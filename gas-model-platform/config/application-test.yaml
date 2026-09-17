@@ -1,0 +1,10 @@
+# 自动化测试环境配置。
+storage:
+  artifact_root: /tmp/gas-model-platform/artifacts
+
+logging:
+  level: WARNING
+  directory: /tmp/gas-model-platform/logs
+  console_enabled: true
+  file_enabled: false
+  retention_days: 3

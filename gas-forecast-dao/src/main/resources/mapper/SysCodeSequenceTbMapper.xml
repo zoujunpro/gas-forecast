@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.SysCodeSequenceTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.SysCodeSequenceTb">
+        <id property="codeType" column="code_type" jdbcType="VARCHAR"/>
+        <result property="currentValue" column="current_value" jdbcType="BIGINT"/>
+        <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectForUpdate" resultMap="BaseResultMap">
+        select code_type, current_value, updated_at
+        from sys_code_sequence_tb
+        where code_type = #{codeType}
+        for update
+    </select>
+</mapper>

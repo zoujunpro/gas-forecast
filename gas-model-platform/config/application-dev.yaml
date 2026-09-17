@@ -1,0 +1,14 @@
+# 本地开发环境配置。
+storage:
+  artifact_root: artifacts
+
+logging:
+  level: DEBUG
+  directory: logs
+  console_enabled: true
+  file_enabled: false
+  request_body_enabled: true
+  response_body_enabled: true
+  body_max_length: 50000
+  body_max_items: 30
+  retention_days: 7

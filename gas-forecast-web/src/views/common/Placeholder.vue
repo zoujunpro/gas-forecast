@@ -1,0 +1,222 @@
+<template>
+  <section class="placeholder-page">
+    <div class="summary-panel">
+      <div>
+        <p class="eyebrow">{{ moduleName }}</p>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+      </div>
+      <el-tag type="info" effect="plain">静态占位</el-tag>
+    </div>
+
+    <div class="layout-grid">
+      <div class="section-panel">
+        <div class="panel-head">
+          <h2>页面定位</h2>
+          <span>01</span>
+        </div>
+        <ul>
+          <li v-for="item in scopes" :key="item">{{ item }}</li>
+        </ul>
+      </div>
+
+      <div class="section-panel">
+        <div class="panel-head">
+          <h2>后续接入</h2>
+          <span>02</span>
+        </div>
+        <ul>
+          <li>接入列表查询、分页、筛选和排序</li>
+          <li>补充新增、编辑、删除和导入导出操作</li>
+          <li>根据角色权限控制菜单和按钮可见性</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+const pageMap: Record<string, { module: string; title: string; description: string; scopes: string[] }> = {
+  winterSupplyConfig: {
+    module: '预测配置',
+    title: '冬季保供配置',
+    description: '用于维护冬季高峰保供预测的模型参数、区域范围、预测周期和预警口径。',
+    scopes: ['区域和冬供周期配置', '模型版本和特征参数配置', '保供缺口阈值和预警等级配置']
+  },
+  monthlySalesConfig: {
+    module: '预测配置',
+    title: '月度销量配置',
+    description: '用于维护月度销量预测的行业口径、回测窗口、预测月数和模型策略。',
+    scopes: ['区域与行业口径配置', '预测周期和回测窗口配置', '模型推荐规则配置']
+  },
+  shortTermConfig: {
+    module: '预测配置',
+    title: '短期客户配置',
+    description: '用于维护短期客户预测的客户范围、行业关系、预测天数和模型策略。',
+    scopes: ['区域、行业、客户联动关系', '客户预测粒度配置', '短期模型参数和输出范围配置']
+  },
+  regionsData: {
+    module: '后台数据管理',
+    title: '区域表管理',
+    description: '维护区域、省份、上级区域和排序状态，是预测筛选的基础维度。',
+    scopes: ['区域编码和区域名称', '区域类型和层级关系', '启用状态和排序']
+  },
+  customersData: {
+    module: '后台数据管理',
+    title: '客户表管理',
+    description: '维护客户档案、所属区域、行业归属和预测展示关系。',
+    scopes: ['客户编码和客户名称', '所属区域和行业', '客户启用状态和预测范围']
+  },
+  industriesData: {
+    module: '后台数据管理',
+    title: '行业表管理',
+    description: '维护行业分类、行业层级和预测口径，支撑行业维度筛选。',
+    scopes: ['行业编码和行业名称', '行业层级和排序', '预测展示名称映射']
+  },
+  forecastBatchesData: {
+    module: '后台数据管理',
+    title: '预测批次表',
+    description: '查看预测任务批次、智能体来源、执行状态和请求参数。',
+    scopes: ['批次号和智能体编码', '预测范围和执行状态', '请求参数和创建信息']
+  },
+  forecastResultsData: {
+    module: '后台数据管理',
+    title: '预测结果表',
+    description: '查看预测日期、预测值和批次归属。',
+    scopes: ['预测批次号和预测日期', '预测值明细', '结果导出和图表追溯']
+  },
+  trainBatchesData: {
+    module: '后台数据管理',
+    title: '训练批次表',
+    description: '查看模型训练批次、回测指标、训练状态和模型版本。',
+    scopes: ['训练批次和模型版本', '训练状态和回测指标', '训练数据范围']
+  },
+  usersSystem: {
+    module: '系统管理',
+    title: '用户管理',
+    description: '维护平台用户、账号状态、部门归属和登录策略。',
+    scopes: ['用户账号和基础信息', '账号启停和密码策略', '用户角色关联']
+  },
+  rolesSystem: {
+    module: '系统管理',
+    title: '角色权限',
+    description: '维护角色、菜单权限、按钮权限和数据范围。',
+    scopes: ['角色列表和角色状态', '菜单和按钮权限', '数据权限范围']
+  },
+  logsSystem: {
+    module: '系统管理',
+    title: '操作日志',
+    description: '查看用户操作、接口调用、异常记录和审计轨迹。',
+    scopes: ['操作人和操作时间', '操作模块和接口路径', '异常信息和审计导出']
+  },
+  settingsSystem: {
+    module: '系统管理',
+    title: '系统参数',
+    description: '维护平台运行参数、默认模型参数和业务开关。',
+    scopes: ['基础运行参数', '预测默认参数', '系统开关和通知策略']
+  }
+}
+
+const page = computed(() => pageMap[String(route.name)] || {
+  module: '平台功能',
+  title: '功能页面',
+  description: '当前页面为静态菜单占位，后续接入具体数据和操作。',
+  scopes: ['列表展示', '条件筛选', '数据维护']
+})
+
+const moduleName = computed(() => page.value.module)
+const title = computed(() => page.value.title)
+const description = computed(() => page.value.description)
+const scopes = computed(() => page.value.scopes)
+</script>
+
+<style scoped>
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.summary-panel,
+.section-panel {
+  background: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 8px;
+}
+
+.summary-panel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0284C7;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: #101828;
+}
+
+p {
+  margin: 0;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.section-panel {
+  padding: 18px 20px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.panel-head h2 {
+  font-size: 16px;
+  color: #101828;
+}
+
+.panel-head span {
+  color: #98A2B3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+ul {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

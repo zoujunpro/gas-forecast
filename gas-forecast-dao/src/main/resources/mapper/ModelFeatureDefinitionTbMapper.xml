@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelFeatureDefinitionTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="featureCode" column="feature_code" jdbcType="VARCHAR"/>
+            <result property="featureName" column="feature_name" jdbcType="VARCHAR"/>
+            <result property="featureColumn" column="feature_column" jdbcType="VARCHAR"/>
+            <result property="timeGranularity" column="time_granularity" jdbcType="VARCHAR"/>
+            <result property="enabled" column="enabled" jdbcType="TINYINT"/>
+            <result property="description" column="description" jdbcType="VARCHAR"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="createdBy" column="created_by" jdbcType="BIGINT"/>
+            <result property="updatedByName" column="updated_by_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,feature_code,feature_name,feature_column,time_granularity,enabled,
+        description,created_at,created_by,updated_by_name
+    </sql>
+</mapper>

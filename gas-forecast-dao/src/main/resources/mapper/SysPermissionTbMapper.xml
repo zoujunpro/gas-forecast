@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.SysPermissionTbMapper">
+    <select id="selectByUsername" resultType="com.gas.forecast.dao.domain.SysPermissionTb">
+        select distinct p.*
+        from sys_permission_tb p
+        where p.status = 1
+          and (
+            exists (
+                select 1
+                from sys_user_tb u
+                join sys_user_role_ref ur on ur.user_id = u.id
+                join sys_role_permission_ref rp on rp.role_id = ur.role_id
+                where rp.permission_id = p.id
+                  and u.username = #{username}
+                  and u.deleted = 0
+            )
+            or exists (
+                select 1
+                from sys_user_tb u
+                join sys_user_department_ref ud on ud.user_id = u.id
+                join sys_department_permission_ref dp on dp.department_id = ud.department_id
+                where dp.permission_id = p.id
+                  and u.username = #{username}
+                  and u.deleted = 0
+            )
+          )
+        order by p.sort_no, p.id
+    </select>
+</mapper>

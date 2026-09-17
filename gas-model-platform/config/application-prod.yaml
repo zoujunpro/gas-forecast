@@ -1,0 +1,14 @@
+# 生产环境配置。部署时可按实际挂载目录调整。
+storage:
+  artifact_root: /data/gas-model-platform/artifacts
+
+logging:
+  level: INFO
+  directory: /data/gas-model-platform/logs
+  console_enabled: true
+  file_enabled: true
+  request_body_enabled: true
+  response_body_enabled: true
+  body_max_length: 10000
+  body_max_items: 10
+  retention_days: 90

@@ -1,0 +1,581 @@
+[2026-09-15 08:11:59.161] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 08:11:59.173] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 40049 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 08:11:59.174] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 08:11:59.483] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 08:11:59.484] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 08:11:59.502] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 11 ms. Found 0 Redis repository interfaces.
+[2026-09-15 08:11:59.806] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 08:11:59.811] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 08:11:59.812] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 08:11:59.812] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 08:11:59.831] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 08:11:59.831] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 635 ms
+[2026-09-15 08:12:00.457] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 08:12:00.464] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 08:12:00.467] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.491 seconds (process running for 1.787)
+[2026-09-15 08:12:11.254] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 08:12:11.254] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 08:12:11.255] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 1 ms
+[2026-09-15 08:12:11.451] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:12:11.480] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 08:12:11.550] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2041fcde
+[2026-09-15 08:12:11.551] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 08:12:11.588] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 137 ms
+[2026-09-15 08:12:12.709] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:12:12.718] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] completed in 9 ms
+[2026-09-15 08:13:40.661] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:13:40.675] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] completed in 14 ms
+[2026-09-15 08:14:06.213] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:14:06.228] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [获取当前登录用户权限] completed in 15 ms
+[2026-09-15 08:22:11.590] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 08:22:11.593] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 08:23:01.484] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 08:23:01.497] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 44170 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 08:23:01.497] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 08:23:01.843] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 08:23:01.844] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 08:23:01.864] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 12 ms. Found 0 Redis repository interfaces.
+[2026-09-15 08:23:02.223] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 08:23:02.229] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 08:23:02.230] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 08:23:02.230] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 08:23:02.253] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 08:23:02.253] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 733 ms
+[2026-09-15 08:23:03.077] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 08:23:03.090] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 08:23:03.095] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.856 seconds (process running for 2.42)
+[2026-09-15 08:23:26.237] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 08:23:26.237] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 08:23:26.238] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 1 ms
+[2026-09-15 08:23:26.427] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:23:26.452] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 08:23:26.515] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5f2023a5
+[2026-09-15 08:23:26.516] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 08:23:26.554] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 127 ms
+[2026-09-15 08:24:49.302] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:24:49.336] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [区域列表查询] completed in 35 ms
+[2026-09-15 08:24:49.925] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:24:49.931] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [客户列表分页查询] completed in 6 ms
+[2026-09-15 08:24:50.605] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:24:50.610] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 08:24:51.207] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:24:51.244] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] completed in 39 ms
+[2026-09-15 08:24:51.516] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:24:51.556] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 40 ms
+[2026-09-15 08:24:54.022] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [原始数据文件分页查询] POST /gas-forecast/data-file-info/listPage args={reqDTO=DataFileInfoPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:24:54.029] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [原始数据文件分页查询] completed in 7 ms
+[2026-09-15 08:25:12.856] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:25:12.862] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [区域列表查询] completed in 6 ms
+[2026-09-15 08:25:22.958] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:25:22.962] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 08:25:24.186] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:25:24.189] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 08:25:28.326] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:25:28.360] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 34 ms
+[2026-09-15 08:25:33.319] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:25:33.358] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 39 ms
+[2026-09-15 08:31:59.409] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:31:59.428] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] completed in 19 ms
+[2026-09-15 08:32:01.183] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:32:01.192] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [区域列表查询] completed in 9 ms
+[2026-09-15 08:32:01.674] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:32:01.678] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [客户列表分页查询] completed in 5 ms
+[2026-09-15 08:32:02.135] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:32:02.138] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 08:32:02.698] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:32:02.735] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 08:41:26.605] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 08:41:26.623] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] completed in 18 ms
+[2026-09-15 08:57:26.004] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:57:26.035] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 31 ms
+[2026-09-15 08:57:27.200] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:57:27.236] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 08:57:36.536] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:57:36.575] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 39 ms
+[2026-09-15 08:57:37.176] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:37.179] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 08:57:37.782] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:37.786] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 08:57:38.495] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:38.499] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 08:57:43.518] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:43.522] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 08:57:43.955] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:43.958] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [客户列表分页查询] completed in 3 ms
+[2026-09-15 08:57:44.434] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:44.438] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [行业列表查询] completed in 4 ms
+[2026-09-15 08:57:45.268] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:57:45.301] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] completed in 33 ms
+[2026-09-15 08:57:45.704] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:57:45.740] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 08:57:46.682] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 08:57:46.720] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 08:57:47.043] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:47.046] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 08:57:47.545] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:47.550] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 08:57:48.114] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:48.118] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 08:57:48.482] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 08:57:48.487] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] completed in 6 ms
+[2026-09-15 09:14:18.618] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取登录RSA公钥] GET /gas-forecast/auth/rsa-public-key args={}
+[2026-09-15 09:14:18.618] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 09:14:18.823] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取登录RSA公钥] completed in 205 ms
+[2026-09-15 09:14:18.949] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取登录验证码] completed in 331 ms
+[2026-09-15 09:15:07.980] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [用户登录] POST /gas-forecast/auth/login args={reqDTO=AuthLoginReqDTO[username=rFBXK6YbmBRtSSQ9u87MXYf2kJOf45gMQkx/O8VSyCVI0mRgaEsCRsGNmOMtNhSz6pISsuDxCGliplFADOryCB9SpGeKQHwJcO9YrhLzNVAsOOtjYyyhkHfLUDk1EvBnceXyIFjvVN4dSf8QnFJI3y8BeKdEsGzeKa64X++Q6WqtLIpQbaUfxNJF4aCyMeVB7s/oOeqyuMb6mth7C8LlnvK+kK918laTAQkuPrSinbjLanCWgx3tR56wRSofvkCD+6yb8pXxIyG8qzFPsu4b1cCG2gU4RtIcrAB5FuKAteIHaVn7d0SO50brQTWyhx+8QZKzAQVCY8MWjkfjBX9+dQ==, password=VEsKInBI1uLJUXQxbwqsRKUR6x/m+pTk6FcaGmZ0S3uAD+IVzUQU8jDL4nvwIjaoCdyvJLhnBWE6F0YfEzZFQ35Q5wUPZv3IVhNvsR+nqDF/RcoicJ60fyCKLCsGytaNnCHwWhm1EaquZqLU8ZPk6ACn9tHrOMDnZEanNQ6BNt/u2t+ivAvMrlpN16js+0jDQRhQ7W0ygjEQWeffF5sE17G4KkOpYtx2UNeGxeG0EEq6DEjTUGsyX0ezO1JYHXinogQ40xCmi3UCqmgqO4UAWSzv12hX/IO9a/HNoYV2rB6tqlnFs7L2JHJGzaEQgz9kcDdap9OjtPqFlKoJ6TjXXg==, captchaId=b1f28729d1fd4e9490f2ad248c9d68ad, captchaCode=fczv, rsaPublicKey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvNpitzbPQqjTDHhUswS7e7qlmAXm1LQkZHqc7s8aKu7Io02zdJChilpr//Jjm1q6pvIs0Yds6cNJ165fPxsnBGTe8bTZc2eG4JJIuJNs0mSJ6O/q4rX9+8DH7MhRUb1Ub5ixV3fLfNAaHzgb9UoBK73z91x...}
+[2026-09-15 09:15:08.015] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [用户登录] completed in 36 ms
+[2026-09-15 09:18:29.223] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 09:18:29.228] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] completed in 5 ms
+[2026-09-15 09:18:40.210] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 09:18:40.214] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 09:23:47.618] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 09:23:47.653] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 35 ms
+[2026-09-15 09:23:48.401] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 09:23:48.441] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 40 ms
+[2026-09-15 09:23:48.888] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 09:23:48.891] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 09:23:49.272] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 09:23:49.275] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] completed in 3 ms
+[2026-09-15 09:26:19.956] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [原始数据文件分页查询] POST /gas-forecast/data-file-info/listPage args={reqDTO=DataFileInfoPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 09:26:19.961] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [原始数据文件分页查询] completed in 5 ms
+[2026-09-15 10:07:19.990] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 10:07:20.011] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] completed in 21 ms
+[2026-09-15 10:07:29.239] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:07:29.243] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 10:07:29.625] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:07:29.629] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 10:07:30.045] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:07:30.050] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 10:07:30.406] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 10:07:30.443] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 10:07:45.975] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [原始数据文件分页查询] POST /gas-forecast/data-file-info/listPage args={reqDTO=DataFileInfoPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:07:45.979] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [原始数据文件分页查询] completed in 4 ms
+[2026-09-15 10:08:47.631] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 10:08:47.662] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 31 ms
+[2026-09-15 10:11:30.896] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 10:11:30.917] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [获取当前登录用户权限] completed in 21 ms
+[2026-09-15 10:11:30.919] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 10:11:30.946] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 27 ms
+[2026-09-15 10:11:43.086] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:11:43.090] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 10:11:43.434] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:11:43.440] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [客户列表分页查询] completed in 6 ms
+[2026-09-15 10:11:43.783] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 10:11:43.787] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [行业列表查询] completed in 4 ms
+[2026-09-15 10:11:44.209] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 10:11:44.246] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 10:11:44.508] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 10:11:44.543] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 35 ms
+[2026-09-15 10:12:16.042] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 10:12:16.076] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] completed in 34 ms
+[2026-09-15 10:39:41.457] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 10:39:41.479] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] completed in 22 ms
+[2026-09-15 11:09:39.759] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 11:09:39.779] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取当前登录用户权限] completed in 20 ms
+[2026-09-15 11:57:44.420] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 11:57:44.429] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] completed in 9 ms
+[2026-09-15 12:31:52.307] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 12:31:52.327] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] completed in 20 ms
+[2026-09-15 13:03:31.637] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 13:03:31.657] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [获取当前登录用户权限] completed in 20 ms
+[2026-09-15 13:39:56.610] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 13:39:56.624] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 14 ms
+[2026-09-15 13:48:53.505] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 13:48:53.526] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] completed in 21 ms
+[2026-09-15 13:54:38.674] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 13:54:38.695] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] completed in 21 ms
+[2026-09-15 13:57:05.900] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 13:57:05.904] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 13:57:09.579] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 13:57:09.583] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 13:57:10.110] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 13:57:10.113] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 13:57:11.574] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 13:57:11.613] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 39 ms
+[2026-09-15 13:57:14.179] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 13:57:14.217] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 14:03:27.804] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 14:03:27.832] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] completed in 28 ms
+[2026-09-15 14:16:22.481] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 14:16:22.506] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取当前登录用户权限] completed in 25 ms
+[2026-09-15 14:16:22.529] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 14:16:22.556] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] completed in 27 ms
+[2026-09-15 14:26:01.229] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 14:26:01.244] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] completed in 15 ms
+[2026-09-15 14:26:01.277] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 14:26:01.314] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 14:29:01.221] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 14:29:01.238] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [获取当前登录用户权限] completed in 17 ms
+[2026-09-15 14:29:01.272] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 14:29:01.309] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 14:42:58.403] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [原始数据文件分页查询] POST /gas-forecast/data-file-info/listPage args={reqDTO=DataFileInfoPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 14:42:58.409] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [原始数据文件分页查询] completed in 6 ms
+[2026-09-15 14:42:59.720] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 14:42:59.761] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 41 ms
+[2026-09-15 15:19:33.694] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 15:19:33.712] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] completed in 18 ms
+[2026-09-15 15:19:33.745] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 15:19:33.784] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] completed in 39 ms
+[2026-09-15 15:29:46.661] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 15:29:46.662] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 21:32:05.107] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 21:32:05.123] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 28971 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 21:32:05.124] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 21:32:05.546] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 21:32:05.548] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 21:32:05.571] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 14 ms. Found 0 Redis repository interfaces.
+[2026-09-15 21:32:06.007] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 21:32:06.013] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:32:06.014] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 21:32:06.014] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 21:32:06.041] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 21:32:06.042] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 893 ms
+[2026-09-15 21:32:06.943] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:32:06.953] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 21:32:06.959] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 2.132 seconds (process running for 2.496)
+[2026-09-15 21:32:50.228] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 21:32:50.228] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 21:32:50.228] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 0 ms
+[2026-09-15 21:32:50.449] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 21:32:50.475] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 21:32:50.545] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7725884e
+[2026-09-15 21:32:50.545] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 21:32:50.581] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 133 ms
+[2026-09-15 21:32:51.797] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:32:51.797] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取登录RSA公钥] GET /gas-forecast/auth/rsa-public-key args={}
+[2026-09-15 21:32:52.247] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取登录验证码] completed in 450 ms
+[2026-09-15 21:32:52.815] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取登录RSA公钥] completed in 1018 ms
+[2026-09-15 21:32:54.707] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:32:54.711] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [获取登录验证码] completed in 4 ms
+[2026-09-15 21:32:58.746] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [用户登录] POST /gas-forecast/auth/login args={reqDTO=AuthLoginReqDTO[username=eePnYvy5EzEE5heY7YZbiBdPBW69wGOs6UXTDP32CW4aveg5GcjavO2bJ6zC55Gw1abXDwAdDaG7LAvyzf/xtiPBkrmUQgBoHt3KQnZAVQGoX+ikLvntPI9z9FtHLoxaR9GE1WT0VpzD/XVVH1gJ4+UWV+mNuebtdH6C8+uFXkChvDpu4WAXMaSGukVfBcmMyK5P8QhlxEdfahfCuZVoOymWrugf9fw+pGaj7ELZhPlyc/ISY8dHcscYi0q7S6gCz7lBqHlLOz5TEE4hXFy+13BQIN53NfgCirJYEJvQD45EF+BF4RzFR7f5yKCPliowqUqdPVP3eJ0VhpJ4XTM4Lg==, password=agoUYi7JZ3fMrft4ZL7YYVegsmobsTAkrOzVS4M6csgmIx+58U9TlTawbIxWMDv0inta+OyjgYRyWjcPVs5MS6gu/9biEfVhy7wHAlY/b0XlJ8BcZHrzphjZMwPyRkvIbcJYtpHP7OteFzYayKPpSTnjEmZEbIM9cQ2dYsRYSm5Vmn2zngsmbuWJ7RmruIvsiL2yQWfsBMAJeNctcyqoB1w6/fUVFQ+S3o2wkUFi3I4uuaZNuRqV9TVmdnNA40bnozFISkHGzqnGy+91RclQduJc4rDMQtMUUYetsvQzZ3lIRT/OkFmFFzcogW2XUvUGN+dlNvkO52J1Rj0kUlWhhg==, captchaId=69dd8b988498413abf7d3e34b455dc03, captchaCode=wwl3, rsaPublicKey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyIsRK0udWhJHsQCUsZC61Kjg6/esuRANefivQUMgOto3+Sfp/r0KHhuuFdzd9sUb72MuqzOq2qaZpv2Udp4uhOGdVSLCU3jpefmZDvTa0qpYTBy388gR7cXmu2Wr6q35QZrhw/1qk985iyFXPjSkVT37Aqb...}
+[2026-09-15 21:32:58.781] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:32:58.784] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [获取登录验证码] completed in 3 ms
+[2026-09-15 21:32:58.788] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [获取登录RSA公钥] GET /gas-forecast/auth/rsa-public-key args={}
+[2026-09-15 21:32:58.968] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [获取登录RSA公钥] completed in 180 ms
+[2026-09-15 21:34:55.820] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 21:34:55.824] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 21:37:40.223] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 21:37:40.233] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 31322 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 21:37:40.233] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 21:37:40.464] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 21:37:40.465] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 21:37:40.480] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 9 ms. Found 0 Redis repository interfaces.
+[2026-09-15 21:37:40.741] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 21:37:40.744] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:37:40.745] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 21:37:40.745] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 21:37:40.760] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 21:37:40.761] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 513 ms
+[2026-09-15 21:37:41.375] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:37:41.385] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 21:37:41.389] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.342 seconds (process running for 1.605)
+[2026-09-15 21:37:45.427] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 21:37:45.427] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 21:37:45.428] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 1 ms
+[2026-09-15 21:37:45.443] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:37:45.652] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取登录验证码] completed in 210 ms
+[2026-09-15 21:37:46.578] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:37:46.581] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [获取登录验证码] completed in 3 ms
+[2026-09-15 21:37:47.873] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:37:47.876] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取登录验证码] completed in 3 ms
+[2026-09-15 21:37:52.886] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [用户登录] POST /gas-forecast/auth/login args={reqDTO=AuthLoginReqDTO[username=H97Hf2ZprBN2yPIgJYTkFYmIXc73F/p1ZYCflOLlfqPGjLF2NdFndCJkxXlCRi0U9q7whmp9SxG1Q/4JGthmpzmwncCF3q+XfVXfxt9Jom3P6O9hSIUDVnDefB9tvx2gqNrNiX5VdiSXHTkti5BNywY4ROCGFXaB6xY8WoSkt9ILIRrTAFZiU455WF0vk91u233gmAA/66ZLSlL3ld/M5du9xOvdSxDscEvP2xYjoWYkMqCipRfsT3J42wnwxzt5OuxL9pB8uW/n4m4DV1scaUwvXrxzf9rc1w56s1BBiQpxmGIcqakJIGzV4y8BSdD0Vm71zP1DcXw1hvx2ucxkBw==, password=ZZUxtIcme7Ous0iSHIi5RZMh0L7L8co9vUrEaqRRBpldwm2YU3d1mAGJZVb/wjXS5Qg547UU0n9NjlchrBXiI+aBJnPv/yDPYEtWpAEWRZVckKdxKL94cHGIXIggmlJLVbaF6RrwSgc/CkS7aOw4PmNFRZn9wZAaf2mhEsmfgDry8pBFeR3Oc543AuKfGV13DvupjnCFiNk7UgOLw1feevgn/idTbPMmkWyPHOjKOUPl06sDzSpK5RjrQPmPYX6g//c4A40xYaNZzH61xZAs0HvqX24ZZ6vLO+4ubGbMnMfp+uZ0/DpibnunNdrRaTJmIx52YOkt8sc3N6wMucLlig==, captchaId=43ebeaef94ec46509e18eb0a71b4b9a9, captchaCode=yuw6, rsaPublicKey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsR+aroqLAFmb9lPCyylTxWC97pH5zOr8sr+1mwbhv5ABxKhB/oEujz3ecNfUhQeLX0U5P5aJtewCOsWgl0pIZqyO1Z+LVvD7j53fZCCJF2DIKL47rLYp5nzJSGQSASdeI6rfGKCx026/Nt1uLUqdki8AnG7...}
+[2026-09-15 21:37:53.015] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:37:53.017] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取登录验证码] completed in 2 ms
+[2026-09-15 21:37:53.020] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [获取登录RSA公钥] GET /gas-forecast/auth/rsa-public-key args={}
+[2026-09-15 21:37:53.188] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [获取登录RSA公钥] completed in 168 ms
+[2026-09-15 21:37:56.600] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [获取登录RSA公钥] GET /gas-forecast/auth/rsa-public-key args={}
+[2026-09-15 21:37:56.600] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取登录验证码] GET /gas-forecast/auth/captcha args={}
+[2026-09-15 21:37:56.601] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取登录验证码] completed in 1 ms
+[2026-09-15 21:37:57.015] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [获取登录RSA公钥] completed in 415 ms
+[2026-09-15 21:38:02.832] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [用户登录] POST /gas-forecast/auth/login args={reqDTO=AuthLoginReqDTO[username=dgkaAG+eQL06q48qAV35RCGuUoGrgGMUjkQGNWpc0YADcW0O5i3TQHCeA47vZr5yvzHkTz+Wyd/O2o8sopvagtHqqNGtGTSMXuvhgxx06kifuhAiOOqB7fmCzfUsAHwgbSdfpIyIbe96CA1iBejRgWW3Es5cOqwtoB/B/5wZaxwnG1VWPHWOXnkxcgUFzruKz2aRgatcpXKVWT80/7A+wl+bsbj3NF9C5gTWB7gVgmCSiY58hlKwS5DWfz4B8sHkionf7Pl3SvTXFcayv7jR4puGo6CxpQ3AB2noYsn7Abm8wrD3TFF5xeZTHnThHi1Y+C/3vDdYzg4XVSAKDydV6A==, password=St/DZ0raLX6OsDEQwfzanf/jaEeMNPmsXwjT1bXCK2mTEF4n8TSmX3R3A8ooAGl+Yzvh+4I58+YCPbwD3reGsSJI50k/gcBDwYuHh8b4Jhmjm1BznWmZl8p5cT7+PvW8/IkviDYjyCeG9M7ylOz5R4MmdIPOXOvamImzHD2iGs8Z0/h4JDPcpPcKYGjl4s9U4KWXhvFPTwkVQETDFqpwKYE8Mc+KccAWvHnqRA8Ru4BZQlR21xl8ZNYcLIEpfT804wOBXmvF5UijITydIx+tlCSW3HGNdYRFj4OS/ySU6m2sAdmzyo2FOfUqtn0xojk1zDixvQ29OpZ9L+VScTRFKg==, captchaId=29880972e9b84fd2837bdee2e5eaf11b, captchaCode=3uht, rsaPublicKey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuNpVT5l1Vk2W0Mjs1M0kXfV58tMWiwMVAEjZ0pe8GBqyAtzbjpjuu0mH/LeCh6evLiZmw5vkwbAWMzGA6m2oPlLvPIs6cg1wt/aV0QLpWG+bpfQ4arsxrcXXPjYxU4k0BellUocqg0euevka+kw9sDNbnJW...}
+[2026-09-15 21:38:02.875] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-9] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 21:38:02.931] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-9] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@39432ce5
+[2026-09-15 21:38:02.931] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-9] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 21:38:02.967] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [用户登录] completed in 135 ms
+[2026-09-15 21:38:05.935] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:38:05.969] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [区域列表查询] completed in 35 ms
+[2026-09-15 21:38:09.181] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:38:09.187] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] completed in 6 ms
+[2026-09-15 21:44:26.695] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 21:44:26.697] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 21:50:06.855] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 21:50:06.867] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 34835 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 21:50:06.867] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 21:50:07.122] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 21:50:07.123] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 21:50:07.140] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 10 ms. Found 0 Redis repository interfaces.
+[2026-09-15 21:50:07.429] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 21:50:07.434] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:50:07.434] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 21:50:07.434] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 21:50:07.452] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 21:50:07.452] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 568 ms
+[2026-09-15 21:50:08.052] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:50:08.059] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 21:50:08.063] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.399 seconds (process running for 1.656)
+[2026-09-15 21:56:18.035] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 21:56:18.035] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 21:56:18.036] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 0 ms
+[2026-09-15 21:56:18.232] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 21:56:18.307] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5d8b3e0d
+[2026-09-15 21:56:18.308] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-1] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 21:56:18.389] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:58:55.069] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 21:58:55.071] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 21:58:57.225] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 21:58:57.240] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 37955 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 21:58:57.241] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 21:58:57.583] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 21:58:57.584] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 21:58:57.605] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 13 ms. Found 0 Redis repository interfaces.
+[2026-09-15 21:58:57.979] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 21:58:57.984] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:58:57.985] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 21:58:57.985] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 21:58:58.008] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 21:58:58.008] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 746 ms
+[2026-09-15 21:58:58.801] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 21:58:58.816] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 21:58:58.820] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.841 seconds (process running for 2.161)
+[2026-09-15 21:59:16.215] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-2] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 21:59:16.216] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-2] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 21:59:16.216] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-2] [INFO] - Completed initialization in 0 ms
+[2026-09-15 21:59:16.466] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 21:59:16.467] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 21:59:16.565] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@5b8d2e5d
+[2026-09-15 21:59:16.566] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 21:59:16.615] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 150 ms
+[2026-09-15 21:59:16.680] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:16.724] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [客户列表分页查询] completed in 45 ms
+[2026-09-15 21:59:17.420] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:17.426] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] completed in 6 ms
+[2026-09-15 21:59:19.431] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:19.436] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [客户列表分页查询] completed in 5 ms
+[2026-09-15 21:59:20.050] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:20.056] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [行业列表查询] completed in 6 ms
+[2026-09-15 21:59:21.771] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:21.776] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [客户列表分页查询] completed in 5 ms
+[2026-09-15 21:59:22.543] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:22.547] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 21:59:23.715] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:23.719] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [行业列表查询] completed in 4 ms
+[2026-09-15 21:59:24.271] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:24.276] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [客户列表分页查询] completed in 5 ms
+[2026-09-15 21:59:24.579] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 21:59:24.584] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [区域列表查询] completed in 5 ms
+[2026-09-15 22:00:56.486] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:00:56.492] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] completed in 6 ms
+[2026-09-15 22:00:56.961] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:00:56.964] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 22:00:58.163] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:00:58.204] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] completed in 43 ms
+[2026-09-15 22:01:00.398] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:01:00.436] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:01:00.914] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:01:00.945] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] completed in 31 ms
+[2026-09-15 22:01:01.394] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:01:01.399] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 22:01:02.120] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:01:02.126] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [客户列表分页查询] completed in 7 ms
+[2026-09-15 22:01:02.527] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:01:02.531] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 22:01:03.029] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:01:03.033] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 22:01:03.385] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:01:03.390] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 22:09:35.996] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:09:36.015] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 19 ms
+[2026-09-15 22:09:36.047] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:09:36.051] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] completed in 4 ms
+[2026-09-15 22:12:20.097] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:12:20.102] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 22:13:12.082] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:13:12.085] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 22:14:04.393] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:14:04.398] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [行业列表查询] completed in 5 ms
+[2026-09-15 22:15:47.617] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:15:47.620] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [行业列表查询] completed in 3 ms
+[2026-09-15 22:16:59.960] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 22:16:59.962] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 22:17:01.894] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 22:17:01.907] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 43690 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 22:17:01.908] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 22:17:02.244] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 22:17:02.246] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 22:17:02.266] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 13 ms. Found 0 Redis repository interfaces.
+[2026-09-15 22:17:02.623] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 22:17:02.628] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 22:17:02.629] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 22:17:02.629] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 22:17:02.650] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 22:17:02.651] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 721 ms
+[2026-09-15 22:17:03.518] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 22:17:03.527] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 22:17:03.533] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.887 seconds (process running for 2.206)
+[2026-09-15 22:17:10.942] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-2] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 22:17:10.943] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-2] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 22:17:10.943] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-2] [INFO] - Completed initialization in 0 ms
+[2026-09-15 22:17:11.152] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:17:11.154] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 22:17:11.234] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4dccc4c9
+[2026-09-15 22:17:11.235] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 22:17:11.274] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 122 ms
+[2026-09-15 22:17:11.324] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:17:11.358] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [行业列表查询] completed in 35 ms
+[2026-09-15 22:17:13.219] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:17:13.225] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [客户列表分页查询] completed in 6 ms
+[2026-09-15 22:17:15.333] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:17:15.339] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [区域列表查询] completed in 6 ms
+[2026-09-15 22:19:59.182] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:19:59.202] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] completed in 20 ms
+[2026-09-15 22:19:59.206] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:19:59.212] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [区域列表查询] completed in 6 ms
+[2026-09-15 22:19:59.922] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:19:59.933] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取当前登录用户权限] completed in 11 ms
+[2026-09-15 22:19:59.950] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:19:59.955] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] completed in 5 ms
+[2026-09-15 22:20:00.171] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:20:00.181] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] completed in 10 ms
+[2026-09-15 22:20:00.198] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:20:00.203] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [区域列表查询] completed in 5 ms
+[2026-09-15 22:20:01.141] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:20:01.146] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [客户列表分页查询] completed in 5 ms
+[2026-09-15 22:20:02.914] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:20:02.918] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-15 22:27:48.270] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:27:48.299] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] completed in 29 ms
+[2026-09-15 22:27:48.302] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:27:48.308] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [区域列表查询] completed in 6 ms
+[2026-09-15 22:27:50.098] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:27:50.102] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [客户列表分页查询] completed in 5 ms
+[2026-09-15 22:27:50.846] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:27:50.850] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [行业列表查询] completed in 4 ms
+[2026-09-15 22:27:58.486] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:27:58.490] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 22:28:07.200] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:28:07.205] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] completed in 5 ms
+[2026-09-15 22:28:16.116] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:28:16.153] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] completed in 40 ms
+[2026-09-15 22:28:18.293] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:28:18.331] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:32:19.782] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-15 22:32:19.784] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-15 22:32:21.558] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-15 22:32:21.572] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 48611 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-15 22:32:21.573] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-15 22:32:21.915] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-15 22:32:21.917] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-15 22:32:21.938] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 14 ms. Found 0 Redis repository interfaces.
+[2026-09-15 22:32:22.303] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-15 22:32:22.309] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-15 22:32:22.310] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-15 22:32:22.310] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-15 22:32:22.333] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-15 22:32:22.333] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 738 ms
+[2026-09-15 22:32:23.165] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-15 22:32:23.172] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-15 22:32:23.178] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.879 seconds (process running for 2.214)
+[2026-09-15 22:32:24.582] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-15 22:32:24.582] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-15 22:32:24.583] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 1 ms
+[2026-09-15 22:32:24.787] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:32:24.789] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Starting...
+[2026-09-15 22:32:24.861] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4720a743
+[2026-09-15 22:32:24.862] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Start completed.
+[2026-09-15 22:32:24.900] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 113 ms
+[2026-09-15 22:32:24.948] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:32:25.014] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 68 ms
+[2026-09-15 22:32:28.225] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:32:28.238] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] completed in 13 ms
+[2026-09-15 22:32:28.257] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:32:28.291] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] completed in 34 ms
+[2026-09-15 22:32:31.116] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:32:31.126] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [获取当前登录用户权限] completed in 10 ms
+[2026-09-15 22:32:31.144] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:32:31.179] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 35 ms
+[2026-09-15 22:33:03.757] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:03.794] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:33:06.595] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:06.632] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:07.300] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:07.337] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:08.200] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:08.238] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:33:08.819] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:08.856] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:09.513] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:09.547] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 34 ms
+[2026-09-15 22:33:12.895] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:12.933] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:33:13.773] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:13.809] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 22:33:14.644] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:14.681] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:15.098] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:33:15.103] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [行业列表查询] completed in 6 ms
+[2026-09-15 22:33:15.945] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:15.987] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] completed in 42 ms
+[2026-09-15 22:33:16.720] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:16.755] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 35 ms
+[2026-09-15 22:33:17.749] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:17.786] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:33:18.453] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:18.489] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:19.636] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:19.671] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 34 ms
+[2026-09-15 22:33:20.282] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:20.316] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 34 ms
+[2026-09-15 22:33:20.718] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:20.755] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:21.145] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:21.180] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] completed in 35 ms
+[2026-09-15 22:33:21.923] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:21.962] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] completed in 39 ms
+[2026-09-15 22:33:22.253] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:22.290] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:25.196] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:25.237] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [日销量标准数据分页查询] completed in 41 ms
+[2026-09-15 22:33:26.222] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:26.258] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 22:33:27.062] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:27.098] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 22:33:27.774] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:27.812] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:33:28.382] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:28.420] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:33:29.222] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:29.257] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 35 ms
+[2026-09-15 22:33:30.580] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:30.617] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [日销量标准数据分页查询] completed in 37 ms
+[2026-09-15 22:33:31.066] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:33:31.103] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:38:58.116] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [月销量标准数据分页查询] POST /gas-forecast/data-monthly-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:38:58.121] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [月销量标准数据分页查询] completed in 5 ms
+[2026-09-15 22:40:11.122] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:40:11.140] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [获取当前登录用户权限] completed in 18 ms
+[2026-09-15 22:40:11.155] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [月销量标准数据分页查询] POST /gas-forecast/data-monthly-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:11.160] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [月销量标准数据分页查询] completed in 5 ms
+[2026-09-15 22:40:12.164] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:12.197] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [日销量标准数据分页查询] completed in 33 ms
+[2026-09-15 22:40:13.010] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [月销量标准数据分页查询] POST /gas-forecast/data-monthly-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:13.014] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [月销量标准数据分页查询] completed in 4 ms
+[2026-09-15 22:40:16.369] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:16.407] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [日销量标准数据分页查询] completed in 38 ms
+[2026-09-15 22:40:16.983] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [月销量标准数据分页查询] POST /gas-forecast/data-monthly-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:16.988] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [月销量标准数据分页查询] completed in 6 ms
+[2026-09-15 22:40:17.868] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:17.904] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 22:40:18.687] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [月销量标准数据分页查询] POST /gas-forecast/data-monthly-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:18.692] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [月销量标准数据分页查询] completed in 5 ms
+[2026-09-15 22:40:20.561] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [月销量标准数据分页查询] POST /gas-forecast/data-monthly-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:20.566] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [月销量标准数据分页查询] completed in 5 ms
+[2026-09-15 22:40:20.901] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] POST /gas-forecast/data-daily-sales/listPage args={reqDTO=DataSalesPageReqDTO[page=1, size=10, keyword=null, startDate=null, endDate=null]}
+[2026-09-15 22:40:20.937] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [日销量标准数据分页查询] completed in 36 ms
+[2026-09-15 22:40:21.901] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [行业列表查询] POST /gas-forecast/base-industry/listPage args={reqDTO=BaseIndustryPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:40:21.904] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [行业列表查询] completed in 4 ms
+[2026-09-15 22:40:22.848] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [客户列表分页查询] POST /gas-forecast/base-customer/listPage args={reqDTO=BaseCustomerPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:40:22.852] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [客户列表分页查询] completed in 4 ms
+[2026-09-15 22:40:23.194] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-15 22:40:23.198] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [区域列表查询] completed in 5 ms
+[2026-09-15 22:40:48.319] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-15 22:40:48.345] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [获取当前登录用户权限] completed in 26 ms

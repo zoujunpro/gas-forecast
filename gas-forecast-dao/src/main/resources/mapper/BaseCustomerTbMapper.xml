@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.BaseCustomerTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.BaseCustomerTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="customerCode" column="customer_code" jdbcType="VARCHAR"/>
+            <result property="customerName" column="customer_name" jdbcType="VARCHAR"/>
+            <result property="industryCode" column="industry_code" jdbcType="VARCHAR"/>
+            <result property="industryName" column="industry_name" jdbcType="VARCHAR"/>
+            <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+            <result property="createdBy" column="created_by" jdbcType="BIGINT"/>
+            <result property="createdByName" column="created_by_name" jdbcType="VARCHAR"/>
+            <result property="updatedBy" column="updated_by" jdbcType="BIGINT"/>
+            <result property="updatedByName" column="updated_by_name" jdbcType="VARCHAR"/>
+            <result property="rawRegionName" column="raw_region_name" jdbcType="VARCHAR"/>
+            <result property="rawIndustryName" column="raw_industry_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,customer_code,customer_name,industry_code,industry_name,region_code,
+        region_name,created_at,updated_at,created_by,created_by_name,
+        updated_by,updated_by_name,raw_region_name,raw_industry_name
+    </sql>
+</mapper>

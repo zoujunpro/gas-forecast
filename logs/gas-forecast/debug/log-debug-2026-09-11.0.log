@@ -1,0 +1,303 @@
+[2026-09-11 17:46:36.479] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 17:46:36.489] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:46:36.502] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 17:46:36.504] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:46:36.505] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:46:36.509] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 10
+[2026-09-11 17:47:00.655] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:47:00.655] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:47:00.657] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 17:47:00.657] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:47:00.657] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:47:00.659] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 10
+[2026-09-11 17:47:02.130] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:47:02.130] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:47:02.131] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 1
+[2026-09-11 17:47:02.131] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:47:02.131] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:47:02.132] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 3
+[2026-09-11 17:47:02.969] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 17:47:02.969] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:47:02.970] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 1
+[2026-09-11 17:47:04.743] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:47:04.743] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:47:04.744] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 1
+[2026-09-11 17:47:04.745] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:47:04.745] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:47:04.746] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 3
+[2026-09-11 17:47:05.366] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:47:05.366] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:47:05.368] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 1
+[2026-09-11 17:47:05.368] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:47:05.368] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:47:05.370] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 10
+[2026-09-11 17:47:32.621] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 17:47:32.622] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:47:32.623] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 1
+[2026-09-11 17:47:32.623] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:47:32.623] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:47:32.625] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 10
+[2026-09-11 17:48:00.360] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:48:00.360] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:48:00.364] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 1
+[2026-09-11 17:48:00.364] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:48:00.365] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:48:00.366] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 3
+[2026-09-11 17:48:04.189] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:48:04.189] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:48:04.190] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 1
+[2026-09-11 17:48:04.190] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:48:04.190] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:48:04.191] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 3
+[2026-09-11 17:49:07.815] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:49:07.816] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:49:07.819] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 1
+[2026-09-11 17:49:07.819] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:49:07.819] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:49:07.820] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 3
+[2026-09-11 17:50:25.052] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:50:25.061] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:50:25.073] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 17:50:25.077] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:50:25.078] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:50:25.080] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 3
+[2026-09-11 17:50:28.495] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:50:28.495] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:50:28.497] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 17:50:28.497] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:50:28.497] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:50:28.499] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 10
+[2026-09-11 17:50:31.523] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 17:50:31.523] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:50:31.524] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 1
+[2026-09-11 17:50:31.525] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:50:31.525] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:50:31.527] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 10
+[2026-09-11 17:50:33.190] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:50:33.191] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:50:33.192] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 1
+[2026-09-11 17:50:33.192] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:50:33.192] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:50:33.195] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 10
+[2026-09-11 17:50:33.934] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:50:33.935] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:50:33.936] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 1
+[2026-09-11 17:50:33.936] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:50:33.936] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:50:33.937] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 3
+[2026-09-11 17:54:05.883] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:54:05.895] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:05.907] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:05.910] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:05.911] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:05.914] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 3
+[2026-09-11 17:54:07.673] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:54:07.674] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:07.675] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:07.675] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:07.675] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:07.677] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 10
+[2026-09-11 17:54:09.956] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 17:54:09.957] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:09.958] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:09.958] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:09.958] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:09.961] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 10
+[2026-09-11 17:54:17.950] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:54:17.951] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:17.952] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:17.953] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:17.953] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:17.954] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 10
+[2026-09-11 17:54:19.854] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 17:54:19.854] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:19.855] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:19.855] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:19.855] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:19.857] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 10
+[2026-09-11 17:54:41.107] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:54:41.108] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:41.111] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:41.111] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:41.111] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:41.114] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 3
+[2026-09-11 17:54:41.482] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:54:41.482] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:41.483] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:41.484] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:41.484] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:41.485] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 10
+[2026-09-11 17:54:42.487] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 17:54:42.487] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:54:42.489] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 1
+[2026-09-11 17:54:42.489] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:54:42.489] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:54:42.491] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 10
+[2026-09-11 17:55:21.593] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 17:55:21.593] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:55:21.600] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 1
+[2026-09-11 17:55:21.601] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:55:21.601] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:55:21.602] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 10
+[2026-09-11 17:55:22.131] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 17:55:22.132] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:55:22.133] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 1
+[2026-09-11 17:55:22.133] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 17:55:22.133] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 17:55:22.134] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 3
+[2026-09-11 17:55:23.395] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 17:55:23.396] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:55:23.399] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 17:55:23.910] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 17:55:23.910] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 17:55:23.911] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 21:48:59.026] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 21:48:59.035] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 21:48:59.046] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 21:48:59.049] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 21:48:59.050] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 21:48:59.053] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 10
+[2026-09-11 21:49:00.185] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 21:49:00.186] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 21:49:00.187] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 21:49:00.188] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 21:49:00.188] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 21:49:00.189] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 3
+[2026-09-11 21:54:26.831] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 21:54:26.831] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 
+[2026-09-11 21:54:26.836] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 1
+[2026-09-11 21:54:26.836] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 21:54:26.837] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 21:54:26.838] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 3
+[2026-09-11 22:01:53.243] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 22:01:53.243] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:01:53.252] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 1
+[2026-09-11 22:01:53.252] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,industry_name,customer_name,customer_code,gas_sales,unit,file_id,created_at,region_code,industry_code FROM data_daily_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:01:53.253] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:01:53.282] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 10
+[2026-09-11 22:01:56.335] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:01:56.336] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:01:56.337] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 1
+[2026-09-11 22:01:56.337] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:01:56.338] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:01:56.340] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 10
+[2026-09-11 22:01:57.604] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 22:01:57.604] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:01:57.608] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 1
+[2026-09-11 22:01:57.608] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,industry_name,customer_name,customer_code,gas_sales,unit,file_id,created_at,region_code,industry_code FROM data_daily_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:01:57.608] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:01:57.640] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 10
+[2026-09-11 22:01:58.435] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:01:58.435] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:01:58.437] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 1
+[2026-09-11 22:01:58.437] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:01:58.437] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:01:58.440] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 10
+[2026-09-11 22:01:59.574] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 22:01:59.574] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:01:59.578] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 1
+[2026-09-11 22:01:59.578] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,industry_name,customer_name,customer_code,gas_sales,unit,file_id,created_at,region_code,industry_code FROM data_daily_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:01:59.578] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:01:59.612] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:01.508] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:01.508] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:01.510] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:01.510] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:01.510] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:01.513] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:02.393] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 22:02:02.393] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:02.397] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:02.398] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,industry_name,customer_name,customer_code,gas_sales,unit,file_id,created_at,region_code,industry_code FROM data_daily_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:02.398] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:02.430] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:05.805] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:05.805] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:05.807] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:05.807] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:05.807] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:05.810] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:09.744] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 22:02:09.744] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:09.747] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:09.747] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,industry_name,customer_name,customer_code,gas_sales,unit,file_id,created_at,region_code,industry_code FROM data_daily_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:09.747] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:09.776] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:13.201] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:13.202] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:13.203] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:13.203] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:13.203] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:13.205] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:14.205] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_daily_sales_tb
+[2026-09-11 22:02:14.205] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:14.209] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:14.210] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,industry_name,customer_name,customer_code,gas_sales,unit,file_id,created_at,region_code,industry_code FROM data_daily_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:14.210] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:14.244] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:20.874] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:20.874] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:20.875] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:20.875] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:02:20.875] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:02:20.878] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:39.041] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:39.041] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:39.042] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:39.043] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-6] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?,?
+[2026-09-11 22:02:39.043] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-6] [DEBUG] - ==> Parameters: 10(Long), 10(Long)
+[2026-09-11 22:02:39.045] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-6] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:39.603] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:39.603] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:39.604] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:39.604] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-7] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?,?
+[2026-09-11 22:02:39.604] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-7] [DEBUG] - ==> Parameters: 20(Long), 10(Long)
+[2026-09-11 22:02:39.606] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-7] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:40.037] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:40.037] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:40.038] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:40.038] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-8] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?,?
+[2026-09-11 22:02:40.038] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-8] [DEBUG] - ==> Parameters: 40(Long), 10(Long)
+[2026-09-11 22:02:40.041] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-8] [DEBUG] - <==      Total: 10
+[2026-09-11 22:02:40.674] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:02:40.674] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:02:40.676] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 1
+[2026-09-11 22:02:40.676] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-9] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?,?
+[2026-09-11 22:02:40.676] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-9] [DEBUG] - ==> Parameters: 60(Long), 10(Long)
+[2026-09-11 22:02:40.679] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-9] [DEBUG] - <==      Total: 10
+[2026-09-11 22:05:38.144] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM data_monthly_sales_tb
+[2026-09-11 22:05:38.145] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:05:38.148] [gas-forecast] [] [] [c.g.f.d.m.D.selectList_mpCount] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 1
+[2026-09-11 22:05:38.148] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-10] [DEBUG] - ==>  Preparing: SELECT id,stat_date,region_name,region_code,industry_name,industry_code,customer_name,customer_code,gas_sales,unit,file_id,created_at FROM data_monthly_sales_tb ORDER BY stat_date DESC,id DESC LIMIT ?
+[2026-09-11 22:05:38.148] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-10] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:05:38.152] [gas-forecast] [] [] [c.g.f.d.m.D.selectList] [http-nio-8080-exec-10] [DEBUG] - <==      Total: 10
+[2026-09-11 22:05:49.721] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 22:05:49.721] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:05:49.722] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 1
+[2026-09-11 22:05:49.722] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 22:05:49.723] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:05:49.724] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-1] [DEBUG] - <==      Total: 3
+[2026-09-11 22:05:50.400] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 22:05:50.401] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:05:50.402] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 1
+[2026-09-11 22:05:50.403] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 22:05:50.404] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:05:50.405] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-2] [DEBUG] - <==      Total: 10
+[2026-09-11 22:05:51.049] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_region_tb
+[2026-09-11 22:05:51.049] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:05:51.050] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 1
+[2026-09-11 22:05:51.050] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==>  Preparing: SELECT id,region_code,region_name,region_type,parent_id,sort_no,enabled,remark,created_by,created_at,updated_by,updated_at,update_by_name,created_by_name FROM base_region_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 22:05:51.050] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:05:51.051] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-3] [DEBUG] - <==      Total: 10
+[2026-09-11 22:05:51.578] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_customer_tb
+[2026-09-11 22:05:51.578] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:05:51.578] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 1
+[2026-09-11 22:05:51.579] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - ==>  Preparing: SELECT id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name FROM base_customer_tb ORDER BY updated_at DESC,id DESC LIMIT ?
+[2026-09-11 22:05:51.579] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:05:51.579] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-4] [DEBUG] - <==      Total: 10
+[2026-09-11 22:05:52.365] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT COUNT(*) AS total FROM base_industry_tb
+[2026-09-11 22:05:52.365] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 
+[2026-09-11 22:05:52.366] [gas-forecast] [] [] [c.g.f.d.m.B.selectList_mpCount] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 1
+[2026-09-11 22:05:52.366] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - ==>  Preparing: SELECT id,industry_code,industry_name,parent_id,industry_level,sort_no,created_at,updated_at,created_by,created_by_name,updated_by,updated_by_name FROM base_industry_tb ORDER BY sort_no ASC,updated_at DESC,id DESC LIMIT ?
+[2026-09-11 22:05:52.366] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - ==> Parameters: 10(Long)
+[2026-09-11 22:05:52.367] [gas-forecast] [] [] [c.g.f.d.m.B.selectList] [http-nio-8080-exec-5] [DEBUG] - <==      Total: 3

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelTrainFeatureDataTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="statDate" column="stat_date" jdbcType="VARCHAR"/>
+            <result property="timeGranularity" column="time_granularity" jdbcType="VARCHAR"/>
+            <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="customerCode" column="customer_code" jdbcType="VARCHAR"/>
+            <result property="customerName" column="customer_name" jdbcType="VARCHAR"/>
+            <result property="industryCode" column="industry_code" jdbcType="VARCHAR"/>
+            <result property="industryName" column="industry_name" jdbcType="VARCHAR"/>
+            <result property="gasSales" column="gas_sales" jdbcType="DECIMAL"/>
+            <result property="feature001" column="feature_001" jdbcType="DOUBLE"/>
+            <result property="feature002" column="feature_002" jdbcType="DOUBLE"/>
+            <result property="feature003" column="feature_003" jdbcType="DOUBLE"/>
+            <result property="feature004" column="feature_004" jdbcType="DOUBLE"/>
+            <result property="feature005" column="feature_005" jdbcType="DOUBLE"/>
+            <result property="feature006" column="feature_006" jdbcType="DOUBLE"/>
+            <result property="feature007" column="feature_007" jdbcType="DOUBLE"/>
+            <result property="feature008" column="feature_008" jdbcType="DOUBLE"/>
+            <result property="feature009" column="feature_009" jdbcType="DOUBLE"/>
+            <result property="feature010" column="feature_010" jdbcType="DOUBLE"/>
+            <result property="feature011" column="feature_011" jdbcType="DOUBLE"/>
+            <result property="feature012" column="feature_012" jdbcType="DOUBLE"/>
+            <result property="feature013" column="feature_013" jdbcType="DOUBLE"/>
+            <result property="feature014" column="feature_014" jdbcType="DOUBLE"/>
+            <result property="feature015" column="feature_015" jdbcType="DOUBLE"/>
+            <result property="feature016" column="feature_016" jdbcType="DOUBLE"/>
+            <result property="feature017" column="feature_017" jdbcType="DOUBLE"/>
+            <result property="feature018" column="feature_018" jdbcType="DOUBLE"/>
+            <result property="feature019" column="feature_019" jdbcType="DOUBLE"/>
+            <result property="feature020" column="feature_020" jdbcType="DOUBLE"/>
+            <result property="feature021" column="feature_021" jdbcType="DOUBLE"/>
+            <result property="feature022" column="feature_022" jdbcType="DOUBLE"/>
+            <result property="feature023" column="feature_023" jdbcType="DOUBLE"/>
+            <result property="feature024" column="feature_024" jdbcType="DOUBLE"/>
+            <result property="feature025" column="feature_025" jdbcType="DOUBLE"/>
+            <result property="feature026" column="feature_026" jdbcType="DOUBLE"/>
+            <result property="feature027" column="feature_027" jdbcType="DOUBLE"/>
+            <result property="feature028" column="feature_028" jdbcType="DOUBLE"/>
+            <result property="feature029" column="feature_029" jdbcType="DOUBLE"/>
+            <result property="feature030" column="feature_030" jdbcType="DOUBLE"/>
+            <result property="feature031" column="feature_031" jdbcType="DOUBLE"/>
+            <result property="feature032" column="feature_032" jdbcType="DOUBLE"/>
+            <result property="feature033" column="feature_033" jdbcType="DOUBLE"/>
+            <result property="feature034" column="feature_034" jdbcType="DOUBLE"/>
+            <result property="feature035" column="feature_035" jdbcType="DOUBLE"/>
+            <result property="feature036" column="feature_036" jdbcType="DOUBLE"/>
+            <result property="feature037" column="feature_037" jdbcType="DOUBLE"/>
+            <result property="feature038" column="feature_038" jdbcType="DOUBLE"/>
+            <result property="feature039" column="feature_039" jdbcType="DOUBLE"/>
+            <result property="feature040" column="feature_040" jdbcType="DOUBLE"/>
+            <result property="feature041" column="feature_041" jdbcType="DOUBLE"/>
+            <result property="feature042" column="feature_042" jdbcType="DOUBLE"/>
+            <result property="feature043" column="feature_043" jdbcType="DOUBLE"/>
+            <result property="feature044" column="feature_044" jdbcType="DOUBLE"/>
+            <result property="feature045" column="feature_045" jdbcType="DOUBLE"/>
+            <result property="feature046" column="feature_046" jdbcType="DOUBLE"/>
+            <result property="feature047" column="feature_047" jdbcType="DOUBLE"/>
+            <result property="feature048" column="feature_048" jdbcType="DOUBLE"/>
+            <result property="feature049" column="feature_049" jdbcType="DOUBLE"/>
+            <result property="feature050" column="feature_050" jdbcType="DOUBLE"/>
+            <result property="feature051" column="feature_051" jdbcType="DOUBLE"/>
+            <result property="feature052" column="feature_052" jdbcType="DOUBLE"/>
+            <result property="feature053" column="feature_053" jdbcType="DOUBLE"/>
+            <result property="feature054" column="feature_054" jdbcType="DOUBLE"/>
+            <result property="feature055" column="feature_055" jdbcType="DOUBLE"/>
+            <result property="feature056" column="feature_056" jdbcType="DOUBLE"/>
+            <result property="feature057" column="feature_057" jdbcType="DOUBLE"/>
+            <result property="feature058" column="feature_058" jdbcType="DOUBLE"/>
+            <result property="feature059" column="feature_059" jdbcType="DOUBLE"/>
+            <result property="feature060" column="feature_060" jdbcType="DOUBLE"/>
+            <result property="feature061" column="feature_061" jdbcType="DOUBLE"/>
+            <result property="feature062" column="feature_062" jdbcType="DOUBLE"/>
+            <result property="feature063" column="feature_063" jdbcType="DOUBLE"/>
+            <result property="feature064" column="feature_064" jdbcType="DOUBLE"/>
+            <result property="feature065" column="feature_065" jdbcType="DOUBLE"/>
+            <result property="feature066" column="feature_066" jdbcType="DOUBLE"/>
+            <result property="feature067" column="feature_067" jdbcType="DOUBLE"/>
+            <result property="feature068" column="feature_068" jdbcType="DOUBLE"/>
+            <result property="feature069" column="feature_069" jdbcType="DOUBLE"/>
+            <result property="feature070" column="feature_070" jdbcType="DOUBLE"/>
+            <result property="feature071" column="feature_071" jdbcType="DOUBLE"/>
+            <result property="feature072" column="feature_072" jdbcType="DOUBLE"/>
+            <result property="feature073" column="feature_073" jdbcType="DOUBLE"/>
+            <result property="feature074" column="feature_074" jdbcType="DOUBLE"/>
+            <result property="feature075" column="feature_075" jdbcType="DOUBLE"/>
+            <result property="feature076" column="feature_076" jdbcType="DOUBLE"/>
+            <result property="feature077" column="feature_077" jdbcType="DOUBLE"/>
+            <result property="feature078" column="feature_078" jdbcType="DOUBLE"/>
+            <result property="feature079" column="feature_079" jdbcType="DOUBLE"/>
+            <result property="feature080" column="feature_080" jdbcType="DOUBLE"/>
+            <result property="feature081" column="feature_081" jdbcType="DOUBLE"/>
+            <result property="feature082" column="feature_082" jdbcType="DOUBLE"/>
+            <result property="feature083" column="feature_083" jdbcType="DOUBLE"/>
+            <result property="feature084" column="feature_084" jdbcType="DOUBLE"/>
+            <result property="feature085" column="feature_085" jdbcType="DOUBLE"/>
+            <result property="feature086" column="feature_086" jdbcType="DOUBLE"/>
+            <result property="feature087" column="feature_087" jdbcType="DOUBLE"/>
+            <result property="feature088" column="feature_088" jdbcType="DOUBLE"/>
+            <result property="feature089" column="feature_089" jdbcType="DOUBLE"/>
+            <result property="feature090" column="feature_090" jdbcType="DOUBLE"/>
+            <result property="feature091" column="feature_091" jdbcType="DOUBLE"/>
+            <result property="feature092" column="feature_092" jdbcType="DOUBLE"/>
+            <result property="feature093" column="feature_093" jdbcType="DOUBLE"/>
+            <result property="feature094" column="feature_094" jdbcType="DOUBLE"/>
+            <result property="feature095" column="feature_095" jdbcType="DOUBLE"/>
+            <result property="feature096" column="feature_096" jdbcType="DOUBLE"/>
+            <result property="feature097" column="feature_097" jdbcType="DOUBLE"/>
+            <result property="feature098" column="feature_098" jdbcType="DOUBLE"/>
+            <result property="feature099" column="feature_099" jdbcType="DOUBLE"/>
+            <result property="feature100" column="feature_100" jdbcType="DOUBLE"/>
+            <result property="feature101" column="feature_101" jdbcType="DOUBLE"/>
+            <result property="feature102" column="feature_102" jdbcType="DOUBLE"/>
+            <result property="feature103" column="feature_103" jdbcType="DOUBLE"/>
+            <result property="feature104" column="feature_104" jdbcType="DOUBLE"/>
+            <result property="feature105" column="feature_105" jdbcType="DOUBLE"/>
+            <result property="feature106" column="feature_106" jdbcType="DOUBLE"/>
+            <result property="feature107" column="feature_107" jdbcType="DOUBLE"/>
+            <result property="feature108" column="feature_108" jdbcType="DOUBLE"/>
+            <result property="feature109" column="feature_109" jdbcType="DOUBLE"/>
+            <result property="feature110" column="feature_110" jdbcType="DOUBLE"/>
+            <result property="feature111" column="feature_111" jdbcType="DOUBLE"/>
+            <result property="feature112" column="feature_112" jdbcType="DOUBLE"/>
+            <result property="feature113" column="feature_113" jdbcType="DOUBLE"/>
+            <result property="feature114" column="feature_114" jdbcType="DOUBLE"/>
+            <result property="feature115" column="feature_115" jdbcType="DOUBLE"/>
+            <result property="feature116" column="feature_116" jdbcType="DOUBLE"/>
+            <result property="feature117" column="feature_117" jdbcType="DOUBLE"/>
+            <result property="feature118" column="feature_118" jdbcType="DOUBLE"/>
+            <result property="feature119" column="feature_119" jdbcType="DOUBLE"/>
+            <result property="feature120" column="feature_120" jdbcType="DOUBLE"/>
+            <result property="feature121" column="feature_121" jdbcType="DOUBLE"/>
+            <result property="feature122" column="feature_122" jdbcType="DOUBLE"/>
+            <result property="feature123" column="feature_123" jdbcType="DOUBLE"/>
+            <result property="feature124" column="feature_124" jdbcType="DOUBLE"/>
+            <result property="feature125" column="feature_125" jdbcType="DOUBLE"/>
+            <result property="feature126" column="feature_126" jdbcType="DOUBLE"/>
+            <result property="feature127" column="feature_127" jdbcType="DOUBLE"/>
+            <result property="feature128" column="feature_128" jdbcType="DOUBLE"/>
+            <result property="feature129" column="feature_129" jdbcType="DOUBLE"/>
+            <result property="feature130" column="feature_130" jdbcType="DOUBLE"/>
+            <result property="feature131" column="feature_131" jdbcType="DOUBLE"/>
+            <result property="feature132" column="feature_132" jdbcType="DOUBLE"/>
+            <result property="feature133" column="feature_133" jdbcType="DOUBLE"/>
+            <result property="feature134" column="feature_134" jdbcType="DOUBLE"/>
+            <result property="feature135" column="feature_135" jdbcType="DOUBLE"/>
+            <result property="feature136" column="feature_136" jdbcType="DOUBLE"/>
+            <result property="feature137" column="feature_137" jdbcType="DOUBLE"/>
+            <result property="feature138" column="feature_138" jdbcType="DOUBLE"/>
+            <result property="feature139" column="feature_139" jdbcType="DOUBLE"/>
+            <result property="feature140" column="feature_140" jdbcType="DOUBLE"/>
+            <result property="feature141" column="feature_141" jdbcType="DOUBLE"/>
+            <result property="feature142" column="feature_142" jdbcType="DOUBLE"/>
+            <result property="feature143" column="feature_143" jdbcType="DOUBLE"/>
+            <result property="feature144" column="feature_144" jdbcType="DOUBLE"/>
+            <result property="feature145" column="feature_145" jdbcType="DOUBLE"/>
+            <result property="feature146" column="feature_146" jdbcType="DOUBLE"/>
+            <result property="feature147" column="feature_147" jdbcType="DOUBLE"/>
+            <result property="feature148" column="feature_148" jdbcType="DOUBLE"/>
+            <result property="feature149" column="feature_149" jdbcType="DOUBLE"/>
+            <result property="feature150" column="feature_150" jdbcType="DOUBLE"/>
+            <result property="feature151" column="feature_151" jdbcType="DOUBLE"/>
+            <result property="feature152" column="feature_152" jdbcType="DOUBLE"/>
+            <result property="feature153" column="feature_153" jdbcType="DOUBLE"/>
+            <result property="feature154" column="feature_154" jdbcType="DOUBLE"/>
+            <result property="feature155" column="feature_155" jdbcType="DOUBLE"/>
+            <result property="feature156" column="feature_156" jdbcType="DOUBLE"/>
+            <result property="feature157" column="feature_157" jdbcType="DOUBLE"/>
+            <result property="feature158" column="feature_158" jdbcType="DOUBLE"/>
+            <result property="feature159" column="feature_159" jdbcType="DOUBLE"/>
+            <result property="feature160" column="feature_160" jdbcType="DOUBLE"/>
+            <result property="feature161" column="feature_161" jdbcType="DOUBLE"/>
+            <result property="feature162" column="feature_162" jdbcType="DOUBLE"/>
+            <result property="feature163" column="feature_163" jdbcType="DOUBLE"/>
+            <result property="feature164" column="feature_164" jdbcType="DOUBLE"/>
+            <result property="feature165" column="feature_165" jdbcType="DOUBLE"/>
+            <result property="feature166" column="feature_166" jdbcType="DOUBLE"/>
+            <result property="feature167" column="feature_167" jdbcType="DOUBLE"/>
+            <result property="feature168" column="feature_168" jdbcType="DOUBLE"/>
+            <result property="feature169" column="feature_169" jdbcType="DOUBLE"/>
+            <result property="feature170" column="feature_170" jdbcType="DOUBLE"/>
+            <result property="feature171" column="feature_171" jdbcType="DOUBLE"/>
+            <result property="feature172" column="feature_172" jdbcType="DOUBLE"/>
+            <result property="feature173" column="feature_173" jdbcType="DOUBLE"/>
+            <result property="feature174" column="feature_174" jdbcType="DOUBLE"/>
+            <result property="feature175" column="feature_175" jdbcType="DOUBLE"/>
+            <result property="feature176" column="feature_176" jdbcType="DOUBLE"/>
+            <result property="feature177" column="feature_177" jdbcType="DOUBLE"/>
+            <result property="feature178" column="feature_178" jdbcType="DOUBLE"/>
+            <result property="feature179" column="feature_179" jdbcType="DOUBLE"/>
+            <result property="feature180" column="feature_180" jdbcType="DOUBLE"/>
+            <result property="feature181" column="feature_181" jdbcType="DOUBLE"/>
+            <result property="feature182" column="feature_182" jdbcType="DOUBLE"/>
+            <result property="feature183" column="feature_183" jdbcType="DOUBLE"/>
+            <result property="feature184" column="feature_184" jdbcType="DOUBLE"/>
+            <result property="feature185" column="feature_185" jdbcType="DOUBLE"/>
+            <result property="feature186" column="feature_186" jdbcType="DOUBLE"/>
+            <result property="feature187" column="feature_187" jdbcType="DOUBLE"/>
+            <result property="feature188" column="feature_188" jdbcType="DOUBLE"/>
+            <result property="feature189" column="feature_189" jdbcType="DOUBLE"/>
+            <result property="feature190" column="feature_190" jdbcType="DOUBLE"/>
+            <result property="feature191" column="feature_191" jdbcType="DOUBLE"/>
+            <result property="feature192" column="feature_192" jdbcType="DOUBLE"/>
+            <result property="feature193" column="feature_193" jdbcType="DOUBLE"/>
+            <result property="feature194" column="feature_194" jdbcType="DOUBLE"/>
+            <result property="feature195" column="feature_195" jdbcType="DOUBLE"/>
+            <result property="feature196" column="feature_196" jdbcType="DOUBLE"/>
+            <result property="feature197" column="feature_197" jdbcType="DOUBLE"/>
+            <result property="feature198" column="feature_198" jdbcType="DOUBLE"/>
+            <result property="feature199" column="feature_199" jdbcType="DOUBLE"/>
+            <result property="feature200" column="feature_200" jdbcType="DOUBLE"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,stat_date,time_granularity,region_code,region_name,customer_code,
+        customer_name,industry_code,industry_name,gas_sales,feature_001,
+        feature_002,feature_003,feature_004,feature_005,feature_006,
+        feature_007,feature_008,feature_009,feature_010,feature_011,
+        feature_012,feature_013,feature_014,feature_015,feature_016,
+        feature_017,feature_018,feature_019,feature_020,feature_021,
+        feature_022,feature_023,feature_024,feature_025,feature_026,
+        feature_027,feature_028,feature_029,feature_030,feature_031,
+        feature_032,feature_033,feature_034,feature_035,feature_036,
+        feature_037,feature_038,feature_039,feature_040,feature_041,
+        feature_042,feature_043,feature_044,feature_045,feature_046,
+        feature_047,feature_048,feature_049,feature_050,feature_051,
+        feature_052,feature_053,feature_054,feature_055,feature_056,
+        feature_057,feature_058,feature_059,feature_060,feature_061,
+        feature_062,feature_063,feature_064,feature_065,feature_066,
+        feature_067,feature_068,feature_069,feature_070,feature_071,
+        feature_072,feature_073,feature_074,feature_075,feature_076,
+        feature_077,feature_078,feature_079,feature_080,feature_081,
+        feature_082,feature_083,feature_084,feature_085,feature_086,
+        feature_087,feature_088,feature_089,feature_090,feature_091,
+        feature_092,feature_093,feature_094,feature_095,feature_096,
+        feature_097,feature_098,feature_099,feature_100,feature_101,
+        feature_102,feature_103,feature_104,feature_105,feature_106,
+        feature_107,feature_108,feature_109,feature_110,feature_111,
+        feature_112,feature_113,feature_114,feature_115,feature_116,
+        feature_117,feature_118,feature_119,feature_120,feature_121,
+        feature_122,feature_123,feature_124,feature_125,feature_126,
+        feature_127,feature_128,feature_129,feature_130,feature_131,
+        feature_132,feature_133,feature_134,feature_135,feature_136,
+        feature_137,feature_138,feature_139,feature_140,feature_141,
+        feature_142,feature_143,feature_144,feature_145,feature_146,
+        feature_147,feature_148,feature_149,feature_150,feature_151,
+        feature_152,feature_153,feature_154,feature_155,feature_156,
+        feature_157,feature_158,feature_159,feature_160,feature_161,
+        feature_162,feature_163,feature_164,feature_165,feature_166,
+        feature_167,feature_168,feature_169,feature_170,feature_171,
+        feature_172,feature_173,feature_174,feature_175,feature_176,
+        feature_177,feature_178,feature_179,feature_180,feature_181,
+        feature_182,feature_183,feature_184,feature_185,feature_186,
+        feature_187,feature_188,feature_189,feature_190,feature_191,
+        feature_192,feature_193,feature_194,feature_195,feature_196,
+        feature_197,feature_198,feature_199,feature_200,create_time,
+        update_time
+    </sql>
+</mapper>

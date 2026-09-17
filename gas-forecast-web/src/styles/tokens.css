@@ -1,0 +1,15 @@
+:root {
+  --app-bg: #F6F8FB;
+  --app-surface: #FFFFFF;
+  --app-border: #E6EAF0;
+  --app-border-soft: #F1F5F9;
+  --app-primary: #1890FF;
+  --app-primary-dark: #0F7FE5;
+  --app-primary-soft: #EAF6FD;
+  --app-text: #101828;
+  --app-text-secondary: #536071;
+  --app-text-muted: #667085;
+  --app-radius: 8px;
+  --app-gap: 14px;
+  --app-control-height: 38px;
+}

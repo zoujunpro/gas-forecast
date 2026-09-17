@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:mysql2026}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis2026}
+      database: ${REDIS_DATABASE:0}
+
+gas:
+  cache:
+    redis-retry-interval: ${CACHE_REDIS_RETRY_INTERVAL:30s}
+    local-max-size: ${CACHE_LOCAL_MAX_SIZE:10000}
+
+log:
+  path: ${LOG_PATH:./logs/${spring.application.name}}
+  level: ${LOG_LEVEL:INFO}
+  max-history: ${LOG_MAX_HISTORY:30}
+  max-file-size: ${LOG_MAX_FILE_SIZE:100MB}
+  total-size-cap: ${LOG_TOTAL_SIZE_CAP:3GB}

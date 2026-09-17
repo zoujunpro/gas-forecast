@@ -1,0 +1,72 @@
+package com.gas.forecast.business.controller;
+
+import com.gas.forecast.business.dto.req.BaseRegionCreateReqDTO;
+import com.gas.forecast.business.dto.req.BaseRegionDeleteReqDTO;
+import com.gas.forecast.business.dto.req.BaseRegionPageReqDTO;
+import com.gas.forecast.business.dto.req.BaseRegionUpdateReqDTO;
+import com.gas.forecast.business.dto.resp.BaseRegionRespDTO;
+import com.gas.forecast.business.service.BaseRegionService;
+import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.core.ResponseResult;
+import com.gas.forecast.common.security.annotation.RequirePermission;
+import com.gas.forecast.common.web.WebLog;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 区域基础信息接口。
+ */
+@RestController
+@RequestMapping("/base-region")
+public class BaseRegionController {
+
+    private final BaseRegionService baseRegionService;
+
+    public BaseRegionController(BaseRegionService baseRegionService) {
+        this.baseRegionService = baseRegionService;
+    }
+
+    /**
+     * 分页查询区域列表。
+     */
+    @PostMapping("listPage")
+    @WebLog("区域列表查询")
+    @RequirePermission("base:region:list")
+    public ResponseResult<PageInfoDTO<BaseRegionRespDTO>> listPage(@Valid @RequestBody BaseRegionPageReqDTO reqDTO) {
+        return ResponseResult.success(baseRegionService.listPage(reqDTO));
+    }
+
+    /**
+     * 新增区域。
+     */
+    @PostMapping("create")
+    @WebLog("新增区域")
+    @RequirePermission("base:region:create")
+    public ResponseResult<BaseRegionRespDTO> create(@Valid @RequestBody BaseRegionCreateReqDTO reqDTO) {
+        return ResponseResult.success(baseRegionService.createRegion(reqDTO));
+    }
+
+    /**
+     * 更新区域。
+     */
+    @PostMapping("update")
+    @WebLog("编辑区域")
+    @RequirePermission("base:region:update")
+    public ResponseResult<BaseRegionRespDTO> update(@Valid @RequestBody BaseRegionUpdateReqDTO reqDTO) {
+        return ResponseResult.success(baseRegionService.update(reqDTO));
+    }
+
+    /**
+     * 删除区域。
+     */
+    @PostMapping("delete")
+    @WebLog("删除区域")
+    @RequirePermission("base:region:delete")
+    public ResponseResult<Void> delete(@Valid @RequestBody BaseRegionDeleteReqDTO reqDTO) {
+        baseRegionService.delete(reqDTO);
+        return ResponseResult.success(null);
+    }
+}

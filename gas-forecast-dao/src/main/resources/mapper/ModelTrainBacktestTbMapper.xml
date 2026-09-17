@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelTrainBacktestTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="trainBatchNo" column="train_batch_no" jdbcType="VARCHAR"/>
+            <result property="trainDate" column="train_date" jdbcType="DATE"/>
+            <result property="actualValue" column="actual_value" jdbcType="DECIMAL"/>
+            <result property="predictedValue" column="predicted_value" jdbcType="DECIMAL"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,train_batch_no,train_date,actual_value,predicted_value,created_at
+    </sql>
+</mapper>

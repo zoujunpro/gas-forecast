@@ -1,0 +1,3246 @@
+{
+  "modelCode": "WINTER_MODEL_001",
+  "train_batch_no": "WGTRAIN-请替换为Java生成的训练批次号",
+  "dataset": [
+    {
+      "date": "2016-04-01",
+      "gas_sales": 19450.1117,
+      "avg_temp": 16.8933,
+      "max_temp": 31.9,
+      "min_temp": 4.5,
+      "HDD": 4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-04-11",
+      "gas_sales": 19450.1117,
+      "avg_temp": 16.8933,
+      "max_temp": 31.9,
+      "min_temp": 4.5,
+      "HDD": 4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-04-21",
+      "gas_sales": 19450.1117,
+      "avg_temp": 16.8933,
+      "max_temp": 31.9,
+      "min_temp": 4.5,
+      "HDD": 4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-05-01",
+      "gas_sales": 18554.7548,
+      "avg_temp": 21.5452,
+      "max_temp": 34.3,
+      "min_temp": 7.8,
+      "HDD": 0.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-05-11",
+      "gas_sales": 18554.7548,
+      "avg_temp": 21.5452,
+      "max_temp": 34.3,
+      "min_temp": 7.8,
+      "HDD": 0.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-05-21",
+      "gas_sales": 20410.2303,
+      "avg_temp": 21.5452,
+      "max_temp": 34.3,
+      "min_temp": 7.8,
+      "HDD": 0.5,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-06-01",
+      "gas_sales": 21795.5798,
+      "avg_temp": 25.8833,
+      "max_temp": 37.8,
+      "min_temp": 15.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-06-11",
+      "gas_sales": 21795.5798,
+      "avg_temp": 25.8833,
+      "max_temp": 37.8,
+      "min_temp": 15.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-06-21",
+      "gas_sales": 21795.5798,
+      "avg_temp": 25.8833,
+      "max_temp": 37.8,
+      "min_temp": 15.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-07-01",
+      "gas_sales": 29177.8285,
+      "avg_temp": 27.4387,
+      "max_temp": 36.5,
+      "min_temp": 20.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-07-11",
+      "gas_sales": 29177.8285,
+      "avg_temp": 27.4387,
+      "max_temp": 36.5,
+      "min_temp": 20.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-07-21",
+      "gas_sales": 32095.6113,
+      "avg_temp": 27.4387,
+      "max_temp": 36.5,
+      "min_temp": 20.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-08-01",
+      "gas_sales": 34358.2845,
+      "avg_temp": 27.4548,
+      "max_temp": 34.6,
+      "min_temp": 16,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-08-11",
+      "gas_sales": 34358.2845,
+      "avg_temp": 27.4548,
+      "max_temp": 34.6,
+      "min_temp": 16,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-08-21",
+      "gas_sales": 37794.113,
+      "avg_temp": 27.4548,
+      "max_temp": 34.6,
+      "min_temp": 16,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-09-01",
+      "gas_sales": 25669.7493,
+      "avg_temp": 22.2067,
+      "max_temp": 32,
+      "min_temp": 8.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-09-11",
+      "gas_sales": 25669.7493,
+      "avg_temp": 22.2067,
+      "max_temp": 32,
+      "min_temp": 8.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-09-21",
+      "gas_sales": 25669.7493,
+      "avg_temp": 22.2067,
+      "max_temp": 32,
+      "min_temp": 8.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-10-01",
+      "gas_sales": 21363.7108,
+      "avg_temp": 13.3742,
+      "max_temp": 28.4,
+      "min_temp": -0.2,
+      "HDD": 24.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-10-11",
+      "gas_sales": 21363.7108,
+      "avg_temp": 13.3742,
+      "max_temp": 28.4,
+      "min_temp": -0.2,
+      "HDD": 24.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-10-21",
+      "gas_sales": 23500.0819,
+      "avg_temp": 13.3742,
+      "max_temp": 28.4,
+      "min_temp": -0.2,
+      "HDD": 27.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2016-11-01",
+      "gas_sales": 63452.8224,
+      "avg_temp": 4.3,
+      "max_temp": 16.5,
+      "min_temp": -6.6,
+      "HDD": 107,
+      "extreme_cold_days": 5
+    },
+    {
+      "date": "2016-11-11",
+      "gas_sales": 63452.8224,
+      "avg_temp": 4.3,
+      "max_temp": 16.5,
+      "min_temp": -6.6,
+      "HDD": 107,
+      "extreme_cold_days": 5
+    },
+    {
+      "date": "2016-11-21",
+      "gas_sales": 63452.8224,
+      "avg_temp": 4.3,
+      "max_temp": 16.5,
+      "min_temp": -6.6,
+      "HDD": 107,
+      "extreme_cold_days": 5
+    },
+    {
+      "date": "2016-12-01",
+      "gas_sales": 71584.4578,
+      "avg_temp": 0.3065,
+      "max_temp": 10.6,
+      "min_temp": -8.2,
+      "HDD": 146.9,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2016-12-11",
+      "gas_sales": 71584.4578,
+      "avg_temp": 0.3065,
+      "max_temp": 10.6,
+      "min_temp": -8.2,
+      "HDD": 146.9,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2016-12-21",
+      "gas_sales": 78742.9036,
+      "avg_temp": 0.3065,
+      "max_temp": 10.6,
+      "min_temp": -8.2,
+      "HDD": 161.6,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-01-01",
+      "gas_sales": 81184.2694,
+      "avg_temp": -1.6677,
+      "max_temp": 9.5,
+      "min_temp": -10.1,
+      "HDD": 166.7,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-01-11",
+      "gas_sales": 81184.2694,
+      "avg_temp": -1.6677,
+      "max_temp": 9.5,
+      "min_temp": -10.1,
+      "HDD": 166.7,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-01-21",
+      "gas_sales": 89302.6963,
+      "avg_temp": -1.6677,
+      "max_temp": 9.5,
+      "min_temp": -10.1,
+      "HDD": 183.3,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2017-02-01",
+      "gas_sales": 74576.4139,
+      "avg_temp": 2.2786,
+      "max_temp": 16.1,
+      "min_temp": -10,
+      "HDD": 127.2,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2017-02-11",
+      "gas_sales": 74576.4139,
+      "avg_temp": 2.2786,
+      "max_temp": 16.1,
+      "min_temp": -10,
+      "HDD": 127.2,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2017-02-21",
+      "gas_sales": 59661.1311,
+      "avg_temp": 2.2786,
+      "max_temp": 16.1,
+      "min_temp": -10,
+      "HDD": 101.8,
+      "extreme_cold_days": 7
+    },
+    {
+      "date": "2017-03-01",
+      "gas_sales": 44491.4347,
+      "avg_temp": 8.9968,
+      "max_temp": 19.9,
+      "min_temp": -2.2,
+      "HDD": 60,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2017-03-11",
+      "gas_sales": 44491.4347,
+      "avg_temp": 8.9968,
+      "max_temp": 19.9,
+      "min_temp": -2.2,
+      "HDD": 60,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2017-03-21",
+      "gas_sales": 48940.5782,
+      "avg_temp": 8.9968,
+      "max_temp": 19.9,
+      "min_temp": -2.2,
+      "HDD": 66,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2017-04-01",
+      "gas_sales": 20592.7101,
+      "avg_temp": 17.4967,
+      "max_temp": 33.5,
+      "min_temp": 4.3,
+      "HDD": 1.6,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-04-11",
+      "gas_sales": 20592.7101,
+      "avg_temp": 17.4967,
+      "max_temp": 33.5,
+      "min_temp": 4.3,
+      "HDD": 1.6,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-04-21",
+      "gas_sales": 20592.7101,
+      "avg_temp": 17.4967,
+      "max_temp": 33.5,
+      "min_temp": 4.3,
+      "HDD": 1.6,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-05-01",
+      "gas_sales": 21748.6224,
+      "avg_temp": 23.2613,
+      "max_temp": 36.8,
+      "min_temp": 11.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-05-11",
+      "gas_sales": 21748.6224,
+      "avg_temp": 23.2613,
+      "max_temp": 36.8,
+      "min_temp": 11.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-05-21",
+      "gas_sales": 23923.4847,
+      "avg_temp": 23.2613,
+      "max_temp": 36.8,
+      "min_temp": 11.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-06-01",
+      "gas_sales": 22061.5343,
+      "avg_temp": 25.6133,
+      "max_temp": 38.5,
+      "min_temp": 12.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-06-11",
+      "gas_sales": 22061.5343,
+      "avg_temp": 25.6133,
+      "max_temp": 38.5,
+      "min_temp": 12.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-06-21",
+      "gas_sales": 22061.5343,
+      "avg_temp": 25.6133,
+      "max_temp": 38.5,
+      "min_temp": 12.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-07-01",
+      "gas_sales": 29489.1132,
+      "avg_temp": 27.9484,
+      "max_temp": 36.5,
+      "min_temp": 19.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-07-11",
+      "gas_sales": 29489.1132,
+      "avg_temp": 27.9484,
+      "max_temp": 36.5,
+      "min_temp": 19.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-07-21",
+      "gas_sales": 32438.0245,
+      "avg_temp": 27.9484,
+      "max_temp": 36.5,
+      "min_temp": 19.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-08-01",
+      "gas_sales": 28753.3657,
+      "avg_temp": 26.2161,
+      "max_temp": 38.2,
+      "min_temp": 15.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-08-11",
+      "gas_sales": 28753.3657,
+      "avg_temp": 26.2161,
+      "max_temp": 38.2,
+      "min_temp": 15.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-08-21",
+      "gas_sales": 31628.7023,
+      "avg_temp": 26.2161,
+      "max_temp": 38.2,
+      "min_temp": 15.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-09-01",
+      "gas_sales": 23209.7337,
+      "avg_temp": 22.97,
+      "max_temp": 32.5,
+      "min_temp": 8.1,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-09-11",
+      "gas_sales": 23209.7337,
+      "avg_temp": 22.97,
+      "max_temp": 32.5,
+      "min_temp": 8.1,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-09-21",
+      "gas_sales": 23209.7337,
+      "avg_temp": 22.97,
+      "max_temp": 32.5,
+      "min_temp": 8.1,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2017-10-01",
+      "gas_sales": 23680.3326,
+      "avg_temp": 12.8226,
+      "max_temp": 26.3,
+      "min_temp": -0.4,
+      "HDD": 25.4,
+      "extreme_cold_days": 1
+    },
+    {
+      "date": "2017-10-11",
+      "gas_sales": 23680.3326,
+      "avg_temp": 12.8226,
+      "max_temp": 26.3,
+      "min_temp": -0.4,
+      "HDD": 25.4,
+      "extreme_cold_days": 1
+    },
+    {
+      "date": "2017-10-21",
+      "gas_sales": 26048.3659,
+      "avg_temp": 12.8226,
+      "max_temp": 26.3,
+      "min_temp": -0.4,
+      "HDD": 27.9,
+      "extreme_cold_days": 1
+    },
+    {
+      "date": "2017-11-01",
+      "gas_sales": 66934.3184,
+      "avg_temp": 4.1167,
+      "max_temp": 20.3,
+      "min_temp": -6.5,
+      "HDD": 108.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-11-11",
+      "gas_sales": 66934.3184,
+      "avg_temp": 4.1167,
+      "max_temp": 20.3,
+      "min_temp": -6.5,
+      "HDD": 108.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-11-21",
+      "gas_sales": 66934.3184,
+      "avg_temp": 4.1167,
+      "max_temp": 20.3,
+      "min_temp": -6.5,
+      "HDD": 108.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-12-01",
+      "gas_sales": 92318.9361,
+      "avg_temp": -0.2484,
+      "max_temp": 10.2,
+      "min_temp": -8.6,
+      "HDD": 152.5,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-12-11",
+      "gas_sales": 92318.9361,
+      "avg_temp": -0.2484,
+      "max_temp": 10.2,
+      "min_temp": -8.6,
+      "HDD": 152.5,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2017-12-21",
+      "gas_sales": 101550.8297,
+      "avg_temp": -0.2484,
+      "max_temp": 10.2,
+      "min_temp": -8.6,
+      "HDD": 167.7,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2018-01-01",
+      "gas_sales": 100550.4296,
+      "avg_temp": -3.229,
+      "max_temp": 8.5,
+      "min_temp": -12.9,
+      "HDD": 182.3,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2018-01-11",
+      "gas_sales": 100550.4296,
+      "avg_temp": -3.229,
+      "max_temp": 8.5,
+      "min_temp": -12.9,
+      "HDD": 182.3,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2018-01-21",
+      "gas_sales": 110605.4726,
+      "avg_temp": -3.229,
+      "max_temp": 8.5,
+      "min_temp": -12.9,
+      "HDD": 200.5,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2018-02-01",
+      "gas_sales": 90682.8831,
+      "avg_temp": -0.875,
+      "max_temp": 12.1,
+      "min_temp": -12.1,
+      "HDD": 158.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2018-02-11",
+      "gas_sales": 90682.8831,
+      "avg_temp": -0.875,
+      "max_temp": 12.1,
+      "min_temp": -12.1,
+      "HDD": 158.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2018-02-21",
+      "gas_sales": 72546.3065,
+      "avg_temp": -0.875,
+      "max_temp": 12.1,
+      "min_temp": -12.1,
+      "HDD": 127,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2018-03-01",
+      "gas_sales": 57242.2593,
+      "avg_temp": 8.2774,
+      "max_temp": 27.4,
+      "min_temp": -4.5,
+      "HDD": 71.8,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2018-03-11",
+      "gas_sales": 57242.2593,
+      "avg_temp": 8.2774,
+      "max_temp": 27.4,
+      "min_temp": -4.5,
+      "HDD": 71.8,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2018-03-21",
+      "gas_sales": 62966.4852,
+      "avg_temp": 8.2774,
+      "max_temp": 27.4,
+      "min_temp": -4.5,
+      "HDD": 79,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2018-04-01",
+      "gas_sales": 24182.6017,
+      "avg_temp": 15.6533,
+      "max_temp": 29.8,
+      "min_temp": 0.4,
+      "HDD": 18.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-04-11",
+      "gas_sales": 24182.6017,
+      "avg_temp": 15.6533,
+      "max_temp": 29.8,
+      "min_temp": 0.4,
+      "HDD": 18.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-04-21",
+      "gas_sales": 24182.6017,
+      "avg_temp": 15.6533,
+      "max_temp": 29.8,
+      "min_temp": 0.4,
+      "HDD": 18.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-05-01",
+      "gas_sales": 24105.6582,
+      "avg_temp": 22.2484,
+      "max_temp": 34.8,
+      "min_temp": 9.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-05-11",
+      "gas_sales": 24105.6582,
+      "avg_temp": 22.2484,
+      "max_temp": 34.8,
+      "min_temp": 9.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-05-21",
+      "gas_sales": 26516.224,
+      "avg_temp": 22.2484,
+      "max_temp": 34.8,
+      "min_temp": 9.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-06-01",
+      "gas_sales": 31215.9865,
+      "avg_temp": 27.1467,
+      "max_temp": 39.9,
+      "min_temp": 15.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-06-11",
+      "gas_sales": 31215.9865,
+      "avg_temp": 27.1467,
+      "max_temp": 39.9,
+      "min_temp": 15.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-06-21",
+      "gas_sales": 31215.9865,
+      "avg_temp": 27.1467,
+      "max_temp": 39.9,
+      "min_temp": 15.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-07-01",
+      "gas_sales": 32797.2159,
+      "avg_temp": 27.9742,
+      "max_temp": 36.3,
+      "min_temp": 21,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-07-11",
+      "gas_sales": 32797.2159,
+      "avg_temp": 27.9742,
+      "max_temp": 36.3,
+      "min_temp": 21,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-07-21",
+      "gas_sales": 36076.9375,
+      "avg_temp": 27.9742,
+      "max_temp": 36.3,
+      "min_temp": 21,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-08-01",
+      "gas_sales": 33996.3702,
+      "avg_temp": 27.829,
+      "max_temp": 37,
+      "min_temp": 19.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-08-11",
+      "gas_sales": 33996.3702,
+      "avg_temp": 27.829,
+      "max_temp": 37,
+      "min_temp": 19.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-08-21",
+      "gas_sales": 37396.0072,
+      "avg_temp": 27.829,
+      "max_temp": 37,
+      "min_temp": 19.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-09-01",
+      "gas_sales": 25731.995,
+      "avg_temp": 21.3567,
+      "max_temp": 33.3,
+      "min_temp": 7.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-09-11",
+      "gas_sales": 25731.995,
+      "avg_temp": 21.3567,
+      "max_temp": 33.3,
+      "min_temp": 7.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-09-21",
+      "gas_sales": 25731.995,
+      "avg_temp": 21.3567,
+      "max_temp": 33.3,
+      "min_temp": 7.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-10-01",
+      "gas_sales": 25848.7307,
+      "avg_temp": 13.0355,
+      "max_temp": 26.7,
+      "min_temp": 1.6,
+      "HDD": 26.6,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-10-11",
+      "gas_sales": 25848.7307,
+      "avg_temp": 13.0355,
+      "max_temp": 26.7,
+      "min_temp": 1.6,
+      "HDD": 26.6,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-10-21",
+      "gas_sales": 28433.6038,
+      "avg_temp": 13.0355,
+      "max_temp": 26.7,
+      "min_temp": 1.6,
+      "HDD": 29.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2018-11-01",
+      "gas_sales": 63407.7297,
+      "avg_temp": 5.6867,
+      "max_temp": 18,
+      "min_temp": -4.1,
+      "HDD": 93.1,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2018-11-11",
+      "gas_sales": 63407.7297,
+      "avg_temp": 5.6867,
+      "max_temp": 18,
+      "min_temp": -4.1,
+      "HDD": 93.1,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2018-11-21",
+      "gas_sales": 63407.7297,
+      "avg_temp": 5.6867,
+      "max_temp": 18,
+      "min_temp": -4.1,
+      "HDD": 93.1,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2018-12-01",
+      "gas_sales": 99383.1211,
+      "avg_temp": -2.4581,
+      "max_temp": 9.9,
+      "min_temp": -13.9,
+      "HDD": 174.6,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2018-12-11",
+      "gas_sales": 99383.1211,
+      "avg_temp": -2.4581,
+      "max_temp": 9.9,
+      "min_temp": -13.9,
+      "HDD": 174.6,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2018-12-21",
+      "gas_sales": 109321.4332,
+      "avg_temp": -2.4581,
+      "max_temp": 9.9,
+      "min_temp": -13.9,
+      "HDD": 192,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-01-01",
+      "gas_sales": 100100.3788,
+      "avg_temp": -1.6645,
+      "max_temp": 11.8,
+      "min_temp": -12.4,
+      "HDD": 166.6,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-01-11",
+      "gas_sales": 100100.3788,
+      "avg_temp": -1.6645,
+      "max_temp": 11.8,
+      "min_temp": -12.4,
+      "HDD": 166.6,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-01-21",
+      "gas_sales": 110110.4167,
+      "avg_temp": -1.6645,
+      "max_temp": 11.8,
+      "min_temp": -12.4,
+      "HDD": 183.3,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2019-02-01",
+      "gas_sales": 93355.9827,
+      "avg_temp": -0.8,
+      "max_temp": 14,
+      "min_temp": -10.8,
+      "HDD": 158,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-02-11",
+      "gas_sales": 93355.9827,
+      "avg_temp": -0.8,
+      "max_temp": 14,
+      "min_temp": -10.8,
+      "HDD": 158,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-02-21",
+      "gas_sales": 74684.7862,
+      "avg_temp": -0.8,
+      "max_temp": 14,
+      "min_temp": -10.8,
+      "HDD": 126.4,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2019-03-01",
+      "gas_sales": 51085.1379,
+      "avg_temp": 9.7194,
+      "max_temp": 24.8,
+      "min_temp": -3.4,
+      "HDD": 53.7,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2019-03-11",
+      "gas_sales": 51085.1379,
+      "avg_temp": 9.7194,
+      "max_temp": 24.8,
+      "min_temp": -3.4,
+      "HDD": 53.7,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2019-03-21",
+      "gas_sales": 56193.6517,
+      "avg_temp": 9.7194,
+      "max_temp": 24.8,
+      "min_temp": -3.4,
+      "HDD": 59,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2019-04-01",
+      "gas_sales": 25034.5477,
+      "avg_temp": 14.6933,
+      "max_temp": 28.3,
+      "min_temp": 1.2,
+      "HDD": 16.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-04-11",
+      "gas_sales": 25034.5477,
+      "avg_temp": 14.6933,
+      "max_temp": 28.3,
+      "min_temp": 1.2,
+      "HDD": 16.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-04-21",
+      "gas_sales": 25034.5477,
+      "avg_temp": 14.6933,
+      "max_temp": 28.3,
+      "min_temp": 1.2,
+      "HDD": 16.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-05-01",
+      "gas_sales": 23843.9438,
+      "avg_temp": 22.3452,
+      "max_temp": 36.6,
+      "min_temp": 6.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-05-11",
+      "gas_sales": 23843.9438,
+      "avg_temp": 22.3452,
+      "max_temp": 36.6,
+      "min_temp": 6.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-05-21",
+      "gas_sales": 26228.3382,
+      "avg_temp": 22.3452,
+      "max_temp": 36.6,
+      "min_temp": 6.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-06-01",
+      "gas_sales": 26010.0188,
+      "avg_temp": 26.33,
+      "max_temp": 37,
+      "min_temp": 18,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-06-11",
+      "gas_sales": 26010.0188,
+      "avg_temp": 26.33,
+      "max_temp": 37,
+      "min_temp": 18,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-06-21",
+      "gas_sales": 26010.0188,
+      "avg_temp": 26.33,
+      "max_temp": 37,
+      "min_temp": 18,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-07-01",
+      "gas_sales": 31733.1306,
+      "avg_temp": 27.9581,
+      "max_temp": 38,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-07-11",
+      "gas_sales": 31733.1306,
+      "avg_temp": 27.9581,
+      "max_temp": 38,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-07-21",
+      "gas_sales": 34906.4437,
+      "avg_temp": 27.9581,
+      "max_temp": 38,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-08-01",
+      "gas_sales": 33183.2881,
+      "avg_temp": 25.8645,
+      "max_temp": 34,
+      "min_temp": 16.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-08-11",
+      "gas_sales": 33183.2881,
+      "avg_temp": 25.8645,
+      "max_temp": 34,
+      "min_temp": 16.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-08-21",
+      "gas_sales": 36501.6169,
+      "avg_temp": 25.8645,
+      "max_temp": 34,
+      "min_temp": 16.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-09-01",
+      "gas_sales": 31669.0356,
+      "avg_temp": 23.0733,
+      "max_temp": 35.9,
+      "min_temp": 13.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-09-11",
+      "gas_sales": 31669.0356,
+      "avg_temp": 23.0733,
+      "max_temp": 35.9,
+      "min_temp": 13.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-09-21",
+      "gas_sales": 31669.0356,
+      "avg_temp": 23.0733,
+      "max_temp": 35.9,
+      "min_temp": 13.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-10-01",
+      "gas_sales": 27822.5624,
+      "avg_temp": 13.2968,
+      "max_temp": 29.9,
+      "min_temp": 0.9,
+      "HDD": 25.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-10-11",
+      "gas_sales": 27822.5624,
+      "avg_temp": 13.2968,
+      "max_temp": 29.9,
+      "min_temp": 0.9,
+      "HDD": 25.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-10-21",
+      "gas_sales": 30604.8186,
+      "avg_temp": 13.2968,
+      "max_temp": 29.9,
+      "min_temp": 0.9,
+      "HDD": 27.6,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2019-11-01",
+      "gas_sales": 66380.249,
+      "avg_temp": 5.7567,
+      "max_temp": 18.7,
+      "min_temp": -6.9,
+      "HDD": 92.4,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2019-11-11",
+      "gas_sales": 66380.249,
+      "avg_temp": 5.7567,
+      "max_temp": 18.7,
+      "min_temp": -6.9,
+      "HDD": 92.4,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2019-11-21",
+      "gas_sales": 66380.249,
+      "avg_temp": 5.7567,
+      "max_temp": 18.7,
+      "min_temp": -6.9,
+      "HDD": 92.4,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2019-12-01",
+      "gas_sales": 95658.9902,
+      "avg_temp": -1.1742,
+      "max_temp": 10.1,
+      "min_temp": -14.4,
+      "HDD": 161.7,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-12-11",
+      "gas_sales": 95658.9902,
+      "avg_temp": -1.1742,
+      "max_temp": 10.1,
+      "min_temp": -14.4,
+      "HDD": 161.7,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2019-12-21",
+      "gas_sales": 105224.8892,
+      "avg_temp": -1.1742,
+      "max_temp": 10.1,
+      "min_temp": -14.4,
+      "HDD": 177.9,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2020-01-01",
+      "gas_sales": 95551.484,
+      "avg_temp": -1.4839,
+      "max_temp": 9.6,
+      "min_temp": -10.5,
+      "HDD": 164.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2020-01-11",
+      "gas_sales": 95551.484,
+      "avg_temp": -1.4839,
+      "max_temp": 9.6,
+      "min_temp": -10.5,
+      "HDD": 164.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2020-01-21",
+      "gas_sales": 105106.6324,
+      "avg_temp": -1.4839,
+      "max_temp": 9.6,
+      "min_temp": -10.5,
+      "HDD": 181.3,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2020-02-01",
+      "gas_sales": 82529.6432,
+      "avg_temp": 1.0414,
+      "max_temp": 12.7,
+      "min_temp": -9,
+      "HDD": 139.6,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2020-02-11",
+      "gas_sales": 82529.6432,
+      "avg_temp": 1.0414,
+      "max_temp": 12.7,
+      "min_temp": -9,
+      "HDD": 139.6,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2020-02-21",
+      "gas_sales": 74276.6789,
+      "avg_temp": 1.0414,
+      "max_temp": 12.7,
+      "min_temp": -9,
+      "HDD": 125.6,
+      "extreme_cold_days": 7
+    },
+    {
+      "date": "2020-03-01",
+      "gas_sales": 58971.534,
+      "avg_temp": 9.1452,
+      "max_temp": 26.2,
+      "min_temp": -4.8,
+      "HDD": 58.9,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2020-03-11",
+      "gas_sales": 58971.534,
+      "avg_temp": 9.1452,
+      "max_temp": 26.2,
+      "min_temp": -4.8,
+      "HDD": 58.9,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2020-03-21",
+      "gas_sales": 64868.6874,
+      "avg_temp": 9.1452,
+      "max_temp": 26.2,
+      "min_temp": -4.8,
+      "HDD": 64.8,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2020-04-01",
+      "gas_sales": 23566.0851,
+      "avg_temp": 15.67,
+      "max_temp": 32.1,
+      "min_temp": 1.7,
+      "HDD": 11.8,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-04-11",
+      "gas_sales": 23566.0851,
+      "avg_temp": 15.67,
+      "max_temp": 32.1,
+      "min_temp": 1.7,
+      "HDD": 11.8,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-04-21",
+      "gas_sales": 23566.0851,
+      "avg_temp": 15.67,
+      "max_temp": 32.1,
+      "min_temp": 1.7,
+      "HDD": 11.8,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-05-01",
+      "gas_sales": 20674.7394,
+      "avg_temp": 21.1065,
+      "max_temp": 34.1,
+      "min_temp": 10.2,
+      "HDD": 0.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-05-11",
+      "gas_sales": 20674.7394,
+      "avg_temp": 21.1065,
+      "max_temp": 34.1,
+      "min_temp": 10.2,
+      "HDD": 0.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-05-21",
+      "gas_sales": 22742.2134,
+      "avg_temp": 21.1065,
+      "max_temp": 34.1,
+      "min_temp": 10.2,
+      "HDD": 0.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-06-01",
+      "gas_sales": 28405.5622,
+      "avg_temp": 26.8733,
+      "max_temp": 37.3,
+      "min_temp": 13.8,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-06-11",
+      "gas_sales": 28405.5622,
+      "avg_temp": 26.8733,
+      "max_temp": 37.3,
+      "min_temp": 13.8,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-06-21",
+      "gas_sales": 28405.5622,
+      "avg_temp": 26.8733,
+      "max_temp": 37.3,
+      "min_temp": 13.8,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-07-01",
+      "gas_sales": 28069.7277,
+      "avg_temp": 26.5935,
+      "max_temp": 37.3,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-07-11",
+      "gas_sales": 28069.7277,
+      "avg_temp": 26.5935,
+      "max_temp": 37.3,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-07-21",
+      "gas_sales": 30876.7005,
+      "avg_temp": 26.5935,
+      "max_temp": 37.3,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-08-01",
+      "gas_sales": 29496.0801,
+      "avg_temp": 26.6516,
+      "max_temp": 37.8,
+      "min_temp": 17.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-08-11",
+      "gas_sales": 29496.0801,
+      "avg_temp": 26.6516,
+      "max_temp": 37.8,
+      "min_temp": 17.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-08-21",
+      "gas_sales": 32445.6881,
+      "avg_temp": 26.6516,
+      "max_temp": 37.8,
+      "min_temp": 17.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-09-01",
+      "gas_sales": 25663.9665,
+      "avg_temp": 21.8267,
+      "max_temp": 33.5,
+      "min_temp": 10.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-09-11",
+      "gas_sales": 25663.9665,
+      "avg_temp": 21.8267,
+      "max_temp": 33.5,
+      "min_temp": 10.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-09-21",
+      "gas_sales": 25663.9665,
+      "avg_temp": 21.8267,
+      "max_temp": 33.5,
+      "min_temp": 10.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-10-01",
+      "gas_sales": 23616.0753,
+      "avg_temp": 13.4806,
+      "max_temp": 23.2,
+      "min_temp": 2.3,
+      "HDD": 18.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-10-11",
+      "gas_sales": 23616.0753,
+      "avg_temp": 13.4806,
+      "max_temp": 23.2,
+      "min_temp": 2.3,
+      "HDD": 18.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-10-21",
+      "gas_sales": 25977.6828,
+      "avg_temp": 13.4806,
+      "max_temp": 23.2,
+      "min_temp": 2.3,
+      "HDD": 20.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2020-11-01",
+      "gas_sales": 70218.1913,
+      "avg_temp": 6.54,
+      "max_temp": 20.5,
+      "min_temp": -5.2,
+      "HDD": 84.6,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2020-11-11",
+      "gas_sales": 70218.1913,
+      "avg_temp": 6.54,
+      "max_temp": 20.5,
+      "min_temp": -5.2,
+      "HDD": 84.6,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2020-11-21",
+      "gas_sales": 70218.1913,
+      "avg_temp": 6.54,
+      "max_temp": 20.5,
+      "min_temp": -5.2,
+      "HDD": 84.6,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2020-12-01",
+      "gas_sales": 105131.7541,
+      "avg_temp": -2.2161,
+      "max_temp": 7.7,
+      "min_temp": -12.8,
+      "HDD": 172.2,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2020-12-11",
+      "gas_sales": 105131.7541,
+      "avg_temp": -2.2161,
+      "max_temp": 7.7,
+      "min_temp": -12.8,
+      "HDD": 172.2,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2020-12-21",
+      "gas_sales": 115644.9295,
+      "avg_temp": -2.2161,
+      "max_temp": 7.7,
+      "min_temp": -12.8,
+      "HDD": 189.4,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2021-01-01",
+      "gas_sales": 109858.8068,
+      "avg_temp": -3.6419,
+      "max_temp": 8.6,
+      "min_temp": -19.6,
+      "HDD": 186.4,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2021-01-11",
+      "gas_sales": 109858.8068,
+      "avg_temp": -3.6419,
+      "max_temp": 8.6,
+      "min_temp": -19.6,
+      "HDD": 186.4,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2021-01-21",
+      "gas_sales": 120844.6875,
+      "avg_temp": -3.6419,
+      "max_temp": 8.6,
+      "min_temp": -19.6,
+      "HDD": 205.1,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2021-02-01",
+      "gas_sales": 83898.649,
+      "avg_temp": 2.8,
+      "max_temp": 25.6,
+      "min_temp": -8.9,
+      "HDD": 122,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2021-02-11",
+      "gas_sales": 83898.649,
+      "avg_temp": 2.8,
+      "max_temp": 25.6,
+      "min_temp": -8.9,
+      "HDD": 122,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2021-02-21",
+      "gas_sales": 67118.9192,
+      "avg_temp": 2.8,
+      "max_temp": 25.6,
+      "min_temp": -8.9,
+      "HDD": 97.6,
+      "extreme_cold_days": 7
+    },
+    {
+      "date": "2021-03-01",
+      "gas_sales": 58479.6901,
+      "avg_temp": 9.3226,
+      "max_temp": 24.8,
+      "min_temp": -3.4,
+      "HDD": 57.4,
+      "extreme_cold_days": 1
+    },
+    {
+      "date": "2021-03-11",
+      "gas_sales": 58479.6901,
+      "avg_temp": 9.3226,
+      "max_temp": 24.8,
+      "min_temp": -3.4,
+      "HDD": 57.4,
+      "extreme_cold_days": 1
+    },
+    {
+      "date": "2021-03-21",
+      "gas_sales": 64327.6591,
+      "avg_temp": 9.3226,
+      "max_temp": 24.8,
+      "min_temp": -3.4,
+      "HDD": 63.1,
+      "extreme_cold_days": 1
+    },
+    {
+      "date": "2021-04-01",
+      "gas_sales": 23615.967,
+      "avg_temp": 15.19,
+      "max_temp": 27.9,
+      "min_temp": 4.5,
+      "HDD": 8.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-04-11",
+      "gas_sales": 23615.967,
+      "avg_temp": 15.19,
+      "max_temp": 27.9,
+      "min_temp": 4.5,
+      "HDD": 8.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-04-21",
+      "gas_sales": 23615.967,
+      "avg_temp": 15.19,
+      "max_temp": 27.9,
+      "min_temp": 4.5,
+      "HDD": 8.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-05-01",
+      "gas_sales": 23722.8485,
+      "avg_temp": 20.529,
+      "max_temp": 32.9,
+      "min_temp": 3.9,
+      "HDD": 0.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-05-11",
+      "gas_sales": 23722.8485,
+      "avg_temp": 20.529,
+      "max_temp": 32.9,
+      "min_temp": 3.9,
+      "HDD": 0.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-05-21",
+      "gas_sales": 26095.1334,
+      "avg_temp": 20.529,
+      "max_temp": 32.9,
+      "min_temp": 3.9,
+      "HDD": 0.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-06-01",
+      "gas_sales": 26996.6082,
+      "avg_temp": 25.6533,
+      "max_temp": 37.2,
+      "min_temp": 11.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-06-11",
+      "gas_sales": 26996.6082,
+      "avg_temp": 25.6533,
+      "max_temp": 37.2,
+      "min_temp": 11.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-06-21",
+      "gas_sales": 26996.6082,
+      "avg_temp": 25.6533,
+      "max_temp": 37.2,
+      "min_temp": 11.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-07-01",
+      "gas_sales": 31935.912,
+      "avg_temp": 26.7419,
+      "max_temp": 34.2,
+      "min_temp": 17.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-07-11",
+      "gas_sales": 31935.912,
+      "avg_temp": 26.7419,
+      "max_temp": 34.2,
+      "min_temp": 17.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-07-21",
+      "gas_sales": 35129.5032,
+      "avg_temp": 26.7419,
+      "max_temp": 34.2,
+      "min_temp": 17.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-08-01",
+      "gas_sales": 35095.2056,
+      "avg_temp": 25.7097,
+      "max_temp": 33.8,
+      "min_temp": 17.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-08-11",
+      "gas_sales": 35095.2056,
+      "avg_temp": 25.7097,
+      "max_temp": 33.8,
+      "min_temp": 17.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-08-21",
+      "gas_sales": 38604.7262,
+      "avg_temp": 25.7097,
+      "max_temp": 33.8,
+      "min_temp": 17.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-09-01",
+      "gas_sales": 29319.4045,
+      "avg_temp": 21.9033,
+      "max_temp": 31.1,
+      "min_temp": 13.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-09-11",
+      "gas_sales": 29319.4045,
+      "avg_temp": 21.9033,
+      "max_temp": 31.1,
+      "min_temp": 13.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-09-21",
+      "gas_sales": 29319.4045,
+      "avg_temp": 21.9033,
+      "max_temp": 31.1,
+      "min_temp": 13.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-10-01",
+      "gas_sales": 28908.6771,
+      "avg_temp": 12.8065,
+      "max_temp": 23.9,
+      "min_temp": -0.2,
+      "HDD": 27.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-10-11",
+      "gas_sales": 28908.6771,
+      "avg_temp": 12.8065,
+      "max_temp": 23.9,
+      "min_temp": -0.2,
+      "HDD": 27.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-10-21",
+      "gas_sales": 31799.5448,
+      "avg_temp": 12.8065,
+      "max_temp": 23.9,
+      "min_temp": -0.2,
+      "HDD": 30.5,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2021-11-01",
+      "gas_sales": 70257.4576,
+      "avg_temp": 5.99,
+      "max_temp": 17,
+      "min_temp": -5,
+      "HDD": 90.1,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2021-11-11",
+      "gas_sales": 70257.4576,
+      "avg_temp": 5.99,
+      "max_temp": 17,
+      "min_temp": -5,
+      "HDD": 90.1,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2021-11-21",
+      "gas_sales": 70257.4576,
+      "avg_temp": 5.99,
+      "max_temp": 17,
+      "min_temp": -5,
+      "HDD": 90.1,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2021-12-01",
+      "gas_sales": 93564.9768,
+      "avg_temp": 0.5645,
+      "max_temp": 13.9,
+      "min_temp": -11.6,
+      "HDD": 144.4,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2021-12-11",
+      "gas_sales": 93564.9768,
+      "avg_temp": 0.5645,
+      "max_temp": 13.9,
+      "min_temp": -11.6,
+      "HDD": 144.4,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2021-12-21",
+      "gas_sales": 102921.4745,
+      "avg_temp": 0.5645,
+      "max_temp": 13.9,
+      "min_temp": -11.6,
+      "HDD": 158.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2022-01-01",
+      "gas_sales": 107929.973,
+      "avg_temp": -1.6258,
+      "max_temp": 9.9,
+      "min_temp": -13.8,
+      "HDD": 166.3,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2022-01-11",
+      "gas_sales": 107929.973,
+      "avg_temp": -1.6258,
+      "max_temp": 9.9,
+      "min_temp": -13.8,
+      "HDD": 166.3,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2022-01-21",
+      "gas_sales": 118722.9703,
+      "avg_temp": -1.6258,
+      "max_temp": 9.9,
+      "min_temp": -13.8,
+      "HDD": 182.9,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2022-02-01",
+      "gas_sales": 98551.9682,
+      "avg_temp": -0.6286,
+      "max_temp": 16.2,
+      "min_temp": -11.3,
+      "HDD": 156.3,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2022-02-11",
+      "gas_sales": 98551.9682,
+      "avg_temp": -0.6286,
+      "max_temp": 16.2,
+      "min_temp": -11.3,
+      "HDD": 156.3,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2022-02-21",
+      "gas_sales": 78841.5745,
+      "avg_temp": -0.6286,
+      "max_temp": 16.2,
+      "min_temp": -11.3,
+      "HDD": 125,
+      "extreme_cold_days": 7
+    },
+    {
+      "date": "2022-03-01",
+      "gas_sales": 59521.0881,
+      "avg_temp": 7.5516,
+      "max_temp": 20.8,
+      "min_temp": -5.2,
+      "HDD": 74.5,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2022-03-11",
+      "gas_sales": 59521.0881,
+      "avg_temp": 7.5516,
+      "max_temp": 20.8,
+      "min_temp": -5.2,
+      "HDD": 74.5,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2022-03-21",
+      "gas_sales": 65473.1969,
+      "avg_temp": 7.5516,
+      "max_temp": 20.8,
+      "min_temp": -5.2,
+      "HDD": 81.9,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2022-04-01",
+      "gas_sales": 26151.6638,
+      "avg_temp": 16.54,
+      "max_temp": 29.6,
+      "min_temp": 0.2,
+      "HDD": 8.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-04-11",
+      "gas_sales": 26151.6638,
+      "avg_temp": 16.54,
+      "max_temp": 29.6,
+      "min_temp": 0.2,
+      "HDD": 8.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-04-21",
+      "gas_sales": 26151.6638,
+      "avg_temp": 16.54,
+      "max_temp": 29.6,
+      "min_temp": 0.2,
+      "HDD": 8.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-05-01",
+      "gas_sales": 22242.9212,
+      "avg_temp": 21.3194,
+      "max_temp": 35.3,
+      "min_temp": 6.7,
+      "HDD": 3.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-05-11",
+      "gas_sales": 22242.9212,
+      "avg_temp": 21.3194,
+      "max_temp": 35.3,
+      "min_temp": 6.7,
+      "HDD": 3.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-05-21",
+      "gas_sales": 24467.2133,
+      "avg_temp": 21.3194,
+      "max_temp": 35.3,
+      "min_temp": 6.7,
+      "HDD": 4.1,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-06-01",
+      "gas_sales": 31443.9366,
+      "avg_temp": 25.7333,
+      "max_temp": 39.2,
+      "min_temp": 15.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-06-11",
+      "gas_sales": 31443.9366,
+      "avg_temp": 25.7333,
+      "max_temp": 39.2,
+      "min_temp": 15.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-06-21",
+      "gas_sales": 31443.9366,
+      "avg_temp": 25.7333,
+      "max_temp": 39.2,
+      "min_temp": 15.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-07-01",
+      "gas_sales": 30819.2639,
+      "avg_temp": 27.4484,
+      "max_temp": 37.2,
+      "min_temp": 19.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-07-11",
+      "gas_sales": 30819.2639,
+      "avg_temp": 27.4484,
+      "max_temp": 37.2,
+      "min_temp": 19.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-07-21",
+      "gas_sales": 33901.1903,
+      "avg_temp": 27.4484,
+      "max_temp": 37.2,
+      "min_temp": 19.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-08-01",
+      "gas_sales": 33762.9292,
+      "avg_temp": 25.9161,
+      "max_temp": 36.7,
+      "min_temp": 14.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-08-11",
+      "gas_sales": 33762.9292,
+      "avg_temp": 25.9161,
+      "max_temp": 36.7,
+      "min_temp": 14.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-08-21",
+      "gas_sales": 37139.2221,
+      "avg_temp": 25.9161,
+      "max_temp": 36.7,
+      "min_temp": 14.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-09-01",
+      "gas_sales": 27140.4012,
+      "avg_temp": 22.74,
+      "max_temp": 32.6,
+      "min_temp": 8.1,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-09-11",
+      "gas_sales": 27140.4012,
+      "avg_temp": 22.74,
+      "max_temp": 32.6,
+      "min_temp": 8.1,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-09-21",
+      "gas_sales": 27140.4012,
+      "avg_temp": 22.74,
+      "max_temp": 32.6,
+      "min_temp": 8.1,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-10-01",
+      "gas_sales": 28481.5638,
+      "avg_temp": 13.029,
+      "max_temp": 29,
+      "min_temp": 0.9,
+      "HDD": 25.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-10-11",
+      "gas_sales": 28481.5638,
+      "avg_temp": 13.029,
+      "max_temp": 29,
+      "min_temp": 0.9,
+      "HDD": 25.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-10-21",
+      "gas_sales": 31329.7202,
+      "avg_temp": 13.029,
+      "max_temp": 29,
+      "min_temp": 0.9,
+      "HDD": 27.7,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2022-11-01",
+      "gas_sales": 67552.5102,
+      "avg_temp": 6.2467,
+      "max_temp": 17.1,
+      "min_temp": -10.8,
+      "HDD": 87.5,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2022-11-11",
+      "gas_sales": 67552.5102,
+      "avg_temp": 6.2467,
+      "max_temp": 17.1,
+      "min_temp": -10.8,
+      "HDD": 87.5,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2022-11-21",
+      "gas_sales": 67552.5102,
+      "avg_temp": 6.2467,
+      "max_temp": 17.1,
+      "min_temp": -10.8,
+      "HDD": 87.5,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2022-12-01",
+      "gas_sales": 111876.2862,
+      "avg_temp": -2.9323,
+      "max_temp": 9.5,
+      "min_temp": -12,
+      "HDD": 179.3,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2022-12-11",
+      "gas_sales": 111876.2862,
+      "avg_temp": -2.9323,
+      "max_temp": 9.5,
+      "min_temp": -12,
+      "HDD": 179.3,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2022-12-21",
+      "gas_sales": 123063.9148,
+      "avg_temp": -2.9323,
+      "max_temp": 9.5,
+      "min_temp": -12,
+      "HDD": 197.3,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2023-01-01",
+      "gas_sales": 109350.203,
+      "avg_temp": -2.4226,
+      "max_temp": 14,
+      "min_temp": -16.7,
+      "HDD": 174.2,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2023-01-11",
+      "gas_sales": 109350.203,
+      "avg_temp": -2.4226,
+      "max_temp": 14,
+      "min_temp": -16.7,
+      "HDD": 174.2,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2023-01-21",
+      "gas_sales": 120285.2233,
+      "avg_temp": -2.4226,
+      "max_temp": 14,
+      "min_temp": -16.7,
+      "HDD": 191.6,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2023-02-01",
+      "gas_sales": 95431.3372,
+      "avg_temp": 1.825,
+      "max_temp": 14.8,
+      "min_temp": -7.4,
+      "HDD": 131.8,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2023-02-11",
+      "gas_sales": 95431.3372,
+      "avg_temp": 1.825,
+      "max_temp": 14.8,
+      "min_temp": -7.4,
+      "HDD": 131.8,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2023-02-21",
+      "gas_sales": 76345.0698,
+      "avg_temp": 1.825,
+      "max_temp": 14.8,
+      "min_temp": -7.4,
+      "HDD": 105.4,
+      "extreme_cold_days": 7
+    },
+    {
+      "date": "2023-03-01",
+      "gas_sales": 52250.5185,
+      "avg_temp": 10.5419,
+      "max_temp": 26.3,
+      "min_temp": -3.2,
+      "HDD": 47,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2023-03-11",
+      "gas_sales": 52250.5185,
+      "avg_temp": 10.5419,
+      "max_temp": 26.3,
+      "min_temp": -3.2,
+      "HDD": 47,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2023-03-21",
+      "gas_sales": 57475.5703,
+      "avg_temp": 10.5419,
+      "max_temp": 26.3,
+      "min_temp": -3.2,
+      "HDD": 51.7,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2023-04-01",
+      "gas_sales": 27479.0002,
+      "avg_temp": 15.0967,
+      "max_temp": 28.5,
+      "min_temp": 2.6,
+      "HDD": 10.9,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-04-11",
+      "gas_sales": 27479.0002,
+      "avg_temp": 15.0967,
+      "max_temp": 28.5,
+      "min_temp": 2.6,
+      "HDD": 10.9,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-04-21",
+      "gas_sales": 27479.0002,
+      "avg_temp": 15.0967,
+      "max_temp": 28.5,
+      "min_temp": 2.6,
+      "HDD": 10.9,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-05-01",
+      "gas_sales": 29001.5466,
+      "avg_temp": 22.0194,
+      "max_temp": 36,
+      "min_temp": 9.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-05-11",
+      "gas_sales": 29001.5466,
+      "avg_temp": 22.0194,
+      "max_temp": 36,
+      "min_temp": 9.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-05-21",
+      "gas_sales": 31901.7012,
+      "avg_temp": 22.0194,
+      "max_temp": 36,
+      "min_temp": 9.3,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-06-01",
+      "gas_sales": 33670.8098,
+      "avg_temp": 28.37,
+      "max_temp": 41.1,
+      "min_temp": 16.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-06-11",
+      "gas_sales": 33670.8098,
+      "avg_temp": 28.37,
+      "max_temp": 41.1,
+      "min_temp": 16.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-06-21",
+      "gas_sales": 33670.8098,
+      "avg_temp": 28.37,
+      "max_temp": 41.1,
+      "min_temp": 16.5,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-07-01",
+      "gas_sales": 36299.945,
+      "avg_temp": 29.0194,
+      "max_temp": 41,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-07-11",
+      "gas_sales": 36299.945,
+      "avg_temp": 29.0194,
+      "max_temp": 41,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-07-21",
+      "gas_sales": 39929.9395,
+      "avg_temp": 29.0194,
+      "max_temp": 41,
+      "min_temp": 19.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-08-01",
+      "gas_sales": 34754.8118,
+      "avg_temp": 27.2452,
+      "max_temp": 37,
+      "min_temp": 18,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-08-11",
+      "gas_sales": 34754.8118,
+      "avg_temp": 27.2452,
+      "max_temp": 37,
+      "min_temp": 18,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-08-21",
+      "gas_sales": 38230.293,
+      "avg_temp": 27.2452,
+      "max_temp": 37,
+      "min_temp": 18,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-09-01",
+      "gas_sales": 26815.4835,
+      "avg_temp": 22.4467,
+      "max_temp": 32.2,
+      "min_temp": 10,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-09-11",
+      "gas_sales": 26815.4835,
+      "avg_temp": 22.4467,
+      "max_temp": 32.2,
+      "min_temp": 10,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-09-21",
+      "gas_sales": 26815.4835,
+      "avg_temp": 22.4467,
+      "max_temp": 32.2,
+      "min_temp": 10,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-10-01",
+      "gas_sales": 25215.5121,
+      "avg_temp": 15.6129,
+      "max_temp": 27.5,
+      "min_temp": 4.3,
+      "HDD": 4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-10-11",
+      "gas_sales": 25215.5121,
+      "avg_temp": 15.6129,
+      "max_temp": 27.5,
+      "min_temp": 4.3,
+      "HDD": 4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-10-21",
+      "gas_sales": 27737.0633,
+      "avg_temp": 15.6129,
+      "max_temp": 27.5,
+      "min_temp": 4.3,
+      "HDD": 4.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2023-11-01",
+      "gas_sales": 74711.6513,
+      "avg_temp": 4.6967,
+      "max_temp": 22.6,
+      "min_temp": -7.7,
+      "HDD": 104,
+      "extreme_cold_days": 6
+    },
+    {
+      "date": "2023-11-11",
+      "gas_sales": 74711.6513,
+      "avg_temp": 4.6967,
+      "max_temp": 22.6,
+      "min_temp": -7.7,
+      "HDD": 104,
+      "extreme_cold_days": 6
+    },
+    {
+      "date": "2023-11-21",
+      "gas_sales": 74711.6513,
+      "avg_temp": 4.6967,
+      "max_temp": 22.6,
+      "min_temp": -7.7,
+      "HDD": 104,
+      "extreme_cold_days": 6
+    },
+    {
+      "date": "2023-12-01",
+      "gas_sales": 110558.9167,
+      "avg_temp": -3.4839,
+      "max_temp": 12.2,
+      "min_temp": -16.1,
+      "HDD": 184.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2023-12-11",
+      "gas_sales": 110558.9167,
+      "avg_temp": -3.4839,
+      "max_temp": 12.2,
+      "min_temp": -16.1,
+      "HDD": 184.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2023-12-21",
+      "gas_sales": 121614.8084,
+      "avg_temp": -3.4839,
+      "max_temp": 12.2,
+      "min_temp": -16.1,
+      "HDD": 203.3,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2024-01-01",
+      "gas_sales": 109528.3873,
+      "avg_temp": -1.9581,
+      "max_temp": 8.4,
+      "min_temp": -13.3,
+      "HDD": 169.6,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2024-01-11",
+      "gas_sales": 109528.3873,
+      "avg_temp": -1.9581,
+      "max_temp": 8.4,
+      "min_temp": -13.3,
+      "HDD": 169.6,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2024-01-21",
+      "gas_sales": 120481.2261,
+      "avg_temp": -1.9581,
+      "max_temp": 8.4,
+      "min_temp": -13.3,
+      "HDD": 186.5,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2024-02-01",
+      "gas_sales": 94070.7635,
+      "avg_temp": 0.6,
+      "max_temp": 15.7,
+      "min_temp": -9.5,
+      "HDD": 144,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2024-02-11",
+      "gas_sales": 94070.7635,
+      "avg_temp": 0.6,
+      "max_temp": 15.7,
+      "min_temp": -9.5,
+      "HDD": 144,
+      "extreme_cold_days": 9
+    },
+    {
+      "date": "2024-02-21",
+      "gas_sales": 84663.6871,
+      "avg_temp": 0.6,
+      "max_temp": 15.7,
+      "min_temp": -9.5,
+      "HDD": 129.6,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2024-03-01",
+      "gas_sales": 54240.4158,
+      "avg_temp": 9.1194,
+      "max_temp": 23.2,
+      "min_temp": -8.1,
+      "HDD": 58.9,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2024-03-11",
+      "gas_sales": 54240.4158,
+      "avg_temp": 9.1194,
+      "max_temp": 23.2,
+      "min_temp": -8.1,
+      "HDD": 58.9,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2024-03-21",
+      "gas_sales": 59664.4574,
+      "avg_temp": 9.1194,
+      "max_temp": 23.2,
+      "min_temp": -8.1,
+      "HDD": 64.8,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2024-04-01",
+      "gas_sales": 25823.601,
+      "avg_temp": 16.61,
+      "max_temp": 29.3,
+      "min_temp": 4.4,
+      "HDD": 7.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-04-11",
+      "gas_sales": 25823.601,
+      "avg_temp": 16.61,
+      "max_temp": 29.3,
+      "min_temp": 4.4,
+      "HDD": 7.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-04-21",
+      "gas_sales": 25823.601,
+      "avg_temp": 16.61,
+      "max_temp": 29.3,
+      "min_temp": 4.4,
+      "HDD": 7.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-05-01",
+      "gas_sales": 24756.9854,
+      "avg_temp": 22.0484,
+      "max_temp": 32.9,
+      "min_temp": 8,
+      "HDD": 0.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-05-11",
+      "gas_sales": 24756.9854,
+      "avg_temp": 22.0484,
+      "max_temp": 32.9,
+      "min_temp": 8,
+      "HDD": 0.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-05-21",
+      "gas_sales": 27232.684,
+      "avg_temp": 22.0484,
+      "max_temp": 32.9,
+      "min_temp": 8,
+      "HDD": 0.4,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-06-01",
+      "gas_sales": 29951.7292,
+      "avg_temp": 27.3167,
+      "max_temp": 37.7,
+      "min_temp": 15.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-06-11",
+      "gas_sales": 29951.7292,
+      "avg_temp": 27.3167,
+      "max_temp": 37.7,
+      "min_temp": 15.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-06-21",
+      "gas_sales": 29951.7292,
+      "avg_temp": 27.3167,
+      "max_temp": 37.7,
+      "min_temp": 15.2,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-07-01",
+      "gas_sales": 36279.1417,
+      "avg_temp": 27.8548,
+      "max_temp": 38.4,
+      "min_temp": 16.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-07-11",
+      "gas_sales": 36279.1417,
+      "avg_temp": 27.8548,
+      "max_temp": 38.4,
+      "min_temp": 16.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-07-21",
+      "gas_sales": 39907.0558,
+      "avg_temp": 27.8548,
+      "max_temp": 38.4,
+      "min_temp": 16.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-08-01",
+      "gas_sales": 33108.2062,
+      "avg_temp": 27.1452,
+      "max_temp": 35.4,
+      "min_temp": 17.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-08-11",
+      "gas_sales": 33108.2062,
+      "avg_temp": 27.1452,
+      "max_temp": 35.4,
+      "min_temp": 17.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-08-21",
+      "gas_sales": 36419.0268,
+      "avg_temp": 27.1452,
+      "max_temp": 35.4,
+      "min_temp": 17.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-09-01",
+      "gas_sales": 25336.1624,
+      "avg_temp": 21.7067,
+      "max_temp": 32.6,
+      "min_temp": 10,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-09-11",
+      "gas_sales": 25336.1624,
+      "avg_temp": 21.7067,
+      "max_temp": 32.6,
+      "min_temp": 10,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-09-21",
+      "gas_sales": 25336.1624,
+      "avg_temp": 21.7067,
+      "max_temp": 32.6,
+      "min_temp": 10,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-10-01",
+      "gas_sales": 25110.4814,
+      "avg_temp": 13.8,
+      "max_temp": 24,
+      "min_temp": -0.7,
+      "HDD": 17.5,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-10-11",
+      "gas_sales": 25110.4814,
+      "avg_temp": 13.8,
+      "max_temp": 24,
+      "min_temp": -0.7,
+      "HDD": 17.5,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-10-21",
+      "gas_sales": 27621.5295,
+      "avg_temp": 13.8,
+      "max_temp": 24,
+      "min_temp": -0.7,
+      "HDD": 19.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2024-11-01",
+      "gas_sales": 64437.3172,
+      "avg_temp": 8.0967,
+      "max_temp": 20.9,
+      "min_temp": -4.7,
+      "HDD": 69,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2024-11-11",
+      "gas_sales": 64437.3172,
+      "avg_temp": 8.0967,
+      "max_temp": 20.9,
+      "min_temp": -4.7,
+      "HDD": 69,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2024-11-21",
+      "gas_sales": 64437.3172,
+      "avg_temp": 8.0967,
+      "max_temp": 20.9,
+      "min_temp": -4.7,
+      "HDD": 69,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2024-12-01",
+      "gas_sales": 101502.5358,
+      "avg_temp": 0.2484,
+      "max_temp": 15,
+      "min_temp": -8,
+      "HDD": 147.5,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2024-12-11",
+      "gas_sales": 101502.5358,
+      "avg_temp": 0.2484,
+      "max_temp": 15,
+      "min_temp": -8,
+      "HDD": 147.5,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2024-12-21",
+      "gas_sales": 111652.7894,
+      "avg_temp": 0.2484,
+      "max_temp": 15,
+      "min_temp": -8,
+      "HDD": 162.3,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2025-01-01",
+      "gas_sales": 104806.1009,
+      "avg_temp": -0.7355,
+      "max_temp": 10,
+      "min_temp": -12.1,
+      "HDD": 157.4,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2025-01-11",
+      "gas_sales": 104806.1009,
+      "avg_temp": -0.7355,
+      "max_temp": 10,
+      "min_temp": -12.1,
+      "HDD": 157.4,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2025-01-21",
+      "gas_sales": 115286.711,
+      "avg_temp": -0.7355,
+      "max_temp": 10,
+      "min_temp": -12.1,
+      "HDD": 173.1,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2025-02-01",
+      "gas_sales": 101442.9415,
+      "avg_temp": 0.0321,
+      "max_temp": 17,
+      "min_temp": -12.7,
+      "HDD": 149.7,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2025-02-11",
+      "gas_sales": 101442.9415,
+      "avg_temp": 0.0321,
+      "max_temp": 17,
+      "min_temp": -12.7,
+      "HDD": 149.7,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2025-02-21",
+      "gas_sales": 81154.3532,
+      "avg_temp": 0.0321,
+      "max_temp": 17,
+      "min_temp": -12.7,
+      "HDD": 119.7,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2025-03-01",
+      "gas_sales": 55399.9754,
+      "avg_temp": 9.8355,
+      "max_temp": 27,
+      "min_temp": -4.2,
+      "HDD": 57.8,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2025-03-11",
+      "gas_sales": 55399.9754,
+      "avg_temp": 9.8355,
+      "max_temp": 27,
+      "min_temp": -4.2,
+      "HDD": 57.8,
+      "extreme_cold_days": 3
+    },
+    {
+      "date": "2025-03-21",
+      "gas_sales": 60939.9729,
+      "avg_temp": 9.8355,
+      "max_temp": 27,
+      "min_temp": -4.2,
+      "HDD": 63.6,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2025-04-01",
+      "gas_sales": 25024.3851,
+      "avg_temp": 16.6833,
+      "max_temp": 31.5,
+      "min_temp": 5.1,
+      "HDD": 5.9,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-04-11",
+      "gas_sales": 25024.3851,
+      "avg_temp": 16.6833,
+      "max_temp": 31.5,
+      "min_temp": 5.1,
+      "HDD": 5.9,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-04-21",
+      "gas_sales": 25024.3851,
+      "avg_temp": 16.6833,
+      "max_temp": 31.5,
+      "min_temp": 5.1,
+      "HDD": 5.9,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-05-01",
+      "gas_sales": 24743.2056,
+      "avg_temp": 20.7548,
+      "max_temp": 33,
+      "min_temp": 9,
+      "HDD": 1.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-05-11",
+      "gas_sales": 24743.2056,
+      "avg_temp": 20.7548,
+      "max_temp": 33,
+      "min_temp": 9,
+      "HDD": 1.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-05-21",
+      "gas_sales": 27217.5261,
+      "avg_temp": 20.7548,
+      "max_temp": 33,
+      "min_temp": 9,
+      "HDD": 1.3,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-06-01",
+      "gas_sales": 30412.5581,
+      "avg_temp": 26.7867,
+      "max_temp": 38.8,
+      "min_temp": 14.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-06-11",
+      "gas_sales": 30412.5581,
+      "avg_temp": 26.7867,
+      "max_temp": 38.8,
+      "min_temp": 14.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-06-21",
+      "gas_sales": 30412.5581,
+      "avg_temp": 26.7867,
+      "max_temp": 38.8,
+      "min_temp": 14.9,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-07-01",
+      "gas_sales": 35827.6807,
+      "avg_temp": 28.4258,
+      "max_temp": 36.9,
+      "min_temp": 22.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-07-11",
+      "gas_sales": 35827.6807,
+      "avg_temp": 28.4258,
+      "max_temp": 36.9,
+      "min_temp": 22.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-07-21",
+      "gas_sales": 39410.4488,
+      "avg_temp": 28.4258,
+      "max_temp": 36.9,
+      "min_temp": 22.6,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-08-01",
+      "gas_sales": 33829.6412,
+      "avg_temp": 26.5613,
+      "max_temp": 36.1,
+      "min_temp": 18.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-08-11",
+      "gas_sales": 33829.6412,
+      "avg_temp": 26.5613,
+      "max_temp": 36.1,
+      "min_temp": 18.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-08-21",
+      "gas_sales": 37212.6053,
+      "avg_temp": 26.5613,
+      "max_temp": 36.1,
+      "min_temp": 18.4,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-09-01",
+      "gas_sales": 22268.3053,
+      "avg_temp": 22.3467,
+      "max_temp": 32.2,
+      "min_temp": 11.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-09-11",
+      "gas_sales": 22268.3053,
+      "avg_temp": 22.3467,
+      "max_temp": 32.2,
+      "min_temp": 11.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-09-21",
+      "gas_sales": 22268.3053,
+      "avg_temp": 22.3467,
+      "max_temp": 32.2,
+      "min_temp": 11.7,
+      "HDD": 0,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-10-01",
+      "gas_sales": 25039.4775,
+      "avg_temp": 12.4258,
+      "max_temp": 29.7,
+      "min_temp": 0.1,
+      "HDD": 36.5,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-10-11",
+      "gas_sales": 25039.4775,
+      "avg_temp": 12.4258,
+      "max_temp": 29.7,
+      "min_temp": 0.1,
+      "HDD": 36.5,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-10-21",
+      "gas_sales": 27543.4253,
+      "avg_temp": 12.4258,
+      "max_temp": 29.7,
+      "min_temp": 0.1,
+      "HDD": 40.2,
+      "extreme_cold_days": 0
+    },
+    {
+      "date": "2025-11-01",
+      "gas_sales": 66901.6699,
+      "avg_temp": 6.8733,
+      "max_temp": 19.9,
+      "min_temp": -3.4,
+      "HDD": 81.3,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2025-11-11",
+      "gas_sales": 66901.6699,
+      "avg_temp": 6.8733,
+      "max_temp": 19.9,
+      "min_temp": -3.4,
+      "HDD": 81.3,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2025-11-21",
+      "gas_sales": 66901.6699,
+      "avg_temp": 6.8733,
+      "max_temp": 19.9,
+      "min_temp": -3.4,
+      "HDD": 81.3,
+      "extreme_cold_days": 4
+    },
+    {
+      "date": "2025-12-01",
+      "gas_sales": 103258.8201,
+      "avg_temp": -0.4161,
+      "max_temp": 10.7,
+      "min_temp": -9.4,
+      "HDD": 154.2,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2025-12-11",
+      "gas_sales": 103258.8201,
+      "avg_temp": -0.4161,
+      "max_temp": 10.7,
+      "min_temp": -9.4,
+      "HDD": 154.2,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2025-12-21",
+      "gas_sales": 113584.7021,
+      "avg_temp": -0.4161,
+      "max_temp": 10.7,
+      "min_temp": -9.4,
+      "HDD": 169.6,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2026-01-01",
+      "gas_sales": 109913.2145,
+      "avg_temp": -2.3806,
+      "max_temp": 8.6,
+      "min_temp": -12,
+      "HDD": 173.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2026-01-11",
+      "gas_sales": 109913.2145,
+      "avg_temp": -2.3806,
+      "max_temp": 8.6,
+      "min_temp": -12,
+      "HDD": 173.8,
+      "extreme_cold_days": 10
+    },
+    {
+      "date": "2026-01-21",
+      "gas_sales": 120904.536,
+      "avg_temp": -2.3806,
+      "max_temp": 8.6,
+      "min_temp": -12,
+      "HDD": 191.2,
+      "extreme_cold_days": 11
+    },
+    {
+      "date": "2026-02-01",
+      "gas_sales": 89518.4973,
+      "avg_temp": 2.9536,
+      "max_temp": 18.8,
+      "min_temp": -10.6,
+      "HDD": 120.5,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2026-02-11",
+      "gas_sales": 89518.4973,
+      "avg_temp": 2.9536,
+      "max_temp": 18.8,
+      "min_temp": -10.6,
+      "HDD": 120.5,
+      "extreme_cold_days": 8
+    },
+    {
+      "date": "2026-02-21",
+      "gas_sales": 71614.7978,
+      "avg_temp": 2.9536,
+      "max_temp": 18.8,
+      "min_temp": -10.6,
+      "HDD": 96.4,
+      "extreme_cold_days": 7
+    },
+    {
+      "date": "2026-03-01",
+      "gas_sales": 58127.0821,
+      "avg_temp": 8.8258,
+      "max_temp": 25.6,
+      "min_temp": -5,
+      "HDD": 63.1,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2026-03-11",
+      "gas_sales": 58127.0821,
+      "avg_temp": 8.8258,
+      "max_temp": 25.6,
+      "min_temp": -5,
+      "HDD": 63.1,
+      "extreme_cold_days": 2
+    },
+    {
+      "date": "2026-03-21",
+      "gas_sales": 63939.7903,
+      "avg_temp": 8.8258,
+      "max_temp": 25.6,
+      "min_temp": -5,
+      "HDD": 69.4,
+      "extreme_cold_days": 2
+    }
+  ]
+}

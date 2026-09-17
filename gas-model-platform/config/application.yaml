@@ -1,0 +1,27 @@
+# gas-model-platform 公共配置，作用类似 Spring Boot application.yml。
+profiles:
+  # 可由 GAS_MODEL_PROFILE 覆盖。
+  active: dev
+
+app:
+  name: gas-model-platform
+  version: 0.1.0
+
+server:
+  host: 0.0.0.0
+  port: 8090
+  reload: false
+
+logging:
+  level: INFO
+  directory: logs
+  console_enabled: true
+  file_enabled: true
+  # 是否记录 HTTP 入参和出参；敏感字段会自动脱敏。
+  request_body_enabled: true
+  response_body_enabled: true
+  # 超长 JSON 会截断，长数组只保留前若干项并记录总数量。
+  body_max_length: 20000
+  body_max_items: 20
+  # TimedRotatingFileHandler 保留的历史日志天数。
+  retention_days: 30

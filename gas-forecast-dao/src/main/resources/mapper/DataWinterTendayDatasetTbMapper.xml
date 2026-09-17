@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.DataWinterTendayDatasetTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.DataWinterTendayDatasetTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="statDate" column="stat_date" jdbcType="VARCHAR"/>
+            <result property="gasSales" column="gas_sales" jdbcType="DECIMAL"/>
+            <result property="avgTemp" column="avg_temp" jdbcType="DECIMAL"/>
+            <result property="maxTemp" column="max_temp" jdbcType="DECIMAL"/>
+            <result property="minTemp" column="min_temp" jdbcType="DECIMAL"/>
+            <result property="hdd" column="hdd" jdbcType="DECIMAL"/>
+            <result property="extremeColdDays" column="extreme_cold_days" jdbcType="SMALLINT"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,region_code,region_name,stat_date,gas_sales,avg_temp,
+        max_temp,min_temp,hdd,extreme_cold_days,created_at,
+        updated_at
+    </sql>
+</mapper>

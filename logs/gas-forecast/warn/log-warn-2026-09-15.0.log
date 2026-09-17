@@ -1,0 +1,29 @@
+[2026-09-15 10:12:57.215] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Retrograde clock change detected (housekeeper delta=29s825ms), soft-evicting connections from pool.
+[2026-09-15 10:46:31.015] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=6m33s388ms).
+[2026-09-15 10:53:09.687] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=6m8s659ms).
+[2026-09-15 11:14:08.707] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3m58s877ms).
+[2026-09-15 11:59:07.667] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=58s638ms).
+[2026-09-15 12:00:55.263] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=1m47s596ms).
+[2026-09-15 12:14:12.300] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=12m47s37ms).
+[2026-09-15 12:47:41.152] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m28s686ms).
+[2026-09-15 12:51:31.390] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3m20s227ms).
+[2026-09-15 13:05:00.141] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=58s623ms).
+[2026-09-15 13:12:36.779] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=7m36s638ms).
+[2026-09-15 14:16:36.937] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Retrograde clock change detected (housekeeper delta=29s865ms), soft-evicting connections from pool.
+[2026-09-15 14:30:51.937] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=1m44s956ms).
+[2026-09-15 21:32:58.769] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [WARN] - Request [用户登录] failed in 25 ms, message=Failed to hash password
+[2026-09-15 21:37:53.010] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [WARN] - Request [用户登录] failed in 126 ms, message=登录页面已过期，请刷新后重试
+[2026-09-15 21:37:53.011] [gas-forecast] [] [] [c.g.f.c.web.GlobalExceptionHandler] [http-nio-8080-exec-4] [WARN] - Business exception, uri=/gas-forecast/auth/login, code=4002, message=登录页面已过期，请刷新后重试
+[2026-09-15 21:56:18.506] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [WARN] - Request [客户列表分页查询] failed in 118 ms, message=
+### Error querying database.  Cause: java.sql.SQLSyntaxErrorException: Unknown column 'update_by_name' in 'field list'
+### The error may exist in com/gas/forecast/dao/mapper/BaseCustomerTbMapper.java (best guess)
+### The error may involve defaultParameterMap
+### The error occurred while setting parameters
+### SQL: SELECT  id,customer_code,customer_name,industry_code,industry_name,region_code,region_name,created_at,updated_at,created_by,created_by_name,updated_by,update_by_name,raw_region_name,raw_industry_name  FROM base_customer_tb           ORDER BY updated_at DESC,id DESC LIMIT ?
+### Cause: java.sql.SQLSyntaxErrorException: Unknown column 'update_by_name' in 'field list'
+; bad SQL grammar []
+[2026-09-15 22:51:37.706] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=10m42s715ms).
+[2026-09-15 23:13:40.535] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=21m32s828ms).
+[2026-09-15 23:29:32.847] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m52s312ms).
+[2026-09-15 23:35:07.813] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=5m34s966ms).
+[2026-09-15 23:56:24.308] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=21m16s495ms).

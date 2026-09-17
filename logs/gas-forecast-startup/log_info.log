@@ -1,0 +1,67 @@
+[2026-09-11 14:10:32.742] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 39956 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/gas-forecast-startup-1.0-SNAPSHOT.jar started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-11 14:10:32.743] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - No active profile set, falling back to 1 default profile: "default"
+[2026-09-11 14:10:33.202] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 0 (http)
+[2026-09-11 14:10:33.207] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-auto-1"]
+[2026-09-11 14:10:33.208] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-11 14:10:33.208] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-11 14:10:33.226] [gas-forecast-startup] [] [] [o.a.c.c.C.[Tomcat].[localhost].[/]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-11 14:10:33.226] [gas-forecast-startup] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 442 ms
+[2026-09-11 14:10:33.713] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-auto-1"]
+[2026-09-11 14:10:33.731] [gas-forecast-startup] [] [] [o.s.b.a.l.ConditionEvaluationReportLogger] [main] [INFO] - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+[2026-09-11 14:11:28.461] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 40260 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/gas-forecast-startup-1.0-SNAPSHOT.jar started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-11 14:11:28.462] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - No active profile set, falling back to 1 default profile: "default"
+[2026-09-11 14:11:28.889] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 0 (http)
+[2026-09-11 14:11:28.893] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-auto-1"]
+[2026-09-11 14:11:28.894] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-11 14:11:28.894] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-11 14:11:28.907] [gas-forecast-startup] [] [] [o.a.c.c.C.[Tomcat].[localhost].[/]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-11 14:11:28.907] [gas-forecast-startup] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 396 ms
+[2026-09-11 14:11:29.341] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-auto-1"]
+[2026-09-11 14:11:29.356] [gas-forecast-startup] [] [] [o.s.b.a.l.ConditionEvaluationReportLogger] [main] [INFO] - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+[2026-09-11 14:13:39.929] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 40939 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/gas-forecast-startup-1.0-SNAPSHOT.jar started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-11 14:13:39.929] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-11 14:13:40.364] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 0 (http)
+[2026-09-11 14:13:40.369] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-auto-1"]
+[2026-09-11 14:13:40.370] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-11 14:13:40.370] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-11 14:13:40.384] [gas-forecast-startup] [] [] [o.a.c.c.C.[Tomcat].[localhost].[/]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-11 14:13:40.384] [gas-forecast-startup] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 414 ms
+[2026-09-11 14:13:40.874] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-auto-1"]
+[2026-09-11 14:13:40.890] [gas-forecast-startup] [] [] [o.s.b.a.l.ConditionEvaluationReportLogger] [main] [INFO] - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+[2026-09-11 14:16:12.588] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 41696 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-11 14:16:12.589] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-11 14:16:12.843] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-11 14:16:12.846] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-11 14:16:12.847] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-11 14:16:12.847] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-11 14:16:12.858] [gas-forecast-startup] [] [] [o.a.c.c.C.[Tomcat].[localhost].[/]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-11 14:16:12.858] [gas-forecast-startup] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 257 ms
+[2026-09-11 14:16:13.131] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-11 14:16:13.137] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path ''
+[2026-09-11 14:16:13.140] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 0.707 seconds (process running for 0.882)
+[2026-09-11 14:16:13.142] [gas-forecast-startup] [] [] [com.zaxxer.hikari.HikariDataSource] [main] [INFO] - HikariPool-1 - Starting...
+[2026-09-11 14:16:13.210] [gas-forecast-startup] [] [] [com.zaxxer.hikari.pool.HikariPool] [main] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@25d911a
+[2026-09-11 14:16:13.211] [gas-forecast-startup] [] [] [com.zaxxer.hikari.HikariDataSource] [main] [INFO] - HikariPool-1 - Start completed.
+[2026-09-11 14:16:13.305] [gas-forecast-startup] [] [] [c.g.f.b.s.XqycForecastPresetInitializer] [main] [INFO] - Persisted winter-supply preset forecasts: 2 batches, 30 results
+[2026-09-11 14:16:13.612] [gas-forecast-startup] [] [] [c.g.f.b.s.XqycForecastPresetInitializer] [main] [INFO] - Persisted monthly-sales preset forecasts: 12 batches, 700 results
+[2026-09-11 14:16:13.727] [gas-forecast-startup] [] [] [c.g.f.b.s.XqycForecastPresetInitializer] [main] [INFO] - Persisted short-term preset forecasts: 10 batches, 260 results
+[2026-09-11 14:19:49.505] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 42853 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-11 14:19:49.505] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-11 14:19:49.828] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-11 14:19:49.834] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-11 14:19:49.835] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-11 14:19:49.835] [gas-forecast-startup] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-11 14:19:49.849] [gas-forecast-startup] [] [] [o.a.c.c.C.[Tomcat].[localhost].[/]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-11 14:19:49.849] [gas-forecast-startup] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 326 ms
+[2026-09-11 14:19:50.170] [gas-forecast-startup] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-11 14:19:50.176] [gas-forecast-startup] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path ''
+[2026-09-11 14:19:50.180] [gas-forecast-startup] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 0.869 seconds (process running for 1.136)
+[2026-09-11 14:20:51.408] [gas-forecast-startup] [] [] [o.a.c.c.C.[Tomcat].[localhost].[/]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-11 14:20:51.409] [gas-forecast-startup] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-11 14:20:51.409] [gas-forecast-startup] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 0 ms

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelForecastBatchTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelForecastBatchTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="batchNo" column="batch_no" jdbcType="VARCHAR"/>
+            <result property="trainBatchNo" column="train_batch_no" jdbcType="VARCHAR"/>
+            <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
+            <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="customerCode" column="customer_code" jdbcType="VARCHAR"/>
+            <result property="customerName" column="customer_name" jdbcType="VARCHAR"/>
+            <result property="industryCode" column="industry_code" jdbcType="VARCHAR"/>
+            <result property="industryName" column="industry_name" jdbcType="VARCHAR"/>
+            <result property="forecastHorizon" column="forecast_horizon" jdbcType="INTEGER"/>
+            <result property="forecastStartDate" column="forecast_start_date" jdbcType="INTEGER"/>
+            <result property="forecastEndDate" column="forecast_end_date" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="VARCHAR"/>
+            <result property="requestJson" column="request_json" jdbcType="OTHER"/>
+            <result property="errorMessage" column="error_message" jdbcType="VARCHAR"/>
+            <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+            <result property="createdByName" column="created_by_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,batch_no,train_batch_no,agent_code,region_code,region_name,
+        customer_code,customer_name,industry_code,industry_name,forecast_horizon,
+        forecast_start_date,forecast_end_date,status,request_json,error_message,
+        created_by,created_at,updated_at,created_by_name
+    </sql>
+</mapper>
