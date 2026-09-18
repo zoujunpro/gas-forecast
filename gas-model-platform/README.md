@@ -170,6 +170,18 @@ class ModelHandler(Protocol):
     def predict(self, context: ModelContext) -> PredictResult: ...
 ```
 
+完整的强制接入规则、产物规范、测试清单和可复制模板见：
+
+- [模型接入标准](docs/model-integration-standard.md)
+- [Handler模板](docs/model-handler-template.py)
+
+除冬季保供智能体外，模型统一采用“业务模型名 + 版本号”命名，并保持一个
+模型对应一个 Python 实现文件，例如：
+
+- `MODEL_JIANGSHU_DIANLI_V1` → `short_agent/model_jiangshu_dianli_v1.py`
+
+冬季保供智能体算法较多，继续保留独立目录和多文件结构。
+
 ## 按模型编号路由
 
 Java 侧传 `modelCode` 和对应业务参数。注册中心以 `modelCode` 为唯一键，
@@ -194,11 +206,16 @@ Java 侧传 `modelCode` 和对应业务参数。注册中心以 `modelCode` 为�
 `selection_reason`、`metrics`、`selected_model_params` 和
 `candidate_evaluations` 可直接用于 Java 侧记录最佳模型及选择依据。
 
+短期日级预测使用 `modelCode=MODEL_JIANGSHU_DIANLI_V1`，迁移自江苏发电预测智能体，
+采用 Prophet 基线与 LightGBM 残差融合模型。训练数据需要日级日期和目标值，
+标准字段为 `date`、`y`；预测时传入从训练结束日期次日起连续的未来日期，
+并使用 `forecast_unit=day`。
+
 当前迁移内容：
 
-- 冬供总入口：`src/gas_model_platform/models/winter_supply/handler.py`
-- 冬供训练与预测算法：`src/gas_model_platform/models/winter_supply/engine/`
-- 冬供结果仓库：`src/gas_model_platform/models/winter_supply/result_store.py`
+- 冬供总入口：`src/gas_model_platform/models/winter_agent/winter_agent_v1/handler.py`
+- 冬供训练与预测算法：`src/gas_model_platform/models/winter_agent/winter_agent_v1/engine/`
+- 冬供结果仓库：`src/gas_model_platform/models/winter_agent/winter_agent_v1/result_store.py`
 - 已迁移结果数据：`src/gas_model_platform/resources/winter_supply_data/*.json`
 
 请求带 `dataset` 时会运行真实的训练、滚动回测或预测算法；不带数据时仍读取迁移的 JSON。训练成功后，Java 保存响应中的 `train_batch_no`；预测时通过顶层 `train_batch_no` 传回训练批次，平台根据模型编号和批次定位模型产物。省份信息保存在产物元数据中并在预测时校验，外部接口不接收或返回模型文件路径：

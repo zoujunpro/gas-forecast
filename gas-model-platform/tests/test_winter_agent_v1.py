@@ -8,10 +8,18 @@ from fastapi import HTTPException
 from gas_model_platform.api.v1.routes import predict
 from gas_model_platform.core.config import settings
 from gas_model_platform.models.registry import ModelRegistry
-from gas_model_platform.models.winter_supply.engine import backtest as backtest_module
-from gas_model_platform.models.winter_supply.engine.model_zoo import ModelSpec
-from gas_model_platform.models.winter_supply.engine.issues import localize_issue_message
-from gas_model_platform.models.winter_supply.handler import WinterSupplyHandler
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine import (
+    backtest as backtest_module,
+)
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine.issues import (
+    localize_issue_message,
+)
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine.model_zoo import (
+    ModelSpec,
+)
+from gas_model_platform.models.winter_agent.winter_agent_v1.handler import (
+    WinterAgentV1Handler,
+)
 from gas_model_platform.schemas.modeling import ModelIssue, PredictRequest, TrainRequest, TrainResult
 
 
@@ -32,8 +40,8 @@ def test_model_code_is_used_as_direct_registry_key() -> None:
 
     assert request.agent_code is None
     assert request.model_code == "WINTER_MODEL_001"
-    assert WinterSupplyHandler()._safe_batch_no(request.train_batch_no) == "T00001"
-    assert WinterSupplyHandler()._province(request) is None
+    assert WinterAgentV1Handler()._safe_batch_no(request.train_batch_no) == "T00001"
+    assert WinterAgentV1Handler()._province(request) is None
 
 
 def test_predict_request_requires_training_batch() -> None:
@@ -67,14 +75,14 @@ def test_predict_rejects_training_batch_inside_params() -> None:
 
 def test_registry_rejects_duplicate_model_registration() -> None:
     model_registry = ModelRegistry()
-    model_registry.register("WINTER_MODEL_001", WinterSupplyHandler())
+    model_registry.register("WINTER_MODEL_001", WinterAgentV1Handler())
 
     with pytest.raises(ValueError, match="already registered"):
-        model_registry.register("WINTER_MODEL_001", WinterSupplyHandler())
+        model_registry.register("WINTER_MODEL_001", WinterAgentV1Handler())
 
 
 def test_training_config_accepts_profile_and_model_names() -> None:
-    config = WinterSupplyHandler()._training_config(
+    config = WinterAgentV1Handler()._training_config(
         {
             "profile": "smoke",
             "model_names": ["SeasonalNaive36"],
@@ -105,17 +113,14 @@ def test_predict_requires_training_batch_instead_of_artifact_path() -> None:
 
 
 def test_artifact_path_is_created_under_platform_store() -> None:
-    path = WinterSupplyHandler()._artifact_path("WGTRAIN-test")
+    path = WinterAgentV1Handler()._artifact_path("WGTRAIN-test")
 
-    assert path == (
-        settings.artifact_root
-        / "winter-supply/v1.0.0/winter-supply-v1/WGTRAIN-test/model.joblib"
-    )
+    assert path == settings.artifact_root / "WGTRAIN-test/model.joblib"
 
 
 def test_artifact_path_rejects_unsafe_training_batch() -> None:
     with pytest.raises(ValueError, match="train_batch_no"):
-        WinterSupplyHandler()._artifact_path(
+        WinterAgentV1Handler()._artifact_path(
             "../other-model",
         )
 
@@ -138,15 +143,15 @@ def test_predict_locates_artifact_by_training_batch() -> None:
     assert "WGTRAIN-not-found/model.joblib" in raised.value.detail
 
 
-def test_winter_supply_exposes_model_version() -> None:
-    handler = WinterSupplyHandler()
+def test_winter_agent_v1_exposes_model_version() -> None:
+    handler = WinterAgentV1Handler()
 
     assert handler.info.model_version == "1.0.0"
     assert handler.info.model_code == "WINTER_MODEL_001"
 
 
 def test_candidate_evaluations_expose_ranking_and_metrics() -> None:
-    evaluations = WinterSupplyHandler()._candidate_evaluations(
+    evaluations = WinterAgentV1Handler()._candidate_evaluations(
         [
             {
                 "rank": 1,
@@ -170,7 +175,7 @@ def test_candidate_evaluations_expose_ranking_and_metrics() -> None:
 
 
 def test_training_response_exposes_rolling_backtest_comparison() -> None:
-    handler = WinterSupplyHandler()
+    handler = WinterAgentV1Handler()
     points = handler._rolling_backtest_results(
         [
             {
@@ -235,7 +240,7 @@ def test_candidate_warning_is_returned_as_structured_issue(monkeypatch) -> None:
 def test_train_result_exposes_issues_at_top_level() -> None:
     result = TrainResult(
         agent_code="winter-supply",
-        model_code="winter-supply-v1",
+        model_code="WINTER_MODEL_001",
         train_batch_no="WGTRAIN-test",
         issues=[
             ModelIssue(

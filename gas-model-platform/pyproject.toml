@@ -15,6 +15,7 @@ dependencies = [
     "lightgbm>=4.0",
     "xgboost>=2.0",
     "catboost>=1.2",
+    "prophet>=1.1.6",
     "PyYAML>=6.0",
     "pydantic>=2.8.0",
     "uvicorn[standard]>=0.30.0"

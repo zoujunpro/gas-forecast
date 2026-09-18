@@ -1,7 +1,7 @@
 from gas_model_platform.models.base import ModelHandler
-from gas_model_platform.models.stub_handlers import MonthlySalesBaselineHandler
-from gas_model_platform.models.stub_handlers import ShortTermBaselineHandler
-from gas_model_platform.models.winter_supply import WinterSupplyHandler
+from gas_model_platform.models.contract import validate_model_handler
+from gas_model_platform.models.short_agent import ModelJiangshuDianliV1Handler
+from gas_model_platform.models.winter_agent import WinterAgentV1Handler
 from gas_model_platform.schemas.modeling import ModelInfo
 
 
@@ -14,11 +14,7 @@ class ModelRegistry:
             self.register(model_code, handler)
 
     def register(self, model_code: str, handler: ModelHandler) -> None:
-        if model_code != handler.info.model_code:
-            raise ValueError(
-                "registry model_code does not match handler info: "
-                f"{model_code} != {handler.info.model_code}"
-            )
+        validate_model_handler(model_code, handler)
         if model_code in self._handlers:
             raise ValueError(f"model handler already registered: {model_code}")
         self._handlers[model_code] = handler
@@ -39,9 +35,8 @@ class ModelRegistry:
 
 
 MODEL_REGISTRY: dict[str, ModelHandler] = {
-    "WINTER_MODEL_001": WinterSupplyHandler(),
-    "MONTHLY_MODEL_001": MonthlySalesBaselineHandler(),
-    "SHORT_MODEL_001": ShortTermBaselineHandler(),
+    "WINTER_MODEL_001": WinterAgentV1Handler(),
+    "MODEL_JIANGSHU_DIANLI_V1": ModelJiangshuDianliV1Handler(),
 }
 
 registry = ModelRegistry(MODEL_REGISTRY)

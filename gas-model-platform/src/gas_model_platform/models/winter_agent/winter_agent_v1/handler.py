@@ -10,15 +10,20 @@ from uuid import uuid4
 import pandas as pd
 
 from gas_model_platform.core.config import settings
-from gas_model_platform.models.winter_supply.engine import (
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine import (
     load_artifact,
     predict as run_prediction,
     save_artifact,
     train as run_training,
 )
-from gas_model_platform.models.winter_supply.engine.config import DEFAULT_CONFIG, load_config
-from gas_model_platform.models.winter_supply.engine.version import MODEL_VERSION
-from gas_model_platform.models.winter_supply.result_store import (
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine.config import (
+    DEFAULT_CONFIG,
+    load_config,
+)
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine.version import (
+    MODEL_VERSION,
+)
+from gas_model_platform.models.winter_agent.winter_agent_v1.result_store import (
     WinterSupplyResult,
     WinterSupplyResultStore,
     parse_date,
@@ -39,7 +44,7 @@ from gas_model_platform.schemas.modeling import (
 )
 
 
-class WinterSupplyHandler:
+class WinterAgentV1Handler:
     """冬供旬预测统一入口。
 
     携带 dataset 时运行迁入的真实算法；没有 dataset 时继续读取既有省份
@@ -321,9 +326,6 @@ class WinterSupplyHandler:
         safe_batch_no = self._safe_batch_no(batch_no)
         return (
             settings.artifact_root
-            / self.info.agent_code
-            / f"v{MODEL_VERSION}"
-            / "winter-supply-v1"
             / safe_batch_no
             / "model.joblib"
         )
