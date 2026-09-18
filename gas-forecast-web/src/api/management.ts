@@ -44,4 +44,8 @@ export const updateRow = (endpoint: string, data: Record<string, any>) => postJs
 
 export const saveRow = (endpoint: string, data: Record<string, any>) => postJson(`${endpoint}/save`, data)
 
-export const deleteRow = (endpoint: string, id: number | string) => postJson(`${endpoint}/delete`, { id })
+export const deleteRow = async (endpoint: string, id: number | string) => {
+  const params = new URLSearchParams({ id: String(id) })
+  const response = await fetch(`${endpoint}/delete?${params.toString()}`)
+  return readResponseResult(response)
+}

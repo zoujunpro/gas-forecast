@@ -340,7 +340,8 @@ const resetConfigForm = (row: Record<string, any>) => {
     timeGranularity: item.timeGranularity,
     requiredFlag: item.requiredFlag ?? 0,
     featureOrder: item.featureOrder ?? index + 1
-  }))
+  })).sort(compareFeatureByColumn)
+  normalizeFeatureOrder()
   if (!configForm.regionCodes.length) {
     configForm.regionCodes = ['ALL']
   }
@@ -370,6 +371,7 @@ const loadFeatureOptions = async () => {
         featureColumn: item.featureColumn,
         timeGranularity: item.timeGranularity
       }))
+      .sort(compareFeatureByColumn)
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '特征列表加载失败')
   } finally {
@@ -471,9 +473,19 @@ const clearSelectedFeatures = () => {
 }
 
 const normalizeFeatureOrder = () => {
+  configForm.featureRefs.sort(compareFeatureByColumn)
   configForm.featureRefs.forEach((item, index) => {
     item.featureOrder = index + 1
   })
+}
+
+const compareFeatureByColumn = (left: { featureColumn?: string }, right: { featureColumn?: string }) => {
+  return featureColumnOrder(left.featureColumn) - featureColumnOrder(right.featureColumn)
+}
+
+const featureColumnOrder = (value?: string) => {
+  const matched = value?.match(/^feature_(\d+)$/)
+  return matched ? Number(matched[1]) : Number.MAX_SAFE_INTEGER
 }
 
 const timeGranularityText = (value: string) => {

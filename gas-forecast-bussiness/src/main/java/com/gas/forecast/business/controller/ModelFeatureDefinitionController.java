@@ -11,9 +11,11 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -50,11 +52,11 @@ public class ModelFeatureDefinitionController {
         return ResponseResult.success(modelFeatureDefinitionService.update(reqDTO));
     }
 
-    @PostMapping("delete")
+    @GetMapping("delete")
     @WebLog("删除特征定义")
     @RequirePermission("model:feature-definition:delete")
-    public ResponseResult<Void> delete(@Valid @RequestBody ModelFeatureDefinitionDeleteReqDTO reqDTO) {
-        modelFeatureDefinitionService.delete(reqDTO);
+    public ResponseResult<Void> delete(@RequestParam Long id) {
+        modelFeatureDefinitionService.delete(new ModelFeatureDefinitionDeleteReqDTO(id));
         return ResponseResult.success(null);
     }
 }

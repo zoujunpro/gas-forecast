@@ -12,9 +12,11 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -58,11 +60,11 @@ public class ModelConfigController {
         return ResponseResult.success(modelConfigService.updateScope(reqDTO));
     }
 
-    @PostMapping("delete")
+    @GetMapping("delete")
     @WebLog("删除模型")
     @RequirePermission("model:config:delete")
-    public ResponseResult<Void> delete(@Valid @RequestBody ModelConfigDeleteReqDTO reqDTO) {
-        modelConfigService.delete(reqDTO);
+    public ResponseResult<Void> delete(@RequestParam Long id) {
+        modelConfigService.delete(new ModelConfigDeleteReqDTO(id));
         return ResponseResult.success(null);
     }
 }

@@ -4,9 +4,11 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.system.service.SystemManagementService;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -45,10 +47,10 @@ public class SysRoleController {
     /**
      * 删除角色。
      */
-    @PostMapping("delete")
+    @GetMapping("delete")
     @RequirePermission("sys:role:delete")
-    public ResponseResult<Void> delete(@RequestBody Map<String, Object> req) {
-        systemManagementService.deleteRole(Long.valueOf(String.valueOf(req.get("id"))));
+    public ResponseResult<Void> delete(@RequestParam Long id) {
+        systemManagementService.deleteRole(id);
         return ResponseResult.success(null);
     }
 }

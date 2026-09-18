@@ -47,10 +47,10 @@ public class SysDepartmentController {
     /**
      * 删除部门。
      */
-    @PostMapping("delete")
+    @GetMapping("delete")
     @RequirePermission("sys:department:delete")
-    public ResponseResult<Void> delete(@RequestBody Map<String, Object> req) {
-        systemManagementService.deleteDepartment(Long.valueOf(String.valueOf(req.get("id"))));
+    public ResponseResult<Void> delete(@RequestParam Long id) {
+        systemManagementService.deleteDepartment(id);
         return ResponseResult.success(null);
     }
 }

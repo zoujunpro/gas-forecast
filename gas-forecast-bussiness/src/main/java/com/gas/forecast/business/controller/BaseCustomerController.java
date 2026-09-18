@@ -11,9 +11,11 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -62,11 +64,11 @@ public class BaseCustomerController {
     /**
      * 删除客户。
      */
-    @PostMapping("delete")
+    @GetMapping("delete")
     @WebLog("删除客户")
     @RequirePermission("base:customer:delete")
-    public ResponseResult<Void> delete(@Valid @RequestBody BaseCustomerDeleteReqDTO reqDTO) {
-        baseCustomerService.delete(reqDTO);
+    public ResponseResult<Void> delete(@RequestParam Long id) {
+        baseCustomerService.delete(new BaseCustomerDeleteReqDTO(id));
         return ResponseResult.success(null);
     }
 }

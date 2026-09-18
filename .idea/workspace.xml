@@ -5,10 +5,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change afterPath="$PROJECT_DIR$/logs/gas-forecast/debug/log-debug-2026-09-17.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/gas-forecast/error/log-error-2026-09-17.0.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/core/logging.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/core/logging.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_jiangshu_dianli_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_jiangshu_dianli_v1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_model_jiangshu_dianli_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_model_jiangshu_dianli_v1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/BaseCustomerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/BaseCustomerController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/BaseIndustryController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/BaseIndustryController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/BaseRegionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/BaseRegionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/DataFileInfoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/DataFileInfoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelConfigController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelConfigController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelFeatureDefinitionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelFeatureDefinitionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelConfigServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelConfigServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysDepartmentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysDepartmentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysPermissionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysPermissionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysRoleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysRoleController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysUserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysUserController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelConfigManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelConfigManagement.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_error.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -202,7 +218,7 @@
       <workItem from="1789551356010" duration="1998000" />
       <workItem from="1789602986482" duration="1782000" />
       <workItem from="1789605601044" duration="24583000" />
-      <workItem from="1789646315088" duration="15079000" />
+      <workItem from="1789646315088" duration="17563000" />
     </task>
     <task id="LOCAL-00001" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -212,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789611557540</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1789698158420</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1789698158420</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

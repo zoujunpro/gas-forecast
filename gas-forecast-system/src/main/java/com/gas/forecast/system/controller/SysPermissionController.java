@@ -47,10 +47,10 @@ public class SysPermissionController {
     /**
      * 删除菜单权限。
      */
-    @PostMapping("delete")
+    @GetMapping("delete")
     @RequirePermission("sys:permission:delete")
-    public ResponseResult<Void> delete(@RequestBody Map<String, Object> req) {
-        systemManagementService.deletePermission(Long.valueOf(String.valueOf(req.get("id"))));
+    public ResponseResult<Void> delete(@RequestParam Long id) {
+        systemManagementService.deletePermission(id);
         return ResponseResult.success(null);
     }
 }

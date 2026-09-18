@@ -26,6 +26,7 @@ import com.gas.forecast.dao.domain.ModelConfigScopeTb;
 import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.domain.ModelFeatureRef;
+import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
@@ -33,6 +34,7 @@ import com.gas.forecast.dao.mapper.ModelConfigScopeTbMapper;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
+import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +57,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final ModelFeatureRefMapper modelFeatureRefMapper;
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
+    private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
     public ModelConfigServiceImpl(ModelConfigTbMapper modelConfigTbMapper,
@@ -64,6 +67,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                                   BaseCustomerTbMapper baseCustomerTbMapper,
                                   ModelFeatureRefMapper modelFeatureRefMapper,
                                   ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper,
+                                  ModelTrainConfigTbMapper modelTrainConfigTbMapper,
                                   BaseCodeGenerateService baseCodeGenerateService) {
         this.modelConfigTbMapper = modelConfigTbMapper;
         this.modelConfigScopeTbMapper = modelConfigScopeTbMapper;
@@ -72,6 +76,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         this.baseCustomerTbMapper = baseCustomerTbMapper;
         this.modelFeatureRefMapper = modelFeatureRefMapper;
         this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
+        this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
         this.baseCodeGenerateService = baseCodeGenerateService;
     }
 
@@ -150,10 +155,18 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     @Transactional
     public void delete(ModelConfigDeleteReqDTO reqDTO) {
         ModelConfigTb exists = modelConfigTbMapper.selectById(reqDTO.id());
-        if (exists != null) {
-            modelConfigScopeTbMapper.delete(Wrappers.<ModelConfigScopeTb>lambdaQuery()
-                    .eq(ModelConfigScopeTb::getModelCode, exists.getModelCode()));
+        if (exists == null) {
+            return;
         }
+        long trainConfigCount = modelTrainConfigTbMapper.selectCount(Wrappers.<ModelTrainConfigTb>lambdaQuery()
+                .eq(ModelTrainConfigTb::getModelCode, exists.getModelCode()));
+        if (trainConfigCount > 0) {
+            throw new BusinessException("模型已被训练配置使用，不能删除");
+        }
+        modelConfigScopeTbMapper.delete(Wrappers.<ModelConfigScopeTb>lambdaQuery()
+                .eq(ModelConfigScopeTb::getModelCode, exists.getModelCode()));
+        modelFeatureRefMapper.delete(Wrappers.<ModelFeatureRef>lambdaQuery()
+                .eq(ModelFeatureRef::getModelId, exists.getId()));
         modelConfigTbMapper.deleteById(reqDTO.id());
     }
 

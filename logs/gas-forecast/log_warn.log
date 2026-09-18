@@ -30,3 +30,4 @@
 [2026-09-18 07:53:21.322] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=51s20ms).
 [2026-09-18 07:55:18.767] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=1m57s445ms).
 [2026-09-18 07:56:18.562] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Retrograde clock change detected (housekeeper delta=29s790ms), soft-evicting connections from pool.
+[2026-09-18 10:28:22.444] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [WARN] - Request [配置模型适用范围] failed in 25 ms, message=null

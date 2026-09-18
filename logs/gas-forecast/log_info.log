@@ -13,3 +13,61 @@
 [2026-09-18 09:31:28.690] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
 [2026-09-18 09:31:28.700] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
 [2026-09-18 09:31:28.705] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.829 seconds (process running for 2.102)
+[2026-09-18 10:23:37.052] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-18 10:23:37.064] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Starting GasForecastStartupApplication using Java 21.0.11 with PID 49501 (/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup/target/classes started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast)
+[2026-09-18 10:23:37.065] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-18 10:23:37.371] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-18 10:23:37.373] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-18 10:23:37.391] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 11 ms. Found 0 Redis repository interfaces.
+[2026-09-18 10:23:37.706] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat initialized with port 8080 (http)
+[2026-09-18 10:23:37.711] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Initializing ProtocolHandler ["http-nio-8080"]
+[2026-09-18 10:23:37.711] [gas-forecast] [] [] [o.a.catalina.core.StandardService] [main] [INFO] - Starting service [Tomcat]
+[2026-09-18 10:23:37.711] [gas-forecast] [] [] [o.a.catalina.core.StandardEngine] [main] [INFO] - Starting Servlet engine: [Apache Tomcat/10.1.20]
+[2026-09-18 10:23:37.730] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [main] [INFO] - Initializing Spring embedded WebApplicationContext
+[2026-09-18 10:23:37.730] [gas-forecast] [] [] [o.s.b.w.s.c.ServletWebServerApplicationContext] [main] [INFO] - Root WebApplicationContext: initialization completed in 650 ms
+[2026-09-18 10:23:38.438] [gas-forecast] [] [] [o.a.coyote.http11.Http11NioProtocol] [main] [INFO] - Starting ProtocolHandler ["http-nio-8080"]
+[2026-09-18 10:23:38.446] [gas-forecast] [] [] [o.s.b.w.e.tomcat.TomcatWebServer] [main] [INFO] - Tomcat started on port 8080 (http) with context path '/gas-forecast'
+[2026-09-18 10:23:38.449] [gas-forecast] [] [] [c.g.f.GasForecastStartupApplication] [main] [INFO] - Started GasForecastStartupApplication in 1.581 seconds (process running for 1.887)
+[2026-09-18 10:23:54.945] [gas-forecast] [] [] [o.a.c.c.C.[.[.[/gas-forecast]] [http-nio-8080-exec-1] [INFO] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+[2026-09-18 10:23:54.945] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Initializing Servlet 'dispatcherServlet'
+[2026-09-18 10:23:54.946] [gas-forecast] [] [] [o.s.web.servlet.DispatcherServlet] [http-nio-8080-exec-1] [INFO] - Completed initialization in 1 ms
+[2026-09-18 10:23:55.023] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [训练特征数据列表查询] POST /gas-forecast/model-train-feature-data/listPage args={reqDTO=ModelTrainFeatureDataPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:23:55.093] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Starting...
+[2026-09-18 10:23:55.131] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-18 10:23:55.171] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4e5a8ba1
+[2026-09-18 10:23:55.172] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [http-nio-8080-exec-2] [INFO] - HikariPool-1 - Start completed.
+[2026-09-18 10:23:55.220] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [获取当前登录用户权限] completed in 89 ms
+[2026-09-18 10:23:55.231] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [训练特征数据列表查询] completed in 209 ms
+[2026-09-18 10:23:55.662] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] GET /gas-forecast/auth/permissions args={}
+[2026-09-18 10:23:55.673] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [获取当前登录用户权限] completed in 11 ms
+[2026-09-18 10:23:55.683] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [训练特征数据列表查询] POST /gas-forecast/model-train-feature-data/listPage args={reqDTO=ModelTrainFeatureDataPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:23:55.724] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [训练特征数据列表查询] completed in 41 ms
+[2026-09-18 10:24:03.536] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [特征定义列表查询] POST /gas-forecast/model-feature-definition/listPage args={reqDTO=ModelFeatureDefinitionPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:24:03.544] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [特征定义列表查询] completed in 8 ms
+[2026-09-18 10:24:14.816] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [训练特征数据列表查询] POST /gas-forecast/model-train-feature-data/listPage args={reqDTO=ModelTrainFeatureDataPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:24:14.849] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [训练特征数据列表查询] completed in 33 ms
+[2026-09-18 10:24:20.007] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:24:20.022] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [模型列表查询] completed in 15 ms
+[2026-09-18 10:25:30.575] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=1000, keyword=null]}
+[2026-09-18 10:25:30.597] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [模型列表查询] completed in 22 ms
+[2026-09-18 10:25:33.628] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=1000, keyword=null]}
+[2026-09-18 10:25:33.638] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [模型列表查询] completed in 10 ms
+[2026-09-18 10:25:35.816] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=1000, keyword=null]}
+[2026-09-18 10:25:35.826] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-10] [INFO] - Request [模型列表查询] completed in 10 ms
+[2026-09-18 10:25:36.516] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=1000, keyword=null]}
+[2026-09-18 10:25:36.528] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-1] [INFO] - Request [模型列表查询] completed in 12 ms
+[2026-09-18 10:25:58.600] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:25:58.614] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-2] [INFO] - Request [模型列表查询] completed in 14 ms
+[2026-09-18 10:26:00.828] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=1000, keyword=null]}
+[2026-09-18 10:26:00.832] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-3] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-18 10:26:00.840] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [特征定义列表查询] POST /gas-forecast/model-feature-definition/listPage args={reqDTO=ModelFeatureDefinitionPageReqDTO[page=1, size=500, keyword=null]}
+[2026-09-18 10:26:00.844] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-4] [INFO] - Request [特征定义列表查询] completed in 4 ms
+[2026-09-18 10:28:22.420] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-6] [INFO] - Request [配置模型适用范围] POST /gas-forecast/model-config/updateScope args={reqDTO=ModelConfigScopeUpdateReqDTO[id=2, regionCode=null, industryCode=null, customerCode=null, regionCodes=[REG000005], industryCodes=[], customerCodes=[], featureRefs=[FeatureRefItem[featureId=5, requiredFlag=0, featureOrder=1], FeatureRefItem[featureId=4, requiredFlag=0, featureOrder=2], FeatureRefItem[featureId=3, requiredFlag=0, featureOrder=3], FeatureRefItem[featureId=2, requiredFlag=0, featureOrder=4], FeatureRefItem[featureId=1, requiredFlag=0, featureOrder=5]]]}
+[2026-09-18 10:29:56.296] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:29:56.312] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-5] [INFO] - Request [模型列表查询] completed in 16 ms
+[2026-09-18 10:30:45.065] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [区域列表查询] POST /gas-forecast/base-region/listPage args={reqDTO=BaseRegionPageReqDTO[page=1, size=1000, keyword=null]}
+[2026-09-18 10:30:45.069] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-7] [INFO] - Request [区域列表查询] completed in 4 ms
+[2026-09-18 10:30:45.079] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [特征定义列表查询] POST /gas-forecast/model-feature-definition/listPage args={reqDTO=ModelFeatureDefinitionPageReqDTO[page=1, size=500, keyword=null]}
+[2026-09-18 10:30:45.084] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-8] [INFO] - Request [特征定义列表查询] completed in 5 ms
+[2026-09-18 10:36:37.342] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [模型列表查询] POST /gas-forecast/model-config/listPage args={reqDTO=ModelConfigPageReqDTO[page=1, size=10, keyword=null]}
+[2026-09-18 10:36:37.373] [gas-forecast] [] [] [c.g.forecast.common.web.WebLogAspect] [http-nio-8080-exec-9] [INFO] - Request [模型列表查询] completed in 31 ms
