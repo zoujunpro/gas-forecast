@@ -3,6 +3,7 @@ export type SystemFieldType = 'text' | 'number' | 'select' | 'tree' | 'treeSelec
 export interface Option {
   label: string
   value: number | string
+  raw?: Record<string, any>
 }
 
 export type FieldDisplayType = 'text' | 'array' | 'enabled' | 'status' | 'permissionType' | 'hash' | 'tag' | 'date' | 'datetime'
@@ -34,6 +35,7 @@ export interface SystemFieldConfig {
   inactiveValue?: number | string | boolean
   activeText?: string
   inactiveText?: string
+  readonly?: boolean
   displayType?: FieldDisplayType
   enumMap?: Record<string, string>
   tagTypeMap?: Record<string, string>
@@ -54,10 +56,13 @@ export interface SystemPageConfig {
     create?: string
     update?: string
     delete?: string
+    execute?: string
   }
+  trainExecution?: boolean
 }
 
-export type BaseDataFieldType = 'text' | 'number' | 'select'
+export type BaseDataFieldType = 'text' | 'number' | 'select' | 'radio' | 'granularityDate'
+export type BaseDataFilterType = 'text' | 'select' | 'dateRange'
 
 export interface BaseDataFieldConfig {
   prop: string
@@ -78,11 +83,37 @@ export interface BaseDataFieldConfig {
   inactiveValue?: number | string | boolean
   activeText?: string
   inactiveText?: string
+  readonly?: boolean
   displayType?: FieldDisplayType
   enumMap?: Record<string, string>
   tagTypeMap?: Record<string, string>
   align?: 'left' | 'center' | 'right'
   width?: number
+  sortable?: boolean | 'custom'
+  optionSource?: {
+    endpoint: string
+    valueProp: string
+    labelProp: string
+    labelTemplate?: 'nameWithCode'
+    size?: number
+  }
+  granularityProp?: string
+  fillProps?: Record<string, string>
+  visibleWhen?: {
+    prop: string
+    value: number | string | boolean
+  }
+}
+
+export interface BaseDataFilterConfig {
+  prop: string
+  label: string
+  type?: BaseDataFilterType
+  placeholder?: string
+  options?: Option[]
+  width?: number
+  startProp?: string
+  endProp?: string
 }
 
 export interface BaseDataPageConfig {
@@ -90,6 +121,9 @@ export interface BaseDataPageConfig {
   endpoint: string
   searchPlaceholder: string
   readonly?: boolean
+  trainExecution?: boolean
+  filterFields?: BaseDataFilterConfig[]
+  featureDetailProp?: string
   tableFields: BaseDataFieldConfig[]
   formFields: BaseDataFieldConfig[]
   emptyForm: Record<string, any>
@@ -97,5 +131,6 @@ export interface BaseDataPageConfig {
     create?: string
     update?: string
     delete?: string
+    execute?: string
   }
 }

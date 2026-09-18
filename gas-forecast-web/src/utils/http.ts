@@ -13,9 +13,18 @@ export const readErrorMessage = async (response: Response, fallback: string) => 
 }
 
 export const readResponseResult = async <T = any>(response: Response): Promise<T> => {
-  const result = await response.json()
+  let result: any = {}
+  const text = await response.text()
+  if (text) {
+    try {
+      result = JSON.parse(text)
+    } catch {
+      throw new Error(`响应格式错误：HTTP ${response.status}`)
+    }
+  }
+
   if (!response.ok || result.code !== '0000') {
-    throw new Error(result.message || '请求失败')
+    throw new Error(result.message || `请求失败：HTTP ${response.status}`)
   }
   return result
 }

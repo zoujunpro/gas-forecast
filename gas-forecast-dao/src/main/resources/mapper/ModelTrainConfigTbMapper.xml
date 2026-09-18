@@ -6,8 +6,8 @@
 
     <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelTrainConfigTb">
             <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="configCode" column="config_code" jdbcType="VARCHAR"/>
-            <result property="configName" column="config_name" jdbcType="VARCHAR"/>
+            <result property="trainCode" column="train_code" jdbcType="VARCHAR"/>
+            <result property="trainName" column="train_name" jdbcType="VARCHAR"/>
             <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
             <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
             <result property="modelName" column="model_name" jdbcType="VARCHAR"/>
@@ -20,12 +20,9 @@
             <result property="customerName" column="customer_name" jdbcType="VARCHAR"/>
             <result property="trainStartDate" column="train_start_date" jdbcType="VARCHAR"/>
             <result property="trainEndDate" column="train_end_date" jdbcType="VARCHAR"/>
-            <result property="trainFrequency" column="train_frequency" jdbcType="VARCHAR"/>
-            <result property="autoTrain" column="auto_train" jdbcType="TINYINT"/>
-            <result property="enableBacktest" column="enable_backtest" jdbcType="TINYINT"/>
-            <result property="backtestWindow" column="backtest_window" jdbcType="INTEGER"/>
-            <result property="modelStrategy" column="model_strategy" jdbcType="VARCHAR"/>
-            <result property="bizConfigJson" column="biz_config_json" jdbcType="OTHER"/>
+            <result property="trainMode" column="train_mode" jdbcType="VARCHAR"/>
+            <result property="timeGranularity" column="time_granularity" jdbcType="VARCHAR"/>
+            <result property="recentPeriods" column="recent_periods" jdbcType="INTEGER"/>
             <result property="enabled" column="enabled" jdbcType="TINYINT"/>
             <result property="remark" column="remark" jdbcType="VARCHAR"/>
             <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
@@ -35,10 +32,10 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,config_code,config_name,agent_code,model_code,model_name,scope_type,region_code,
+        id,train_code,train_name,agent_code,model_code,model_name,scope_type,region_code,
         region_name,industry_code,industry_name,customer_code,customer_name,
-        train_start_date,train_end_date,train_frequency,auto_train,enable_backtest,
-        backtest_window,model_strategy,biz_config_json,enabled,remark,
+        train_start_date,train_end_date,train_mode,time_granularity,recent_periods,
+        enabled,remark,
         created_by,created_by_name,created_at,updated_at
     </sql>
 </mapper>

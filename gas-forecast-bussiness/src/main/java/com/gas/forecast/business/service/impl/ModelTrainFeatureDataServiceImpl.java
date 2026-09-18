@@ -8,25 +8,35 @@ import com.gas.forecast.business.dto.req.ModelTrainFeatureDataDeleteReqDTO;
 import com.gas.forecast.business.dto.req.ModelTrainFeatureDataPageReqDTO;
 import com.gas.forecast.business.dto.req.ModelTrainFeatureDataUpdateReqDTO;
 import com.gas.forecast.business.dto.resp.ModelTrainFeatureDataRespDTO;
+import com.gas.forecast.business.dto.resp.ModelTrainFeatureValueRespDTO;
 import com.gas.forecast.business.service.ModelTrainFeatureDataService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
+import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
+import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataService {
 
     private final ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper;
+    private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
 
-    public ModelTrainFeatureDataServiceImpl(ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper) {
+    public ModelTrainFeatureDataServiceImpl(ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper,
+                                            ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper) {
         this.modelTrainFeatureDataTbMapper = modelTrainFeatureDataTbMapper;
+        this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
     }
 
     @Override
@@ -51,11 +61,33 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
                     .or()
                     .like(ModelTrainFeatureDataTb::getIndustryName, keyword));
         }
-        query.orderByDesc(ModelTrainFeatureDataTb::getUpdateTime).orderByDesc(ModelTrainFeatureDataTb::getId);
+        if (TextUtils.hasText(reqDTO.timeGranularity())) {
+            query.eq(ModelTrainFeatureDataTb::getTimeGranularity, reqDTO.timeGranularity().trim());
+        }
+        if (TextUtils.hasText(reqDTO.statDate())) {
+            query.like(ModelTrainFeatureDataTb::getStatDate, reqDTO.statDate().trim());
+        }
+        if (TextUtils.hasText(reqDTO.regionCode())) {
+            query.eq(ModelTrainFeatureDataTb::getRegionCode, reqDTO.regionCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.industryCode())) {
+            query.eq(ModelTrainFeatureDataTb::getIndustryCode, reqDTO.industryCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.customerCode())) {
+            query.eq(ModelTrainFeatureDataTb::getCustomerCode, reqDTO.customerCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.statDateStart())) {
+            query.ge(ModelTrainFeatureDataTb::getStatDate, reqDTO.statDateStart().trim());
+        }
+        if (TextUtils.hasText(reqDTO.statDateEnd())) {
+            query.le(ModelTrainFeatureDataTb::getStatDate, reqDTO.statDateEnd().trim());
+        }
+        applySort(query, reqDTO);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<ModelTrainFeatureDataTb> result = modelTrainFeatureDataTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        Map<String, String> featureCodeByColumn = featureCodeByColumn();
+        return PageUtils.toPage(result, result.getRecords().stream().map(entity -> toResp(entity, featureCodeByColumn)).toList());
     }
 
     @Override
@@ -67,7 +99,7 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         entity.setCreateTime(now);
         entity.setUpdateTime(now);
         modelTrainFeatureDataTbMapper.insert(entity);
-        return toResp(entity);
+        return toResp(entity, featureCodeByColumn());
     }
 
     @Override
@@ -82,7 +114,7 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         entity.setCreateTime(exists.getCreateTime());
         entity.setUpdateTime(new Date());
         modelTrainFeatureDataTbMapper.updateById(entity);
-        return toResp(modelTrainFeatureDataTbMapper.selectById(reqDTO.id()));
+        return toResp(modelTrainFeatureDataTbMapper.selectById(reqDTO.id()), featureCodeByColumn());
     }
 
     @Override
@@ -91,10 +123,11 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         modelTrainFeatureDataTbMapper.deleteById(reqDTO.id());
     }
 
-    private ModelTrainFeatureDataRespDTO toResp(ModelTrainFeatureDataTb entity) {
+    private ModelTrainFeatureDataRespDTO toResp(ModelTrainFeatureDataTb entity, Map<String, String> featureCodeByColumn) {
         if (entity == null) {
             return null;
         }
+        Map<String, Double> featureValues = featureValues(entity);
         return new ModelTrainFeatureDataRespDTO(
                 entity.getId(),
                 entity.getStatDate(),
@@ -116,9 +149,70 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
                 entity.getFeature008(),
                 entity.getFeature009(),
                 entity.getFeature010(),
+                featureValues,
+                featureDetails(featureValues, featureCodeByColumn),
                 entity.getCreateTime(),
                 entity.getUpdateTime()
         );
+    }
+
+    private Map<String, String> featureCodeByColumn() {
+        return modelFeatureDefinitionTbMapper.selectList(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery()
+                        .select(ModelFeatureDefinitionTb::getFeatureColumn, ModelFeatureDefinitionTb::getFeatureCode)
+                        .eq(ModelFeatureDefinitionTb::getEnabled, 1))
+                .stream()
+                .filter(item -> TextUtils.hasText(item.getFeatureColumn()) && TextUtils.hasText(item.getFeatureCode()))
+                .collect(Collectors.toMap(ModelFeatureDefinitionTb::getFeatureColumn, ModelFeatureDefinitionTb::getFeatureCode, (left, right) -> left));
+    }
+
+    private List<ModelTrainFeatureValueRespDTO> featureDetails(Map<String, Double> featureValues, Map<String, String> featureCodeByColumn) {
+        return featureValues.entrySet().stream()
+                .map(entry -> new ModelTrainFeatureValueRespDTO(
+                        entry.getKey(),
+                        featureCodeByColumn.getOrDefault(featureColumn(entry.getKey()), "-"),
+                        entry.getValue()
+                ))
+                .toList();
+    }
+
+    private String featureColumn(String featureNo) {
+        if (!TextUtils.hasText(featureNo) || !featureNo.matches("feature\\d{3}")) {
+            return featureNo;
+        }
+        return "feature_" + featureNo.substring("feature".length());
+    }
+
+    private void applySort(LambdaQueryWrapper<ModelTrainFeatureDataTb> query, ModelTrainFeatureDataPageReqDTO reqDTO) {
+        boolean asc = "asc".equalsIgnoreCase(reqDTO.sortOrder()) || "ascending".equalsIgnoreCase(reqDTO.sortOrder());
+        boolean desc = "desc".equalsIgnoreCase(reqDTO.sortOrder()) || "descending".equalsIgnoreCase(reqDTO.sortOrder());
+        String sortField = TextUtils.hasText(reqDTO.sortField()) ? reqDTO.sortField().trim() : "statDate";
+        if (!asc && !desc) {
+            desc = true;
+        }
+        switch (sortField) {
+            case "statDate" -> query.orderBy(true, asc, ModelTrainFeatureDataTb::getStatDate);
+            case "updateTime" -> query.orderBy(true, asc, ModelTrainFeatureDataTb::getUpdateTime);
+            case "createTime" -> query.orderBy(true, asc, ModelTrainFeatureDataTb::getCreateTime);
+            case "id" -> query.orderBy(true, asc, ModelTrainFeatureDataTb::getId);
+            default -> query.orderByDesc(ModelTrainFeatureDataTb::getStatDate);
+        }
+        query.orderByDesc(ModelTrainFeatureDataTb::getId);
+    }
+
+    private Map<String, Double> featureValues(ModelTrainFeatureDataTb entity) {
+        Map<String, Double> values = new LinkedHashMap<>();
+        for (int i = 1; i <= 200; i++) {
+            String property = String.format("feature%03d", i);
+            try {
+                Object value = ModelTrainFeatureDataTb.class.getMethod("get" + Character.toUpperCase(property.charAt(0)) + property.substring(1)).invoke(entity);
+                if (value instanceof Double doubleValue && doubleValue != null) {
+                    values.put(property, doubleValue);
+                }
+            } catch (ReflectiveOperationException ignored) {
+                break;
+            }
+        }
+        return values;
     }
 
     private ModelTrainFeatureDataTb toEntity(ModelTrainFeatureDataCreateReqDTO reqDTO) {
@@ -168,4 +262,5 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         entity.setFeature010(reqDTO.feature010());
         return entity;
     }
+
 }

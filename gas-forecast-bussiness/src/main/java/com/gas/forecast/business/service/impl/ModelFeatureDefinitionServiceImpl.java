@@ -45,6 +45,9 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
                     .or()
                     .like(ModelFeatureDefinitionTb::getDescription, keyword));
         }
+        if (TextUtils.hasText(reqDTO.timeGranularity())) {
+            query.eq(ModelFeatureDefinitionTb::getTimeGranularity, reqDTO.timeGranularity().trim());
+        }
         query.orderByDesc(ModelFeatureDefinitionTb::getCreatedAt).orderByDesc(ModelFeatureDefinitionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();

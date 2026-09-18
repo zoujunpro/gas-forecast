@@ -80,8 +80,12 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     @Override
     @Transactional
     public ModelTrainExecuteRespDTO execute(ModelTrainExecuteReqDTO reqDTO) {
+        String trainCode = TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode() : reqDTO.configCode();
+        if (!TextUtils.hasText(trainCode)) {
+            throw new BusinessException("训练配置编码不能为空");
+        }
         ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery()
-                .eq(ModelTrainConfigTb::getConfigCode, reqDTO.configCode()));
+                .eq(ModelTrainConfigTb::getTrainCode, trainCode));
         if (trainConfig == null) {
             throw new BusinessException("训练配置不存在");
         }
@@ -107,7 +111,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         String status = agentResponse == null ? "PENDING" : "RUNNING";
         saveBatch(trainConfig, modelConfig, batchNo, status, payload, agentResponse);
         return new ModelTrainExecuteRespDTO(
-                trainConfig.getConfigCode(),
+                trainConfig.getTrainCode(),
                 batchNo,
                 modelConfig.getModelCode(),
                 trainData.size(),
@@ -146,17 +150,28 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                                                         ModelConfigTb modelConfig,
                                                         List<FeatureMapping> features) {
         var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery();
-        String timeGranularity = resolveTimeGranularity(features);
+        String timeGranularity = TextUtils.hasText(trainConfig.getTimeGranularity())
+                ? trainConfig.getTimeGranularity()
+                : resolveTimeGranularity(features);
         if (TextUtils.hasText(timeGranularity)) {
             query.eq(ModelTrainFeatureDataTb::getTimeGranularity, timeGranularity);
         }
-        if (TextUtils.hasText(trainConfig.getTrainStartDate())) {
+        boolean recentMode = "RECENT".equals(trainConfig.getTrainMode());
+        if (!recentMode && TextUtils.hasText(trainConfig.getTrainStartDate())) {
             query.ge(ModelTrainFeatureDataTb::getStatDate, trainConfig.getTrainStartDate());
         }
-        if (TextUtils.hasText(trainConfig.getTrainEndDate())) {
+        if (!recentMode && TextUtils.hasText(trainConfig.getTrainEndDate())) {
             query.le(ModelTrainFeatureDataTb::getStatDate, trainConfig.getTrainEndDate());
         }
         applyTrainScope(query, trainConfig, modelConfig.getModelCode());
+        if (recentMode) {
+            int recentPeriods = trainConfig.getRecentPeriods() == null ? 36 : trainConfig.getRecentPeriods();
+            query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId)
+                    .last("limit " + Math.max(recentPeriods, 1));
+            return modelTrainFeatureDataTbMapper.selectList(query).stream()
+                    .sorted(Comparator.comparing(ModelTrainFeatureDataTb::getStatDate).thenComparing(ModelTrainFeatureDataTb::getId))
+                    .toList();
+        }
         query.orderByAsc(ModelTrainFeatureDataTb::getStatDate).orderByAsc(ModelTrainFeatureDataTb::getId);
         return modelTrainFeatureDataTbMapper.selectList(query);
     }

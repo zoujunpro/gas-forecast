@@ -20,14 +20,14 @@ public class ModelTrainConfigTb {
     private Long id;
 
     /**
-     * 配置编码
+     * 训练配置编码
      */
-    private String configCode;
+    private String trainCode;
 
     /**
-     * 配置名称
+     * 训练配置名称
      */
-    private String configName;
+    private String trainName;
 
     /**
      * 智能体编码
@@ -90,34 +90,19 @@ public class ModelTrainConfigTb {
     private String trainEndDate;
 
     /**
-     * 训练频率：DAILY/WEEKLY/MONTHLY/SEASONAL/MANUAL
+     * 训练方式：RECENT/RANGE
      */
-    private String trainFrequency;
+    private String trainMode;
 
     /**
-     * 是否自动训练
+     * 时间格式：DAY/TENDAY/MONTH
      */
-    private Integer autoTrain;
+    private String timeGranularity;
 
     /**
-     * 是否启用回测
+     * 最近周期数
      */
-    private Integer enableBacktest;
-
-    /**
-     * 回测窗口
-     */
-    private Integer backtestWindow;
-
-    /**
-     * 模型选择策略
-     */
-    private String modelStrategy;
-
-    /**
-     * 业务训练参数
-     */
-    private Object bizConfigJson;
+    private Integer recentPeriods;
 
     /**
      * 是否启用

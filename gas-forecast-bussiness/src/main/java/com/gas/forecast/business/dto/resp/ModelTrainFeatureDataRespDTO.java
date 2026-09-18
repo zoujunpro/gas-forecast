@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 训练特征数据应答参数。
@@ -29,6 +31,8 @@ public record ModelTrainFeatureDataRespDTO(
         Double feature008,
         Double feature009,
         Double feature010,
+        Map<String, Double> featureValues,
+        List<ModelTrainFeatureValueRespDTO> featureDetails,
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
         Date createTime,
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

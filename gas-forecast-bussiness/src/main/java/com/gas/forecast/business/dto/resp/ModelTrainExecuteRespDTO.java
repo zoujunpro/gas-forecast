@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * 模型训练执行结果。
  */
 public record ModelTrainExecuteRespDTO(
-        String configCode,
+        String trainCode,
         String trainBatchNo,
         String modelCode,
         Integer datasetSize,
