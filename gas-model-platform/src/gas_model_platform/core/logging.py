@@ -64,6 +64,8 @@ def configure_logging(
         "loggers": {
             "uvicorn": {"level": log_level, "propagate": True, "handlers": []},
             "uvicorn.error": {"level": log_level, "propagate": True, "handlers": []},
+            # Prophet 每次拟合都会调用 CmdStan；只保留警告和错误，避免数百次底层日志刷屏。
+            "cmdstanpy": {"level": "WARNING", "propagate": True, "handlers": []},
             # 已由 RequestResponseLoggingMiddleware 输出更完整的访问日志，避免重复两行。
             "uvicorn.access": {"level": "WARNING", "propagate": False, "handlers": []},
         },

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from hashlib import sha256
+import logging
 from pathlib import Path
 import re
 from typing import Any
@@ -32,6 +33,9 @@ from gas_model_platform.schemas.modeling import (
     RollingBacktestPoint,
     TrainResult,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 ALIASES = {
@@ -366,6 +370,10 @@ def _fit_and_predict_original_split(
     train: pd.DataFrame,
     validation: pd.DataFrame,
     params: dict[str, Any],
+    prophet_cache: dict[
+        tuple[int, float], tuple[pd.DataFrame, pd.DataFrame]
+    ] | None = None,
+    cache_key: tuple[int, float] | None = None,
 ) -> tuple[np.ndarray, dict[str, float]]:
     train_with_climate, means, stds, fallback_mean, fallback_std = (
         _features_with_climatology(train, train)
@@ -377,9 +385,17 @@ def _fit_and_predict_original_split(
         fallback_mean,
         fallback_std,
     )
-    prophet_model = _fit_prophet(train_with_climate[["ds", "y"]], params["cps"])
-    prophet_train = _prophet_components(prophet_model, train_with_climate["ds"])
-    prophet_validation = _prophet_components(prophet_model, validation_with_climate["ds"])
+    cached = prophet_cache.get(cache_key) if prophet_cache is not None and cache_key else None
+    if cached is None:
+        prophet_model = _fit_prophet(train_with_climate[["ds", "y"]], params["cps"])
+        prophet_train = _prophet_components(prophet_model, train_with_climate["ds"])
+        prophet_validation = _prophet_components(
+            prophet_model, validation_with_climate["ds"]
+        )
+        if prophet_cache is not None and cache_key is not None:
+            prophet_cache[cache_key] = (prophet_train, prophet_validation)
+    else:
+        prophet_train, prophet_validation = cached
     train_features = _merge_prophet_features(train_with_climate, prophet_train)
     validation_features = _merge_prophet_features(
         validation_with_climate, prophet_validation
@@ -454,8 +470,19 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
     best_params: dict[str, Any] | None = None
     best_score = float("inf")
     best_fold_metrics: list[dict[str, Any]] = []
+    prophet_cache: dict[tuple[int, float], tuple[pd.DataFrame, pd.DataFrame]] = {}
+    total_candidates = 4 * len(population)
+    completed_candidates = 0
+
+    logger.info(
+        "江苏电力模型开始训练 rows=%d folds=%d generations=4 candidates_per_generation=%d",
+        len(clean),
+        len(splits),
+        len(population),
+    )
 
     for generation in range(4):
+        logger.info("江苏电力模型参数搜索 generation=%d/4 开始", generation + 1)
         generation_scores: list[float] = []
         for candidate_index, params in enumerate(population):
             fold_rmses: list[float] = []
@@ -472,8 +499,16 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
                         train,
                         validation,
                         params,
+                        prophet_cache=prophet_cache,
+                        cache_key=(fold_index, round(float(params["cps"]), 12)),
                     )
                 except Exception:
+                    logger.exception(
+                        "江苏电力模型回测失败 generation=%d candidate=%d fold=%d",
+                        generation + 1,
+                        candidate_index + 1,
+                        fold_index,
+                    )
                     continue
                 fold_rmses.append(metrics["rmse"])
                 current_fold_metrics.append(
@@ -486,6 +521,20 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
                         "metrics": metrics,
                     }
                 )
+                if (
+                    fold_index == 1
+                    or fold_index % 5 == 0
+                    or fold_index == len(splits)
+                ):
+                    logger.info(
+                        "江苏电力模型回测进度 generation=%d/4 candidate=%d/%d "
+                        "fold=%d/%d",
+                        generation + 1,
+                        candidate_index + 1,
+                        len(population),
+                        fold_index,
+                        len(splits),
+                    )
             average_rmse = (
                 float(np.mean(fold_rmses)) if fold_rmses else float("inf")
             )
@@ -497,6 +546,19 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
                     "params": dict(params),
                     "metrics": {"rmse": average_rmse},
                 }
+            )
+            completed_candidates += 1
+            logger.info(
+                "江苏电力模型训练进度 generation=%d/4 candidate=%d/%d "
+                "completed=%d/%d folds=%d rmse=%.6f prophet_fit_count=%d",
+                generation + 1,
+                candidate_index + 1,
+                len(population),
+                completed_candidates,
+                total_candidates,
+                len(fold_rmses),
+                average_rmse,
+                len(prophet_cache),
             )
             if average_rmse < best_score:
                 best_score = average_rmse
@@ -599,6 +661,13 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
     )
     actual = test_final["y"].to_numpy(dtype=float)
     final_metrics = calculate_metrics(actual, predicted)
+    logger.info(
+        "江苏电力模型训练完成 candidates=%d folds=%d prophet_fit_count=%d rmse=%.6f",
+        completed_candidates,
+        len(splits),
+        len(prophet_cache) + 2,
+        final_metrics["rmse"],
+    )
     residuals = actual - predicted
     artifact = JiangshuDianliV1Artifact(
         prophet_model=prophet_model,

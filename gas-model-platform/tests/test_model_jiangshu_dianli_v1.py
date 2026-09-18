@@ -16,10 +16,13 @@ from gas_model_platform.models.short_agent import model_jiangshu_dianli_v1 as sh
 
 
 class FakeProphet:
+    fit_count = 0
+
     def __init__(self, **kwargs) -> None:
         self.kwargs = kwargs
 
     def fit(self, frame: pd.DataFrame):
+        type(self).fit_count += 1
         self.level = float(frame["y"].mean())
         return self
 
@@ -135,6 +138,7 @@ def test_jiangshu_dianli_v1_rejects_non_continuous_future_dates() -> None:
 
 
 def test_jiangshu_dianli_v1_smoke_training_pipeline(monkeypatch) -> None:
+    FakeProphet.fit_count = 0
     monkeypatch.setattr(short_engine, "_prophet_class", lambda: FakeProphet)
     monkeypatch.setattr(short_engine, "LGBMRegressor", FakeResidualModel)
     dates = pd.date_range("2025-01-01", periods=880, freq="D")
@@ -150,3 +154,5 @@ def test_jiangshu_dianli_v1_smoke_training_pipeline(monkeypatch) -> None:
     assert len(output.candidate_evaluations) == 16
     assert output.n_folds == 1
     assert output.metrics["mape"] >= 0
+    # 相同回测折和相同 cps 复用 Prophet，避免原实现的 18 次重复拟合。
+    assert FakeProphet.fit_count <= 15

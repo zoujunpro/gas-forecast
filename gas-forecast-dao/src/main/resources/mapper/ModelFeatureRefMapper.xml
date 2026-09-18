@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelFeatureRefMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelFeatureRef">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="modelId" column="model_id" jdbcType="BIGINT"/>
+            <result property="featureId" column="feature_id" jdbcType="BIGINT"/>
+            <result property="requiredFlag" column="required_flag" jdbcType="TINYINT"/>
+            <result property="featureOrder" column="feature_order" jdbcType="INTEGER"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="createdBy" column="created_by" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,model_id,feature_id,required_flag,feature_order,created_at,
+        created_by
+    </sql>
+</mapper>
