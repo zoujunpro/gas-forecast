@@ -33,13 +33,20 @@
           :align="field.align"
           show-overflow-tooltip
         >
+          <template #header>
+            <el-tooltip v-if="field.tooltip" :content="field.tooltip" placement="top">
+              <span class="column-header-with-tip">{{ field.label }}</span>
+            </el-tooltip>
+            <span v-else>{{ field.label }}</span>
+          </template>
           <template #default="{ row }">
             <ManagementTableCell :field="field" :row="row" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right" class-name="action-column" label-class-name="action-column">
+        <el-table-column label="操作" width="210" fixed="right" class-name="action-column" label-class-name="action-column">
           <template #default="{ row }">
-            <PermissionButton link type="primary" :icon="Setting" permission="model:config:update" @click="openConfig(row)">模型配置</PermissionButton>
+            <PermissionButton link type="primary" :icon="Edit" permission="model:config:update" @click="openEdit(row)">编辑</PermissionButton>
+            <PermissionButton link type="success" :icon="Setting" permission="model:config:update" @click="openConfig(row)">配置</PermissionButton>
             <PermissionButton link type="danger" :icon="Delete" permission="model:config:delete" @click="removeRow(row)">删除</PermissionButton>
           </template>
         </el-table-column>
@@ -57,7 +64,7 @@
       </template>
     </AppTablePanel>
 
-    <AppDialog v-model="dialogVisible" eyebrow="模型管理" :title="dialogTitle" width="720px" align-center>
+    <AppDialog v-model="dialogVisible" eyebrow="模型管理" :title="dialogTitle" width="min(960px, calc(100vw - 32px))" align-center>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
         <el-form-item label="模型编码" prop="configCode">
           <el-input :model-value="form.configCode || '保存后自动生成'" disabled />
@@ -65,33 +72,12 @@
         <el-form-item label="模型名称" prop="configName">
           <el-input v-model="form.configName" clearable maxlength="128" />
         </el-form-item>
+        <el-form-item label="模型版本" prop="modelVersion">
+          <el-input v-model="form.modelVersion" clearable maxlength="32" placeholder="例如 V1.0" />
+        </el-form-item>
         <el-form-item label="所属智能体" prop="agentCode">
           <el-select v-model="form.agentCode" class="form-control" @change="handleAgentChange">
             <el-option v-for="item in modelAgentOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="isWinterAgent" label="区域" prop="regionCodes">
-          <el-select v-model="form.regionCodes" class="form-control" multiple collapse-tags collapse-tags-tooltip filterable @change="handleWinterRegionsChange">
-            <el-option label="全部" value="ALL" />
-            <el-option v-for="item in regionOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-else label="区域" prop="regionCode">
-          <el-select v-model="form.regionCodes" class="form-control" multiple collapse-tags collapse-tags-tooltip filterable :disabled="hasCustomerScope" @change="handleNonWinterRegionsChange">
-            <el-option label="全部" value="ALL" />
-            <el-option v-for="item in regionOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="!isWinterAgent" label="行业" prop="industryCode">
-          <el-select v-model="form.industryCodes" class="form-control" multiple collapse-tags collapse-tags-tooltip filterable :disabled="hasCustomerScope" @change="handleNonWinterIndustriesChange">
-            <el-option label="全部" value="ALL" />
-            <el-option v-for="item in industryOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="!isWinterAgent" label="客户" prop="customerCode">
-          <el-select v-model="form.customerCodes" class="form-control" multiple collapse-tags collapse-tags-tooltip filterable @change="handleCustomerChange">
-            <el-option label="全部" value="ALL" />
-            <el-option v-for="item in filteredCustomerOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         <el-form-item class="form-wide" label="描述" prop="description">
@@ -103,14 +89,131 @@
         <el-button type="primary" :loading="saving" @click="saveData">保存</el-button>
       </template>
     </AppDialog>
+
+    <AppDialog v-model="configDialogVisible" eyebrow="模型配置" :title="configDialogTitle" width="min(1080px, calc(100vw - 32px))" align-center>
+      <div class="config-overview">
+        <div class="model-avatar">
+          <el-icon><Setting /></el-icon>
+        </div>
+        <div class="model-title">
+          <div class="model-title-row">
+            <strong>{{ configForm.configName || '模型配置' }}</strong>
+            <el-tag type="success" effect="light">启用</el-tag>
+          </div>
+          <span>基于气象、能源价格等多源特征，预测冬季各地区天然气需求。</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">模型编码</span>
+          <strong>{{ configForm.configCode || '-' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">所属智能体</span>
+          <strong>{{ configForm.agentName || '-' }}</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">模型版本</span>
+          <strong>{{ configForm.modelVersion || '-' }}</strong>
+        </div>
+      </div>
+
+      <el-form class="config-form" :model="configForm" label-position="top">
+        <section class="config-section">
+          <header class="section-header">
+            <div class="section-title">
+              <el-icon><Location /></el-icon>
+              <div>
+                <h3>适用范围</h3>
+                <span>选择该模型适用的地区，可选择多个地区，或选择所有地区</span>
+              </div>
+            </div>
+          </header>
+          <div class="scope-row">
+            <el-radio-group v-model="regionScopeMode" @change="handleRegionScopeModeChange">
+              <el-radio value="CUSTOM">指定地区</el-radio>
+              <el-radio value="ALL">所有地区</el-radio>
+            </el-radio-group>
+          </div>
+          <el-form-item label="地区" required>
+            <el-select
+              v-model="configForm.regionCodes"
+              class="form-control"
+              multiple
+              filterable
+              placeholder="请选择地区"
+              @change="handleRegionCodesChange"
+            >
+              <el-option v-for="item in regionOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+        </section>
+
+        <section class="config-section">
+          <header class="section-header">
+            <div class="section-title">
+              <el-icon><Histogram /></el-icon>
+              <div>
+                <h3>输入特征</h3>
+                <span>选择模型训练需要的输入特征</span>
+              </div>
+            </div>
+            <div class="feature-actions">
+              <el-tag class="selected-count" effect="plain">已选 {{ selectedFeatureCount }}</el-tag>
+              <el-button plain :disabled="!configForm.featureRefs.length" @click="clearSelectedFeatures">清空选择</el-button>
+            </div>
+          </header>
+          <div class="feature-picker-panel">
+            <div class="feature-picker-head">
+              <span>特征列表</span>
+            </div>
+            <el-table
+              v-loading="featureLoading"
+              class="feature-select-table"
+              :data="featureOptions"
+              row-key="id"
+              border
+              max-height="360"
+              empty-text="暂无特征"
+              :row-class-name="featureRowClassName"
+              @row-click="toggleFeatureSelection"
+            >
+              <el-table-column label="" width="48" align="center">
+                <template #default="{ row }">
+                  <el-checkbox :model-value="isFeatureSelected(row)" @click.stop @change="toggleFeatureSelection(row)" />
+                </template>
+              </el-table-column>
+              <el-table-column type="index" label="序号" width="64" />
+              <el-table-column prop="featureName" label="特征名称" min-width="160" show-overflow-tooltip />
+              <el-table-column prop="featureColumn" label="特征字段" min-width="150" show-overflow-tooltip />
+              <el-table-column label="时间跨度" width="110">
+                <template #default="{ row }">
+                  <el-tag effect="plain">{{ timeGranularityText(row.timeGranularity) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="featureCode" label="特征编号" min-width="140" show-overflow-tooltip />
+              <el-table-column label="状态" width="100" align="center">
+                <template #default="{ row }">
+                  <el-tag v-if="isFeatureSelected(row)" type="success" effect="light">已选中</el-tag>
+                  <el-tag v-else type="info" effect="plain">未选择</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </section>
+      </el-form>
+
+      <template #footer>
+        <el-button type="info" plain @click="configDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="configSaving" @click="saveConfig">保存配置</el-button>
+      </template>
+    </AppDialog>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Delete, Plus, Search, Setting } from '@element-plus/icons-vue'
-import { createRow, deleteRow, listPage, updateRow } from '@/api/management'
+import { Delete, Edit, Histogram, Location, Plus, Search, Setting } from '@element-plus/icons-vue'
+import { createRow, deleteRow, listPage, postJson, updateRow } from '@/api/management'
 import { usePageQuery } from '@/composables/usePageQuery'
 import AppDialog from '@/components/AppDialog.vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -126,32 +229,52 @@ defineOptions({ name: 'ModelConfigManagement' })
 const endpoint = '/model-config'
 const formRef = ref<FormInstance>()
 const saving = ref(false)
+const configSaving = ref(false)
 const dialogVisible = ref(false)
+const configDialogVisible = ref(false)
 const editingId = ref<number | null>(null)
+const configuringId = ref<number | null>(null)
 const form = reactive({
   configCode: '',
   configName: '',
+  modelVersion: 'V1.0',
   agentCode: 'winter-supply',
   sceneCode: 'WINTER_SUPPLY',
-  regionCode: '',
-  regionCodes: ['ALL'] as string[],
-  industryCode: '',
-  industryCodes: ['ALL'] as string[],
-  customerCode: '',
-  customerCodes: ['ALL'] as string[],
   description: ''
+})
+const configForm = reactive({
+  configCode: '',
+  configName: '',
+  modelVersion: '',
+  agentName: '',
+  sceneCode: '',
+  regionCodes: ['ALL'] as string[],
+  featureRefs: [] as FeatureRefRow[]
 })
 
 interface SelectOption {
   label: string
   value: string
-  regionCode?: string
-  industryCode?: string
+}
+
+interface FeatureOption {
+  id: number
+  featureCode: string
+  featureName: string
+  featureColumn: string
+  timeGranularity: string
+}
+
+interface FeatureRefRow extends FeatureOption {
+  featureId: number
+  requiredFlag: number
+  featureOrder: number
 }
 
 const regionOptions = ref<SelectOption[]>([])
-const industryOptions = ref<SelectOption[]>([])
-const customerOptions = ref<SelectOption[]>([])
+const featureOptions = ref<FeatureOption[]>([])
+const featureLoading = ref(false)
+const regionScopeMode = ref<'ALL' | 'CUSTOM'>('ALL')
 
 const formRules: FormRules = {
   configName: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
@@ -176,119 +299,82 @@ const {
   fetcher: ({ page, size, keyword }) => listPage(endpoint, { page, size, keyword: keyword || undefined })
 })
 
-const dialogTitle = computed(() => editingId.value ? '模型配置' : '新增模型')
+const dialogTitle = computed(() => editingId.value ? '编辑模型' : '新增模型')
+const configDialogTitle = computed(() => `${configForm.configName || '模型'}配置`)
 const selectedAgent = computed(() => modelAgentOptions.find((item) => item.value === form.agentCode))
-const isWinterAgent = computed(() => form.sceneCode === 'WINTER_SUPPLY')
-const hasCustomerScope = computed(() => form.customerCodes.some((code) => code !== 'ALL'))
-const filteredCustomerOptions = computed(() => {
-  return customerOptions.value.filter((item) => {
-    const selectedRegionCodes = form.regionCodes.filter((code) => code !== 'ALL')
-    const selectedIndustryCodes = form.industryCodes.filter((code) => code !== 'ALL')
-    if (selectedRegionCodes.length && !selectedRegionCodes.includes(item.regionCode || '')) return false
-    if (selectedIndustryCodes.length && !selectedIndustryCodes.includes(item.industryCode || '')) return false
-    return true
-  })
-})
-
+const selectedFeatureCount = computed(() => configForm.featureRefs.length)
 const syncSceneCode = () => {
   form.sceneCode = selectedAgent.value?.sceneCode || ''
 }
 
 const handleAgentChange = () => {
   syncSceneCode()
-  if (isWinterAgent.value) {
-    form.regionCodes = ['ALL']
-    form.regionCode = ''
-  } else {
-    form.regionCodes = ['ALL']
-  }
-  form.industryCodes = ['ALL']
-  form.customerCodes = ['ALL']
-  form.industryCode = ''
-  form.customerCode = ''
 }
 
 const resetForm = (row?: Record<string, any>) => {
   editingId.value = row?.id ?? null
   form.configCode = row?.configCode || ''
   form.configName = row?.configName || ''
+  form.modelVersion = row?.modelVersion || 'V1.0'
   form.agentCode = row?.agentCode || 'winter-supply'
   form.sceneCode = row?.sceneCode || selectedAgent.value?.sceneCode || 'WINTER_SUPPLY'
-  form.regionCode = row?.regionCode || ''
-  form.regionCodes = row?.regionCodes?.length ? row.regionCodes : ['ALL']
-  form.industryCode = row?.industryCode || ''
-  form.industryCodes = row?.industryCodes?.length ? row.industryCodes : ['ALL']
-  form.customerCode = row?.customerCode || ''
-  form.customerCodes = row?.customerCodes?.length ? row.customerCodes : ['ALL']
   form.description = row?.description || ''
   syncSceneCode()
-  if (isWinterAgent.value && !form.regionCodes.length) {
-    form.regionCodes = ['ALL']
-  }
-  if (!isWinterAgent.value) {
-    form.regionCodes = row?.regionCodes?.length ? row.regionCodes : ['ALL']
-    form.industryCodes = row?.industryCodes?.length ? row.industryCodes : ['ALL']
-    form.customerCodes = row?.customerCodes?.length ? row.customerCodes : ['ALL']
+}
+
+const resetConfigForm = (row: Record<string, any>) => {
+  configuringId.value = row.id
+  configForm.configCode = row.configCode || ''
+  configForm.configName = row.configName || ''
+  configForm.modelVersion = row.modelVersion || 'V1.0'
+  configForm.agentName = row.agentName || ''
+  configForm.sceneCode = row.sceneCode || ''
+  configForm.regionCodes = row.regionCodes?.length ? [...row.regionCodes] : ['ALL']
+  regionScopeMode.value = configForm.regionCodes.length && !configForm.regionCodes.includes('ALL') ? 'CUSTOM' : 'ALL'
+  configForm.featureRefs = (row.featureRefs || []).map((item: Record<string, any>, index: number) => ({
+    id: item.featureId,
+    featureId: item.featureId,
+    featureCode: item.featureCode,
+    featureName: item.featureName,
+    featureColumn: item.featureColumn,
+    timeGranularity: item.timeGranularity,
+    requiredFlag: item.requiredFlag ?? 0,
+    featureOrder: item.featureOrder ?? index + 1
+  }))
+  if (!configForm.regionCodes.length) {
+    configForm.regionCodes = ['ALL']
   }
 }
 
 const loadScopeOptions = async () => {
-  const [regions, industries, customers] = await Promise.all([
-    listPage('/base-region', { page: 1, size: 200 }),
-    listPage('/base-industry', { page: 1, size: 200 }),
-    listPage('/base-customer', { page: 1, size: 200 })
-  ])
+  const regions = await listPage('/base-region', { page: 1, size: 1000 })
   regionOptions.value = regions.records.map((item: Record<string, any>) => ({
     label: item.regionName || item.regionCode,
     value: item.regionCode
   })).filter((item: SelectOption) => item.value)
-  industryOptions.value = industries.records.map((item: Record<string, any>) => ({
-    label: item.industryName || item.industryCode,
-    value: item.industryCode
-  })).filter((item: SelectOption) => item.value)
-  customerOptions.value = customers.records.map((item: Record<string, any>) => ({
-    label: item.customerName || item.customerCode,
-    value: item.customerCode,
-    regionCode: item.regionCode,
-    industryCode: item.industryCode
-  })).filter((item: SelectOption) => item.value)
+  if (regionScopeMode.value === 'ALL') {
+    configForm.regionCodes = regionOptions.value.map((item) => item.value)
+  }
 }
 
-const handleWinterRegionsChange = (values: string[]) => {
-  if (!values.length || values[values.length - 1] === 'ALL') {
-    form.regionCodes = ['ALL']
-    return
+const loadFeatureOptions = async () => {
+  featureLoading.value = true
+  try {
+    const features = await listPage('/model-feature-definition', { page: 1, size: 500 })
+    featureOptions.value = features.records
+      .filter((item: Record<string, any>) => item.enabled === 1)
+      .map((item: Record<string, any>) => ({
+        id: item.id,
+        featureCode: item.featureCode,
+        featureName: item.featureName,
+        featureColumn: item.featureColumn,
+        timeGranularity: item.timeGranularity
+      }))
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '特征列表加载失败')
+  } finally {
+    featureLoading.value = false
   }
-  form.regionCodes = values.filter((value) => value !== 'ALL')
-}
-
-const handleNonWinterRegionsChange = (values: string[]) => {
-  if (!values.length || values[values.length - 1] === 'ALL') {
-    form.regionCodes = ['ALL']
-    return
-  }
-  form.regionCodes = values.filter((value) => value !== 'ALL')
-}
-
-const handleNonWinterIndustriesChange = (values: string[]) => {
-  if (!values.length || values[values.length - 1] === 'ALL') {
-    form.industryCodes = ['ALL']
-    return
-  }
-  form.industryCodes = values.filter((value) => value !== 'ALL')
-}
-
-const handleCustomerChange = (values: string[]) => {
-  if (!values.length || values[values.length - 1] === 'ALL') {
-    form.customerCodes = ['ALL']
-    return
-  }
-  form.customerCodes = values.filter((value) => value !== 'ALL')
-  const selectedCustomers = customerOptions.value.filter((item) => form.customerCodes.includes(item.value))
-  const regionCodes = Array.from(new Set(selectedCustomers.map((item) => item.regionCode).filter(Boolean))) as string[]
-  const industryCodes = Array.from(new Set(selectedCustomers.map((item) => item.industryCode).filter(Boolean))) as string[]
-  form.regionCodes = regionCodes.length ? regionCodes : ['ALL']
-  form.industryCodes = industryCodes.length ? industryCodes : ['ALL']
 }
 
 const openCreate = () => {
@@ -296,9 +382,23 @@ const openCreate = () => {
   dialogVisible.value = true
 }
 
-const openConfig = (row: Record<string, any>) => {
+const openEdit = (row: Record<string, any>) => {
   resetForm(row)
   dialogVisible.value = true
+}
+
+const openConfig = async (row: Record<string, any>) => {
+  resetConfigForm(row)
+  configDialogVisible.value = true
+  if (!regionOptions.value.length) {
+    await loadScopeOptions()
+  }
+  if (regionScopeMode.value === 'ALL') {
+    configForm.regionCodes = regionOptions.value.map((item) => item.value)
+  }
+  if (!featureOptions.value.length) {
+    await loadFeatureOptions()
+  }
 }
 
 const saveData = async () => {
@@ -323,29 +423,98 @@ const saveData = async () => {
 }
 
 const buildPayload = () => {
-  if (isWinterAgent.value) {
-    const regionCodes = form.regionCodes.includes('ALL') ? [] : form.regionCodes
-    return {
-      ...form,
-      regionCode: '',
-      regionCodes,
-      industryCode: '',
-      customerCode: ''
-    }
-  }
   return {
-    ...form,
-    regionCode: '',
-    industryCode: '',
-    customerCode: '',
-    regionCodes: hasCustomerScope.value ? [] : form.regionCodes.filter((code) => code !== 'ALL'),
-    industryCodes: hasCustomerScope.value ? [] : form.industryCodes.filter((code) => code !== 'ALL'),
-    customerCodes: hasCustomerScope.value ? form.customerCodes.filter((code) => code !== 'ALL') : []
+    configCode: form.configCode,
+    configName: form.configName,
+    modelVersion: form.modelVersion,
+    agentCode: form.agentCode,
+    sceneCode: form.sceneCode,
+    description: form.description
+  }
+}
+
+const handleRegionScopeModeChange = () => {
+  configForm.regionCodes = regionScopeMode.value === 'ALL'
+    ? regionOptions.value.map((item) => item.value)
+    : []
+}
+
+const handleRegionCodesChange = () => {
+  regionScopeMode.value = configForm.regionCodes.length === regionOptions.value.length ? 'ALL' : 'CUSTOM'
+}
+
+const isFeatureSelected = (row: FeatureOption) => {
+  return configForm.featureRefs.some((item) => item.featureId === row.id)
+}
+
+const toggleFeatureSelection = (feature: FeatureOption) => {
+  if (isFeatureSelected(feature)) {
+    configForm.featureRefs = configForm.featureRefs.filter((item) => item.featureId !== feature.id)
+    normalizeFeatureOrder()
+    return
+  }
+  configForm.featureRefs.push({
+    ...feature,
+    featureId: feature.id,
+    requiredFlag: 0,
+    featureOrder: configForm.featureRefs.length + 1
+  })
+  normalizeFeatureOrder()
+}
+
+const featureRowClassName = ({ row }: { row: FeatureOption }) => {
+  return isFeatureSelected(row) ? 'selected-feature-row' : ''
+}
+
+const clearSelectedFeatures = () => {
+  configForm.featureRefs = []
+}
+
+const normalizeFeatureOrder = () => {
+  configForm.featureRefs.forEach((item, index) => {
+    item.featureOrder = index + 1
+  })
+}
+
+const timeGranularityText = (value: string) => {
+  return ({ DAY: '日', TENDAY: '旬', MONTH: '月', YEAR: '年' } as Record<string, string>)[value] || value || '-'
+}
+
+const buildConfigPayload = () => {
+  return {
+    id: configuringId.value,
+    regionCodes: configForm.regionCodes,
+    industryCodes: [],
+    customerCodes: [],
+    featureRefs: configForm.featureRefs.map((item, index) => ({
+      featureId: item.featureId,
+      requiredFlag: item.requiredFlag,
+      featureOrder: index + 1
+    }))
+  }
+}
+
+const saveConfig = async () => {
+  if (!configuringId.value) return
+  if (regionScopeMode.value === 'CUSTOM' && !configForm.regionCodes.length) {
+    ElMessage.warning('请至少选择一个地区')
+    return
+  }
+  configSaving.value = true
+  try {
+    await postJson(`${endpoint}/updateScope`, buildConfigPayload())
+    ElMessage.success('配置保存成功')
+    configDialogVisible.value = false
+    await loadData()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '配置保存失败')
+  } finally {
+    configSaving.value = false
   }
 }
 
 const removeRow = async (row: Record<string, any>) => {
-  await ElMessageBox.confirm('删除模型配置后，对应作用范围配置也会同步删除，确认继续？', '删除确认', { type: 'warning' })
+  await ElMessageBox.confirm('删除模型后，对应作用范围配置也会同步删除，确认继续？', '删除确认', { type: 'warning' })
   try {
     await deleteRow(endpoint, row.id)
     ElMessage.success('删除成功')
@@ -356,7 +525,6 @@ const removeRow = async (row: Record<string, any>) => {
 }
 
 onMounted(() => {
-  void loadScopeOptions()
   void loadData()
 })
 </script>
@@ -387,6 +555,293 @@ onMounted(() => {
   grid-column: 1 / -1;
 }
 
+.config-overview {
+  display: grid;
+  grid-template-columns: 44px minmax(240px, 1fr) repeat(3, minmax(120px, 0.42fr));
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: #F8FAFC;
+  border: 1px solid #E6EAF0;
+  border-radius: 8px;
+}
+
+.model-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--app-primary);
+  font-size: 22px;
+  background: #EAF4FF;
+  border-radius: 50%;
+}
+
+.model-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.model-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.model-title-row strong {
+  overflow: hidden;
+  color: #101828;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-title span {
+  overflow: hidden;
+  color: #667085;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.summary-label {
+  color: #667085;
+  font-size: 12px;
+}
+
+.summary-item strong {
+  overflow: hidden;
+  color: #101828;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.config-section {
+  border: 1px solid #E6EAF0;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.section-title > .el-icon {
+  margin-top: 2px;
+  color: var(--app-primary);
+  font-size: 20px;
+}
+
+.section-title div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.section-title span {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.feature-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.feature-picker-panel {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #F8FAFC;
+  border: 1px solid #D6E0EA;
+  border-radius: 8px;
+}
+
+.feature-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.feature-picker-head > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-count {
+  font-weight: 600;
+}
+
+.feature-select-table {
+  width: 100%;
+}
+
+.feature-select-table :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+.feature-select-table :deep(.selected-feature-row) {
+  background: #F0F7FF;
+}
+
+.feature-select-table :deep(.selected-feature-row td.el-table__cell) {
+  background: #F0F7FF;
+}
+
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.scope-row {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 12px;
+}
+
+.scope-region-field {
+  grid-column: 1 / -1;
+}
+
+.scope-card {
+  min-height: 260px;
+  padding: 12px;
+  background: #F8FAFC;
+  border: 1px solid #E6EAF0;
+  border-radius: 8px;
+}
+
+.scope-card.disabled {
+  opacity: 0.65;
+}
+
+.scope-select-layout {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) 240px;
+  gap: 12px;
+}
+
+.scope-select-main {
+  min-width: 0;
+}
+
+.selected-region-panel {
+  min-height: 234px;
+  padding: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E6EAF0;
+  border-radius: 8px;
+}
+
+.selected-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.selected-tags {
+  display: flex;
+  align-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 160px;
+}
+
+.empty-selection {
+  color: #98A2B3;
+  font-size: 13px;
+}
+
+.scope-search {
+  margin-bottom: 8px;
+}
+
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.region-group-list {
+  max-height: 184px;
+  overflow: auto;
+}
+
+.region-group + .region-group {
+  margin-top: 8px;
+}
+
+.region-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.region-group :deep(.el-checkbox-group) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  padding-left: 12px;
+}
+
+.region-group :deep(.el-checkbox) {
+  height: 22px;
+  margin-right: 0;
+}
+
 .dialog-form :deep(.el-form-item) {
   margin-bottom: 16px;
 }
@@ -397,12 +852,36 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.column-header-with-tip {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 760px) {
   .search-input {
     width: 100%;
   }
 
   .dialog-form {
+    grid-template-columns: 1fr;
+  }
+
+  .config-overview,
+  .scope-grid,
+  .scope-select-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .model-avatar {
+    display: none;
+  }
+
+  .feature-actions {
+    width: 100%;
+  }
+
+  .region-group :deep(.el-checkbox-group) {
     grid-template-columns: 1fr;
   }
 }

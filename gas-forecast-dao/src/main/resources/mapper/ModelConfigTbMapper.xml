@@ -8,6 +8,7 @@
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
             <result property="modelName" column="model_name" jdbcType="VARCHAR"/>
+            <result property="modelVersion" column="model_version" jdbcType="VARCHAR"/>
             <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
             <result property="description" column="description" jdbcType="VARCHAR"/>
             <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
@@ -17,7 +18,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,model_code,model_name,agent_code,description,created_by,
+        id,model_code,model_name,model_version,agent_code,description,created_by,
         created_at,updated_at,created_by_name
     </sql>
 </mapper>

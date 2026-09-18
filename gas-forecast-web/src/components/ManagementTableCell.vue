@@ -3,8 +3,8 @@
     {{ value === 1 ? '启用' : '停用' }}
   </el-tag>
   <ManagementStatusTag v-else-if="displayType === 'status'" :status="value" />
-  <el-tag v-else-if="displayType === 'permissionType'" :type="value === 'MENU' ? 'primary' : 'warning'" effect="plain">
-    {{ value === 'MENU' ? '菜单' : '按钮' }}
+  <el-tag v-else-if="displayType === 'permissionType'" :type="permissionTypeTagType" effect="plain">
+    {{ permissionTypeText }}
   </el-tag>
   <el-tag v-else-if="displayType === 'tag'" :type="tagType" effect="plain">
     {{ mappedValue }}
@@ -29,6 +29,16 @@ const value = computed(() => props.row[props.field.prop])
 const displayType = computed(() => props.field.displayType || (Array.isArray(value.value) ? 'array' : 'text'))
 const mappedValue = computed(() => props.field.enumMap?.[String(value.value)] || displayValue(value.value))
 const tagType = computed(() => props.field.tagTypeMap?.[String(value.value)] || 'info')
+const permissionTypeText = computed(() => {
+  if (value.value === 'DIRECTORY') return '目录'
+  if (value.value === 'MENU') return '菜单'
+  return '按钮'
+})
+const permissionTypeTagType = computed(() => {
+  if (value.value === 'DIRECTORY') return 'info'
+  if (value.value === 'MENU') return 'primary'
+  return 'warning'
+})
 
 const formatDateTime = (rawValue: unknown, type: string) => {
   const text = String(displayValue(rawValue))

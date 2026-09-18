@@ -1,6 +1,5 @@
 package com.gas.forecast.business.dto.req;
 
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
@@ -18,7 +17,6 @@ public record DataFileInfoPageReqDTO(
          * 每页条数。
          */
         @Min(value = 1, message = "每页条数不能小于1")
-        @Max(value = 200, message = "每页条数不能超过200")
         Integer size,
 
         /**

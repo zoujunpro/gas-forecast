@@ -2,8 +2,9 @@ use gas_data;
 
 create table if not exists model_config_tb (
     id bigint unsigned not null auto_increment comment '主键ID',
-    config_code varchar(64) not null comment '配置编码',
-    config_name varchar(128) not null comment '配置名称',
+    model_code varchar(64) not null comment '模型编码',
+    model_name varchar(128) not null comment '模型名称',
+    model_version varchar(32) not null default 'V1.0' comment '模型版本',
     agent_code varchar(64) not null comment '智能体编码',
     scene_code varchar(32) not null comment '场景编码：WINTER_SUPPLY/MONTHLY_SALES/SHORT_CUSTOMER',
     enabled tinyint not null default 1 comment '是否启用',
@@ -11,21 +12,21 @@ create table if not exists model_config_tb (
     create_time datetime not null default current_timestamp comment '创建时间',
     update_time datetime not null default current_timestamp on update current_timestamp comment '更新时间',
     primary key (id),
-    unique key uk_config_code (config_code),
+    unique key uk_model_code (model_code),
     key idx_model_config_agent (agent_code, enabled),
     key idx_model_config_scene (scene_code, enabled)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci comment='模型配置表';
 
 create table if not exists model_config_scope_tb (
     id bigint unsigned not null auto_increment comment '主键ID',
-    model_config_id bigint unsigned not null comment '模型配置ID',
+    model_code varchar(64) not null comment '模型配置编码',
     region_code varchar(32) default null comment '地区编码',
     industry_code varchar(32) default null comment '行业编码',
     customer_code varchar(64) default null comment '客户编码',
     enabled tinyint not null default 1 comment '是否启用',
     create_time datetime not null default current_timestamp comment '创建时间',
     primary key (id),
-    key idx_model_config (model_config_id),
+    key idx_model_config (model_code),
     key idx_region (region_code),
     key idx_customer (customer_code),
     key idx_scope_lookup (region_code, industry_code, customer_code, enabled)
@@ -36,6 +37,8 @@ create table if not exists model_train_config_tb (
     config_code varchar(64) not null comment '配置编码',
     config_name varchar(128) not null comment '配置名称',
     agent_code varchar(64) not null comment '智能体编码',
+    model_code varchar(64) default null comment '所属模型编码',
+    model_name varchar(128) default null comment '所属模型名称',
     scope_type varchar(32) not null comment '作用范围：REGION/CUSTOMER/INDUSTRY/ALL',
     region_code varchar(64) default null comment '区域编号',
     region_name varchar(64) default null comment '区域名称',
@@ -60,6 +63,7 @@ create table if not exists model_train_config_tb (
     primary key (id),
     unique key uk_train_config_code (config_code),
     key idx_train_config_agent (agent_code, enabled),
+    key idx_train_config_model (model_code),
     key idx_train_config_scope (agent_code, scope_type, region_code, customer_code, industry_code)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci comment='智能体训练配置表';
 

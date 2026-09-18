@@ -1,6 +1,8 @@
 package com.gas.forecast.dao.domain;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -14,10 +16,16 @@ public class SysPermissionTb {
     private Long id;
     private Long parentId;
     private String permissionName;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String path;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String component;
     private String permissionType;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String perms;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String buttonCode;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String icon;
     private Integer sortNo;
     private Integer hidden;

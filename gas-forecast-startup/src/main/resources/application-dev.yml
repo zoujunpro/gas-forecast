@@ -18,6 +18,8 @@ spring:
       database: ${REDIS_DATABASE:0}
 
 gas:
+  agent:
+    train-url: ${GAS_AGENT_TRAIN_URL:http://127.0.0.1:8090/api/v1/train}
   cache:
     redis-retry-interval: ${CACHE_REDIS_RETRY_INTERVAL:30s}
     local-max-size: ${CACHE_LOCAL_MAX_SIZE:10000}

@@ -21,6 +21,9 @@ public record ModelConfigUpdateReqDTO(
         @Size(max = 128, message = "配置名称长度不能超过128个字符")
         String configName,
 
+        @Size(max = 32, message = "模型版本长度不能超过32个字符")
+        String modelVersion,
+
         @NotBlank(message = "智能体编码不能为空")
         @Size(max = 64, message = "智能体编码长度不能超过64个字符")
         String agentCode,

@@ -19,7 +19,7 @@
 
       <template #actions>
         <slot name="table-actions" :reload="loadData" />
-        <PermissionButton type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">新增</PermissionButton>
+        <PermissionButton v-if="!config.readonly" type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">新增</PermissionButton>
       </template>
 
       <AppTable v-loading="loading" :data="records" stripe border>
@@ -34,11 +34,17 @@
           :align="field.align"
           show-overflow-tooltip
         >
+          <template #header>
+            <el-tooltip v-if="field.tooltip" :content="field.tooltip" placement="top">
+              <span class="column-header-with-tip">{{ field.label }}</span>
+            </el-tooltip>
+            <span v-else>{{ field.label }}</span>
+          </template>
           <template #default="{ row }">
             <ManagementTableCell :field="field" :row="row" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right" class-name="action-column" label-class-name="action-column">
+        <el-table-column v-if="!config.readonly" label="操作" width="150" fixed="right" class-name="action-column" label-class-name="action-column">
           <template #default="{ row }">
             <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)">编辑</PermissionButton>
             <PermissionButton link type="danger" :permission="config.permissions?.delete" @click="removeRow(row)">删除</PermissionButton>
@@ -234,6 +240,12 @@ defineExpose({ loadData })
 .dialog-form :deep(.el-select__wrapper),
 .dialog-form :deep(.el-input-number) {
   min-height: var(--app-control-height);
+}
+
+.column-header-with-tip {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
 }
 
 @media (max-width: 760px) {

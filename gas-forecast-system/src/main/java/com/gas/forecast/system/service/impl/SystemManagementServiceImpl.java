@@ -208,7 +208,7 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     public List<Map<String, Object>> listPermissions(String keyword) {
         List<SysPermissionTb> permissions = permissionMapper.selectList(Wrappers.<SysPermissionTb>lambdaQuery().orderByAsc(SysPermissionTb::getSortNo).orderByAsc(SysPermissionTb::getId));
         return permissions.stream()
-                .filter(item -> matches(keyword, item.getPermissionName(), item.getPath(), item.getPerms(), item.getPermissionType()))
+                .filter(item -> matches(keyword, item.getPermissionName(), item.getPath(), item.getPerms(), item.getButtonCode(), item.getPermissionType()))
                 .map(this::permissionRow)
                 .toList();
     }
@@ -222,11 +222,12 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         }
         permission.setParentId(longOrNull(req.get("parentId")));
         permission.setPermissionName(required(req, "permissionName"));
-        permission.setPath(stringValue(req.get("path")));
-        permission.setComponent(stringValue(req.get("component")));
+        permission.setPath(nullableString(req.get("path")));
+        permission.setComponent(nullableString(req.get("component")));
         permission.setPermissionType(required(req, "permissionType"));
-        permission.setPerms(stringValue(req.get("perms")));
-        permission.setIcon(stringValue(req.get("icon")));
+        permission.setPerms(nullableString(req.get("perms")));
+        permission.setButtonCode(nullableString(req.get("buttonCode")));
+        permission.setIcon(nullableString(req.get("icon")));
         permission.setSortNo(intValue(req.get("sortNo"), 0));
         permission.setHidden(intValue(req.get("hidden"), 0));
         permission.setStatus(intValue(req.get("status"), 1));
@@ -239,6 +240,9 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     }
 
     public void deletePermission(Long id) {
+        if (permissionMapper.selectCount(Wrappers.<SysPermissionTb>lambdaQuery().eq(SysPermissionTb::getParentId, id)) > 0) {
+            throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "请先删除子菜单或按钮");
+        }
         permissionMapper.deleteById(id);
         rolePermissionRefMapper.delete(Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getPermissionId, id));
     }
@@ -298,6 +302,7 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         row.put("component", item.getComponent());
         row.put("permissionType", item.getPermissionType());
         row.put("perms", item.getPerms());
+        row.put("buttonCode", item.getButtonCode());
         row.put("icon", item.getIcon());
         row.put("sortNo", item.getSortNo());
         row.put("hidden", item.getHidden());
@@ -368,6 +373,11 @@ public class SystemManagementServiceImpl implements SystemManagementService {
 
     private String stringValue(Object value) {
         return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    private String nullableString(Object value) {
+        String text = stringValue(value);
+        return text.isBlank() ? null : text;
     }
 
     private int intValue(Object value, int defaultValue) {

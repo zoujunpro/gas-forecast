@@ -58,7 +58,7 @@ export const rolesSystemConfig: SystemPageConfig = {
     { prop: 'permissionIds', label: '菜单权限', type: 'tree' }
   ],
   emptyForm: { roleCode: '', roleName: '', description: '', permissionIds: [] },
-  permissions: { create: 'system:role:create', update: 'system:role:update', delete: 'system:role:delete' }
+  permissions: { create: 'sys:role:save', update: 'sys:role:save', delete: 'sys:role:delete' }
 }
 
 export const departmentsSystemConfig: SystemPageConfig = {
@@ -80,22 +80,24 @@ export const departmentsSystemConfig: SystemPageConfig = {
     { prop: 'status', label: '状态', type: 'select', options: statusOptions }
   ],
   emptyForm: { departmentName: '', orgCode: '', parentId: undefined, sortNo: 0, status: 1 },
-  permissions: { create: 'system:department:create', update: 'system:department:update', delete: 'system:department:delete' }
+  permissions: { create: 'sys:department:save', update: 'sys:department:save', delete: 'sys:department:delete' }
 }
 
 export const permissionsSystemConfig: SystemPageConfig = {
   title: '菜单管理',
   mode: 'permissions',
   endpoint: '/system/permissions',
-  placeholder: '搜索名称、路径、权限码',
+  placeholder: '请输入菜单名称',
   paged: false,
   tableFields: [
-    { prop: 'permissionName', label: '名称', minWidth: 180 },
+    { prop: 'permissionName', label: '菜单名称', minWidth: 210 },
     { prop: 'permissionType', label: '类型', minWidth: 90, displayType: 'permissionType' },
     { prop: 'path', label: '路由路径', minWidth: 170 },
     { prop: 'component', label: '组件', minWidth: 140 },
     { prop: 'perms', label: '权限码', minWidth: 180 },
-    { prop: 'status', label: '状态', minWidth: 90, displayType: 'status' }
+    { prop: 'buttonCode', label: '按钮标识', minWidth: 130 },
+    { prop: 'status', label: '状态', minWidth: 90, displayType: 'status' },
+    { prop: 'sortNo', label: '排序', minWidth: 80, align: 'right' }
   ],
   formFields: [
     { prop: 'permissionName', label: '名称', required: true, maxLength: 80 },
@@ -104,11 +106,12 @@ export const permissionsSystemConfig: SystemPageConfig = {
     { prop: 'path', label: '路由路径' },
     { prop: 'component', label: '组件' },
     { prop: 'perms', label: '权限码' },
+    { prop: 'buttonCode', label: '按钮标识' },
     { prop: 'icon', label: '图标' },
     { prop: 'sortNo', label: '排序', type: 'number' },
     { prop: 'hidden', label: '侧边栏显示', type: 'switch', activeValue: 0, inactiveValue: 1, activeText: '显示', inactiveText: '隐藏' },
     { prop: 'status', label: '启用状态', type: 'switch', activeValue: 1, inactiveValue: 0, activeText: '启用', inactiveText: '停用' }
   ],
-  emptyForm: { permissionName: '', uiPermissionKind: 'DIRECTORY', permissionType: 'MENU', parentId: undefined, path: '', component: '', perms: '', icon: '', sortNo: 0, hidden: 0, status: 1 },
-  permissions: { create: 'system:permission:create', update: 'system:permission:update', delete: 'system:permission:delete' }
+  emptyForm: { permissionName: '', uiPermissionKind: 'DIRECTORY', permissionType: 'DIRECTORY', parentId: undefined, path: '', component: '', perms: '', buttonCode: '', icon: '', sortNo: 0, hidden: 0, status: 1 },
+  permissions: { create: 'sys:permission:save', update: 'sys:permission:save', delete: 'sys:permission:delete' }
 }

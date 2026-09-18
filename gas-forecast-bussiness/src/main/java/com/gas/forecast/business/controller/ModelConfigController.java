@@ -3,6 +3,7 @@ package com.gas.forecast.business.controller;
 import com.gas.forecast.business.dto.req.ModelConfigCreateReqDTO;
 import com.gas.forecast.business.dto.req.ModelConfigDeleteReqDTO;
 import com.gas.forecast.business.dto.req.ModelConfigPageReqDTO;
+import com.gas.forecast.business.dto.req.ModelConfigScopeUpdateReqDTO;
 import com.gas.forecast.business.dto.req.ModelConfigUpdateReqDTO;
 import com.gas.forecast.business.dto.resp.ModelConfigRespDTO;
 import com.gas.forecast.business.service.ModelConfigService;
@@ -37,21 +38,28 @@ public class ModelConfigController {
     }
 
     @PostMapping("create")
-    @WebLog("新增模型配置")
+    @WebLog("新增模型")
     @RequirePermission("model:config:create")
     public ResponseResult<ModelConfigRespDTO> create(@Valid @RequestBody ModelConfigCreateReqDTO reqDTO) {
         return ResponseResult.success(modelConfigService.create(reqDTO));
     }
 
     @PostMapping("update")
-    @WebLog("编辑模型配置")
+    @WebLog("编辑模型")
     @RequirePermission("model:config:update")
     public ResponseResult<ModelConfigRespDTO> update(@Valid @RequestBody ModelConfigUpdateReqDTO reqDTO) {
         return ResponseResult.success(modelConfigService.update(reqDTO));
     }
 
+    @PostMapping("updateScope")
+    @WebLog("配置模型适用范围")
+    @RequirePermission("model:config:update")
+    public ResponseResult<ModelConfigRespDTO> updateScope(@Valid @RequestBody ModelConfigScopeUpdateReqDTO reqDTO) {
+        return ResponseResult.success(modelConfigService.updateScope(reqDTO));
+    }
+
     @PostMapping("delete")
-    @WebLog("删除模型配置")
+    @WebLog("删除模型")
     @RequirePermission("model:config:delete")
     public ResponseResult<Void> delete(@Valid @RequestBody ModelConfigDeleteReqDTO reqDTO) {
         modelConfigService.delete(reqDTO);

@@ -105,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
                 .sorted()
                 .toList();
         List<AuthMenuRespDTO> menus = buildMenuTree(permissions.stream()
-                .filter(item -> "MENU".equals(item.getPermissionType()))
+                .filter(item -> "DIRECTORY".equals(item.getPermissionType()) || "MENU".equals(item.getPermissionType()))
                 .toList());
         return new AuthLoginRespDTO(token, toUser(user), roles, perms, menus);
     }

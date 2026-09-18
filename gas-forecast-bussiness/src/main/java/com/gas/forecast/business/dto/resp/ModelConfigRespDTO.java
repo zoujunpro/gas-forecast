@@ -9,6 +9,7 @@ public record ModelConfigRespDTO(
         Long id,
         String configCode,
         String configName,
+        String modelVersion,
         String agentCode,
         String agentName,
         String sceneCode,
@@ -25,6 +26,7 @@ public record ModelConfigRespDTO(
         List<String> industryNames,
         List<String> customerCodes,
         List<String> customerNames,
+        List<ModelFeatureRefRespDTO> featureRefs,
         String description,
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
         Date createTime,

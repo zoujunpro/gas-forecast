@@ -947,7 +947,7 @@
       <AutoIntrospectionLevel>3</AutoIntrospectionLevel>
       <Current>1</Current>
       <LastIntrospectionLevel>3</LastIntrospectionLevel>
-      <LastIntrospectionLocalTimestamp>2026-09-17.02:14:08</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLocalTimestamp>2026-09-17.05:36:33</LastIntrospectionLocalTimestamp>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </schema>
     <schema id="301" parent="1" name="submission">
@@ -1029,608 +1029,614 @@
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="317" parent="300" name="model_forecast_batch_tb">
+    <table id="317" parent="300" name="model_feature_ref">
+      <Comment>模型特征关联表</Comment>
+      <DetailsLevel>3</DetailsLevel>
+      <Engine>InnoDB</Engine>
+      <CollationName>utf8mb4_0900_ai_ci</CollationName>
+    </table>
+    <table id="318" parent="300" name="model_forecast_batch_tb">
       <Comment>预测任务批次</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="318" parent="300" name="model_forecast_result_tb">
+    <table id="319" parent="300" name="model_forecast_result_tb">
       <Comment>旬度预测结果</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="319" parent="300" name="model_train_backtest_tb">
+    <table id="320" parent="300" name="model_train_backtest_tb">
       <Comment>模型训练滚动回测明细表</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="320" parent="300" name="model_train_batch_tb">
+    <table id="321" parent="300" name="model_train_batch_tb">
       <Comment>模型训练批次</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="321" parent="300" name="model_train_feature_data_tb">
+    <table id="322" parent="300" name="model_train_feature_data_tb">
       <Comment>天然气预测模型统一训练特征宽表</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="322" parent="300" name="model_train_winter_data_tb">
+    <table id="323" parent="300" name="model_train_winter_data_tb">
       <Comment>冬季保供旬度标准智能体训练数据表</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </table>
-    <table id="323" parent="300" name="sys_code_sequence_tb">
+    <table id="324" parent="300" name="sys_code_sequence_tb">
       <Comment>业务编码流水表</Comment>
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="324" parent="300" name="sys_department_permission_ref">
+    <table id="325" parent="300" name="sys_department_permission_ref">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="325" parent="300" name="sys_department_tb">
+    <table id="326" parent="300" name="sys_department_tb">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="326" parent="300" name="sys_permission_tb">
+    <table id="327" parent="300" name="sys_permission_tb">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="327" parent="300" name="sys_role_permission_ref">
+    <table id="328" parent="300" name="sys_role_permission_ref">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="328" parent="300" name="sys_role_tb">
+    <table id="329" parent="300" name="sys_role_tb">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="329" parent="300" name="sys_user_department_ref">
+    <table id="330" parent="300" name="sys_user_department_ref">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="330" parent="300" name="sys_user_role_ref">
+    <table id="331" parent="300" name="sys_user_role_ref">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <table id="331" parent="300" name="sys_user_tb">
+    <table id="332" parent="300" name="sys_user_tb">
       <DetailsLevel>3</DetailsLevel>
       <Engine>InnoDB</Engine>
       <CollationName>utf8mb4_unicode_ci</CollationName>
     </table>
-    <column id="332" parent="308" name="id">
+    <column id="333" parent="308" name="id">
       <AutoIncrement>94</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="333" parent="308" name="customer_code">
+    <column id="334" parent="308" name="customer_code">
       <Comment>客户编码</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="334" parent="308" name="customer_name">
+    <column id="335" parent="308" name="customer_name">
       <Comment>客户名称</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="335" parent="308" name="industry_code">
+    <column id="336" parent="308" name="industry_code">
       <Comment>所属行业编号</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="336" parent="308" name="industry_name">
+    <column id="337" parent="308" name="industry_name">
       <Comment>所属行业名字</Comment>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="337" parent="308" name="region_code">
+    <column id="338" parent="308" name="region_code">
       <Comment>所属地区编号</Comment>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="338" parent="308" name="region_name">
+    <column id="339" parent="308" name="region_name">
       <Comment>所属地区名字</Comment>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="339" parent="308" name="created_at">
+    <column id="340" parent="308" name="created_at">
       <Comment>创建时间</Comment>
       <NotNull>1</NotNull>
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="340" parent="308" name="updated_at">
+    <column id="341" parent="308" name="updated_at">
       <Comment>更新时间</Comment>
       <NotNull>1</NotNull>
       <Position>9</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="341" parent="308" name="created_by">
+    <column id="342" parent="308" name="created_by">
       <Comment>创建人ID</Comment>
       <Position>10</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="342" parent="308" name="created_by_name">
+    <column id="343" parent="308" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>11</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="343" parent="308" name="updated_by">
+    <column id="344" parent="308" name="updated_by">
       <Comment>更新人ID</Comment>
       <Position>12</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="344" parent="308" name="updated_by_name">
+    <column id="345" parent="308" name="updated_by_name">
       <Comment>更新人名字</Comment>
       <Position>13</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="345" parent="308" name="raw_region_name">
+    <column id="346" parent="308" name="raw_region_name">
       <Comment>原始地区名称</Comment>
       <Position>14</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="346" parent="308" name="raw_industry_name">
+    <column id="347" parent="308" name="raw_industry_name">
       <Comment>原始行业名称</Comment>
       <Position>15</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <index id="347" parent="308" name="PRIMARY">
+    <index id="348" parent="308" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="348" parent="308" name="uk_base_customer_code">
+    <index id="349" parent="308" name="uk_base_customer_code">
       <ColNames>customer_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="349" parent="308" name="PRIMARY">
+    <key id="350" parent="308" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="350" parent="308" name="uk_base_customer_code">
+    <key id="351" parent="308" name="uk_base_customer_code">
       <UnderlyingIndexName>uk_base_customer_code</UnderlyingIndexName>
     </key>
-    <column id="351" parent="309" name="id">
+    <column id="352" parent="309" name="id">
       <AutoIncrement>10</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="352" parent="309" name="industry_code">
+    <column id="353" parent="309" name="industry_code">
       <Comment>行业编码</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="353" parent="309" name="industry_name">
+    <column id="354" parent="309" name="industry_name">
       <Comment>行业名称</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="354" parent="309" name="created_at">
+    <column id="355" parent="309" name="created_at">
       <Comment>创建时间</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="355" parent="309" name="updated_at">
+    <column id="356" parent="309" name="updated_at">
       <Comment>更新时间</Comment>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="356" parent="309" name="created_by">
+    <column id="357" parent="309" name="created_by">
       <Comment>创建人ID</Comment>
       <Position>6</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="357" parent="309" name="created_by_name">
+    <column id="358" parent="309" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>7</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="358" parent="309" name="updated_by">
+    <column id="359" parent="309" name="updated_by">
       <Comment>更新人ID</Comment>
       <Position>8</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="359" parent="309" name="updated_by_name">
+    <column id="360" parent="309" name="updated_by_name">
       <Comment>更新人名字</Comment>
       <Position>9</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <index id="360" parent="309" name="PRIMARY">
+    <index id="361" parent="309" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="361" parent="309" name="uk_base_industry_code">
+    <index id="362" parent="309" name="uk_base_industry_code">
       <ColNames>industry_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="362" parent="309" name="PRIMARY">
+    <key id="363" parent="309" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="363" parent="309" name="uk_base_industry_code">
+    <key id="364" parent="309" name="uk_base_industry_code">
       <UnderlyingIndexName>uk_base_industry_code</UnderlyingIndexName>
     </key>
-    <column id="364" parent="310" name="id">
+    <column id="365" parent="310" name="id">
       <AutoIncrement>34</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="365" parent="310" name="region_code">
+    <column id="366" parent="310" name="region_code">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="366" parent="310" name="region_name">
+    <column id="367" parent="310" name="region_name">
       <Comment>区域名称</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="367" parent="310" name="remark">
+    <column id="368" parent="310" name="remark">
       <Comment>备注</Comment>
       <Position>4</Position>
       <StoredType>varchar(500)|0s</StoredType>
     </column>
-    <column id="368" parent="310" name="created_by">
+    <column id="369" parent="310" name="created_by">
       <Comment>创建人</Comment>
       <Position>5</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="369" parent="310" name="created_at">
+    <column id="370" parent="310" name="created_at">
       <Comment>创建时间</Comment>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="370" parent="310" name="updated_by">
+    <column id="371" parent="310" name="updated_by">
       <Comment>最后修改人</Comment>
       <Position>7</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="371" parent="310" name="updated_at">
+    <column id="372" parent="310" name="updated_at">
       <Comment>最后修改时间</Comment>
       <NotNull>1</NotNull>
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="372" parent="310" name="updated_by_name">
+    <column id="373" parent="310" name="updated_by_name">
       <Comment>更新人名字</Comment>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="373" parent="310" name="created_by_name">
+    <column id="374" parent="310" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>10</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <index id="374" parent="310" name="PRIMARY">
+    <index id="375" parent="310" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="375" parent="310" name="uk_base_region_code">
+    <index id="376" parent="310" name="uk_base_region_code">
       <ColNames>region_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="376" parent="310" name="PRIMARY">
+    <key id="377" parent="310" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="377" parent="310" name="uk_base_region_code">
+    <key id="378" parent="310" name="uk_base_region_code">
       <UnderlyingIndexName>uk_base_region_code</UnderlyingIndexName>
     </key>
-    <column id="378" parent="311" name="id">
+    <column id="379" parent="311" name="id">
       <AutoIncrement>170191</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="379" parent="311" name="stat_date">
+    <column id="380" parent="311" name="stat_date">
       <Comment>统计日期</Comment>
       <Position>2</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <column id="380" parent="311" name="region_name">
+    <column id="381" parent="311" name="region_name">
       <Comment>地区名称</Comment>
       <Position>3</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="381" parent="311" name="industry_name">
+    <column id="382" parent="311" name="industry_name">
       <Comment>行业名称</Comment>
       <Position>4</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="382" parent="311" name="customer_name">
+    <column id="383" parent="311" name="customer_name">
       <Comment>客户名称</Comment>
       <Position>5</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="383" parent="311" name="customer_code">
+    <column id="384" parent="311" name="customer_code">
       <Comment>客户编号</Comment>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="384" parent="311" name="gas_sales">
+    <column id="385" parent="311" name="gas_sales">
       <Comment>销量值</Comment>
       <Position>7</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="385" parent="311" name="unit">
+    <column id="386" parent="311" name="unit">
       <Comment>销量单位</Comment>
       <Position>8</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="386" parent="311" name="file_id">
+    <column id="387" parent="311" name="file_id">
       <Comment>来源文件</Comment>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="387" parent="311" name="created_at">
+    <column id="388" parent="311" name="created_at">
       <Comment>创建时间</Comment>
       <Position>10</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="388" parent="311" name="region_code">
+    <column id="389" parent="311" name="region_code">
       <Comment>地区编号</Comment>
       <Position>11</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="389" parent="311" name="industry_code">
+    <column id="390" parent="311" name="industry_code">
       <Comment>行业编号</Comment>
       <Position>12</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <index id="390" parent="311" name="PRIMARY">
+    <index id="391" parent="311" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="391" parent="311" name="PRIMARY">
+    <key id="392" parent="311" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="392" parent="312" name="id">
+    <column id="393" parent="312" name="id">
       <Comment>主键ID</Comment>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="393" parent="312" name="file_code">
+    <column id="394" parent="312" name="file_code">
       <Comment>文件编码</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="394" parent="312" name="file_name">
+    <column id="395" parent="312" name="file_name">
       <Comment>原始文件名称</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="395" parent="312" name="object_key">
+    <column id="396" parent="312" name="object_key">
       <Comment>文件存储路径或对象存储Object Key</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(500)|0s</StoredType>
     </column>
-    <column id="396" parent="312" name="file_hash">
+    <column id="397" parent="312" name="file_hash">
       <Comment>文件Hash值</Comment>
       <Position>5</Position>
       <StoredType>varchar(128)|0s</StoredType>
     </column>
-    <column id="397" parent="312" name="status">
+    <column id="398" parent="312" name="status">
       <Comment>处理状态：UPLOADED    已上传，等待处理    ；PROCESSING  正在处理；SUCCESS  全部处理成功；FAILED  处理失败</Comment>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>varchar(30)|0s</StoredType>
     </column>
-    <column id="398" parent="312" name="total_count">
+    <column id="399" parent="312" name="total_count">
       <Comment>数据总条数</Comment>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="399" parent="312" name="error_message">
+    <column id="400" parent="312" name="error_message">
       <Comment>处理异常信息</Comment>
       <Position>8</Position>
       <StoredType>longtext|0s</StoredType>
     </column>
-    <column id="400" parent="312" name="created_at">
+    <column id="401" parent="312" name="created_at">
       <Comment>创建时间</Comment>
       <NotNull>1</NotNull>
       <Position>9</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="401" parent="312" name="updated_at">
+    <column id="402" parent="312" name="updated_at">
       <Comment>更新时间</Comment>
       <NotNull>1</NotNull>
       <Position>10</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="402" parent="312" name="created_by">
+    <column id="403" parent="312" name="created_by">
       <Comment>创建人</Comment>
       <Position>11</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="403" parent="312" name="created_by_name">
+    <column id="404" parent="312" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>12</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <index id="404" parent="312" name="PRIMARY">
+    <index id="405" parent="312" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="405" parent="312" name="uk_data_file_info_code">
+    <index id="406" parent="312" name="uk_data_file_info_code">
       <ColNames>file_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="406" parent="312" name="idx_raw_file_hash">
+    <index id="407" parent="312" name="idx_raw_file_hash">
       <ColNames>file_hash</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="407" parent="312" name="idx_raw_file_status">
+    <index id="408" parent="312" name="idx_raw_file_status">
       <ColNames>status</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="408" parent="312" name="PRIMARY">
+    <key id="409" parent="312" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="409" parent="312" name="uk_data_file_info_code">
+    <key id="410" parent="312" name="uk_data_file_info_code">
       <UnderlyingIndexName>uk_data_file_info_code</UnderlyingIndexName>
     </key>
-    <column id="410" parent="313" name="id">
+    <column id="411" parent="313" name="id">
       <AutoIncrement>5581</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="411" parent="313" name="stat_date">
+    <column id="412" parent="313" name="stat_date">
       <Comment>统计日期</Comment>
       <Position>2</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <column id="412" parent="313" name="region_name">
+    <column id="413" parent="313" name="region_name">
       <Comment>地区名称</Comment>
       <Position>3</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="413" parent="313" name="region_code">
+    <column id="414" parent="313" name="region_code">
       <Comment>地区编号</Comment>
       <Position>4</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="414" parent="313" name="industry_name">
+    <column id="415" parent="313" name="industry_name">
       <Comment>行业名称</Comment>
       <Position>5</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="415" parent="313" name="industry_code">
+    <column id="416" parent="313" name="industry_code">
       <Comment>行业编号</Comment>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="416" parent="313" name="customer_name">
+    <column id="417" parent="313" name="customer_name">
       <Comment>客户名称</Comment>
       <Position>7</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="417" parent="313" name="customer_code">
+    <column id="418" parent="313" name="customer_code">
       <Comment>客户编号</Comment>
       <Position>8</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="418" parent="313" name="gas_sales">
+    <column id="419" parent="313" name="gas_sales">
       <Comment>销量值</Comment>
       <Position>9</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="419" parent="313" name="unit">
+    <column id="420" parent="313" name="unit">
       <Comment>销量单位</Comment>
       <Position>10</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="420" parent="313" name="file_id">
+    <column id="421" parent="313" name="file_id">
       <Comment>来源文件</Comment>
       <Position>11</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="421" parent="313" name="created_at">
+    <column id="422" parent="313" name="created_at">
       <Comment>创建时间</Comment>
       <Position>12</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="422" parent="313" name="PRIMARY">
+    <index id="423" parent="313" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="423" parent="313" name="PRIMARY">
+    <key id="424" parent="313" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="424" parent="314" name="id">
+    <column id="425" parent="314" name="id">
       <AutoIncrement>1</AutoIncrement>
       <Comment>主键ID</Comment>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="425" parent="314" name="model_code">
+    <column id="426" parent="314" name="model_code">
       <Comment>模型配置ID</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="426" parent="314" name="region_code">
+    <column id="427" parent="314" name="region_code">
       <Comment>地区编码</Comment>
       <Position>3</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="427" parent="314" name="industry_code">
+    <column id="428" parent="314" name="industry_code">
       <Comment>行业编码</Comment>
       <Position>4</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="428" parent="314" name="customer_code">
+    <column id="429" parent="314" name="customer_code">
       <Comment>客户编码</Comment>
       <Position>5</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="429" parent="314" name="created_by">
+    <column id="430" parent="314" name="created_by">
       <Comment>创建人</Comment>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </column>
-    <column id="430" parent="314" name="created_at">
+    <column id="431" parent="314" name="created_at">
       <Comment>创建时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="431" parent="314" name="updated_at">
+    <column id="432" parent="314" name="updated_at">
       <Comment>更新时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
@@ -1638,84 +1644,84 @@
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="432" parent="314" name="created_by_name">
+    <column id="433" parent="314" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </column>
-    <index id="433" parent="314" name="PRIMARY">
+    <index id="434" parent="314" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="434" parent="314" name="idx_model_config">
+    <index id="435" parent="314" name="idx_model_config">
       <ColNames>model_code</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="435" parent="314" name="idx_scope_lookup">
+    <index id="436" parent="314" name="idx_scope_lookup">
       <ColNames>region_code
 industry_code
 customer_code</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="436" parent="314" name="idx_region">
+    <index id="437" parent="314" name="idx_region">
       <ColNames>region_code</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="437" parent="314" name="idx_customer">
+    <index id="438" parent="314" name="idx_customer">
       <ColNames>customer_code</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="438" parent="314" name="PRIMARY">
+    <key id="439" parent="314" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="439" parent="315" name="id">
+    <column id="440" parent="315" name="id">
       <AutoIncrement>1</AutoIncrement>
       <Comment>主键ID</Comment>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="440" parent="315" name="model_code">
+    <column id="441" parent="315" name="model_code">
       <Comment>配置编码</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="441" parent="315" name="model_name">
+    <column id="442" parent="315" name="model_name">
       <Comment>配置名称</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(128)|0s</StoredType>
     </column>
-    <column id="442" parent="315" name="agent_code">
+    <column id="443" parent="315" name="agent_code">
       <Comment>智能体编码</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="443" parent="315" name="description">
+    <column id="444" parent="315" name="description">
       <Comment>描述</Comment>
       <Position>5</Position>
       <StoredType>varchar(500)|0s</StoredType>
     </column>
-    <column id="444" parent="315" name="created_by">
+    <column id="445" parent="315" name="created_by">
       <Comment>创建人</Comment>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </column>
-    <column id="445" parent="315" name="created_at">
+    <column id="446" parent="315" name="created_at">
       <Comment>创建时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="446" parent="315" name="updated_at">
+    <column id="447" parent="315" name="updated_at">
       <Comment>更新时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
@@ -1723,204 +1729,283 @@ customer_code</ColNames>
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="447" parent="315" name="created_by_name">
+    <column id="448" parent="315" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
       <CollationName>utf8mb4_0900_ai_ci</CollationName>
     </column>
-    <index id="448" parent="315" name="PRIMARY">
+    <index id="449" parent="315" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="449" parent="315" name="uk_config_code">
+    <index id="450" parent="315" name="uk_config_code">
       <ColNames>model_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="450" parent="315" name="idx_model_config_agent">
+    <index id="451" parent="315" name="idx_model_config_agent">
       <ColNames>agent_code</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="451" parent="315" name="PRIMARY">
+    <key id="452" parent="315" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="452" parent="315" name="uk_config_code">
+    <key id="453" parent="315" name="uk_config_code">
       <UnderlyingIndexName>uk_config_code</UnderlyingIndexName>
     </key>
-    <column id="453" parent="316" name="id">
+    <column id="454" parent="316" name="id">
       <Comment>主键</Comment>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="454" parent="316" name="feature_code">
+    <column id="455" parent="316" name="feature_code">
       <Comment>特征编号</Comment>
       <Position>2</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="455" parent="316" name="feature_name">
+    <column id="456" parent="316" name="feature_name">
       <Comment>特征名称</Comment>
       <Position>3</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="456" parent="316" name="feature_column">
+    <column id="457" parent="316" name="feature_column">
       <Comment>宽表字段</Comment>
       <Position>4</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="457" parent="316" name="time_granularity">
+    <column id="458" parent="316" name="time_granularity">
       <Comment>时间粒度 DAY/TENDAY/MONTH</Comment>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="458" parent="316" name="enabled">
+    <column id="459" parent="316" name="enabled">
       <Comment>是否启用 1  0</Comment>
       <DefaultExpression>1</DefaultExpression>
       <Position>6</Position>
       <StoredType>tinyint(1)|0s</StoredType>
     </column>
-    <column id="459" parent="316" name="description">
+    <column id="460" parent="316" name="description">
       <Comment>描述</Comment>
       <Position>7</Position>
       <StoredType>text|0s</StoredType>
     </column>
-    <column id="460" parent="316" name="created_at">
+    <column id="461" parent="316" name="created_at">
       <Comment>创建时间</Comment>
       <NotNull>1</NotNull>
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="461" parent="316" name="created_by">
+    <column id="462" parent="316" name="created_by">
       <Comment>创建人ID</Comment>
       <Position>9</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="462" parent="316" name="updated_by_name">
+    <column id="463" parent="316" name="updated_by_name">
       <Comment>更新人名字</Comment>
       <Position>10</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <index id="463" parent="316" name="PRIMARY">
+    <index id="464" parent="316" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="464" parent="316" name="PRIMARY">
+    <index id="465" parent="316" name="feature_code">
+      <ColNames>feature_code
+time_granularity</ColNames>
+      <Type>btree</Type>
+      <Unique>1</Unique>
+    </index>
+    <index id="466" parent="316" name="uk_feature_code_granularity">
+      <ColNames>feature_code
+time_granularity</ColNames>
+      <Type>btree</Type>
+      <Unique>1</Unique>
+    </index>
+    <key id="467" parent="316" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="465" parent="317" name="id">
+    <key id="468" parent="316" name="feature_code">
+      <UnderlyingIndexName>feature_code</UnderlyingIndexName>
+    </key>
+    <key id="469" parent="316" name="uk_feature_code_granularity">
+      <UnderlyingIndexName>uk_feature_code_granularity</UnderlyingIndexName>
+    </key>
+    <column id="470" parent="317" name="id">
+      <AutoIncrement>1</AutoIncrement>
+      <Comment>主键ID</Comment>
+      <NotNull>1</NotNull>
+      <Position>1</Position>
+      <StoredType>bigint|0s</StoredType>
+    </column>
+    <column id="471" parent="317" name="model_id">
+      <Comment>模型ID</Comment>
+      <NotNull>1</NotNull>
+      <Position>2</Position>
+      <StoredType>bigint|0s</StoredType>
+    </column>
+    <column id="472" parent="317" name="feature_id">
+      <Comment>特征ID</Comment>
+      <NotNull>1</NotNull>
+      <Position>3</Position>
+      <StoredType>bigint|0s</StoredType>
+    </column>
+    <column id="473" parent="317" name="required_flag">
+      <Comment>是否必选特征</Comment>
+      <DefaultExpression>1</DefaultExpression>
+      <Position>4</Position>
+      <StoredType>tinyint|0s</StoredType>
+    </column>
+    <column id="474" parent="317" name="feature_order">
+      <Comment>特征顺序</Comment>
+      <DefaultExpression>0</DefaultExpression>
+      <Position>5</Position>
+      <StoredType>int|0s</StoredType>
+    </column>
+    <column id="475" parent="317" name="created_at">
+      <Comment>创建时间</Comment>
+      <NotNull>1</NotNull>
+      <Position>6</Position>
+      <StoredType>timestamp|0s</StoredType>
+    </column>
+    <column id="476" parent="317" name="created_by">
+      <Comment>创建人ID</Comment>
+      <Position>7</Position>
+      <StoredType>bigint|0s</StoredType>
+    </column>
+    <index id="477" parent="317" name="PRIMARY">
+      <ColNames>id</ColNames>
+      <Type>btree</Type>
+      <Unique>1</Unique>
+    </index>
+    <index id="478" parent="317" name="uk_model_feature">
+      <ColNames>model_id
+feature_id</ColNames>
+      <Type>btree</Type>
+      <Unique>1</Unique>
+    </index>
+    <key id="479" parent="317" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <Primary>1</Primary>
+      <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
+    </key>
+    <key id="480" parent="317" name="uk_model_feature">
+      <UnderlyingIndexName>uk_model_feature</UnderlyingIndexName>
+    </key>
+    <column id="481" parent="318" name="id">
       <AutoIncrement>358</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="466" parent="317" name="batch_no">
+    <column id="482" parent="318" name="batch_no">
       <Comment>预测批次号</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="467" parent="317" name="train_batch_no">
+    <column id="483" parent="318" name="train_batch_no">
       <Comment>使用的训练批次</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="468" parent="317" name="agent_code">
+    <column id="484" parent="318" name="agent_code">
       <Comment>智能体编码</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="469" parent="317" name="region_code">
+    <column id="485" parent="318" name="region_code">
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="470" parent="317" name="region_name">
+    <column id="486" parent="318" name="region_name">
       <Comment>区域名称</Comment>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="471" parent="317" name="customer_code">
+    <column id="487" parent="318" name="customer_code">
       <Comment>客户编码</Comment>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="472" parent="317" name="customer_name">
+    <column id="488" parent="318" name="customer_name">
       <Comment>客户名称</Comment>
       <NotNull>1</NotNull>
       <Position>8</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="473" parent="317" name="industry_code">
+    <column id="489" parent="318" name="industry_code">
       <Comment>所属行业编号</Comment>
       <NotNull>1</NotNull>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="474" parent="317" name="industry_name">
+    <column id="490" parent="318" name="industry_name">
       <Comment>所属行业名字</Comment>
       <NotNull>1</NotNull>
       <Position>10</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="475" parent="317" name="forecast_horizon">
+    <column id="491" parent="318" name="forecast_horizon">
       <Comment>预测跨度数量</Comment>
       <NotNull>1</NotNull>
       <Position>11</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="476" parent="317" name="forecast_start_date">
+    <column id="492" parent="318" name="forecast_start_date">
       <Comment>预测起始日期</Comment>
       <NotNull>1</NotNull>
       <Position>12</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="477" parent="317" name="forecast_end_date">
+    <column id="493" parent="318" name="forecast_end_date">
       <Comment>预测结束日期</Comment>
       <NotNull>1</NotNull>
       <Position>13</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="478" parent="317" name="status">
+    <column id="494" parent="318" name="status">
       <Comment>PENDING/RUNNING/SUCCESS/FAILED</Comment>
       <NotNull>1</NotNull>
       <Position>14</Position>
       <StoredType>varchar(20)|0s</StoredType>
     </column>
-    <column id="479" parent="317" name="request_json">
+    <column id="495" parent="318" name="request_json">
       <Comment>预测调用参数</Comment>
       <Position>15</Position>
       <StoredType>json|0s</StoredType>
     </column>
-    <column id="480" parent="317" name="error_message">
+    <column id="496" parent="318" name="error_message">
       <Comment>错误信息</Comment>
       <Position>16</Position>
       <StoredType>text|0s</StoredType>
     </column>
-    <column id="481" parent="317" name="created_by">
+    <column id="497" parent="318" name="created_by">
       <Comment>创建人</Comment>
       <Position>17</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="482" parent="317" name="created_at">
+    <column id="498" parent="318" name="created_at">
       <Comment>创建时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>18</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="483" parent="317" name="updated_at">
+    <column id="499" parent="318" name="updated_at">
       <Comment>更新时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
@@ -1928,302 +2013,302 @@ customer_code</ColNames>
       <Position>19</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="484" parent="317" name="created_by_name">
+    <column id="500" parent="318" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>20</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <index id="485" parent="317" name="PRIMARY">
+    <index id="501" parent="318" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="486" parent="317" name="uk_forecast_batch_no">
+    <index id="502" parent="318" name="uk_forecast_batch_no">
       <ColNames>batch_no</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="487" parent="317" name="idx_forecast_train">
+    <index id="503" parent="318" name="idx_forecast_train">
       <ColNames>train_batch_no</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="488" parent="317" name="idx_forecast_province_date">
+    <index id="504" parent="318" name="idx_forecast_province_date">
       <ColNames>forecast_horizon</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="489" parent="317" name="PRIMARY">
+    <key id="505" parent="318" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="490" parent="317" name="uk_forecast_batch_no">
+    <key id="506" parent="318" name="uk_forecast_batch_no">
       <UnderlyingIndexName>uk_forecast_batch_no</UnderlyingIndexName>
     </key>
-    <column id="491" parent="318" name="id">
+    <column id="507" parent="319" name="id">
       <AutoIncrement>14242</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="492" parent="318" name="forecast_batch_no">
+    <column id="508" parent="319" name="forecast_batch_no">
       <Comment>预测批次</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="493" parent="318" name="forecast_date">
+    <column id="509" parent="319" name="forecast_date">
       <Comment>预测旬日期</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="494" parent="318" name="forecast_value">
+    <column id="510" parent="319" name="forecast_value">
       <Comment>预测值</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>decimal(18,4 digit)|0s</StoredType>
     </column>
-    <column id="495" parent="318" name="created_at">
+    <column id="511" parent="319" name="created_at">
       <Comment>创建时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="496" parent="318" name="PRIMARY">
+    <index id="512" parent="319" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="497" parent="318" name="uk_forecast_date">
+    <index id="513" parent="319" name="uk_forecast_date">
       <ColNames>forecast_batch_no
 forecast_date</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="498" parent="318" name="PRIMARY">
+    <key id="514" parent="319" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="499" parent="318" name="uk_forecast_date">
+    <key id="515" parent="319" name="uk_forecast_date">
       <UnderlyingIndexName>uk_forecast_date</UnderlyingIndexName>
     </key>
-    <column id="500" parent="319" name="id">
+    <column id="516" parent="320" name="id">
       <AutoIncrement>256</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="501" parent="319" name="train_batch_no">
+    <column id="517" parent="320" name="train_batch_no">
       <Comment>训练批次号</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="502" parent="319" name="train_date">
+    <column id="518" parent="320" name="train_date">
       <Comment>回测日期</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>date|0s</StoredType>
     </column>
-    <column id="503" parent="319" name="actual_value">
+    <column id="519" parent="320" name="actual_value">
       <Comment>历史实际值</Comment>
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>decimal(18,4 digit)|0s</StoredType>
     </column>
-    <column id="504" parent="319" name="predicted_value">
+    <column id="520" parent="320" name="predicted_value">
       <Comment>回测预测值</Comment>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>decimal(18,4 digit)|0s</StoredType>
     </column>
-    <column id="505" parent="319" name="created_at">
+    <column id="521" parent="320" name="created_at">
       <Comment>创建日期</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>datetime|0s</StoredType>
     </column>
-    <index id="506" parent="319" name="PRIMARY">
+    <index id="522" parent="320" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="507" parent="319" name="uk_train_date">
+    <index id="523" parent="320" name="uk_train_date">
       <ColNames>train_batch_no
 train_date</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="508" parent="319" name="PRIMARY">
+    <key id="524" parent="320" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="509" parent="319" name="uk_train_date">
+    <key id="525" parent="320" name="uk_train_date">
       <UnderlyingIndexName>uk_train_date</UnderlyingIndexName>
     </key>
-    <column id="510" parent="320" name="id">
+    <column id="526" parent="321" name="id">
       <AutoIncrement>22</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint unsigned|0s</StoredType>
     </column>
-    <column id="511" parent="320" name="batch_no">
+    <column id="527" parent="321" name="batch_no">
       <Comment>训练批次号</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="512" parent="320" name="agent_code">
+    <column id="528" parent="321" name="agent_code">
       <Comment>智能体编码</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="513" parent="320" name="region_code">
+    <column id="529" parent="321" name="region_code">
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="514" parent="320" name="region_name">
+    <column id="530" parent="321" name="region_name">
       <Comment>区域名称</Comment>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="515" parent="320" name="customer_code">
+    <column id="531" parent="321" name="customer_code">
       <Comment>客户编码</Comment>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="516" parent="320" name="customer_name">
+    <column id="532" parent="321" name="customer_name">
       <Comment>客户名称</Comment>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>varchar(200)|0s</StoredType>
     </column>
-    <column id="517" parent="320" name="industry_code">
+    <column id="533" parent="321" name="industry_code">
       <Comment>所属行业编号</Comment>
       <NotNull>1</NotNull>
       <Position>8</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="518" parent="320" name="industry_name">
+    <column id="534" parent="321" name="industry_name">
       <Comment>所属行业名字</Comment>
       <NotNull>1</NotNull>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="519" parent="320" name="train_start_date">
+    <column id="535" parent="321" name="train_start_date">
       <Comment>训练数据开始日期</Comment>
       <NotNull>1</NotNull>
       <Position>10</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="520" parent="320" name="train_end_date">
+    <column id="536" parent="321" name="train_end_date">
       <Comment>训练数据截止日期</Comment>
       <NotNull>1</NotNull>
       <Position>11</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="521" parent="320" name="status">
+    <column id="537" parent="321" name="status">
       <Comment>PENDING/RUNNING/SUCCESS/FAILED</Comment>
       <NotNull>1</NotNull>
       <Position>12</Position>
       <StoredType>varchar(20)|0s</StoredType>
     </column>
-    <column id="522" parent="320" name="best_model">
+    <column id="538" parent="321" name="best_model">
       <Comment>最佳模型</Comment>
       <Position>13</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="523" parent="320" name="mape">
+    <column id="539" parent="321" name="mape">
       <Comment>MAPE</Comment>
       <Position>14</Position>
       <StoredType>decimal(12,6 digit)|0s</StoredType>
     </column>
-    <column id="524" parent="320" name="wmape">
+    <column id="540" parent="321" name="wmape">
       <Comment>WMAPE</Comment>
       <Position>15</Position>
       <StoredType>decimal(12,6 digit)|0s</StoredType>
     </column>
-    <column id="525" parent="320" name="rmse">
+    <column id="541" parent="321" name="rmse">
       <Comment>RMSE</Comment>
       <Position>16</Position>
       <StoredType>decimal(18,4 digit)|0s</StoredType>
     </column>
-    <column id="526" parent="320" name="mae">
+    <column id="542" parent="321" name="mae">
       <Comment>MAE</Comment>
       <Position>17</Position>
       <StoredType>decimal(18,4 digit)|0s</StoredType>
     </column>
-    <column id="527" parent="320" name="r2">
+    <column id="543" parent="321" name="r2">
       <Comment>R²</Comment>
       <Position>18</Position>
       <StoredType>decimal(12,6 digit)|0s</StoredType>
     </column>
-    <column id="528" parent="320" name="config_json">
+    <column id="544" parent="321" name="config_json">
       <Comment>训练参数</Comment>
       <Position>19</Position>
       <StoredType>json|0s</StoredType>
     </column>
-    <column id="529" parent="320" name="result_json">
+    <column id="545" parent="321" name="result_json">
       <Comment>模型排名、特征、清洗记录等</Comment>
       <Position>20</Position>
       <StoredType>json|0s</StoredType>
     </column>
-    <column id="530" parent="320" name="artifact_uri">
+    <column id="546" parent="321" name="artifact_uri">
       <Comment>模型文件地址</Comment>
       <Position>21</Position>
       <StoredType>text|0s</StoredType>
     </column>
-    <column id="531" parent="320" name="artifact_sha256">
+    <column id="547" parent="321" name="artifact_sha256">
       <Comment>模型文件摘要</Comment>
       <Position>22</Position>
       <StoredType>char(64)|0s</StoredType>
     </column>
-    <column id="532" parent="320" name="artifact_version">
+    <column id="548" parent="321" name="artifact_version">
       <Comment>模型产物版本</Comment>
       <Position>23</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="533" parent="320" name="error_message">
+    <column id="549" parent="321" name="error_message">
       <Comment>错误信息</Comment>
       <Position>24</Position>
       <StoredType>text|0s</StoredType>
     </column>
-    <column id="534" parent="320" name="created_by">
+    <column id="550" parent="321" name="created_by">
       <Comment>创建人</Comment>
       <Position>25</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="535" parent="320" name="created_by_name">
+    <column id="551" parent="321" name="created_by_name">
       <Comment>创建人名字</Comment>
       <Position>26</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="536" parent="320" name="started_at">
+    <column id="552" parent="321" name="started_at">
       <Comment>开始时间</Comment>
       <Position>27</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="537" parent="320" name="completed_at">
+    <column id="553" parent="321" name="completed_at">
       <Comment>完成时间</Comment>
       <Position>28</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="538" parent="320" name="created_at">
+    <column id="554" parent="321" name="created_at">
       <Comment>创建时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>29</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="539" parent="320" name="updated_at">
+    <column id="555" parent="321" name="updated_at">
       <Comment>更新时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
@@ -2231,1209 +2316,1119 @@ train_date</ColNames>
       <Position>30</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="540" parent="320" name="PRIMARY">
+    <index id="556" parent="321" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="541" parent="320" name="uk_train_batch_no">
+    <index id="557" parent="321" name="uk_train_batch_no">
       <ColNames>batch_no</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="542" parent="320" name="idx_train_province_date">
+    <index id="558" parent="321" name="idx_train_province_date">
       <ColNames>region_code
 train_end_date</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="543" parent="320" name="PRIMARY">
+    <key id="559" parent="321" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="544" parent="320" name="uk_train_batch_no">
+    <key id="560" parent="321" name="uk_train_batch_no">
       <UnderlyingIndexName>uk_train_batch_no</UnderlyingIndexName>
     </key>
-    <column id="545" parent="321" name="id">
+    <column id="561" parent="322" name="id">
       <AutoIncrement>1</AutoIncrement>
       <Comment>主键ID</Comment>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="546" parent="321" name="stat_date">
+    <column id="562" parent="322" name="stat_date">
       <Comment>统计日期</Comment>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="547" parent="321" name="time_granularity">
+    <column id="563" parent="322" name="time_granularity">
       <Comment>时间粒度 DAY/TENDAY/MONTH</Comment>
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="548" parent="321" name="region_code">
+    <column id="564" parent="322" name="region_code">
       <Comment>区域编码</Comment>
       <Position>4</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="549" parent="321" name="region_name">
+    <column id="565" parent="322" name="region_name">
       <Comment>区域名称</Comment>
       <Position>5</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="550" parent="321" name="customer_code">
+    <column id="566" parent="322" name="customer_code">
       <Comment>客户编码</Comment>
       <Position>6</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="551" parent="321" name="customer_name">
+    <column id="567" parent="322" name="customer_name">
       <Comment>客户名称</Comment>
       <Position>7</Position>
       <StoredType>varchar(128)|0s</StoredType>
     </column>
-    <column id="552" parent="321" name="industry_code">
+    <column id="568" parent="322" name="industry_code">
       <Comment>行业编码</Comment>
       <Position>8</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="553" parent="321" name="industry_name">
+    <column id="569" parent="322" name="industry_name">
       <Comment>行业名称</Comment>
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="554" parent="321" name="gas_sales">
+    <column id="570" parent="322" name="gas_sales">
       <Comment>天然气销量(预测目标)</Comment>
       <Position>10</Position>
       <StoredType>decimal(18,4 digit)|0s</StoredType>
     </column>
-    <column id="555" parent="321" name="feature_001">
+    <column id="571" parent="322" name="feature_001">
       <Comment>模型特征槽位001</Comment>
       <Position>11</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="556" parent="321" name="feature_002">
+    <column id="572" parent="322" name="feature_002">
       <Comment>模型特征槽位002</Comment>
       <Position>12</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="557" parent="321" name="feature_003">
+    <column id="573" parent="322" name="feature_003">
       <Comment>模型特征槽位003</Comment>
       <Position>13</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="558" parent="321" name="feature_004">
+    <column id="574" parent="322" name="feature_004">
       <Comment>模型特征槽位004</Comment>
       <Position>14</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="559" parent="321" name="feature_005">
+    <column id="575" parent="322" name="feature_005">
       <Comment>模型特征槽位005</Comment>
       <Position>15</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="560" parent="321" name="feature_006">
+    <column id="576" parent="322" name="feature_006">
       <Comment>模型特征槽位006</Comment>
       <Position>16</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="561" parent="321" name="feature_007">
+    <column id="577" parent="322" name="feature_007">
       <Comment>模型特征槽位007</Comment>
       <Position>17</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="562" parent="321" name="feature_008">
+    <column id="578" parent="322" name="feature_008">
       <Comment>模型特征槽位008</Comment>
       <Position>18</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="563" parent="321" name="feature_009">
+    <column id="579" parent="322" name="feature_009">
       <Comment>模型特征槽位009</Comment>
       <Position>19</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="564" parent="321" name="feature_010">
+    <column id="580" parent="322" name="feature_010">
       <Comment>模型特征槽位010</Comment>
       <Position>20</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="565" parent="321" name="feature_011">
+    <column id="581" parent="322" name="feature_011">
       <Comment>模型特征槽位011</Comment>
       <Position>21</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="566" parent="321" name="feature_012">
+    <column id="582" parent="322" name="feature_012">
       <Comment>模型特征槽位012</Comment>
       <Position>22</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="567" parent="321" name="feature_013">
+    <column id="583" parent="322" name="feature_013">
       <Comment>模型特征槽位013</Comment>
       <Position>23</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="568" parent="321" name="feature_014">
+    <column id="584" parent="322" name="feature_014">
       <Comment>模型特征槽位014</Comment>
       <Position>24</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="569" parent="321" name="feature_015">
+    <column id="585" parent="322" name="feature_015">
       <Comment>模型特征槽位015</Comment>
       <Position>25</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="570" parent="321" name="feature_016">
+    <column id="586" parent="322" name="feature_016">
       <Comment>模型特征槽位016</Comment>
       <Position>26</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="571" parent="321" name="feature_017">
+    <column id="587" parent="322" name="feature_017">
       <Comment>模型特征槽位017</Comment>
       <Position>27</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="572" parent="321" name="feature_018">
+    <column id="588" parent="322" name="feature_018">
       <Comment>模型特征槽位018</Comment>
       <Position>28</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="573" parent="321" name="feature_019">
+    <column id="589" parent="322" name="feature_019">
       <Comment>模型特征槽位019</Comment>
       <Position>29</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="574" parent="321" name="feature_020">
+    <column id="590" parent="322" name="feature_020">
       <Comment>模型特征槽位020</Comment>
       <Position>30</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="575" parent="321" name="feature_021">
+    <column id="591" parent="322" name="feature_021">
       <Comment>模型特征槽位021</Comment>
       <Position>31</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="576" parent="321" name="feature_022">
+    <column id="592" parent="322" name="feature_022">
       <Comment>模型特征槽位022</Comment>
       <Position>32</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="577" parent="321" name="feature_023">
+    <column id="593" parent="322" name="feature_023">
       <Comment>模型特征槽位023</Comment>
       <Position>33</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="578" parent="321" name="feature_024">
+    <column id="594" parent="322" name="feature_024">
       <Comment>模型特征槽位024</Comment>
       <Position>34</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="579" parent="321" name="feature_025">
+    <column id="595" parent="322" name="feature_025">
       <Comment>模型特征槽位025</Comment>
       <Position>35</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="580" parent="321" name="feature_026">
+    <column id="596" parent="322" name="feature_026">
       <Comment>模型特征槽位026</Comment>
       <Position>36</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="581" parent="321" name="feature_027">
+    <column id="597" parent="322" name="feature_027">
       <Comment>模型特征槽位027</Comment>
       <Position>37</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="582" parent="321" name="feature_028">
+    <column id="598" parent="322" name="feature_028">
       <Comment>模型特征槽位028</Comment>
       <Position>38</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="583" parent="321" name="feature_029">
+    <column id="599" parent="322" name="feature_029">
       <Comment>模型特征槽位029</Comment>
       <Position>39</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="584" parent="321" name="feature_030">
+    <column id="600" parent="322" name="feature_030">
       <Comment>模型特征槽位030</Comment>
       <Position>40</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="585" parent="321" name="feature_031">
+    <column id="601" parent="322" name="feature_031">
       <Comment>模型特征槽位031</Comment>
       <Position>41</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="586" parent="321" name="feature_032">
+    <column id="602" parent="322" name="feature_032">
       <Comment>模型特征槽位032</Comment>
       <Position>42</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="587" parent="321" name="feature_033">
+    <column id="603" parent="322" name="feature_033">
       <Comment>模型特征槽位033</Comment>
       <Position>43</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="588" parent="321" name="feature_034">
+    <column id="604" parent="322" name="feature_034">
       <Comment>模型特征槽位034</Comment>
       <Position>44</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="589" parent="321" name="feature_035">
+    <column id="605" parent="322" name="feature_035">
       <Comment>模型特征槽位035</Comment>
       <Position>45</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="590" parent="321" name="feature_036">
+    <column id="606" parent="322" name="feature_036">
       <Comment>模型特征槽位036</Comment>
       <Position>46</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="591" parent="321" name="feature_037">
+    <column id="607" parent="322" name="feature_037">
       <Comment>模型特征槽位037</Comment>
       <Position>47</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="592" parent="321" name="feature_038">
+    <column id="608" parent="322" name="feature_038">
       <Comment>模型特征槽位038</Comment>
       <Position>48</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="593" parent="321" name="feature_039">
+    <column id="609" parent="322" name="feature_039">
       <Comment>模型特征槽位039</Comment>
       <Position>49</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="594" parent="321" name="feature_040">
+    <column id="610" parent="322" name="feature_040">
       <Comment>模型特征槽位040</Comment>
       <Position>50</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="595" parent="321" name="feature_041">
+    <column id="611" parent="322" name="feature_041">
       <Comment>模型特征槽位041</Comment>
       <Position>51</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="596" parent="321" name="feature_042">
+    <column id="612" parent="322" name="feature_042">
       <Comment>模型特征槽位042</Comment>
       <Position>52</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="597" parent="321" name="feature_043">
+    <column id="613" parent="322" name="feature_043">
       <Comment>模型特征槽位043</Comment>
       <Position>53</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="598" parent="321" name="feature_044">
+    <column id="614" parent="322" name="feature_044">
       <Comment>模型特征槽位044</Comment>
       <Position>54</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="599" parent="321" name="feature_045">
+    <column id="615" parent="322" name="feature_045">
       <Comment>模型特征槽位045</Comment>
       <Position>55</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="600" parent="321" name="feature_046">
+    <column id="616" parent="322" name="feature_046">
       <Comment>模型特征槽位046</Comment>
       <Position>56</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="601" parent="321" name="feature_047">
+    <column id="617" parent="322" name="feature_047">
       <Comment>模型特征槽位047</Comment>
       <Position>57</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="602" parent="321" name="feature_048">
+    <column id="618" parent="322" name="feature_048">
       <Comment>模型特征槽位048</Comment>
       <Position>58</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="603" parent="321" name="feature_049">
+    <column id="619" parent="322" name="feature_049">
       <Comment>模型特征槽位049</Comment>
       <Position>59</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="604" parent="321" name="feature_050">
+    <column id="620" parent="322" name="feature_050">
       <Comment>模型特征槽位050</Comment>
       <Position>60</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="605" parent="321" name="feature_051">
+    <column id="621" parent="322" name="feature_051">
       <Comment>模型特征槽位051</Comment>
       <Position>61</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="606" parent="321" name="feature_052">
+    <column id="622" parent="322" name="feature_052">
       <Comment>模型特征槽位052</Comment>
       <Position>62</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="607" parent="321" name="feature_053">
+    <column id="623" parent="322" name="feature_053">
       <Comment>模型特征槽位053</Comment>
       <Position>63</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="608" parent="321" name="feature_054">
+    <column id="624" parent="322" name="feature_054">
       <Comment>模型特征槽位054</Comment>
       <Position>64</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="609" parent="321" name="feature_055">
+    <column id="625" parent="322" name="feature_055">
       <Comment>模型特征槽位055</Comment>
       <Position>65</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="610" parent="321" name="feature_056">
+    <column id="626" parent="322" name="feature_056">
       <Comment>模型特征槽位056</Comment>
       <Position>66</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="611" parent="321" name="feature_057">
+    <column id="627" parent="322" name="feature_057">
       <Comment>模型特征槽位057</Comment>
       <Position>67</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="612" parent="321" name="feature_058">
+    <column id="628" parent="322" name="feature_058">
       <Comment>模型特征槽位058</Comment>
       <Position>68</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="613" parent="321" name="feature_059">
+    <column id="629" parent="322" name="feature_059">
       <Comment>模型特征槽位059</Comment>
       <Position>69</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="614" parent="321" name="feature_060">
+    <column id="630" parent="322" name="feature_060">
       <Comment>模型特征槽位060</Comment>
       <Position>70</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="615" parent="321" name="feature_061">
+    <column id="631" parent="322" name="feature_061">
       <Comment>模型特征槽位061</Comment>
       <Position>71</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="616" parent="321" name="feature_062">
+    <column id="632" parent="322" name="feature_062">
       <Comment>模型特征槽位062</Comment>
       <Position>72</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="617" parent="321" name="feature_063">
+    <column id="633" parent="322" name="feature_063">
       <Comment>模型特征槽位063</Comment>
       <Position>73</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="618" parent="321" name="feature_064">
+    <column id="634" parent="322" name="feature_064">
       <Comment>模型特征槽位064</Comment>
       <Position>74</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="619" parent="321" name="feature_065">
+    <column id="635" parent="322" name="feature_065">
       <Comment>模型特征槽位065</Comment>
       <Position>75</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="620" parent="321" name="feature_066">
+    <column id="636" parent="322" name="feature_066">
       <Comment>模型特征槽位066</Comment>
       <Position>76</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="621" parent="321" name="feature_067">
+    <column id="637" parent="322" name="feature_067">
       <Comment>模型特征槽位067</Comment>
       <Position>77</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="622" parent="321" name="feature_068">
+    <column id="638" parent="322" name="feature_068">
       <Comment>模型特征槽位068</Comment>
       <Position>78</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="623" parent="321" name="feature_069">
+    <column id="639" parent="322" name="feature_069">
       <Comment>模型特征槽位069</Comment>
       <Position>79</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="624" parent="321" name="feature_070">
+    <column id="640" parent="322" name="feature_070">
       <Comment>模型特征槽位070</Comment>
       <Position>80</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="625" parent="321" name="feature_071">
+    <column id="641" parent="322" name="feature_071">
       <Comment>模型特征槽位071</Comment>
       <Position>81</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="626" parent="321" name="feature_072">
+    <column id="642" parent="322" name="feature_072">
       <Comment>模型特征槽位072</Comment>
       <Position>82</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="627" parent="321" name="feature_073">
+    <column id="643" parent="322" name="feature_073">
       <Comment>模型特征槽位073</Comment>
       <Position>83</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="628" parent="321" name="feature_074">
+    <column id="644" parent="322" name="feature_074">
       <Comment>模型特征槽位074</Comment>
       <Position>84</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="629" parent="321" name="feature_075">
+    <column id="645" parent="322" name="feature_075">
       <Comment>模型特征槽位075</Comment>
       <Position>85</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="630" parent="321" name="feature_076">
+    <column id="646" parent="322" name="feature_076">
       <Comment>模型特征槽位076</Comment>
       <Position>86</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="631" parent="321" name="feature_077">
+    <column id="647" parent="322" name="feature_077">
       <Comment>模型特征槽位077</Comment>
       <Position>87</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="632" parent="321" name="feature_078">
+    <column id="648" parent="322" name="feature_078">
       <Comment>模型特征槽位078</Comment>
       <Position>88</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="633" parent="321" name="feature_079">
+    <column id="649" parent="322" name="feature_079">
       <Comment>模型特征槽位079</Comment>
       <Position>89</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="634" parent="321" name="feature_080">
+    <column id="650" parent="322" name="feature_080">
       <Comment>模型特征槽位080</Comment>
       <Position>90</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="635" parent="321" name="feature_081">
+    <column id="651" parent="322" name="feature_081">
       <Comment>模型特征槽位081</Comment>
       <Position>91</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="636" parent="321" name="feature_082">
+    <column id="652" parent="322" name="feature_082">
       <Comment>模型特征槽位082</Comment>
       <Position>92</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="637" parent="321" name="feature_083">
+    <column id="653" parent="322" name="feature_083">
       <Comment>模型特征槽位083</Comment>
       <Position>93</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="638" parent="321" name="feature_084">
+    <column id="654" parent="322" name="feature_084">
       <Comment>模型特征槽位084</Comment>
       <Position>94</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="639" parent="321" name="feature_085">
+    <column id="655" parent="322" name="feature_085">
       <Comment>模型特征槽位085</Comment>
       <Position>95</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="640" parent="321" name="feature_086">
+    <column id="656" parent="322" name="feature_086">
       <Comment>模型特征槽位086</Comment>
       <Position>96</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="641" parent="321" name="feature_087">
+    <column id="657" parent="322" name="feature_087">
       <Comment>模型特征槽位087</Comment>
       <Position>97</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="642" parent="321" name="feature_088">
+    <column id="658" parent="322" name="feature_088">
       <Comment>模型特征槽位088</Comment>
       <Position>98</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="643" parent="321" name="feature_089">
+    <column id="659" parent="322" name="feature_089">
       <Comment>模型特征槽位089</Comment>
       <Position>99</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="644" parent="321" name="feature_090">
+    <column id="660" parent="322" name="feature_090">
       <Comment>模型特征槽位090</Comment>
       <Position>100</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="645" parent="321" name="feature_091">
+    <column id="661" parent="322" name="feature_091">
       <Comment>模型特征槽位091</Comment>
       <Position>101</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="646" parent="321" name="feature_092">
+    <column id="662" parent="322" name="feature_092">
       <Comment>模型特征槽位092</Comment>
       <Position>102</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="647" parent="321" name="feature_093">
+    <column id="663" parent="322" name="feature_093">
       <Comment>模型特征槽位093</Comment>
       <Position>103</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="648" parent="321" name="feature_094">
+    <column id="664" parent="322" name="feature_094">
       <Comment>模型特征槽位094</Comment>
       <Position>104</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="649" parent="321" name="feature_095">
+    <column id="665" parent="322" name="feature_095">
       <Comment>模型特征槽位095</Comment>
       <Position>105</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="650" parent="321" name="feature_096">
+    <column id="666" parent="322" name="feature_096">
       <Comment>模型特征槽位096</Comment>
       <Position>106</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="651" parent="321" name="feature_097">
+    <column id="667" parent="322" name="feature_097">
       <Comment>模型特征槽位097</Comment>
       <Position>107</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="652" parent="321" name="feature_098">
+    <column id="668" parent="322" name="feature_098">
       <Comment>模型特征槽位098</Comment>
       <Position>108</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="653" parent="321" name="feature_099">
+    <column id="669" parent="322" name="feature_099">
       <Comment>模型特征槽位099</Comment>
       <Position>109</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="654" parent="321" name="feature_100">
+    <column id="670" parent="322" name="feature_100">
       <Comment>模型特征槽位100</Comment>
       <Position>110</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="655" parent="321" name="feature_101">
+    <column id="671" parent="322" name="feature_101">
       <Comment>模型特征槽位101</Comment>
       <Position>111</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="656" parent="321" name="feature_102">
+    <column id="672" parent="322" name="feature_102">
       <Comment>模型特征槽位102</Comment>
       <Position>112</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="657" parent="321" name="feature_103">
+    <column id="673" parent="322" name="feature_103">
       <Comment>模型特征槽位103</Comment>
       <Position>113</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="658" parent="321" name="feature_104">
+    <column id="674" parent="322" name="feature_104">
       <Comment>模型特征槽位104</Comment>
       <Position>114</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="659" parent="321" name="feature_105">
+    <column id="675" parent="322" name="feature_105">
       <Comment>模型特征槽位105</Comment>
       <Position>115</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="660" parent="321" name="feature_106">
+    <column id="676" parent="322" name="feature_106">
       <Comment>模型特征槽位106</Comment>
       <Position>116</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="661" parent="321" name="feature_107">
+    <column id="677" parent="322" name="feature_107">
       <Comment>模型特征槽位107</Comment>
       <Position>117</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="662" parent="321" name="feature_108">
+    <column id="678" parent="322" name="feature_108">
       <Comment>模型特征槽位108</Comment>
       <Position>118</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="663" parent="321" name="feature_109">
+    <column id="679" parent="322" name="feature_109">
       <Comment>模型特征槽位109</Comment>
       <Position>119</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="664" parent="321" name="feature_110">
+    <column id="680" parent="322" name="feature_110">
       <Comment>模型特征槽位110</Comment>
       <Position>120</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="665" parent="321" name="feature_111">
+    <column id="681" parent="322" name="feature_111">
       <Comment>模型特征槽位111</Comment>
       <Position>121</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="666" parent="321" name="feature_112">
+    <column id="682" parent="322" name="feature_112">
       <Comment>模型特征槽位112</Comment>
       <Position>122</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="667" parent="321" name="feature_113">
+    <column id="683" parent="322" name="feature_113">
       <Comment>模型特征槽位113</Comment>
       <Position>123</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="668" parent="321" name="feature_114">
+    <column id="684" parent="322" name="feature_114">
       <Comment>模型特征槽位114</Comment>
       <Position>124</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="669" parent="321" name="feature_115">
+    <column id="685" parent="322" name="feature_115">
       <Comment>模型特征槽位115</Comment>
       <Position>125</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="670" parent="321" name="feature_116">
+    <column id="686" parent="322" name="feature_116">
       <Comment>模型特征槽位116</Comment>
       <Position>126</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="671" parent="321" name="feature_117">
+    <column id="687" parent="322" name="feature_117">
       <Comment>模型特征槽位117</Comment>
       <Position>127</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="672" parent="321" name="feature_118">
+    <column id="688" parent="322" name="feature_118">
       <Comment>模型特征槽位118</Comment>
       <Position>128</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="673" parent="321" name="feature_119">
+    <column id="689" parent="322" name="feature_119">
       <Comment>模型特征槽位119</Comment>
       <Position>129</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="674" parent="321" name="feature_120">
+    <column id="690" parent="322" name="feature_120">
       <Comment>模型特征槽位120</Comment>
       <Position>130</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="675" parent="321" name="feature_121">
+    <column id="691" parent="322" name="feature_121">
       <Comment>模型特征槽位121</Comment>
       <Position>131</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="676" parent="321" name="feature_122">
+    <column id="692" parent="322" name="feature_122">
       <Comment>模型特征槽位122</Comment>
       <Position>132</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="677" parent="321" name="feature_123">
+    <column id="693" parent="322" name="feature_123">
       <Comment>模型特征槽位123</Comment>
       <Position>133</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="678" parent="321" name="feature_124">
+    <column id="694" parent="322" name="feature_124">
       <Comment>模型特征槽位124</Comment>
       <Position>134</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="679" parent="321" name="feature_125">
+    <column id="695" parent="322" name="feature_125">
       <Comment>模型特征槽位125</Comment>
       <Position>135</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="680" parent="321" name="feature_126">
+    <column id="696" parent="322" name="feature_126">
       <Comment>模型特征槽位126</Comment>
       <Position>136</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="681" parent="321" name="feature_127">
+    <column id="697" parent="322" name="feature_127">
       <Comment>模型特征槽位127</Comment>
       <Position>137</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="682" parent="321" name="feature_128">
+    <column id="698" parent="322" name="feature_128">
       <Comment>模型特征槽位128</Comment>
       <Position>138</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="683" parent="321" name="feature_129">
+    <column id="699" parent="322" name="feature_129">
       <Comment>模型特征槽位129</Comment>
       <Position>139</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="684" parent="321" name="feature_130">
+    <column id="700" parent="322" name="feature_130">
       <Comment>模型特征槽位130</Comment>
       <Position>140</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="685" parent="321" name="feature_131">
+    <column id="701" parent="322" name="feature_131">
       <Comment>模型特征槽位131</Comment>
       <Position>141</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="686" parent="321" name="feature_132">
+    <column id="702" parent="322" name="feature_132">
       <Comment>模型特征槽位132</Comment>
       <Position>142</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="687" parent="321" name="feature_133">
+    <column id="703" parent="322" name="feature_133">
       <Comment>模型特征槽位133</Comment>
       <Position>143</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="688" parent="321" name="feature_134">
+    <column id="704" parent="322" name="feature_134">
       <Comment>模型特征槽位134</Comment>
       <Position>144</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="689" parent="321" name="feature_135">
+    <column id="705" parent="322" name="feature_135">
       <Comment>模型特征槽位135</Comment>
       <Position>145</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="690" parent="321" name="feature_136">
+    <column id="706" parent="322" name="feature_136">
       <Comment>模型特征槽位136</Comment>
       <Position>146</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="691" parent="321" name="feature_137">
+    <column id="707" parent="322" name="feature_137">
       <Comment>模型特征槽位137</Comment>
       <Position>147</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="692" parent="321" name="feature_138">
+    <column id="708" parent="322" name="feature_138">
       <Comment>模型特征槽位138</Comment>
       <Position>148</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="693" parent="321" name="feature_139">
+    <column id="709" parent="322" name="feature_139">
       <Comment>模型特征槽位139</Comment>
       <Position>149</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="694" parent="321" name="feature_140">
+    <column id="710" parent="322" name="feature_140">
       <Comment>模型特征槽位140</Comment>
       <Position>150</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="695" parent="321" name="feature_141">
+    <column id="711" parent="322" name="feature_141">
       <Comment>模型特征槽位141</Comment>
       <Position>151</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="696" parent="321" name="feature_142">
+    <column id="712" parent="322" name="feature_142">
       <Comment>模型特征槽位142</Comment>
       <Position>152</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="697" parent="321" name="feature_143">
+    <column id="713" parent="322" name="feature_143">
       <Comment>模型特征槽位143</Comment>
       <Position>153</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="698" parent="321" name="feature_144">
+    <column id="714" parent="322" name="feature_144">
       <Comment>模型特征槽位144</Comment>
       <Position>154</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="699" parent="321" name="feature_145">
+    <column id="715" parent="322" name="feature_145">
       <Comment>模型特征槽位145</Comment>
       <Position>155</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="700" parent="321" name="feature_146">
+    <column id="716" parent="322" name="feature_146">
       <Comment>模型特征槽位146</Comment>
       <Position>156</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="701" parent="321" name="feature_147">
+    <column id="717" parent="322" name="feature_147">
       <Comment>模型特征槽位147</Comment>
       <Position>157</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="702" parent="321" name="feature_148">
+    <column id="718" parent="322" name="feature_148">
       <Comment>模型特征槽位148</Comment>
       <Position>158</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="703" parent="321" name="feature_149">
+    <column id="719" parent="322" name="feature_149">
       <Comment>模型特征槽位149</Comment>
       <Position>159</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="704" parent="321" name="feature_150">
+    <column id="720" parent="322" name="feature_150">
       <Comment>模型特征槽位150</Comment>
       <Position>160</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="705" parent="321" name="feature_151">
+    <column id="721" parent="322" name="feature_151">
       <Comment>模型特征槽位151</Comment>
       <Position>161</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="706" parent="321" name="feature_152">
+    <column id="722" parent="322" name="feature_152">
       <Comment>模型特征槽位152</Comment>
       <Position>162</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="707" parent="321" name="feature_153">
+    <column id="723" parent="322" name="feature_153">
       <Comment>模型特征槽位153</Comment>
       <Position>163</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="708" parent="321" name="feature_154">
+    <column id="724" parent="322" name="feature_154">
       <Comment>模型特征槽位154</Comment>
       <Position>164</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="709" parent="321" name="feature_155">
+    <column id="725" parent="322" name="feature_155">
       <Comment>模型特征槽位155</Comment>
       <Position>165</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="710" parent="321" name="feature_156">
+    <column id="726" parent="322" name="feature_156">
       <Comment>模型特征槽位156</Comment>
       <Position>166</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="711" parent="321" name="feature_157">
+    <column id="727" parent="322" name="feature_157">
       <Comment>模型特征槽位157</Comment>
       <Position>167</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="712" parent="321" name="feature_158">
+    <column id="728" parent="322" name="feature_158">
       <Comment>模型特征槽位158</Comment>
       <Position>168</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="713" parent="321" name="feature_159">
+    <column id="729" parent="322" name="feature_159">
       <Comment>模型特征槽位159</Comment>
       <Position>169</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="714" parent="321" name="feature_160">
+    <column id="730" parent="322" name="feature_160">
       <Comment>模型特征槽位160</Comment>
       <Position>170</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="715" parent="321" name="feature_161">
+    <column id="731" parent="322" name="feature_161">
       <Comment>模型特征槽位161</Comment>
       <Position>171</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="716" parent="321" name="feature_162">
+    <column id="732" parent="322" name="feature_162">
       <Comment>模型特征槽位162</Comment>
       <Position>172</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="717" parent="321" name="feature_163">
+    <column id="733" parent="322" name="feature_163">
       <Comment>模型特征槽位163</Comment>
       <Position>173</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="718" parent="321" name="feature_164">
+    <column id="734" parent="322" name="feature_164">
       <Comment>模型特征槽位164</Comment>
       <Position>174</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="719" parent="321" name="feature_165">
+    <column id="735" parent="322" name="feature_165">
       <Comment>模型特征槽位165</Comment>
       <Position>175</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="720" parent="321" name="feature_166">
+    <column id="736" parent="322" name="feature_166">
       <Comment>模型特征槽位166</Comment>
       <Position>176</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="721" parent="321" name="feature_167">
+    <column id="737" parent="322" name="feature_167">
       <Comment>模型特征槽位167</Comment>
       <Position>177</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="722" parent="321" name="feature_168">
+    <column id="738" parent="322" name="feature_168">
       <Comment>模型特征槽位168</Comment>
       <Position>178</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="723" parent="321" name="feature_169">
+    <column id="739" parent="322" name="feature_169">
       <Comment>模型特征槽位169</Comment>
       <Position>179</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="724" parent="321" name="feature_170">
+    <column id="740" parent="322" name="feature_170">
       <Comment>模型特征槽位170</Comment>
       <Position>180</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="725" parent="321" name="feature_171">
+    <column id="741" parent="322" name="feature_171">
       <Comment>模型特征槽位171</Comment>
       <Position>181</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="726" parent="321" name="feature_172">
+    <column id="742" parent="322" name="feature_172">
       <Comment>模型特征槽位172</Comment>
       <Position>182</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="727" parent="321" name="feature_173">
+    <column id="743" parent="322" name="feature_173">
       <Comment>模型特征槽位173</Comment>
       <Position>183</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="728" parent="321" name="feature_174">
+    <column id="744" parent="322" name="feature_174">
       <Comment>模型特征槽位174</Comment>
       <Position>184</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="729" parent="321" name="feature_175">
+    <column id="745" parent="322" name="feature_175">
       <Comment>模型特征槽位175</Comment>
       <Position>185</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="730" parent="321" name="feature_176">
+    <column id="746" parent="322" name="feature_176">
       <Comment>模型特征槽位176</Comment>
       <Position>186</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="731" parent="321" name="feature_177">
+    <column id="747" parent="322" name="feature_177">
       <Comment>模型特征槽位177</Comment>
       <Position>187</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="732" parent="321" name="feature_178">
+    <column id="748" parent="322" name="feature_178">
       <Comment>模型特征槽位178</Comment>
       <Position>188</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="733" parent="321" name="feature_179">
+    <column id="749" parent="322" name="feature_179">
       <Comment>模型特征槽位179</Comment>
       <Position>189</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="734" parent="321" name="feature_180">
+    <column id="750" parent="322" name="feature_180">
       <Comment>模型特征槽位180</Comment>
       <Position>190</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="735" parent="321" name="feature_181">
+    <column id="751" parent="322" name="feature_181">
       <Comment>模型特征槽位181</Comment>
       <Position>191</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="736" parent="321" name="feature_182">
+    <column id="752" parent="322" name="feature_182">
       <Comment>模型特征槽位182</Comment>
       <Position>192</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="737" parent="321" name="feature_183">
+    <column id="753" parent="322" name="feature_183">
       <Comment>模型特征槽位183</Comment>
       <Position>193</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="738" parent="321" name="feature_184">
+    <column id="754" parent="322" name="feature_184">
       <Comment>模型特征槽位184</Comment>
       <Position>194</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="739" parent="321" name="feature_185">
+    <column id="755" parent="322" name="feature_185">
       <Comment>模型特征槽位185</Comment>
       <Position>195</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="740" parent="321" name="feature_186">
+    <column id="756" parent="322" name="feature_186">
       <Comment>模型特征槽位186</Comment>
       <Position>196</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="741" parent="321" name="feature_187">
+    <column id="757" parent="322" name="feature_187">
       <Comment>模型特征槽位187</Comment>
       <Position>197</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="742" parent="321" name="feature_188">
+    <column id="758" parent="322" name="feature_188">
       <Comment>模型特征槽位188</Comment>
       <Position>198</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="743" parent="321" name="feature_189">
+    <column id="759" parent="322" name="feature_189">
       <Comment>模型特征槽位189</Comment>
       <Position>199</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="744" parent="321" name="feature_190">
+    <column id="760" parent="322" name="feature_190">
       <Comment>模型特征槽位190</Comment>
       <Position>200</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="745" parent="321" name="feature_191">
+    <column id="761" parent="322" name="feature_191">
       <Comment>模型特征槽位191</Comment>
       <Position>201</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="746" parent="321" name="feature_192">
+    <column id="762" parent="322" name="feature_192">
       <Comment>模型特征槽位192</Comment>
       <Position>202</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="747" parent="321" name="feature_193">
+    <column id="763" parent="322" name="feature_193">
       <Comment>模型特征槽位193</Comment>
       <Position>203</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="748" parent="321" name="feature_194">
+    <column id="764" parent="322" name="feature_194">
       <Comment>模型特征槽位194</Comment>
       <Position>204</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="749" parent="321" name="feature_195">
+    <column id="765" parent="322" name="feature_195">
       <Comment>模型特征槽位195</Comment>
       <Position>205</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="750" parent="321" name="feature_196">
+    <column id="766" parent="322" name="feature_196">
       <Comment>模型特征槽位196</Comment>
       <Position>206</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="751" parent="321" name="feature_197">
+    <column id="767" parent="322" name="feature_197">
       <Comment>模型特征槽位197</Comment>
       <Position>207</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="752" parent="321" name="feature_198">
+    <column id="768" parent="322" name="feature_198">
       <Comment>模型特征槽位198</Comment>
       <Position>208</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="753" parent="321" name="feature_199">
+    <column id="769" parent="322" name="feature_199">
       <Comment>模型特征槽位199</Comment>
       <Position>209</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="754" parent="321" name="feature_200">
+    <column id="770" parent="322" name="feature_200">
       <Comment>模型特征槽位200</Comment>
       <Position>210</Position>
       <StoredType>double|0s</StoredType>
     </column>
-    <column id="755" parent="321" name="create_time">
+    <column id="771" parent="322" name="create_time">
       <Comment>创建时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <Position>211</Position>
       <StoredType>datetime|0s</StoredType>
     </column>
-    <column id="756" parent="321" name="update_time">
+    <column id="772" parent="322" name="update_time">
       <Comment>更新时间</Comment>
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>212</Position>
       <StoredType>datetime|0s</StoredType>
     </column>
-    <index id="757" parent="321" name="PRIMARY">
+    <index id="773" parent="322" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="758" parent="321" name="idx_stat_date">
+    <index id="774" parent="322" name="idx_stat_date">
       <ColNames>stat_date</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="759" parent="321" name="idx_time_granularity">
+    <index id="775" parent="322" name="idx_time_granularity">
       <ColNames>time_granularity</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="760" parent="321" name="idx_province_code">
+    <index id="776" parent="322" name="idx_province_code">
       <ColNames>region_code</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="761" parent="321" name="idx_customer_code">
+    <index id="777" parent="322" name="idx_customer_code">
       <ColNames>customer_code</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="762" parent="321" name="idx_industry_code">
+    <index id="778" parent="322" name="idx_industry_code">
       <ColNames>industry_code</ColNames>
-      <Type>btree</Type>
-    </index>
-    <key id="763" parent="321" name="PRIMARY">
-      <NameSurrogate>1</NameSurrogate>
-      <Primary>1</Primary>
-      <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
-    </key>
-    <column id="764" parent="322" name="id">
-      <AutoIncrement>5671</AutoIncrement>
-      <Comment>主键ID</Comment>
-      <NotNull>1</NotNull>
-      <Position>1</Position>
-      <StoredType>bigint|0s</StoredType>
-    </column>
-    <column id="765" parent="322" name="region_code">
-      <Comment>地区编号</Comment>
-      <NotNull>1</NotNull>
-      <Position>2</Position>
-      <StoredType>varchar(64)|0s</StoredType>
-    </column>
-    <column id="766" parent="322" name="region_name">
-      <Comment>地区名称</Comment>
-      <NotNull>1</NotNull>
-      <Position>3</Position>
-      <StoredType>varchar(100)|0s</StoredType>
-    </column>
-    <column id="767" parent="322" name="stat_date">
-      <Comment>旬起始日期，01上旬、11中旬、21下旬</Comment>
-      <NotNull>1</NotNull>
-      <Position>4</Position>
-      <StoredType>varchar(16)|0s</StoredType>
-    </column>
-    <column id="768" parent="322" name="gas_sales">
-      <Comment>天然气销量</Comment>
-      <Position>5</Position>
-      <StoredType>decimal(18,4 digit)|0s</StoredType>
-    </column>
-    <column id="769" parent="322" name="avg_temp">
-      <Comment>旬平均温度</Comment>
-      <Position>6</Position>
-      <StoredType>decimal(8,4 digit)|0s</StoredType>
-    </column>
-    <column id="770" parent="322" name="max_temp">
-      <Comment>旬最高温度</Comment>
-      <Position>7</Position>
-      <StoredType>decimal(8,2 digit)|0s</StoredType>
-    </column>
-    <column id="771" parent="322" name="min_temp">
-      <Comment>旬最低温度</Comment>
-      <Position>8</Position>
-      <StoredType>decimal(8,2 digit)|0s</StoredType>
-    </column>
-    <column id="772" parent="322" name="hdd">
-      <Comment>采暖度日HDD</Comment>
-      <Position>9</Position>
-      <StoredType>decimal(10,2 digit)|0s</StoredType>
-    </column>
-    <column id="773" parent="322" name="extreme_cold_days">
-      <Comment>极端低温天数</Comment>
-      <Position>10</Position>
-      <StoredType>smallint|0s</StoredType>
-    </column>
-    <column id="774" parent="322" name="created_at">
-      <Comment>创建时间</Comment>
-      <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
-      <NotNull>1</NotNull>
-      <Position>11</Position>
-      <StoredType>datetime|0s</StoredType>
-    </column>
-    <column id="775" parent="322" name="updated_at">
-      <Comment>更新时间</Comment>
-      <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
-      <NotNull>1</NotNull>
-      <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
-      <Position>12</Position>
-      <StoredType>datetime|0s</StoredType>
-    </column>
-    <index id="776" parent="322" name="PRIMARY">
-      <ColNames>id</ColNames>
-      <Type>btree</Type>
-      <Unique>1</Unique>
-    </index>
-    <index id="777" parent="322" name="uk_region_stat_date">
-      <ColNames>region_code
-stat_date</ColNames>
-      <Type>btree</Type>
-      <Unique>1</Unique>
-    </index>
-    <index id="778" parent="322" name="idx_stat_date">
-      <ColNames>stat_date</ColNames>
       <Type>btree</Type>
     </index>
     <key id="779" parent="322" name="PRIMARY">
@@ -3441,517 +3436,612 @@ stat_date</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="780" parent="322" name="uk_region_stat_date">
+    <column id="780" parent="323" name="id">
+      <AutoIncrement>5671</AutoIncrement>
+      <Comment>主键ID</Comment>
+      <NotNull>1</NotNull>
+      <Position>1</Position>
+      <StoredType>bigint|0s</StoredType>
+    </column>
+    <column id="781" parent="323" name="region_code">
+      <Comment>地区编号</Comment>
+      <NotNull>1</NotNull>
+      <Position>2</Position>
+      <StoredType>varchar(64)|0s</StoredType>
+    </column>
+    <column id="782" parent="323" name="region_name">
+      <Comment>地区名称</Comment>
+      <NotNull>1</NotNull>
+      <Position>3</Position>
+      <StoredType>varchar(100)|0s</StoredType>
+    </column>
+    <column id="783" parent="323" name="stat_date">
+      <Comment>旬起始日期，01上旬、11中旬、21下旬</Comment>
+      <NotNull>1</NotNull>
+      <Position>4</Position>
+      <StoredType>varchar(16)|0s</StoredType>
+    </column>
+    <column id="784" parent="323" name="gas_sales">
+      <Comment>天然气销量</Comment>
+      <Position>5</Position>
+      <StoredType>decimal(18,4 digit)|0s</StoredType>
+    </column>
+    <column id="785" parent="323" name="avg_temp">
+      <Comment>旬平均温度</Comment>
+      <Position>6</Position>
+      <StoredType>decimal(8,4 digit)|0s</StoredType>
+    </column>
+    <column id="786" parent="323" name="max_temp">
+      <Comment>旬最高温度</Comment>
+      <Position>7</Position>
+      <StoredType>decimal(8,2 digit)|0s</StoredType>
+    </column>
+    <column id="787" parent="323" name="min_temp">
+      <Comment>旬最低温度</Comment>
+      <Position>8</Position>
+      <StoredType>decimal(8,2 digit)|0s</StoredType>
+    </column>
+    <column id="788" parent="323" name="hdd">
+      <Comment>采暖度日HDD</Comment>
+      <Position>9</Position>
+      <StoredType>decimal(10,2 digit)|0s</StoredType>
+    </column>
+    <column id="789" parent="323" name="extreme_cold_days">
+      <Comment>极端低温天数</Comment>
+      <Position>10</Position>
+      <StoredType>smallint|0s</StoredType>
+    </column>
+    <column id="790" parent="323" name="created_at">
+      <Comment>创建时间</Comment>
+      <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
+      <NotNull>1</NotNull>
+      <Position>11</Position>
+      <StoredType>datetime|0s</StoredType>
+    </column>
+    <column id="791" parent="323" name="updated_at">
+      <Comment>更新时间</Comment>
+      <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
+      <NotNull>1</NotNull>
+      <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
+      <Position>12</Position>
+      <StoredType>datetime|0s</StoredType>
+    </column>
+    <index id="792" parent="323" name="PRIMARY">
+      <ColNames>id</ColNames>
+      <Type>btree</Type>
+      <Unique>1</Unique>
+    </index>
+    <index id="793" parent="323" name="uk_region_stat_date">
+      <ColNames>region_code
+stat_date</ColNames>
+      <Type>btree</Type>
+      <Unique>1</Unique>
+    </index>
+    <index id="794" parent="323" name="idx_stat_date">
+      <ColNames>stat_date</ColNames>
+      <Type>btree</Type>
+    </index>
+    <key id="795" parent="323" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <Primary>1</Primary>
+      <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
+    </key>
+    <key id="796" parent="323" name="uk_region_stat_date">
       <UnderlyingIndexName>uk_region_stat_date</UnderlyingIndexName>
     </key>
-    <column id="781" parent="323" name="code_type">
+    <column id="797" parent="324" name="code_type">
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="782" parent="323" name="current_value">
+    <column id="798" parent="324" name="current_value">
       <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="783" parent="323" name="updated_at">
+    <column id="799" parent="324" name="updated_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>3</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="784" parent="323" name="PRIMARY">
+    <index id="800" parent="324" name="PRIMARY">
       <ColNames>code_type</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="785" parent="323" name="PRIMARY">
+    <key id="801" parent="324" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="786" parent="324" name="id">
+    <column id="802" parent="325" name="id">
       <AutoIncrement>1</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="787" parent="324" name="department_id">
+    <column id="803" parent="325" name="department_id">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="788" parent="324" name="permission_id">
+    <column id="804" parent="325" name="permission_id">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <index id="789" parent="324" name="PRIMARY">
+    <index id="805" parent="325" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="790" parent="324" name="uk_sys_department_permission">
+    <index id="806" parent="325" name="uk_sys_department_permission">
       <ColNames>department_id
 permission_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="791" parent="324" name="idx_sys_department_permission_department">
+    <index id="807" parent="325" name="idx_sys_department_permission_department">
       <ColNames>department_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="792" parent="324" name="idx_sys_department_permission_permission">
+    <index id="808" parent="325" name="idx_sys_department_permission_permission">
       <ColNames>permission_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="793" parent="324" name="PRIMARY">
+    <key id="809" parent="325" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="794" parent="324" name="uk_sys_department_permission">
+    <key id="810" parent="325" name="uk_sys_department_permission">
       <UnderlyingIndexName>uk_sys_department_permission</UnderlyingIndexName>
     </key>
-    <column id="795" parent="325" name="id">
+    <column id="811" parent="326" name="id">
       <AutoIncrement>8</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="796" parent="325" name="parent_id">
+    <column id="812" parent="326" name="parent_id">
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="797" parent="325" name="department_name">
+    <column id="813" parent="326" name="department_name">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="798" parent="325" name="org_code">
+    <column id="814" parent="326" name="org_code">
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="799" parent="325" name="sort_no">
+    <column id="815" parent="326" name="sort_no">
       <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>int|0s</StoredType>
     </column>
-    <column id="800" parent="325" name="status">
+    <column id="816" parent="326" name="status">
       <DefaultExpression>1</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>tinyint|0s</StoredType>
     </column>
-    <column id="801" parent="325" name="created_at">
+    <column id="817" parent="326" name="created_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>7</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="802" parent="325" name="updated_at">
+    <column id="818" parent="326" name="updated_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>8</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="803" parent="325" name="PRIMARY">
+    <index id="819" parent="326" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="804" parent="325" name="uk_sys_department_org_code">
+    <index id="820" parent="326" name="uk_sys_department_org_code">
       <ColNames>org_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="805" parent="325" name="idx_sys_department_parent">
+    <index id="821" parent="326" name="idx_sys_department_parent">
       <ColNames>parent_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="806" parent="325" name="PRIMARY">
+    <key id="822" parent="326" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="807" parent="325" name="uk_sys_department_org_code">
+    <key id="823" parent="326" name="uk_sys_department_org_code">
       <UnderlyingIndexName>uk_sys_department_org_code</UnderlyingIndexName>
     </key>
-    <column id="808" parent="326" name="id">
+    <column id="824" parent="327" name="id">
       <AutoIncrement>6104</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="809" parent="326" name="parent_id">
+    <column id="825" parent="327" name="parent_id">
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="810" parent="326" name="permission_name">
+    <column id="826" parent="327" name="permission_name">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="811" parent="326" name="path">
+    <column id="827" parent="327" name="path">
       <Position>4</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="812" parent="326" name="component">
+    <column id="828" parent="327" name="component">
       <Position>5</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="813" parent="326" name="permission_type">
-      <Comment>MENU or BUTTON</Comment>
+    <column id="829" parent="327" name="permission_type">
+      <Comment>DIRECTORY, MENU or BUTTON</Comment>
       <NotNull>1</NotNull>
       <Position>6</Position>
       <StoredType>varchar(16)|0s</StoredType>
     </column>
-    <column id="814" parent="326" name="perms">
+    <column id="830" parent="327" name="perms">
       <Position>7</Position>
       <StoredType>varchar(128)|0s</StoredType>
     </column>
-    <column id="815" parent="326" name="icon">
+    <column id="831" parent="327" name="button_code">
+      <Comment>custom button identifier</Comment>
       <Position>8</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="816" parent="326" name="sort_no">
-      <DefaultExpression>0</DefaultExpression>
-      <NotNull>1</NotNull>
+    <column id="832" parent="327" name="icon">
       <Position>9</Position>
-      <StoredType>int|0s</StoredType>
+      <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="817" parent="326" name="hidden">
+    <column id="833" parent="327" name="sort_no">
       <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>10</Position>
-      <StoredType>tinyint|0s</StoredType>
+      <StoredType>int|0s</StoredType>
     </column>
-    <column id="818" parent="326" name="status">
-      <DefaultExpression>1</DefaultExpression>
+    <column id="834" parent="327" name="hidden">
+      <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>11</Position>
       <StoredType>tinyint|0s</StoredType>
     </column>
-    <column id="819" parent="326" name="created_at">
-      <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
+    <column id="835" parent="327" name="status">
+      <DefaultExpression>1</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>12</Position>
-      <StoredType>timestamp|0s</StoredType>
+      <StoredType>tinyint|0s</StoredType>
     </column>
-    <column id="820" parent="326" name="updated_at">
+    <column id="836" parent="327" name="created_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
-      <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>13</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="821" parent="326" name="PRIMARY">
+    <column id="837" parent="327" name="updated_at">
+      <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
+      <NotNull>1</NotNull>
+      <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
+      <Position>14</Position>
+      <StoredType>timestamp|0s</StoredType>
+    </column>
+    <index id="838" parent="327" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="822" parent="326" name="uk_sys_permission_path">
+    <index id="839" parent="327" name="uk_sys_permission_path">
       <ColNames>path</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="823" parent="326" name="idx_sys_permission_parent">
+    <index id="840" parent="327" name="idx_sys_permission_parent">
       <ColNames>parent_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="824" parent="326" name="idx_sys_permission_type">
+    <index id="841" parent="327" name="idx_sys_permission_type">
       <ColNames>permission_type</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="825" parent="326" name="idx_sys_permission_perms">
+    <index id="842" parent="327" name="idx_sys_permission_perms">
       <ColNames>perms</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="826" parent="326" name="PRIMARY">
+    <key id="843" parent="327" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="827" parent="326" name="uk_sys_permission_path">
+    <key id="844" parent="327" name="uk_sys_permission_path">
       <UnderlyingIndexName>uk_sys_permission_path</UnderlyingIndexName>
     </key>
-    <column id="828" parent="327" name="id">
+    <column id="845" parent="328" name="id">
       <AutoIncrement>78</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="829" parent="327" name="role_id">
+    <column id="846" parent="328" name="role_id">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="830" parent="327" name="permission_id">
+    <column id="847" parent="328" name="permission_id">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <index id="831" parent="327" name="PRIMARY">
+    <index id="848" parent="328" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="832" parent="327" name="uk_sys_role_permission">
+    <index id="849" parent="328" name="uk_sys_role_permission">
       <ColNames>role_id
 permission_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="833" parent="327" name="idx_sys_role_permission_role">
+    <index id="850" parent="328" name="idx_sys_role_permission_role">
       <ColNames>role_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="834" parent="327" name="idx_sys_role_permission_permission">
+    <index id="851" parent="328" name="idx_sys_role_permission_permission">
       <ColNames>permission_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="835" parent="327" name="PRIMARY">
+    <key id="852" parent="328" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="836" parent="327" name="uk_sys_role_permission">
+    <key id="853" parent="328" name="uk_sys_role_permission">
       <UnderlyingIndexName>uk_sys_role_permission</UnderlyingIndexName>
     </key>
-    <column id="837" parent="328" name="id">
+    <column id="854" parent="329" name="id">
       <AutoIncrement>2</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="838" parent="328" name="role_code">
+    <column id="855" parent="329" name="role_code">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="839" parent="328" name="role_name">
+    <column id="856" parent="329" name="role_name">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="840" parent="328" name="description">
+    <column id="857" parent="329" name="description">
       <Position>4</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="841" parent="328" name="created_at">
+    <column id="858" parent="329" name="created_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="842" parent="328" name="updated_at">
+    <column id="859" parent="329" name="updated_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>6</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="843" parent="328" name="PRIMARY">
+    <index id="860" parent="329" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="844" parent="328" name="uk_sys_role_code">
+    <index id="861" parent="329" name="uk_sys_role_code">
       <ColNames>role_code</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="845" parent="328" name="PRIMARY">
+    <key id="862" parent="329" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="846" parent="328" name="uk_sys_role_code">
+    <key id="863" parent="329" name="uk_sys_role_code">
       <UnderlyingIndexName>uk_sys_role_code</UnderlyingIndexName>
     </key>
-    <column id="847" parent="329" name="id">
+    <column id="864" parent="330" name="id">
       <AutoIncrement>6</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="848" parent="329" name="user_id">
+    <column id="865" parent="330" name="user_id">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="849" parent="329" name="department_id">
+    <column id="866" parent="330" name="department_id">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <index id="850" parent="329" name="PRIMARY">
+    <index id="867" parent="330" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="851" parent="329" name="uk_sys_user_department">
+    <index id="868" parent="330" name="uk_sys_user_department">
       <ColNames>user_id
 department_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="852" parent="329" name="idx_sys_user_department_user">
+    <index id="869" parent="330" name="idx_sys_user_department_user">
       <ColNames>user_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="853" parent="329" name="idx_sys_user_department_department">
+    <index id="870" parent="330" name="idx_sys_user_department_department">
       <ColNames>department_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="854" parent="329" name="PRIMARY">
+    <key id="871" parent="330" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="855" parent="329" name="uk_sys_user_department">
+    <key id="872" parent="330" name="uk_sys_user_department">
       <UnderlyingIndexName>uk_sys_user_department</UnderlyingIndexName>
     </key>
-    <column id="856" parent="330" name="id">
+    <column id="873" parent="331" name="id">
       <AutoIncrement>6</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="857" parent="330" name="user_id">
+    <column id="874" parent="331" name="user_id">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="858" parent="330" name="role_id">
+    <column id="875" parent="331" name="role_id">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <index id="859" parent="330" name="PRIMARY">
+    <index id="876" parent="331" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="860" parent="330" name="uk_sys_user_role">
+    <index id="877" parent="331" name="uk_sys_user_role">
       <ColNames>user_id
 role_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="861" parent="330" name="idx_sys_user_role_user">
+    <index id="878" parent="331" name="idx_sys_user_role_user">
       <ColNames>user_id</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="862" parent="330" name="idx_sys_user_role_role">
+    <index id="879" parent="331" name="idx_sys_user_role_role">
       <ColNames>role_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="863" parent="330" name="PRIMARY">
+    <key id="880" parent="331" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="864" parent="330" name="uk_sys_user_role">
+    <key id="881" parent="331" name="uk_sys_user_role">
       <UnderlyingIndexName>uk_sys_user_role</UnderlyingIndexName>
     </key>
-    <column id="865" parent="331" name="id">
+    <column id="882" parent="332" name="id">
       <AutoIncrement>2</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>bigint|0s</StoredType>
     </column>
-    <column id="866" parent="331" name="username">
+    <column id="883" parent="332" name="username">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="867" parent="331" name="real_name">
+    <column id="884" parent="332" name="real_name">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="868" parent="331" name="password_hash">
+    <column id="885" parent="332" name="password_hash">
       <NotNull>1</NotNull>
       <Position>4</Position>
       <StoredType>varchar(128)|0s</StoredType>
     </column>
-    <column id="869" parent="331" name="password_salt">
+    <column id="886" parent="332" name="password_salt">
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="870" parent="331" name="avatar">
+    <column id="887" parent="332" name="avatar">
       <Position>6</Position>
       <StoredType>varchar(255)|0s</StoredType>
     </column>
-    <column id="871" parent="331" name="email">
+    <column id="888" parent="332" name="email">
       <Position>7</Position>
       <StoredType>varchar(128)|0s</StoredType>
     </column>
-    <column id="872" parent="331" name="phone">
+    <column id="889" parent="332" name="phone">
       <Position>8</Position>
       <StoredType>varchar(32)|0s</StoredType>
     </column>
-    <column id="873" parent="331" name="org_code">
+    <column id="890" parent="332" name="org_code">
       <Position>9</Position>
       <StoredType>varchar(64)|0s</StoredType>
     </column>
-    <column id="874" parent="331" name="status">
+    <column id="891" parent="332" name="status">
       <Comment>1 normal, 0 disabled</Comment>
       <DefaultExpression>1</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>10</Position>
       <StoredType>tinyint|0s</StoredType>
     </column>
-    <column id="875" parent="331" name="deleted">
+    <column id="892" parent="332" name="deleted">
       <DefaultExpression>0</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>11</Position>
       <StoredType>tinyint|0s</StoredType>
     </column>
-    <column id="876" parent="331" name="created_at">
+    <column id="893" parent="332" name="created_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <Position>12</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <column id="877" parent="331" name="updated_at">
+    <column id="894" parent="332" name="updated_at">
       <DefaultExpression>CURRENT_TIMESTAMP</DefaultExpression>
       <NotNull>1</NotNull>
       <OnUpdate>CURRENT_TIMESTAMP</OnUpdate>
       <Position>13</Position>
       <StoredType>timestamp|0s</StoredType>
     </column>
-    <index id="878" parent="331" name="PRIMARY">
+    <index id="895" parent="332" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="879" parent="331" name="uk_sys_user_username">
+    <index id="896" parent="332" name="uk_sys_user_username">
       <ColNames>username</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="880" parent="331" name="idx_sys_user_status">
+    <index id="897" parent="332" name="idx_sys_user_status">
       <ColNames>status</ColNames>
       <Type>btree</Type>
     </index>
-    <index id="881" parent="331" name="idx_sys_user_deleted">
+    <index id="898" parent="332" name="idx_sys_user_deleted">
       <ColNames>deleted</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="882" parent="331" name="PRIMARY">
+    <key id="899" parent="332" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="883" parent="331" name="uk_sys_user_username">
+    <key id="900" parent="332" name="uk_sys_user_username">
       <UnderlyingIndexName>uk_sys_user_username</UnderlyingIndexName>
     </key>
   </database-model>

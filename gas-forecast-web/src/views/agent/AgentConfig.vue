@@ -22,6 +22,11 @@
         <el-table-column type="index" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
         <el-table-column prop="configCode" label="配置编码" min-width="150" />
         <el-table-column prop="configName" label="配置名称" min-width="180" />
+        <el-table-column v-if="configType === 'train'" label="所属模型" min-width="180">
+          <template #default="{ row }">
+            <span>{{ row.modelName || row.modelCode || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="作用范围" min-width="170">
           <template #default="{ row }">
             {{ formatScope(row) }}
@@ -73,6 +78,23 @@
       <el-form class="config-form" label-position="top" :model="form">
         <el-form-item label="配置名称">
           <el-input v-model="form.configName" placeholder="请输入配置名称" />
+        </el-form-item>
+        <el-form-item v-if="configType === 'train'" label="所属模型" required>
+          <el-select
+            v-model="form.modelCode"
+            filterable
+            :disabled="modelOptions.length === 0"
+            no-data-text="当前智能体暂无可用模型"
+            placeholder="请选择所属模型"
+            @change="handleModelChange"
+          >
+            <el-option
+              v-for="model in modelOptions"
+              :key="model.modelCode"
+              :label="`${model.modelName}（${model.modelCode}）`"
+              :value="model.modelCode"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="执行范围">
           <el-segmented v-model="form.scopeMode" :options="scopeModeOptions" />
@@ -200,6 +222,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
+import { listPage, postJson } from '@/api/management'
 import AppTable from '@/components/AppTable.vue'
 import AppTablePanel from '@/components/AppTablePanel.vue'
 import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
@@ -211,6 +234,8 @@ type ExecutionMode = 'MANUAL' | 'SCHEDULED'
 interface ConfigRow {
   configCode: string
   configName: string
+  modelCode?: string
+  modelName?: string
   scopeMode: ScopeMode
   regionName?: string
   industryName?: string
@@ -234,6 +259,8 @@ interface ConfigRow {
 interface ConfigForm {
   configCode: string
   configName: string
+  modelCode: string
+  modelName: string
   scopeMode: ScopeMode
   regionName: string[]
   industryName: string[]
@@ -261,6 +288,13 @@ const appliedKeyword = ref('')
 const appliedStatus = ref('ALL')
 const drawerVisible = ref(false)
 const editingCode = ref('')
+const modelOptions = ref<ModelOption[]>([])
+
+interface ModelOption {
+  modelCode: string
+  modelName: string
+  agentCode: string
+}
 
 const regions = ['华北区域', '北京', '天津', '河北', '山东', '山西', '河南', '陕西']
 const industries = ['城燃', '工业', '电厂']
@@ -309,6 +343,8 @@ const weekdayOptions = [
 const form = reactive<ConfigForm>({
   configCode: '',
   configName: '',
+  modelCode: '',
+  modelName: '',
   scopeMode: 'ALL',
   regionName: [],
   industryName: [],
@@ -336,11 +372,14 @@ const buildDefaultRows = (): ConfigRow[] => {
   const agent = agentCode.value.toUpperCase().replace(/-/g, '_')
   const isTrain = configType.value === 'train'
   const frequency = getDefaultFrequency()
+  const defaultModel = modelOptions.value[0]
 
   return [
     {
       configCode: `${prefix}-${agent}-001`,
       configName: `${agentLabel.value}默认${pageLabel.value}`,
+      modelCode: isTrain ? defaultModel?.modelCode : undefined,
+      modelName: isTrain ? defaultModel?.modelName : undefined,
       scopeMode: 'ALL',
       frequency,
       executionTime: isTrain ? '02:00' : undefined,
@@ -357,6 +396,8 @@ const buildDefaultRows = (): ConfigRow[] => {
     {
       configCode: `${prefix}-${agent}-002`,
       configName: `${agentLabel.value}人工复核配置`,
+      modelCode: isTrain ? defaultModel?.modelCode : undefined,
+      modelName: isTrain ? defaultModel?.modelName : undefined,
       scopeMode: 'PARTIAL',
       regionName: '北京',
       industryName: agentCode.value === 'winter-supply' ? undefined : '城燃',
@@ -374,7 +415,8 @@ const buildDefaultRows = (): ConfigRow[] => {
 
 watch(
   () => [configType.value, agentCode.value],
-  () => {
+  async () => {
+    await loadModelOptions()
     configs.value = buildDefaultRows()
     keyword.value = ''
     statusFilter.value = 'ALL'
@@ -384,9 +426,35 @@ watch(
   { immediate: true }
 )
 
+const loadModelOptions = async () => {
+  if (configType.value !== 'train') {
+    modelOptions.value = []
+    return
+  }
+  try {
+    const result = await listPage('/model-config', { page: 1, size: 1000 })
+    modelOptions.value = result.records
+      .filter((item: Record<string, any>) => item.agentCode === agentCode.value)
+      .map((item: Record<string, any>) => ({
+        modelCode: item.configCode,
+        modelName: item.configName,
+        agentCode: item.agentCode
+      }))
+  } catch (error) {
+    modelOptions.value = []
+    ElMessage.error(error instanceof Error ? error.message : '模型列表加载失败')
+  }
+}
+
+const handleModelChange = () => {
+  const selected = modelOptions.value.find((item) => item.modelCode === form.modelCode)
+  form.modelName = selected?.modelName || ''
+}
+
 const filteredConfigs = computed(() => configs.value.filter((item) => {
   const searchText = appliedKeyword.value.trim()
-  const hitKeyword = !searchText || [item.configCode, item.configName].some((value) => value.includes(searchText))
+  const hitKeyword = !searchText || [item.configCode, item.configName, item.modelCode, item.modelName]
+    .some((value) => value?.includes(searchText))
   const hitStatus = appliedStatus.value === 'ALL' || (appliedStatus.value === 'ENABLED' ? item.enabled : !item.enabled)
   return hitKeyword && hitStatus
 }))
@@ -491,6 +559,8 @@ function parseTrainWindowSize(trainRange?: string) {
 const resetForm = () => {
   form.configCode = ''
   form.configName = ''
+  form.modelCode = configType.value === 'train' ? modelOptions.value[0]?.modelCode || '' : ''
+  form.modelName = configType.value === 'train' ? modelOptions.value[0]?.modelName || '' : ''
   form.scopeMode = 'ALL'
   form.regionName = []
   form.industryName = []
@@ -522,6 +592,8 @@ const openEdit = (row: ConfigRow) => {
   resetForm()
   form.configCode = row.configCode
   form.configName = row.configName
+  form.modelCode = row.modelCode || ''
+  form.modelName = row.modelName || ''
   form.scopeMode = row.scopeMode
   form.regionName = row.regionName ? row.regionName.split('、') : []
   form.industryName = row.industryName ? row.industryName.split('、') : []
@@ -543,10 +615,19 @@ const openEdit = (row: ConfigRow) => {
 const saveConfig = () => {
   const code = editingCode.value || `${configType.value === 'train' ? 'TRAIN' : 'FC'}-${Date.now()}`
   const isTrain = configType.value === 'train'
+  if (isTrain && !form.modelCode) {
+    ElMessage.warning(modelOptions.value.length === 0 ? '当前智能体暂无可用模型，请先配置模型' : '请选择所属模型')
+    return
+  }
+  if (isTrain && !form.modelName) {
+    handleModelChange()
+  }
   const frequency = isTrain && form.executionMode === 'MANUAL' ? 'MANUAL' : form.frequency
   const row: ConfigRow = {
     configCode: code,
     configName: form.configName || pageTitle.value,
+    modelCode: isTrain ? form.modelCode : undefined,
+    modelName: isTrain ? form.modelName : undefined,
     scopeMode: form.scopeMode,
     regionName: form.scopeMode === 'PARTIAL' ? form.regionName.join('、') : undefined,
     industryName: form.scopeMode === 'PARTIAL' ? form.industryName.join('、') : undefined,
@@ -578,10 +659,22 @@ const removeConfig = (configCode: string) => {
   configs.value = configs.value.filter((item) => item.configCode !== configCode)
 }
 
-const runConfig = (row: ConfigRow) => {
+const runConfig = async (row: ConfigRow) => {
   const actionName = configType.value === 'train' ? '训练任务' : '预测任务'
-  const batchPrefix = configType.value === 'train' ? 'TRAIN' : 'FC'
-  const taskCode = `${batchPrefix}-TASK-${Date.now()}`
+  if (configType.value === 'train') {
+    try {
+      const result = await postJson('/model-train-execution/execute', { configCode: row.configCode })
+      const data = result.data || {}
+      row.lastTaskCode = data.trainBatchNo || data.train_batch_no || row.lastTaskCode
+      row.lastTaskAt = getCurrentTime()
+      row.updatedAt = row.lastTaskAt
+      ElMessage.success(`已创建${actionName}：${row.lastTaskCode}，训练数据 ${data.datasetSize || 0} 条`)
+    } catch (error) {
+      ElMessage.error(error instanceof Error ? error.message : '训练任务创建失败')
+    }
+    return
+  }
+  const taskCode = `FC-TASK-${Date.now()}`
 
   row.lastTaskCode = taskCode
   row.lastTaskAt = getCurrentTime()

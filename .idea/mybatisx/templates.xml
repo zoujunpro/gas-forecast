@@ -69,12 +69,8 @@
             <option name="tableUIInfoList">
               <list>
                 <TableUIInfo>
-                  <option name="className" value="ModelTrainFeatureDataTb" />
-                  <option name="tableName" value="model_train_feature_data_tb" />
-                </TableUIInfo>
-                <TableUIInfo>
-                  <option name="className" value="ModelFeatureDefinitionTb" />
-                  <option name="tableName" value="model_feature_definition_tb" />
+                  <option name="className" value="ModelFeatureRef" />
+                  <option name="tableName" value="model_feature_ref" />
                 </TableUIInfo>
               </list>
             </option>

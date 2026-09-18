@@ -12,7 +12,7 @@ insert into sys_code_sequence_tb (code_type, current_value) values
     ('IND', 0),
     ('CUS', 0),
     ('FIL', 0),
-    ('MCF', 0)
+    ('MODEL', 0)
 on duplicate key update code_type = values(code_type);
 
 alter table data_file_info_tb add column file_code varchar(64) null comment '文件编码' after id;
@@ -54,9 +54,9 @@ where code_type = 'FIL';
 update sys_code_sequence_tb
 set current_value = greatest(
     current_value,
-    coalesce((select max(cast(substr(config_code, 4) as unsigned)) from model_config_tb where config_code regexp '^MCF[0-9]+$'), 0)
+    coalesce((select max(cast(substr(model_code, 6) as unsigned)) from model_config_tb where model_code regexp '^MODEL[0-9]+$'), 0)
 )
-where code_type = 'MCF';
+where code_type = 'MODEL';
 
 alter table base_region_tb add unique key uk_base_region_code (region_code);
 alter table base_industry_tb add unique key uk_base_industry_code (industry_code);

@@ -31,6 +31,11 @@ public class ModelConfigTb {
     private String modelName;
 
     /**
+     * 模型版本
+     */
+    private String modelVersion;
+
+    /**
      * 智能体编码
      */
     private String agentCode;

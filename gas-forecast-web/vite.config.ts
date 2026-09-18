@@ -37,7 +37,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
-      '^/model-config/.*': {
+      '^/(model-config|model-feature-definition|model-train-feature-data)/.*': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`

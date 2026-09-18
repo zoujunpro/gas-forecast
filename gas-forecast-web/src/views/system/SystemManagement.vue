@@ -13,22 +13,46 @@
           @clear="searchData"
           @keyup.enter="searchData"
         />
+        <el-select
+          v-if="config.mode === 'permissions'"
+          v-model="permissionKindFilter"
+          class="filter-select"
+          @change="searchData"
+        >
+          <el-option label="全部类型" value="" />
+          <el-option label="目录" value="DIRECTORY" />
+          <el-option label="菜单" value="MENU" />
+          <el-option label="按钮" value="BUTTON" />
+        </el-select>
+        <el-select
+          v-if="config.mode === 'permissions'"
+          v-model="statusFilter"
+          class="filter-select"
+          @change="searchData"
+        >
+          <el-option label="全部状态" value="" />
+          <el-option label="启用" :value="1" />
+          <el-option label="停用" :value="0" />
+        </el-select>
         <el-button type="primary" :icon="Search" @click="searchData">查询</el-button>
-        <el-button type="info" plain @click="resetSearch">重置</el-button>
+        <el-button type="info" plain @click="resetAllFilters">重置</el-button>
       </template>
       <template #actions>
-        <PermissionButton type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">新增</PermissionButton>
+        <el-button v-if="config.mode === 'permissions'" plain :icon="Expand" @click="setTreeExpanded(true)">展开全部</el-button>
+        <el-button v-if="config.mode === 'permissions'" plain :icon="Fold" @click="setTreeExpanded(false)">折叠全部</el-button>
+        <PermissionButton type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">{{ config.mode === 'permissions' ? '新增菜单' : '新增' }}</PermissionButton>
       </template>
       <AppTable
+        :key="tableKey"
         v-loading="loading"
         :data="records"
         :row-key="rowKey"
         :tree-props="{ children: 'children' }"
-        default-expand-all
+        :default-expand-all="treeExpanded"
         stripe
         border
       >
-        <el-table-column type="index" :index="rowIndex" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
+        <el-table-column v-if="config.mode !== 'permissions'" type="index" :index="rowIndex" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
         <el-table-column
           v-for="field in config.tableFields"
           :key="field.prop"
@@ -36,8 +60,32 @@
           :label="field.label"
           :min-width="field.minWidth || 120"
         >
+          <template #header>
+            <el-tooltip v-if="field.tooltip" :content="field.tooltip" placement="top">
+              <span class="column-header-with-tip">{{ field.label }}</span>
+            </el-tooltip>
+            <span v-else>{{ field.label }}</span>
+          </template>
           <template #default="{ row }">
-            <ManagementTableCell :field="field" :row="row" />
+            <template v-if="config.mode === 'permissions' && field.prop === 'permissionName'">
+              <span class="menu-name-cell">
+                <el-icon class="menu-kind-icon">
+                  <Folder v-if="derivePermissionKind(row) === 'DIRECTORY'" />
+                  <Document v-else-if="derivePermissionKind(row) === 'MENU'" />
+                  <Pointer v-else />
+                </el-icon>
+                <span>{{ row.permissionName || '-' }}</span>
+              </span>
+            </template>
+            <template v-else-if="config.mode === 'permissions' && field.prop === 'status'">
+              <span class="status-cell">
+                <el-switch :model-value="row.status" :active-value="1" :inactive-value="0" disabled size="small" />
+                <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
+                  {{ row.status === 1 ? '启用' : '停用' }}
+                </el-tag>
+              </span>
+            </template>
+            <ManagementTableCell v-else :field="field" :row="row" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="210" fixed="right" class-name="action-column" label-class-name="action-column">
@@ -46,6 +94,15 @@
               <el-button link type="primary" @click="moveDepartment(row, -1)">上移</el-button>
               <el-button link type="primary" @click="moveDepartment(row, 1)">下移</el-button>
             </template>
+            <PermissionButton
+              v-if="config.mode === 'permissions' && row.permissionType !== 'BUTTON'"
+              link
+              type="primary"
+              :permission="config.permissions?.create"
+              @click="openCreateChild(row)"
+            >
+              新增
+            </PermissionButton>
             <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)">编辑</PermissionButton>
             <PermissionButton link type="danger" :permission="config.permissions?.delete" @click="removeRow(row)">删除</PermissionButton>
           </template>
@@ -102,7 +159,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, ElTree, type FormInstance, type FormRules } from 'element-plus'
-import { Check, Expand, Fold, Plus, RefreshLeft, Search } from '@element-plus/icons-vue'
+import { Check, Document, Expand, Folder, Fold, Plus, Pointer, RefreshLeft, Search } from '@element-plus/icons-vue'
 import AppDialog from '@/components/AppDialog.vue'
 import AppPagination from '@/components/AppPagination.vue'
 import AppTable from '@/components/AppTable.vue'
@@ -124,6 +181,10 @@ const dialogVisible = ref(false)
 const editingId = ref<number | null>(null)
 const formRef = ref<FormInstance>()
 const flatRecords = ref<Record<string, any>[]>([])
+const permissionKindFilter = ref('')
+const statusFilter = ref<number | ''>('')
+const treeExpanded = ref(true)
+const tableKey = ref(0)
 const form = reactive<Record<string, any>>({})
 const optionMap = reactive<Record<string, Option[]>>({ roles: [], departments: [] })
 const permissionTree = ref<Record<string, any>[]>([])
@@ -176,7 +237,8 @@ const {
       }
     }
 
-    flatRecords.value = await listAll(config.value.endpoint, keyword)
+    const sourceRecords = await listAll(config.value.endpoint, keyword)
+    flatRecords.value = config.value.mode === 'permissions' ? filterPermissionRows(sourceRecords) : sourceRecords
     const treeRecords = buildTree(flatRecords.value)
     if (config.value.mode === 'departments') {
       departmentTree.value = buildTree(flatRecords.value)
@@ -207,6 +269,19 @@ const openCreate = async () => {
   refreshSelectedPermissionCount()
 }
 
+const openCreateChild = async (row: Record<string, any>) => {
+  editingId.value = null
+  resetForm()
+  form.parentId = row.id
+  form.uiPermissionKind = row.permissionType === 'MENU' ? 'BUTTON' : 'MENU'
+  form.permissionType = form.uiPermissionKind
+  form.sortNo = nextChildSortNo(row.id)
+  dialogVisible.value = true
+  await nextTick()
+  getPermissionTree()?.setCheckedKeys([])
+  refreshSelectedPermissionCount()
+}
+
 const openEdit = async (row: Record<string, any>) => {
   editingId.value = row.id
   resetForm(row)
@@ -230,10 +305,18 @@ const saveRow = async () => {
       const halfCheckedKeys = permissionTree?.getHalfCheckedKeys() || []
       payload.permissionIds = Array.from(new Set([...checkedKeys, ...halfCheckedKeys]))
     } else if (config.value.mode === 'permissions') {
-      payload.permissionType = payload.uiPermissionKind === 'BUTTON' ? 'BUTTON' : 'MENU'
+      payload.permissionType = payload.uiPermissionKind || payload.permissionType || 'MENU'
       if (payload.uiPermissionKind === 'DIRECTORY') {
-        payload.component = ''
-        payload.perms = ''
+        payload.path = null
+        payload.component = null
+        payload.perms = null
+        payload.buttonCode = null
+      } else if (payload.uiPermissionKind === 'MENU') {
+        payload.buttonCode = null
+      } else if (payload.uiPermissionKind === 'BUTTON') {
+        payload.path = null
+        payload.component = null
+        payload.icon = null
       }
       delete payload.uiPermissionKind
     }
@@ -250,11 +333,28 @@ const saveRow = async () => {
 }
 
 const removeRow = async (row: Record<string, any>) => {
+  if (config.value.mode === 'permissions' && row.children?.length) {
+    ElMessage.warning('请先删除子菜单或按钮')
+    return
+  }
   await ElMessageBox.confirm(`确认删除 ${row.permissionName || row.departmentName || row.roleName || row.username}？`, '删除确认', { type: 'warning' })
   await deleteRow(config.value.endpoint, row.id)
   ElMessage.success('删除成功')
   await loadOptions()
   await loadData()
+}
+
+const resetAllFilters = () => {
+  if (config.value.mode === 'permissions') {
+    permissionKindFilter.value = ''
+    statusFilter.value = ''
+  }
+  resetSearch()
+}
+
+const setTreeExpanded = (expanded: boolean) => {
+  treeExpanded.value = expanded
+  tableKey.value += 1
 }
 
 const moveDepartment = async (row: Record<string, any>, direction: -1 | 1) => {
@@ -355,6 +455,26 @@ const buildTree = (items: Record<string, any>[]) => {
   return clean(roots)
 }
 
+const filterPermissionRows = (items: Record<string, any>[]) => {
+  const kind = permissionKindFilter.value
+  const status = statusFilter.value
+  return items.filter((item) => {
+    if (kind && derivePermissionKind(item) !== kind) {
+      return false
+    }
+    if (status !== '' && item.status !== status) {
+      return false
+    }
+    return true
+  })
+}
+
+const nextChildSortNo = (parentId: number) => {
+  const siblings = flatRecords.value.filter((item) => (item.parentId || 0) === parentId)
+  const maxSort = siblings.reduce((max, item) => Math.max(max, Number(item.sortNo || 0)), 0)
+  return maxSort + 1
+}
+
 const treeSelectData = (key?: string) => {
   if (key === 'permissions') return permissionTree.value
   if (key === 'departments') return departmentTree.value
@@ -363,6 +483,7 @@ const treeSelectData = (key?: string) => {
 
 const derivePermissionKind = (row: Record<string, any>) => {
   if (row.permissionType === 'BUTTON') return 'BUTTON'
+  if (row.permissionType === 'DIRECTORY') return 'DIRECTORY'
   if (row.path || row.component) return 'MENU'
   return 'DIRECTORY'
 }
@@ -389,6 +510,10 @@ onMounted(async () => {
 
 .search-input {
   width: 260px;
+}
+
+.filter-select {
+  width: 140px;
 }
 
 .form-control {
@@ -473,8 +598,53 @@ onMounted(async () => {
   background: #EAF6FF;
 }
 
+.column-header-with-tip {
+  cursor: help;
+}
+
+.menu-name-cell,
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-kind-icon {
+  color: #667085;
+  font-size: 15px;
+}
+
+.system-page :deep(.el-table__placeholder) {
+  position: relative;
+}
+
+.system-page :deep(.el-table__placeholder::before) {
+  position: absolute;
+  top: -13px;
+  bottom: -13px;
+  left: 50%;
+  width: 1px;
+  background: #D6E0EA;
+  content: '';
+}
+
+.system-page :deep(.el-table__indent) {
+  position: relative;
+}
+
+.system-page :deep(.el-table__indent::after) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 1px;
+  background: #D6E0EA;
+  content: '';
+}
+
 @media (max-width: 760px) {
-  .search-input {
+  .search-input,
+  .filter-select {
     width: 100%;
   }
 

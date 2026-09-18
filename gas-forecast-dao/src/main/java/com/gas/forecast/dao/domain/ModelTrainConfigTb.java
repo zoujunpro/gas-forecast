@@ -35,6 +35,16 @@ public class ModelTrainConfigTb {
     private String agentCode;
 
     /**
+     * 所属模型编码
+     */
+    private String modelCode;
+
+    /**
+     * 所属模型名称
+     */
+    private String modelName;
+
+    /**
      * 作用范围：REGION/CUSTOMER/INDUSTRY/ALL
      */
     private String scopeType;

@@ -35,8 +35,9 @@ create table if not exists sys_permission_tb (
     permission_name varchar(64) not null,
     path varchar(255),
     component varchar(255),
-    permission_type varchar(16) not null comment 'MENU or BUTTON',
+    permission_type varchar(16) not null comment 'DIRECTORY, MENU or BUTTON',
     perms varchar(128),
+    button_code varchar(64) comment 'custom button identifier',
     icon varchar(64),
     sort_no int not null default 0,
     hidden tinyint not null default 0,
@@ -160,6 +161,8 @@ insert ignore into sys_permission_tb (id, parent_id, permission_name, path, comp
     (48, 40, '训练批次表', '/data/train-batches', 'views/common/Placeholder.vue', 'MENU', null, null, 48, 0, 1),
     (60, null, '模型管理', '/model', null, 'MENU', null, 'DataAnalysis', 60, 0, 1),
     (61, 60, '模型列表', '/model/list', 'views/model/ModelConfigManagement.vue', 'MENU', 'model:config:list', null, 61, 0, 1),
+    (62, 60, '训练数据管理', '/model/train-feature-data', 'views/model/ModelTrainFeatureDataManagement.vue', 'MENU', 'model:train-feature-data:list', null, 62, 0, 1),
+    (63, 60, '特征定义管理', '/model/feature-definitions', 'views/model/ModelFeatureDefinitionManagement.vue', 'MENU', 'model:feature-definition:list', null, 63, 0, 1),
     (50, null, '系统管理', '/system', null, 'MENU', null, 'Setting', 50, 0, 1),
     (51, 50, '用户管理', '/system/users', 'views/system/SystemUserManagement.vue', 'MENU', 'sys:user:list', null, 51, 0, 1),
     (52, 50, '角色权限', '/system/roles', 'views/system/SystemRoleManagement.vue', 'MENU', 'sys:role:list', null, 52, 0, 1),
@@ -179,6 +182,8 @@ update sys_permission_tb set component = 'views/agent/AgentConfig.vue' where id 
 update sys_permission_tb set component = 'views/common/Placeholder.vue' where id in (46, 47, 48, 55, 56);
 update sys_permission_tb set permission_name = '模型管理', path = '/model', component = null, perms = null, icon = 'DataAnalysis', sort_no = 60 where id = 60;
 update sys_permission_tb set permission_name = '模型列表', path = '/model/list', component = 'views/model/ModelConfigManagement.vue', perms = 'model:config:list', sort_no = 61 where id = 61;
+update sys_permission_tb set permission_name = '训练数据管理', path = '/model/train-feature-data', component = 'views/model/ModelTrainFeatureDataManagement.vue', perms = 'model:train-feature-data:list', sort_no = 62 where id = 62;
+update sys_permission_tb set permission_name = '特征定义管理', path = '/model/feature-definitions', component = 'views/model/ModelFeatureDefinitionManagement.vue', perms = 'model:feature-definition:list', sort_no = 63 where id = 63;
 update sys_permission_tb set component = 'views/system/SystemUserManagement.vue', perms = 'sys:user:list' where id = 51;
 update sys_permission_tb set component = 'views/system/SystemRoleManagement.vue', perms = 'sys:role:list' where id = 52;
 update sys_permission_tb set permission_name = '部门管理', path = '/system/departments', component = 'views/system/SystemDepartmentManagement.vue', perms = 'sys:department:list', sort_no = 53 where id = 53;
@@ -201,8 +206,11 @@ insert ignore into sys_permission_tb (id, parent_id, permission_name, path, comp
     (4902, 49, '编辑原始数据文件', null, null, 'BUTTON', 'data:file-info:update', null, 4902, 1, 1),
     (4903, 49, '删除原始数据文件', null, null, 'BUTTON', 'data:file-info:delete', null, 4903, 1, 1),
     (6101, 61, '新增模型', null, null, 'BUTTON', 'model:config:create', null, 6101, 1, 1),
-    (6102, 61, '模型配置', null, null, 'BUTTON', 'model:config:update', null, 6102, 1, 1),
+    (6102, 61, '编辑模型', null, null, 'BUTTON', 'model:config:update', null, 6102, 1, 1),
     (6103, 61, '删除模型', null, null, 'BUTTON', 'model:config:delete', null, 6103, 1, 1),
+    (6301, 63, '新增特征定义', null, null, 'BUTTON', 'model:feature-definition:create', null, 6301, 1, 1),
+    (6302, 63, '编辑特征定义', null, null, 'BUTTON', 'model:feature-definition:update', null, 6302, 1, 1),
+    (6303, 63, '删除特征定义', null, null, 'BUTTON', 'model:feature-definition:delete', null, 6303, 1, 1),
     (5101, 51, '保存用户', null, null, 'BUTTON', 'sys:user:save', null, 5101, 1, 1),
     (5102, 51, '删除用户', null, null, 'BUTTON', 'sys:user:delete', null, 5102, 1, 1),
     (5201, 52, '保存角色', null, null, 'BUTTON', 'sys:role:save', null, 5201, 1, 1),

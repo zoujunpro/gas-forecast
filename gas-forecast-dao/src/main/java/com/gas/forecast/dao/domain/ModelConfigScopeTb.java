@@ -21,9 +21,9 @@ public class ModelConfigScopeTb {
     private Long id;
 
     /**
-     * 模型配置ID
+     * 模型配置编码
      */
-    private Long modelCode;
+    private String modelCode;
 
     /**
      * 地区编码

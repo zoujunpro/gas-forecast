@@ -21,6 +21,7 @@ export interface SystemFieldConfig {
   type?: SystemFieldType
   min?: number
   minWidth?: number
+  tooltip?: string
   multiple?: boolean
   optionKey?: string
   options?: Option[]
@@ -65,6 +66,7 @@ export interface BaseDataFieldConfig {
   inputType?: string
   min?: number
   minWidth?: number
+  tooltip?: string
   options?: Option[]
   multiple?: boolean
   optionKey?: string
@@ -87,6 +89,7 @@ export interface BaseDataPageConfig {
   title: string
   endpoint: string
   searchPlaceholder: string
+  readonly?: boolean
   tableFields: BaseDataFieldConfig[]
   formFields: BaseDataFieldConfig[]
   emptyForm: Record<string, any>

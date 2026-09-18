@@ -9,6 +9,8 @@
             <result property="configCode" column="config_code" jdbcType="VARCHAR"/>
             <result property="configName" column="config_name" jdbcType="VARCHAR"/>
             <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
+            <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
+            <result property="modelName" column="model_name" jdbcType="VARCHAR"/>
             <result property="scopeType" column="scope_type" jdbcType="VARCHAR"/>
             <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
             <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
@@ -33,7 +35,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,config_code,config_name,agent_code,scope_type,region_code,
+        id,config_code,config_name,agent_code,model_code,model_name,scope_type,region_code,
         region_name,industry_code,industry_name,customer_code,customer_name,
         train_start_date,train_end_date,train_frequency,auto_train,enable_backtest,
         backtest_window,model_strategy,biz_config_json,enabled,remark,
