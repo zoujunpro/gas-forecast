@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelTrainFeatureDataCreateRequest;
-import com.gas.forecast.business.dto.request.ModelTrainFeatureDataDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainFeatureDataPageRequest;
 import com.gas.forecast.business.dto.request.ModelTrainFeatureDataUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelTrainFeatureDataResponse;
@@ -130,8 +129,8 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
 
     @Override
     @Transactional
-    public void delete(ModelTrainFeatureDataDeleteRequest reqDTO) {
-        modelTrainFeatureDataTbMapper.deleteById(reqDTO.id());
+    public void delete(Long id) {
+        modelTrainFeatureDataTbMapper.deleteById(id);
     }
 
     private ModelTrainFeatureDataResponse toResp(

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest;
-import com.gas.forecast.business.dto.request.ModelFeatureDefinitionDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
@@ -94,8 +93,8 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
 
     @Override
     @Transactional
-    public void delete(ModelFeatureDefinitionDeleteRequest reqDTO) {
-        modelFeatureDefinitionTbMapper.deleteById(reqDTO.id());
+    public void delete(Long id) {
+        modelFeatureDefinitionTbMapper.deleteById(id);
     }
 
     private void ensureFeatureCodeUnique(String featureCode, String timeGranularity, Long excludeId) {

@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
-import com.gas.forecast.business.dto.request.ModelConfigDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
@@ -65,7 +64,7 @@ public class ModelConfigController {
     @WebLog("删除模型")
     @RequirePermission("model:config:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        modelConfigService.delete(new ModelConfigDeleteRequest(id));
+        modelConfigService.delete(id);
         return ResponseResult.success(null);
     }
 }

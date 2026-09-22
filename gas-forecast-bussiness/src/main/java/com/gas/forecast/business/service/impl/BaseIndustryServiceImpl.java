@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.BaseIndustryCreateRequest;
-import com.gas.forecast.business.dto.request.BaseIndustryDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseIndustryPageRequest;
 import com.gas.forecast.business.dto.request.BaseIndustryUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseIndustryResponse;
@@ -77,8 +76,8 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
     }
 
     @Override
-    public void delete(BaseIndustryDeleteRequest reqDTO) {
-        baseIndustryTbMapper.deleteById(reqDTO.id());
+    public void delete(Long id) {
+        baseIndustryTbMapper.deleteById(id);
     }
 
     private BaseIndustryResponse toResp(BaseIndustryTb industry) {

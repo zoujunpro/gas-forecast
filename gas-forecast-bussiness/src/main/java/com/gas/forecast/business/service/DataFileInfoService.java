@@ -1,7 +1,6 @@
 package com.gas.forecast.business.service;
 
 import com.gas.forecast.business.dto.request.DataFileInfoCreateRequest;
-import com.gas.forecast.business.dto.request.DataFileInfoDeleteRequest;
 import com.gas.forecast.business.dto.request.DataFileInfoPageRequest;
 import com.gas.forecast.business.dto.request.DataFileInfoUpdateRequest;
 import com.gas.forecast.business.dto.response.DataFileInfoResponse;
@@ -30,5 +29,5 @@ public interface DataFileInfoService {
     /**
      * 删除原始数据文件信息。
      */
-    void delete(DataFileInfoDeleteRequest reqDTO);
+    void delete(Long id);
 }

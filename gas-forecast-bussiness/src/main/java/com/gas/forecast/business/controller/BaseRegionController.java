@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.BaseRegionCreateRequest;
-import com.gas.forecast.business.dto.request.BaseRegionDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseRegionPageRequest;
 import com.gas.forecast.business.dto.request.BaseRegionUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseRegionResponse;
@@ -68,7 +67,7 @@ public class BaseRegionController {
     @WebLog("删除区域")
     @RequirePermission("base:region:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        baseRegionService.delete(new BaseRegionDeleteRequest(id));
+        baseRegionService.delete(id);
         return ResponseResult.success(null);
     }
 }

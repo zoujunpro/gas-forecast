@@ -1,7 +1,6 @@
 package com.gas.forecast.business.service;
 
 import com.gas.forecast.business.dto.request.BaseRegionCreateRequest;
-import com.gas.forecast.business.dto.request.BaseRegionDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseRegionPageRequest;
 import com.gas.forecast.business.dto.request.BaseRegionUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseRegionResponse;
@@ -15,5 +14,5 @@ public interface BaseRegionService {
 
     BaseRegionResponse update(BaseRegionUpdateRequest reqDTO);
 
-    void delete(BaseRegionDeleteRequest reqDTO);
+    void delete(Long id);
 }

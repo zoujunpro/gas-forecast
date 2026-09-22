@@ -1,7 +1,6 @@
 package com.gas.forecast.business.service;
 
 import com.gas.forecast.business.dto.request.ModelTrainFeatureDataCreateRequest;
-import com.gas.forecast.business.dto.request.ModelTrainFeatureDataDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainFeatureDataPageRequest;
 import com.gas.forecast.business.dto.request.ModelTrainFeatureDataUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelTrainFeatureDataResponse;
@@ -15,5 +14,5 @@ public interface ModelTrainFeatureDataService {
 
     ModelTrainFeatureDataResponse update(ModelTrainFeatureDataUpdateRequest reqDTO);
 
-    void delete(ModelTrainFeatureDataDeleteRequest reqDTO);
+    void delete(Long id);
 }

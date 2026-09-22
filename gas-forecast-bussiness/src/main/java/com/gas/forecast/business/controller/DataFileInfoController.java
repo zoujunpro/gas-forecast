@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.DataFileInfoCreateRequest;
-import com.gas.forecast.business.dto.request.DataFileInfoDeleteRequest;
 import com.gas.forecast.business.dto.request.DataFileInfoPageRequest;
 import com.gas.forecast.business.dto.request.DataFileInfoUpdateRequest;
 import com.gas.forecast.business.dto.response.DataFileInfoResponse;
@@ -69,7 +68,7 @@ public class DataFileInfoController {
     @WebLog("删除原始数据文件信息")
     @RequirePermission("data:file-info:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        dataFileInfoService.delete(new DataFileInfoDeleteRequest(id));
+        dataFileInfoService.delete(id);
         return ResponseResult.success(null);
     }
 }

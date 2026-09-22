@@ -1,7 +1,6 @@
 package com.gas.forecast.business.service;
 
 import com.gas.forecast.business.dto.request.BaseCustomerCreateRequest;
-import com.gas.forecast.business.dto.request.BaseCustomerDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseCustomerPageRequest;
 import com.gas.forecast.business.dto.request.BaseCustomerUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseCustomerResponse;
@@ -30,5 +29,5 @@ public interface BaseCustomerService {
     /**
      * 删除客户。
      */
-    void delete(BaseCustomerDeleteRequest reqDTO);
+    void delete(Long id);
 }

@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelTrainConfigCreateRequest;
-import com.gas.forecast.business.dto.request.ModelTrainConfigDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelTrainConfigUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelTrainConfigResponse;
@@ -57,7 +56,7 @@ public class ModelTrainConfigController {
     @WebLog("删除模型训练配置")
     @RequirePermission("model:train-config:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        modelTrainConfigService.delete(new ModelTrainConfigDeleteRequest(id));
+        modelTrainConfigService.delete(id);
         return ResponseResult.success(null);
     }
 }

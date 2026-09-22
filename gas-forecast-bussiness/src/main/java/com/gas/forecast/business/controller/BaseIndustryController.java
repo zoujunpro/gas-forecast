@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.BaseIndustryCreateRequest;
-import com.gas.forecast.business.dto.request.BaseIndustryDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseIndustryPageRequest;
 import com.gas.forecast.business.dto.request.BaseIndustryUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseIndustryResponse;
@@ -69,7 +68,7 @@ public class BaseIndustryController {
     @WebLog("删除行业")
     @RequirePermission("base:industry:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        baseIndustryService.delete(new BaseIndustryDeleteRequest(id));
+        baseIndustryService.delete(id);
         return ResponseResult.success(null);
     }
 }

@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.BaseCustomerCreateRequest;
-import com.gas.forecast.business.dto.request.BaseCustomerDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseCustomerPageRequest;
 import com.gas.forecast.business.dto.request.BaseCustomerUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseCustomerResponse;
@@ -69,7 +68,7 @@ public class BaseCustomerController {
     @WebLog("删除客户")
     @RequirePermission("base:customer:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        baseCustomerService.delete(new BaseCustomerDeleteRequest(id));
+        baseCustomerService.delete(id);
         return ResponseResult.success(null);
     }
 }

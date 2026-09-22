@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.BaseRegionCreateRequest;
-import com.gas.forecast.business.dto.request.BaseRegionDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseRegionPageRequest;
 import com.gas.forecast.business.dto.request.BaseRegionUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseRegionResponse;
@@ -80,8 +79,8 @@ public class BaseRegionServiceImpl implements BaseRegionService {
     }
 
     @Override
-    public void delete(BaseRegionDeleteRequest reqDTO) {
-        baseRegionTbMapper.deleteById(reqDTO.id());
+    public void delete(Long id) {
+        baseRegionTbMapper.deleteById(id);
     }
 
     private BaseRegionResponse toResp(BaseRegionTb region) {

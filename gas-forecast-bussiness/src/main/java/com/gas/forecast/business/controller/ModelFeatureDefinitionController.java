@@ -1,7 +1,6 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest;
-import com.gas.forecast.business.dto.request.ModelFeatureDefinitionDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
@@ -59,7 +58,7 @@ public class ModelFeatureDefinitionController {
     @WebLog("删除特征定义")
     @RequirePermission("model:feature-definition:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        modelFeatureDefinitionService.delete(new ModelFeatureDefinitionDeleteRequest(id));
+        modelFeatureDefinitionService.delete(id);
         return ResponseResult.success(null);
     }
 }

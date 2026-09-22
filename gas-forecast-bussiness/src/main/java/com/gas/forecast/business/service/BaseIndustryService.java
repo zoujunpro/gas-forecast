@@ -1,7 +1,6 @@
 package com.gas.forecast.business.service;
 
 import com.gas.forecast.business.dto.request.BaseIndustryCreateRequest;
-import com.gas.forecast.business.dto.request.BaseIndustryDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseIndustryPageRequest;
 import com.gas.forecast.business.dto.request.BaseIndustryUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseIndustryResponse;
@@ -15,5 +14,5 @@ public interface BaseIndustryService {
 
     BaseIndustryResponse update(BaseIndustryUpdateRequest reqDTO);
 
-    void delete(BaseIndustryDeleteRequest reqDTO);
+    void delete(Long id);
 }

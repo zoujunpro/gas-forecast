@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.BaseCustomerCreateRequest;
-import com.gas.forecast.business.dto.request.BaseCustomerDeleteRequest;
 import com.gas.forecast.business.dto.request.BaseCustomerPageRequest;
 import com.gas.forecast.business.dto.request.BaseCustomerUpdateRequest;
 import com.gas.forecast.business.dto.response.BaseCustomerResponse;
@@ -109,8 +108,8 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
      * 删除客户。
      */
     @Override
-    public void delete(BaseCustomerDeleteRequest reqDTO) {
-        baseCustomerTbMapper.deleteById(reqDTO.id());
+    public void delete(Long id) {
+        baseCustomerTbMapper.deleteById(id);
     }
 
     private BaseCustomerResponse toResp(BaseCustomerTb customer) {

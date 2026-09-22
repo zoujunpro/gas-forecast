@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
-import com.gas.forecast.business.dto.request.ModelConfigDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
@@ -175,8 +174,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
 
     @Override
     @Transactional
-    public void delete(ModelConfigDeleteRequest reqDTO) {
-        ModelConfigTb exists = modelConfigTbMapper.selectById(reqDTO.id());
+    public void delete(Long id) {
+        ModelConfigTb exists = modelConfigTbMapper.selectById(id);
         if (exists == null) {
             return;
         }
@@ -189,7 +188,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                 Wrappers.<ModelConfigScopeTb>lambdaQuery().eq(ModelConfigScopeTb::getModelId, exists.getId()));
         modelFeatureRefMapper.delete(
                 Wrappers.<ModelFeatureRef>lambdaQuery().eq(ModelFeatureRef::getModelId, exists.getId()));
-        modelConfigTbMapper.deleteById(reqDTO.id());
+        modelConfigTbMapper.deleteById(id);
     }
 
     private ForecastAgentEnum validateAgent(String agentCode, String sceneCode) {

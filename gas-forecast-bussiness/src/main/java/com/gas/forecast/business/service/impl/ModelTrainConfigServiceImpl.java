@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelTrainConfigCreateRequest;
-import com.gas.forecast.business.dto.request.ModelTrainConfigDeleteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelTrainConfigUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelTrainConfigResponse;
@@ -119,8 +118,8 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
 
     @Override
     @Transactional
-    public void delete(ModelTrainConfigDeleteRequest reqDTO) {
-        modelTrainConfigTbMapper.deleteById(reqDTO.id());
+    public void delete(Long id) {
+        modelTrainConfigTbMapper.deleteById(id);
     }
 
     private void ensureTrainCodeUnique(String trainCode, Long excludeId) {
