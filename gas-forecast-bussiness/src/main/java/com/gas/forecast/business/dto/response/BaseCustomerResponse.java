@@ -69,48 +69,4 @@ public class BaseCustomerResponse {
      */
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date updatedAt;
-
-    public Long id() {
-        return id;
-    }
-
-    public String customerCode() {
-        return customerCode;
-    }
-
-    public String customerName() {
-        return customerName;
-    }
-
-    public String industryCode() {
-        return industryCode;
-    }
-
-    public String industryName() {
-        return industryName;
-    }
-
-    public String regionCode() {
-        return regionCode;
-    }
-
-    public String regionName() {
-        return regionName;
-    }
-
-    public String rawRegionName() {
-        return rawRegionName;
-    }
-
-    public String rawIndustryName() {
-        return rawIndustryName;
-    }
-
-    public Date createdAt() {
-        return createdAt;
-    }
-
-    public Date updatedAt() {
-        return updatedAt;
-    }
 }

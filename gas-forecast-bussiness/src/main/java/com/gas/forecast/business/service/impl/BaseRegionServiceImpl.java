@@ -11,10 +11,13 @@ import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.BaseRegionService;
 import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
+import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.BaseRegionTb;
+import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
 import java.util.Date;
 import org.springframework.stereotype.Service;
@@ -24,11 +27,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class BaseRegionServiceImpl implements BaseRegionService {
 
     private final BaseRegionTbMapper baseRegionTbMapper;
+    private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
     public BaseRegionServiceImpl(
-            BaseRegionTbMapper baseRegionTbMapper, BaseCodeGenerateService baseCodeGenerateService) {
+            BaseRegionTbMapper baseRegionTbMapper,
+            BaseCustomerTbMapper baseCustomerTbMapper,
+            BaseCodeGenerateService baseCodeGenerateService) {
         this.baseRegionTbMapper = baseRegionTbMapper;
+        this.baseCustomerTbMapper = baseCustomerTbMapper;
         this.baseCodeGenerateService = baseCodeGenerateService;
     }
 
@@ -79,7 +86,17 @@ public class BaseRegionServiceImpl implements BaseRegionService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
+        BaseRegionTb region = baseRegionTbMapper.selectById(id);
+        if (region == null) {
+            return;
+        }
+        long customerCount = baseCustomerTbMapper.selectCount(
+                Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getRegionCode, region.getRegionCode()));
+        if (customerCount > 0) {
+            throw new BusinessException("该地区已被客户引用，不能删除");
+        }
         baseRegionTbMapper.deleteById(id);
     }
 

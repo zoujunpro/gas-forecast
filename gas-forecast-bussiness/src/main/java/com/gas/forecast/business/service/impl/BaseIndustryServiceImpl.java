@@ -11,10 +11,13 @@ import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.BaseIndustryService;
 import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
+import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.BaseIndustryTb;
+import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import java.util.Date;
 import org.springframework.stereotype.Service;
@@ -24,11 +27,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class BaseIndustryServiceImpl implements BaseIndustryService {
 
     private final BaseIndustryTbMapper baseIndustryTbMapper;
+    private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
     public BaseIndustryServiceImpl(
-            BaseIndustryTbMapper baseIndustryTbMapper, BaseCodeGenerateService baseCodeGenerateService) {
+            BaseIndustryTbMapper baseIndustryTbMapper,
+            BaseCustomerTbMapper baseCustomerTbMapper,
+            BaseCodeGenerateService baseCodeGenerateService) {
         this.baseIndustryTbMapper = baseIndustryTbMapper;
+        this.baseCustomerTbMapper = baseCustomerTbMapper;
         this.baseCodeGenerateService = baseCodeGenerateService;
     }
 
@@ -76,7 +83,17 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
+        BaseIndustryTb industry = baseIndustryTbMapper.selectById(id);
+        if (industry == null) {
+            return;
+        }
+        long customerCount = baseCustomerTbMapper.selectCount(
+                Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getIndustryCode, industry.getIndustryCode()));
+        if (customerCount > 0) {
+            throw new BusinessException("该行业已被客户引用，不能删除");
+        }
         baseIndustryTbMapper.deleteById(id);
     }
 
