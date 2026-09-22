@@ -26,6 +26,7 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.MediaType;
@@ -40,6 +41,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 @CrossOrigin
 @RestController
+@RequiredArgsConstructor
 public class XqycAgentController {
 
     private static final Map<String, AgentMeta> AGENTS = new LinkedHashMap<>();
@@ -58,21 +60,6 @@ public class XqycAgentController {
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper forecastResultMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-
-    public XqycAgentController(
-            ObjectMapper objectMapper,
-            XqycForecastPersistenceService persistenceService,
-            ModelTrainRecordTbMapper trainRecordMapper,
-            ModelTrainBacktestTbMapper trainBacktestMapper,
-            ModelForecastRecordTbMapper forecastRecordMapper,
-            ModelForecastResultTbMapper forecastResultMapper) {
-        this.objectMapper = objectMapper;
-        this.persistenceService = persistenceService;
-        this.trainRecordMapper = trainRecordMapper;
-        this.trainBacktestMapper = trainBacktestMapper;
-        this.forecastRecordMapper = forecastRecordMapper;
-        this.forecastResultMapper = forecastResultMapper;
-    }
 
     @GetMapping("/agents/config")
     public ResponseEntity<JsonNode> getAgentConfig(@RequestParam String agentId) {

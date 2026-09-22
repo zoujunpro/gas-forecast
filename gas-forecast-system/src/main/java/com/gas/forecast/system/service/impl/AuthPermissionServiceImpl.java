@@ -6,15 +6,13 @@ import com.gas.forecast.dao.mapper.SysPermissionTbMapper;
 import com.gas.forecast.system.service.AuthPermissionService;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthPermissionServiceImpl implements AuthPermissionService {
     private final SysPermissionTbMapper sysPermissionTbMapper;
-
-    public AuthPermissionServiceImpl(SysPermissionTbMapper sysPermissionTbMapper) {
-        this.sysPermissionTbMapper = sysPermissionTbMapper;
-    }
 
     @Override
     public boolean hasPermission(String username, String permission) {

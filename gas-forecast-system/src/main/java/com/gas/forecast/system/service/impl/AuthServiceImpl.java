@@ -23,9 +23,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private final SysUserTbMapper sysUserTbMapper;
     private final SysUserRoleRefMapper sysUserRoleRefMapper;
@@ -34,23 +36,6 @@ public class AuthServiceImpl implements AuthService {
     private final AuthTokenService authTokenService;
     private final CaptchaService captchaService;
     private final LoginEncryptionService loginEncryptionService;
-
-    public AuthServiceImpl(
-            SysUserTbMapper sysUserTbMapper,
-            SysUserRoleRefMapper sysUserRoleRefMapper,
-            SysPermissionTbMapper sysPermissionTbMapper,
-            PasswordHashService passwordHashService,
-            AuthTokenService authTokenService,
-            CaptchaService captchaService,
-            LoginEncryptionService loginEncryptionService) {
-        this.sysUserTbMapper = sysUserTbMapper;
-        this.sysUserRoleRefMapper = sysUserRoleRefMapper;
-        this.sysPermissionTbMapper = sysPermissionTbMapper;
-        this.passwordHashService = passwordHashService;
-        this.authTokenService = authTokenService;
-        this.captchaService = captchaService;
-        this.loginEncryptionService = loginEncryptionService;
-    }
 
     @Override
     public AuthLoginResponse login(AuthLoginRequest reqDTO) {

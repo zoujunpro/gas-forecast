@@ -10,23 +10,18 @@ import com.gas.forecast.common.security.token.AuthTokenService;
 import com.gas.forecast.common.util.ThreadLocalUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
+@RequiredArgsConstructor
 public class AuthInterceptor implements HandlerInterceptor {
     private final AuthTokenService authTokenService;
     private final PermissionChecker permissionChecker;
     private final ObjectMapper objectMapper;
-
-    public AuthInterceptor(
-            AuthTokenService authTokenService, PermissionChecker permissionChecker, ObjectMapper objectMapper) {
-        this.authTokenService = authTokenService;
-        this.permissionChecker = permissionChecker;
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)

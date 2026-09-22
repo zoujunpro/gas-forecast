@@ -3,15 +3,13 @@ package com.gas.forecast.business.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.gas.forecast.business.service.ModelForecastManagementService;
 import com.gas.forecast.common.core.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 public class ModelForecastManagementController {
     private final ModelForecastManagementService service;
-
-    public ModelForecastManagementController(ModelForecastManagementService service) {
-        this.service = service;
-    }
 
     @PostMapping("/model-forecast-config/listPage")
     public ResponseResult<?> listConfigs(@RequestBody JsonNode request) {

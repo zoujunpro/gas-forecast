@@ -11,6 +11,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,13 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/model-config")
+@RequiredArgsConstructor
 public class ModelConfigController {
 
     private final ModelConfigService modelConfigService;
-
-    public ModelConfigController(ModelConfigService modelConfigService) {
-        this.modelConfigService = modelConfigService;
-    }
 
     @PostMapping("listPage")
     @WebLog("模型列表查询")

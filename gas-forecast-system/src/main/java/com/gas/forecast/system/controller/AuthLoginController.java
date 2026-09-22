@@ -16,6 +16,7 @@ import com.gas.forecast.system.service.CaptchaService;
 import com.gas.forecast.system.service.LoginEncryptionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,22 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthLoginController {
     private final AuthService authService;
     private final CaptchaService captchaService;
     private final AuthTokenService authTokenService;
     private final LoginEncryptionService loginEncryptionService;
-
-    public AuthLoginController(
-            AuthService authService,
-            CaptchaService captchaService,
-            AuthTokenService authTokenService,
-            LoginEncryptionService loginEncryptionService) {
-        this.authService = authService;
-        this.captchaService = captchaService;
-        this.authTokenService = authTokenService;
-        this.loginEncryptionService = loginEncryptionService;
-    }
 
     /**
      * 获取登录验证码。

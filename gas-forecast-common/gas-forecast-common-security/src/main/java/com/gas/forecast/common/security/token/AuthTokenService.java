@@ -7,19 +7,17 @@ import java.time.Instant;
 import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthTokenService {
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String TOKEN_KEY_PREFIX = "gas-forecast:auth:token:";
 
     private final CacheClient cacheClient;
-
-    public AuthTokenService(CacheClient cacheClient) {
-        this.cacheClient = cacheClient;
-    }
 
     @Value("${gas.auth.secret:gas-forecast-local-secret}")
     private String secret;

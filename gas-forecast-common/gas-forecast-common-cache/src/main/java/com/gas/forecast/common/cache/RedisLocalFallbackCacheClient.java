@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -18,6 +19,7 @@ import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.Assert;
 
+@RequiredArgsConstructor
 public class RedisLocalFallbackCacheClient implements CacheClient {
     private static final Logger log = LoggerFactory.getLogger(RedisLocalFallbackCacheClient.class);
 
@@ -26,13 +28,6 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
     private final CacheProperties properties;
     private final Map<String, LocalCacheValue> localCache = new ConcurrentHashMap<>();
     private final AtomicLong redisUnavailableUntil = new AtomicLong(0);
-
-    public RedisLocalFallbackCacheClient(
-            RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper, CacheProperties properties) {
-        this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
-        this.properties = properties;
-    }
 
     @Override
     public <T> T get(String key, Class<T> type) {

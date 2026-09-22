@@ -10,18 +10,16 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.Base64;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class LoginEncryptionServiceImpl implements LoginEncryptionService {
     private static final String RSA_PRIVATE_KEY_PREFIX = "gas-forecast:auth:rsa:";
     private static final Duration RSA_KEY_TTL = Duration.ofMinutes(2);
 
     private final CacheClient cacheClient;
-
-    public LoginEncryptionServiceImpl(CacheClient cacheClient) {
-        this.cacheClient = cacheClient;
-    }
 
     @Override
     public String createRsaPublicKey() {

@@ -22,6 +22,7 @@ import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,23 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
  * 客户基础信息业务服务实现。
  */
 @Service
+@RequiredArgsConstructor
 public class BaseCustomerServiceImpl implements BaseCustomerService {
 
     private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final BaseRegionTbMapper baseRegionTbMapper;
     private final BaseIndustryTbMapper baseIndustryTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
-
-    public BaseCustomerServiceImpl(
-            BaseCustomerTbMapper baseCustomerTbMapper,
-            BaseRegionTbMapper baseRegionTbMapper,
-            BaseIndustryTbMapper baseIndustryTbMapper,
-            BaseCodeGenerateService baseCodeGenerateService) {
-        this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.baseRegionTbMapper = baseRegionTbMapper;
-        this.baseIndustryTbMapper = baseIndustryTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
-    }
 
     /**
      * 分页查询客户列表。

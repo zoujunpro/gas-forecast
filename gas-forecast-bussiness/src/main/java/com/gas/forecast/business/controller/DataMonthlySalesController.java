@@ -8,6 +8,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,13 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/data-monthly-sales")
+@RequiredArgsConstructor
 public class DataMonthlySalesController {
 
     private final DataMonthlySalesService dataMonthlySalesService;
-
-    public DataMonthlySalesController(DataMonthlySalesService dataMonthlySalesService) {
-        this.dataMonthlySalesService = dataMonthlySalesService;
-    }
 
     /**
      * 分页查询月销量标准数据。

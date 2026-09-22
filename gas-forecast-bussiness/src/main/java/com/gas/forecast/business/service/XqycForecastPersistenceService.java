@@ -19,12 +19,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class XqycForecastPersistenceService {
 
     private static final DateTimeFormatter BATCH_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
@@ -32,12 +34,6 @@ public class XqycForecastPersistenceService {
     private final ModelForecastResultTbMapper modelForecastResultTbMapper;
     private final ObjectMapper objectMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-
-    public XqycForecastPersistenceService(
-            ModelForecastResultTbMapper modelForecastResultTbMapper, ObjectMapper objectMapper) {
-        this.modelForecastResultTbMapper = modelForecastResultTbMapper;
-        this.objectMapper = objectMapper;
-    }
 
     @Transactional
     public PersistSummary persist(String agentId, JsonNode request) throws Exception {

@@ -51,9 +51,9 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +63,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClientResponseException;
 
 @Service
+@RequiredArgsConstructor
 public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ModelTrainExecutionServiceImpl.class);
@@ -85,35 +86,6 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     @Value("${gas.agent.train-url:http://127.0.0.1:8090/api/v1/train}")
     private String trainUrl;
-
-    public ModelTrainExecutionServiceImpl(
-            ModelTrainConfigTbMapper modelTrainConfigTbMapper,
-            ModelConfigTbMapper modelConfigTbMapper,
-            ModelConfigScopeTbMapper modelConfigScopeTbMapper,
-            ModelFeatureRefMapper modelFeatureRefMapper,
-            ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper,
-            ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper,
-            ModelTrainBacktestTbMapper modelTrainBacktestTbMapper,
-            ModelTrainRecordTbMapper modelTrainDetailTbMapper,
-            BaseCodeGenerateService baseCodeGenerateService,
-            ObjectMapper objectMapper,
-            @Qualifier("modelTrainTaskExecutor") Executor modelTrainTaskExecutor,
-            TransactionTemplate transactionTemplate,
-            ModelPlatformService modelPlatformService) {
-        this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
-        this.modelConfigTbMapper = modelConfigTbMapper;
-        this.modelConfigScopeTbMapper = modelConfigScopeTbMapper;
-        this.modelFeatureRefMapper = modelFeatureRefMapper;
-        this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
-        this.modelTrainFeatureDataTbMapper = modelTrainFeatureDataTbMapper;
-        this.modelTrainBacktestTbMapper = modelTrainBacktestTbMapper;
-        this.modelTrainDetailTbMapper = modelTrainDetailTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
-        this.objectMapper = objectMapper;
-        this.modelTrainTaskExecutor = modelTrainTaskExecutor;
-        this.transactionTemplate = transactionTemplate;
-        this.modelPlatformService = modelPlatformService;
-    }
 
     @Override
     @Transactional

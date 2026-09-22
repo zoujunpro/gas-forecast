@@ -16,17 +16,15 @@ import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinitionService {
 
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
-
-    public ModelFeatureDefinitionServiceImpl(ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper) {
-        this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
-    }
 
     @Override
     public PageInfoDTO<ModelFeatureDefinitionResponse> listPage(ModelFeatureDefinitionPageRequest reqDTO) {

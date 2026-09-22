@@ -33,10 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@RequiredArgsConstructor
 public class GasForecastServiceImpl implements GasForecastService {
 
     private static final BigDecimal LOWER_RATIO = new BigDecimal("0.95");
@@ -48,21 +50,6 @@ public class GasForecastServiceImpl implements GasForecastService {
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper modelForecastResultTbMapper;
     private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
-
-    public GasForecastServiceImpl(
-            BaseRegionTbMapper baseRegionTbMapper,
-            BaseCustomerTbMapper baseCustomerTbMapper,
-            ModelTrainRecordTbMapper modelTrainDetailTbMapper,
-            ModelForecastRecordTbMapper forecastRecordMapper,
-            ModelForecastResultTbMapper modelForecastResultTbMapper,
-            ModelTrainBacktestTbMapper modelTrainBacktestTbMapper) {
-        this.baseRegionTbMapper = baseRegionTbMapper;
-        this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.modelTrainDetailTbMapper = modelTrainDetailTbMapper;
-        this.forecastRecordMapper = forecastRecordMapper;
-        this.modelForecastResultTbMapper = modelForecastResultTbMapper;
-        this.modelTrainBacktestTbMapper = modelTrainBacktestTbMapper;
-    }
 
     @Override
     public List<String> listProvinces() {

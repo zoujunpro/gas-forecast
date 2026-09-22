@@ -10,6 +10,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,13 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/base-customer")
+@RequiredArgsConstructor
 public class BaseCustomerController {
 
     private final BaseCustomerService baseCustomerService;
-
-    public BaseCustomerController(BaseCustomerService baseCustomerService) {
-        this.baseCustomerService = baseCustomerService;
-    }
 
     /**
      * 分页查询客户列表。

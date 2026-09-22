@@ -8,6 +8,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,13 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/model-train-feature-data")
+@RequiredArgsConstructor
 public class ModelTrainFeatureDataController {
 
     private final ModelTrainFeatureDataService modelTrainFeatureDataService;
-
-    public ModelTrainFeatureDataController(ModelTrainFeatureDataService modelTrainFeatureDataService) {
-        this.modelTrainFeatureDataService = modelTrainFeatureDataService;
-    }
 
     @PostMapping("listPage")
     @WebLog("训练特征数据列表查询")

@@ -44,10 +44,12 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ModelConfigServiceImpl implements ModelConfigService {
 
     private final ModelConfigTbMapper modelConfigTbMapper;
@@ -59,29 +61,10 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
 
-    public ModelConfigServiceImpl(
-            ModelConfigTbMapper modelConfigTbMapper,
-            ModelConfigScopeTbMapper modelConfigScopeTbMapper,
-            BaseRegionTbMapper baseRegionTbMapper,
-            BaseIndustryTbMapper baseIndustryTbMapper,
-            BaseCustomerTbMapper baseCustomerTbMapper,
-            ModelFeatureRefMapper modelFeatureRefMapper,
-            ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper,
-            ModelTrainConfigTbMapper modelTrainConfigTbMapper) {
-        this.modelConfigTbMapper = modelConfigTbMapper;
-        this.modelConfigScopeTbMapper = modelConfigScopeTbMapper;
-        this.baseRegionTbMapper = baseRegionTbMapper;
-        this.baseIndustryTbMapper = baseIndustryTbMapper;
-        this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.modelFeatureRefMapper = modelFeatureRefMapper;
-        this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
-        this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
-    }
-
     @Override
-    public PageInfoDTO<ModelConfigResponse> listPage(ModelConfigPageRequest reqDTO) {
+    public PageInfoDTO<ModelConfigResponse> listPage(ModelConfigPageRequest request) {
         LambdaQueryWrapper<ModelConfigTb> query = Wrappers.lambdaQuery();
-        String keyword = reqDTO.keyword();
+        String keyword = request.getKeyword();
         if (TextUtils.hasText(keyword)) {
             query.and(wrapper -> wrapper.like(ModelConfigTb::getModelCode, keyword)
                     .or()
@@ -92,9 +75,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                     .like(ModelConfigTb::getDescription, keyword));
         }
         query.orderByDesc(ModelConfigTb::getUpdatedAt).orderByDesc(ModelConfigTb::getId);
-        int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<ModelConfigTb> result = modelConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        IPage<ModelConfigTb> result =
+                modelConfigTbMapper.selectPage(PageUtils.pageRequest(request.getPage(), request.getSize()), query);
         List<ModelConfigTb> records = result.getRecords();
         ScopeContext scopeContext = loadScopeContext(records);
         return PageUtils.toPage(

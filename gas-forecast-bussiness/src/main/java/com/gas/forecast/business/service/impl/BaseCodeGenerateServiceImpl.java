@@ -5,17 +5,15 @@ import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.dao.domain.SysCodeSequenceTb;
 import com.gas.forecast.dao.mapper.SysCodeSequenceTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class BaseCodeGenerateServiceImpl implements BaseCodeGenerateService {
     private final SysCodeSequenceTbMapper sysCodeSequenceTbMapper;
-
-    public BaseCodeGenerateServiceImpl(SysCodeSequenceTbMapper sysCodeSequenceTbMapper) {
-        this.sysCodeSequenceTbMapper = sysCodeSequenceTbMapper;
-    }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)

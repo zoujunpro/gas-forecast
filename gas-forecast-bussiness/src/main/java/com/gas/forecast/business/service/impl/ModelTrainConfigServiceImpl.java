@@ -20,24 +20,17 @@ import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
 
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelConfigTbMapper modelConfigTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
-
-    public ModelTrainConfigServiceImpl(
-            ModelTrainConfigTbMapper modelTrainConfigTbMapper,
-            ModelConfigTbMapper modelConfigTbMapper,
-            BaseCodeGenerateService baseCodeGenerateService) {
-        this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
-        this.modelConfigTbMapper = modelConfigTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
-    }
 
     @Override
     public PageInfoDTO<ModelTrainConfigResponse> listPage(ModelTrainConfigPageRequest reqDTO) {

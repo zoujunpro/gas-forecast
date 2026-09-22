@@ -5,6 +5,7 @@ import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.system.service.SystemManagementService;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,13 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/system/departments")
+@RequiredArgsConstructor
 public class SysDepartmentController {
 
     private final SystemManagementService systemManagementService;
-
-    public SysDepartmentController(SystemManagementService systemManagementService) {
-        this.systemManagementService = systemManagementService;
-    }
 
     /**
      * 查询部门列表。

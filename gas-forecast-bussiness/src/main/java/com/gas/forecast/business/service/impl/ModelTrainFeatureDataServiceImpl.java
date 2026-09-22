@@ -22,21 +22,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataService {
 
     private final ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper;
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
-
-    public ModelTrainFeatureDataServiceImpl(
-            ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper,
-            ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper) {
-        this.modelTrainFeatureDataTbMapper = modelTrainFeatureDataTbMapper;
-        this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
-    }
 
     @Override
     public PageInfoDTO<ModelTrainFeatureDataResponse> listPage(ModelTrainFeatureDataPageRequest reqDTO) {

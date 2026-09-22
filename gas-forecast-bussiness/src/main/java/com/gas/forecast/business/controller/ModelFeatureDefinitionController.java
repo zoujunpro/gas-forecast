@@ -10,6 +10,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,13 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/model-feature-definition")
+@RequiredArgsConstructor
 public class ModelFeatureDefinitionController {
 
     private final ModelFeatureDefinitionService modelFeatureDefinitionService;
-
-    public ModelFeatureDefinitionController(ModelFeatureDefinitionService modelFeatureDefinitionService) {
-        this.modelFeatureDefinitionService = modelFeatureDefinitionService;
-    }
 
     @PostMapping("listPage")
     @WebLog("特征定义列表查询")

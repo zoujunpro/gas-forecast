@@ -10,6 +10,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,13 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/data-file-info")
+@RequiredArgsConstructor
 public class DataFileInfoController {
 
     private final DataFileInfoService dataFileInfoService;
-
-    public DataFileInfoController(DataFileInfoService dataFileInfoService) {
-        this.dataFileInfoService = dataFileInfoService;
-    }
 
     /**
      * 分页查询原始数据文件列表。

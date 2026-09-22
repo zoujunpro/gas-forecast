@@ -20,24 +20,17 @@ import com.gas.forecast.dao.domain.BaseIndustryTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class BaseIndustryServiceImpl implements BaseIndustryService {
 
     private final BaseIndustryTbMapper baseIndustryTbMapper;
     private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
-
-    public BaseIndustryServiceImpl(
-            BaseIndustryTbMapper baseIndustryTbMapper,
-            BaseCustomerTbMapper baseCustomerTbMapper,
-            BaseCodeGenerateService baseCodeGenerateService) {
-        this.baseIndustryTbMapper = baseIndustryTbMapper;
-        this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
-    }
 
     @Override
     public PageInfoDTO<BaseIndustryResponse> listPage(BaseIndustryPageRequest reqDTO) {

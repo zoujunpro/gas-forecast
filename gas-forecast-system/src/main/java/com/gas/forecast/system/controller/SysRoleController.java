@@ -5,6 +5,7 @@ import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.system.service.SystemManagementService;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,13 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/system/roles")
+@RequiredArgsConstructor
 public class SysRoleController {
 
     private final SystemManagementService systemManagementService;
-
-    public SysRoleController(SystemManagementService systemManagementService) {
-        this.systemManagementService = systemManagementService;
-    }
 
     /**
      * 分页查询角色列表。

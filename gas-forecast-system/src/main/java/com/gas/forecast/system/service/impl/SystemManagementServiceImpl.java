@@ -30,10 +30,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class SystemManagementServiceImpl implements SystemManagementService {
     private final SysUserTbMapper userMapper;
     private final SysRoleTbMapper roleMapper;
@@ -43,25 +45,6 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     private final SysUserDepartmentRefMapper userDepartmentRefMapper;
     private final SysRolePermissionRefMapper rolePermissionRefMapper;
     private final PasswordHashService passwordHashService;
-
-    public SystemManagementServiceImpl(
-            SysUserTbMapper userMapper,
-            SysRoleTbMapper roleMapper,
-            SysDepartmentTbMapper departmentMapper,
-            SysPermissionTbMapper permissionMapper,
-            SysUserRoleRefMapper userRoleRefMapper,
-            SysUserDepartmentRefMapper userDepartmentRefMapper,
-            SysRolePermissionRefMapper rolePermissionRefMapper,
-            PasswordHashService passwordHashService) {
-        this.userMapper = userMapper;
-        this.roleMapper = roleMapper;
-        this.departmentMapper = departmentMapper;
-        this.permissionMapper = permissionMapper;
-        this.userRoleRefMapper = userRoleRefMapper;
-        this.userDepartmentRefMapper = userDepartmentRefMapper;
-        this.rolePermissionRefMapper = rolePermissionRefMapper;
-        this.passwordHashService = passwordHashService;
-    }
 
     public PageInfoDTO<Map<String, Object>> listUsers(Map<String, Object> req) {
         long page = longValue(req.get("page"), 1);

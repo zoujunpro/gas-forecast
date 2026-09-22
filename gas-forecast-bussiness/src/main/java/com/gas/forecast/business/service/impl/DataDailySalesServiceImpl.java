@@ -11,16 +11,14 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.DataDailySalesTb;
 import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class DataDailySalesServiceImpl implements DataDailySalesService {
 
     private final DataDailySalesTbMapper dataDailySalesTbMapper;
-
-    public DataDailySalesServiceImpl(DataDailySalesTbMapper dataDailySalesTbMapper) {
-        this.dataDailySalesTbMapper = dataDailySalesTbMapper;
-    }
 
     @Override
     public PageInfoDTO<DataSalesResponse> listPage(DataSalesPageRequest reqDTO) {

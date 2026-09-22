@@ -20,24 +20,17 @@ import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class BaseRegionServiceImpl implements BaseRegionService {
 
     private final BaseRegionTbMapper baseRegionTbMapper;
     private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
-
-    public BaseRegionServiceImpl(
-            BaseRegionTbMapper baseRegionTbMapper,
-            BaseCustomerTbMapper baseCustomerTbMapper,
-            BaseCodeGenerateService baseCodeGenerateService) {
-        this.baseRegionTbMapper = baseRegionTbMapper;
-        this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
-    }
 
     @Override
     public PageInfoDTO<BaseRegionResponse> listPage(BaseRegionPageRequest reqDTO) {

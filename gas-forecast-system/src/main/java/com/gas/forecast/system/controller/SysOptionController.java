@@ -5,6 +5,7 @@ import com.gas.forecast.common.security.annotation.Logical;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.system.service.SystemManagementService;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,13 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/system")
+@RequiredArgsConstructor
 public class SysOptionController {
 
     private final SystemManagementService systemManagementService;
-
-    public SysOptionController(SystemManagementService systemManagementService) {
-        this.systemManagementService = systemManagementService;
-    }
 
     /**
      * 查询用户、角色、部门、菜单等公共选项。

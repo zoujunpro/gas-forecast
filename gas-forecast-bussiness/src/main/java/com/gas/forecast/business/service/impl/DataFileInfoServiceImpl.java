@@ -17,6 +17,7 @@ import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.DataFileInfoTb;
 import com.gas.forecast.dao.mapper.DataFileInfoTbMapper;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,16 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
  * 原始数据文件信息业务服务实现。
  */
 @Service
+@RequiredArgsConstructor
 public class DataFileInfoServiceImpl implements DataFileInfoService {
 
     private final DataFileInfoTbMapper dataFileInfoTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
-
-    public DataFileInfoServiceImpl(
-            DataFileInfoTbMapper dataFileInfoTbMapper, BaseCodeGenerateService baseCodeGenerateService) {
-        this.dataFileInfoTbMapper = dataFileInfoTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
-    }
 
     /**
      * 分页查询原始数据文件列表。

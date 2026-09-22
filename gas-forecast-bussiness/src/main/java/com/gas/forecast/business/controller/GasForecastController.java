@@ -7,6 +7,7 @@ import com.gas.forecast.business.service.GasForecastService;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,13 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 @RestController
 @RequestMapping("/forecast")
+@RequiredArgsConstructor
 public class GasForecastController {
 
     private final GasForecastService gasForecastService;
-
-    public GasForecastController(GasForecastService gasForecastService) {
-        this.gasForecastService = gasForecastService;
-    }
 
     @GetMapping("/provinces")
     public List<String> listProvinces() {

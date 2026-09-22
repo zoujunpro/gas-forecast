@@ -44,11 +44,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ModelForecastManagementService {
     private final ModelForecastConfigTbMapper configMapper;
     private final ModelForecastRecordTbMapper recordMapper;
@@ -63,29 +65,6 @@ public class ModelForecastManagementService {
 
     @Value("${gas.agent.predict-url:http://127.0.0.1:8090/api/v1/predict}")
     private String predictUrl;
-
-    public ModelForecastManagementService(
-            ModelForecastConfigTbMapper configMapper,
-            ModelForecastRecordTbMapper recordMapper,
-            ModelForecastResultTbMapper resultMapper,
-            ModelTrainConfigTbMapper trainConfigMapper,
-            ModelTrainBacktestTbMapper trainBacktestMapper,
-            ModelTrainRecordTbMapper trainDetailMapper,
-            ModelFeatureRefMapper featureRefMapper,
-            ModelFeatureDefinitionTbMapper featureDefinitionMapper,
-            ModelTrainFeatureDataTbMapper featureDataMapper,
-            ObjectMapper objectMapper) {
-        this.configMapper = configMapper;
-        this.recordMapper = recordMapper;
-        this.resultMapper = resultMapper;
-        this.trainConfigMapper = trainConfigMapper;
-        this.trainBacktestMapper = trainBacktestMapper;
-        this.trainDetailMapper = trainDetailMapper;
-        this.featureRefMapper = featureRefMapper;
-        this.featureDefinitionMapper = featureDefinitionMapper;
-        this.featureDataMapper = featureDataMapper;
-        this.objectMapper = objectMapper;
-    }
 
     public PageInfoDTO<ModelForecastConfigTb> listConfigs(JsonNode request) {
         var query = Wrappers.<ModelForecastConfigTb>lambdaQuery();
