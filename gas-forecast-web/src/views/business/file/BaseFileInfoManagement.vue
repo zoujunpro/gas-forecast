@@ -28,7 +28,9 @@
       <el-icon class="upload-icon"><UploadFilled /></el-icon>
       <div class="el-upload__text">拖拽文件到这里，或点击选择文件</div>
       <template #tip>
-        <div class="upload-tip">支持 Excel、CSV 文件；当前选择 {{ uploadFiles.length }} 个文件，合计 {{ totalUploadSize }}</div>
+        <div class="upload-tip">
+          支持 Excel、CSV 文件；当前选择 {{ uploadFiles.length }} 个文件，合计 {{ totalUploadSize }}
+        </div>
       </template>
     </el-upload>
 
@@ -50,7 +52,6 @@ import { createRow } from '@/api/management'
 import AppDialog from '@/components/AppDialog.vue'
 import BaseDataManagement from '../base/BaseDataManagement.vue'
 import { fileInfoDataConfig } from '../base/baseDataManagementConfigs'
-import { getProfile } from '@/utils/auth'
 
 defineOptions({ name: 'BaseFileInfoManagement' })
 
@@ -93,16 +94,13 @@ const hashFile = async (file?: File) => {
 const createFileRecord = async (file: UploadUserFile) => {
   const rawFile = file.raw
   const fileHash = await hashFile(rawFile)
-  const currentUser = getProfile().user
   await createRow(fileInfoDataConfig.endpoint, {
     fileName: file.name,
     objectKey: `raw/upload/${uploadForm.dataType}/${Date.now()}-${file.name}`,
     fileHash,
     status: 'UPLOADED',
     totalCount: 0,
-    errorMessage: '',
-    createdBy: currentUser?.username || 'admin',
-    createdByName: currentUser?.realName || '管理员'
+    errorMessage: ''
   })
 }
 
@@ -144,7 +142,7 @@ const submitUpload = async () => {
 }
 
 .upload-icon {
-  color: #1890FF;
+  color: #1890ff;
   font-size: 42px;
 }
 

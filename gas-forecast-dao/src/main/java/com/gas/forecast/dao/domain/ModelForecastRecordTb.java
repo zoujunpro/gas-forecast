@@ -11,7 +11,7 @@ import lombok.Data;
  * 模型预测记录表
  * @TableName model_forecast_record_tb
  */
-@TableName(value ="model_forecast_record_tb")
+@TableName(value = "model_forecast_record_tb")
 @Data
 public class ModelForecastRecordTb {
     /**

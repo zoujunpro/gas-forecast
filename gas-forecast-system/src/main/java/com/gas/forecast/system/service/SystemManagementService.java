@@ -1,7 +1,6 @@
 package com.gas.forecast.system.service;
 
 import com.gas.forecast.common.core.PageInfoDTO;
-
 import java.util.List;
 import java.util.Map;
 

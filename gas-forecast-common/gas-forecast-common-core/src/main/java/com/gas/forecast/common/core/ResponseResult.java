@@ -10,8 +10,7 @@ public class ResponseResult<T> implements Serializable {
     private String message;
     private T data;
 
-    public ResponseResult() {
-    }
+    public ResponseResult() {}
 
     public ResponseResult(String code, String message, T data) {
         this.code = code;

@@ -32,7 +32,10 @@ export const getJson = async <T = any>(url: string): Promise<ResponseData<T>> =>
   return readResponseResult<ResponseData<T>>(response)
 }
 
-export const listPage = async <T = Record<string, any>>(endpoint: string, params: PageRequest): Promise<PageData<T>> => {
+export const listPage = async <T = Record<string, any>>(
+  endpoint: string,
+  params: PageRequest
+): Promise<PageData<T>> => {
   const result = await postJson(`${endpoint}/listPage`, params)
   const data = result.data || {}
   return {

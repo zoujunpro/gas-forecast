@@ -1,13 +1,12 @@
 package com.gas.forecast.system.service.impl;
 
+import com.gas.forecast.common.security.annotation.Logical;
 import com.gas.forecast.dao.domain.SysPermissionTb;
 import com.gas.forecast.dao.mapper.SysPermissionTbMapper;
-import com.gas.forecast.common.security.annotation.Logical;
 import com.gas.forecast.system.service.AuthPermissionService;
-import org.springframework.stereotype.Service;
-
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AuthPermissionServiceImpl implements AuthPermissionService {

@@ -1,10 +1,8 @@
 package com.gas.forecast.common.security.context;
 
-
 import cn.hutool.core.convert.Convert;
 import com.alibaba.excel.util.StringUtils;
 import com.gas.forecast.common.security.contants.SecurityConstants;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,8 +43,8 @@ public class SecurityContextHolder {
         THREAD_LOCAL.set(threadLocalMap);
     }
 
-    public static Integer getUserId() {
-        return Convert.toInt(get(SecurityConstants.USER_ID), 0);
+    public static Long getUserId() {
+        return Convert.toLong(get(SecurityConstants.USER_ID), 0L);
     }
 
     public static void setUserId(String account) {
@@ -68,18 +66,15 @@ public class SecurityContextHolder {
     public static void setJobNum(String jobNum) {
         set(SecurityConstants.JOB_NUM, jobNum);
     }
+
     public static String getJobNum() {
         return get(SecurityConstants.JOB_NUM);
     }
-    public static String getNickName() {
-        return get(SecurityConstants.NICK_NAME);
-    }
+
     public static void setUserName(String username) {
         set(SecurityConstants.USERNAME, username);
     }
-    public static void setNickName(String nickName) {
-        set(SecurityConstants.NICK_NAME, nickName);
-    }
+
     public static String getRequest() {
         return get(SecurityConstants.TRACE_ID_HEADER);
     }
@@ -87,7 +82,6 @@ public class SecurityContextHolder {
     public static void setRequestId(String requestId) {
         set(SecurityConstants.TRACE_ID_HEADER, requestId);
     }
-
 
     public static void remove() {
         THREAD_LOCAL.remove();

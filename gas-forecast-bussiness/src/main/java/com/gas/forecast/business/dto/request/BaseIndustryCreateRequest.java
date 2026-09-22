@@ -19,8 +19,4 @@ public class BaseIndustryCreateRequest {
     @NotBlank(message = "行业名称不能为空")
     @Size(max = 128, message = "行业名称长度不能超过128个字符")
     private String industryName;
-
-    public String industryName() {
-        return industryName;
-    }
 }

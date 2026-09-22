@@ -1,7 +1,6 @@
 package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
@@ -11,7 +10,7 @@ import lombok.Data;
  * 天然气客户行业基础信息表
  * @TableName base_industry_tb
  */
-@TableName(value ="base_industry_tb")
+@TableName(value = "base_industry_tb")
 @Data
 public class BaseIndustryTb {
     /**
@@ -29,7 +28,6 @@ public class BaseIndustryTb {
      * 行业名称
      */
     private String industryName;
-
 
     /**
      * 创建时间

@@ -97,7 +97,9 @@ const emit = defineEmits<{
   optionSelect: [field: BaseDataFieldConfig | SystemFieldConfig, option?: Option]
 }>()
 
-const resolvedOptions = computed(() => props.field.options || props.optionMap?.[props.field.optionKey || props.field.prop] || [])
+const resolvedOptions = computed(
+  () => props.field.options || props.optionMap?.[props.field.optionKey || props.field.prop] || []
+)
 const currentGranularity = computed(() => {
   if (props.field.type !== 'granularityDate') {
     return ''

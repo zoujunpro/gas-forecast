@@ -1,7 +1,5 @@
 package com.gas.forecast.dao.domain;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
@@ -11,11 +9,11 @@ import lombok.Data;
  * 天然气销量原始数据表
  * @TableName data_daily_sales_tb
  */
-@TableName(value ="data_daily_sales_tb")
+@TableName(value = "data_daily_sales_tb")
 @Data
 public class DataDailySalesTb {
     /**
-     * 
+     *
      */
     @TableId
     private Long id;
@@ -69,5 +67,4 @@ public class DataDailySalesTb {
      * 行业编号
      */
     private String industryCode;
-
 }

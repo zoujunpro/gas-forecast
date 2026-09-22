@@ -38,7 +38,12 @@
             @change="searchData"
             @clear="searchData"
           >
-            <el-option v-for="option in field.options || []" :key="option.value" :label="option.label" :value="option.value" />
+            <el-option
+              v-for="option in field.options || []"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
           <el-input
             v-else
@@ -57,11 +62,26 @@
 
       <template #actions>
         <slot name="table-actions" :reload="loadData" />
-        <PermissionButton v-if="!config.readonly" type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">新增</PermissionButton>
+        <PermissionButton
+          v-if="!config.readonly"
+          type="primary"
+          :icon="Plus"
+          :permission="config.permissions?.create"
+          @click="openCreate"
+          >新增</PermissionButton
+        >
       </template>
 
       <AppTable v-loading="loading" :data="records" stripe border @sort-change="handleSortChange">
-        <el-table-column type="index" :index="rowIndex" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
+        <el-table-column
+          type="index"
+          :index="rowIndex"
+          label="序号"
+          width="72"
+          fixed
+          class-name="id-column"
+          label-class-name="id-column"
+        />
         <el-table-column
           v-for="field in config.tableFields"
           :key="field.prop"
@@ -83,15 +103,35 @@
             <ManagementTableCell :field="field" :row="row" />
           </template>
         </el-table-column>
-        <el-table-column v-if="!config.readonly" label="操作" :width="config.trainExecution ? 260 : 150" fixed="right" class-name="action-column" label-class-name="action-column">
+        <el-table-column
+          v-if="!config.readonly"
+          label="操作"
+          :width="config.trainExecution ? 260 : 150"
+          fixed="right"
+          class-name="action-column"
+          label-class-name="action-column"
+        >
           <template #default="{ row }">
             <el-button v-if="config.trainExecution" link type="success" @click="openExecute(row)">执行</el-button>
-            <el-button v-if="config.trainExecution" link type="primary" :icon="View" @click="openTrainResult(row)">结果</el-button>
-            <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)">编辑</PermissionButton>
-            <PermissionButton link type="danger" :permission="config.permissions?.delete" @click="removeRow(row)">删除</PermissionButton>
+            <el-button v-if="config.trainExecution" link type="primary" :icon="View" @click="openTrainResult(row)"
+              >结果</el-button
+            >
+            <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)"
+              >编辑</PermissionButton
+            >
+            <PermissionButton link type="danger" :permission="config.permissions?.delete" @click="removeRow(row)"
+              >删除</PermissionButton
+            >
           </template>
         </el-table-column>
-        <el-table-column v-else-if="config.featureDetailProp" label="操作" width="110" fixed="right" class-name="action-column" label-class-name="action-column">
+        <el-table-column
+          v-else-if="config.featureDetailProp"
+          label="操作"
+          width="110"
+          fixed="right"
+          class-name="action-column"
+          label-class-name="action-column"
+        >
           <template #default="{ row }">
             <el-button link type="primary" :icon="View" @click="openFeatureDetail(row)">查看特征</el-button>
           </template>
@@ -113,7 +153,12 @@
     <AppDialog v-model="dialogVisible" eyebrow="后台数据管理" :title="dialogTitle" width="680px" align-center>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
         <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.prop">
-          <FormFieldRenderer :field="field" :model="form" :option-map="formOptionMap" @option-select="handleFormOptionSelect" />
+          <FormFieldRenderer
+            :field="field"
+            :model="form"
+            :option-map="formOptionMap"
+            @option-select="handleFormOptionSelect"
+          />
         </el-form-item>
       </el-form>
       <section v-if="config.trainExecution" class="training-requirement-card" v-loading="platformModelsLoading">
@@ -124,17 +169,41 @@
           </div>
           <p>{{ selectedPlatformModel.training_data_range?.description || '模型平台未提供详细的数据范围说明。' }}</p>
           <div v-if="selectedPlatformModel.training_data_range" class="requirement-grid">
-            <span><small>数据频率</small><strong>{{ platformFrequencyText(selectedPlatformModel.training_data_range.frequency) }}</strong></span>
-            <span><small>最低数量</small><strong>{{ selectedPlatformModel.training_data_range.minimum }} 个周期</strong></span>
-            <span><small>建议数量</small><strong>{{ selectedPlatformModel.training_data_range.recommended ? `${selectedPlatformModel.training_data_range.recommended} 个周期` : '-' }}</strong></span>
-            <span><small>连续性</small><strong>{{ selectedPlatformModel.training_data_range.continuous === true ? '必须连续' : selectedPlatformModel.training_data_range.continuous === false ? '允许不连续' : '-' }}</strong></span>
+            <span
+              ><small>数据频率</small
+              ><strong>{{ platformFrequencyText(selectedPlatformModel.training_data_range.frequency) }}</strong></span
+            >
+            <span
+              ><small>最低数量</small
+              ><strong>{{ selectedPlatformModel.training_data_range.minimum }} 个周期</strong></span
+            >
+            <span
+              ><small>建议数量</small
+              ><strong>{{
+                selectedPlatformModel.training_data_range.recommended
+                  ? `${selectedPlatformModel.training_data_range.recommended} 个周期`
+                  : '-'
+              }}</strong></span
+            >
+            <span
+              ><small>连续性</small
+              ><strong>{{
+                selectedPlatformModel.training_data_range.continuous === true
+                  ? '必须连续'
+                  : selectedPlatformModel.training_data_range.continuous === false
+                    ? '允许不连续'
+                    : '-'
+              }}</strong></span
+            >
           </div>
         </template>
         <el-empty v-else :image-size="46" description="选择模型后显示训练数据要求" />
       </section>
       <template #footer>
         <el-button type="info" plain @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="executionMode ? continueExecution() : saveData()">{{ executionMode ? '继续执行' : '保存' }}</el-button>
+        <el-button type="primary" :loading="saving" @click="executionMode ? continueExecution() : saveData()">{{
+          executionMode ? '继续执行' : '保存'
+        }}</el-button>
       </template>
     </AppDialog>
 
@@ -161,7 +230,9 @@
         <el-table-column prop="customerName" label="客户" min-width="140" />
         <el-table-column prop="gasSales" label="天然气销量" min-width="120" align="right" />
         <el-table-column prop="featureDetails" label="特征数量" min-width="90" align="right">
-          <template #default="{ row }">{{ Array.isArray(row.featureDetails) ? row.featureDetails.length : 0 }}</template>
+          <template #default="{ row }">{{
+            Array.isArray(row.featureDetails) ? row.featureDetails.length : 0
+          }}</template>
         </el-table-column>
       </el-table>
       <div class="preview-pagination">
@@ -176,7 +247,9 @@
       </div>
       <template #footer>
         <el-button type="info" plain @click="previewVisible = false">取消</el-button>
-        <el-button type="primary" :loading="executing" :disabled="previewRows.length === 0" @click="executeTraining">确认执行</el-button>
+        <el-button type="primary" :loading="executing" :disabled="previewRows.length === 0" @click="executeTraining"
+          >确认执行</el-button
+        >
       </template>
     </AppDialog>
 
@@ -187,7 +260,13 @@
           <span>{{ selectedRow.regionName || '-' }}</span>
           <span>{{ selectedRow.industryName || '-' }}</span>
         </div>
-        <el-table v-if="featureDetailEntries.length" :data="featureDetailEntries" border stripe height="calc(100vh - 190px)">
+        <el-table
+          v-if="featureDetailEntries.length"
+          :data="featureDetailEntries"
+          border
+          stripe
+          height="calc(100vh - 190px)"
+        >
           <el-table-column prop="featureNo" label="特征编号" min-width="120" />
           <el-table-column prop="featureCode" label="特征编码" min-width="160" show-overflow-tooltip />
           <el-table-column prop="featureValue" label="特征值" min-width="120" align="right" />
@@ -201,7 +280,9 @@
         <div v-if="trainResultBatches.length" class="train-result-layout">
           <aside class="train-result-sidebar">
             <div class="result-sidebar-head">
-              <strong><el-icon><Tickets /></el-icon>训练批次</strong>
+              <strong
+                ><el-icon><Tickets /></el-icon>训练批次</strong
+              >
               <span>{{ filteredTrainResultBatches.length }} / {{ trainResultBatches.length }} 条</span>
             </div>
             <div class="result-sidebar-search">
@@ -234,7 +315,9 @@
             >
               <span class="batch-card-top">
                 <strong>{{ batch.batchNo || '-' }}</strong>
-                <el-tag size="small" :type="statusTagType(batch.status)" effect="light">{{ statusText(batch.status) }}</el-tag>
+                <el-tag size="small" :type="statusTagType(batch.status)" effect="light">{{
+                  statusText(batch.status)
+                }}</el-tag>
               </span>
               <span>{{ batch.bestModel || '暂无最佳模型' }}</span>
               <small>{{ batch.updatedAt || batch.createdAt || '-' }}</small>
@@ -259,7 +342,9 @@
               <div class="result-hero-content">
                 <div class="result-hero-title">
                   <strong>{{ selectedTrainBatchNo || '-' }}</strong>
-                  <el-tag size="small" :type="statusTagType(selectedTrainResult?.status)" effect="light">{{ statusText(selectedTrainResult?.status) }}</el-tag>
+                  <el-tag size="small" :type="statusTagType(selectedTrainResult?.status)" effect="light">{{
+                    statusText(selectedTrainResult?.status)
+                  }}</el-tag>
                 </div>
                 <div class="result-hero-subtitle">
                   <span>{{ trainResultSource?.trainName || '-' }}</span>
@@ -270,7 +355,14 @@
               <div class="result-hero-actions">
                 <el-tooltip :content="retrainTip" placement="top">
                   <span>
-                    <el-button type="primary" plain :icon="RefreshRight" :loading="retraining" :disabled="!canRetrainSelectedBatch" @click="retrainFromSelectedBatch">
+                    <el-button
+                      type="primary"
+                      plain
+                      :icon="RefreshRight"
+                      :loading="retraining"
+                      :disabled="!canRetrainSelectedBatch"
+                      @click="retrainFromSelectedBatch"
+                    >
                       重新训练
                     </el-button>
                   </span>
@@ -280,7 +372,9 @@
 
             <section class="result-info-panel">
               <div class="result-info-title">
-                <span><el-icon><Document /></el-icon>训练基本信息</span>
+                <span
+                  ><el-icon><Document /></el-icon>训练基本信息</span
+                >
               </div>
               <div class="result-overview-grid">
                 <div v-for="item in resultOverviewRows" :key="item.label" class="result-overview-item">
@@ -291,7 +385,12 @@
             </section>
 
             <section class="result-metric-grid">
-              <div v-for="metric in resultMetricCards" :key="metric.label" class="result-metric-card" :class="metric.tone">
+              <div
+                v-for="metric in resultMetricCards"
+                :key="metric.label"
+                class="result-metric-card"
+                :class="metric.tone"
+              >
                 <div class="metric-card-head">
                   <el-icon><component :is="metric.icon" /></el-icon>
                   <span>{{ metric.label }}</span>
@@ -301,101 +400,107 @@
               </div>
             </section>
 
-        <el-tabs v-model="activeTrainResultTab" class="result-tabs">
-          <el-tab-pane label="训练数据" name="dataset" lazy>
-            <template v-if="requestDatasetRows.length">
-              <el-table :data="pagedRequestDatasetRows" border stripe height="320px">
-                <el-table-column
-                  v-for="column in requestDatasetColumns"
-                  :key="column"
-                  :prop="column"
-                  :label="column"
-                  min-width="120"
-                  show-overflow-tooltip
+            <el-tabs v-model="activeTrainResultTab" class="result-tabs">
+              <el-tab-pane label="训练数据" name="dataset" lazy>
+                <template v-if="requestDatasetRows.length">
+                  <el-table :data="pagedRequestDatasetRows" border stripe height="320px">
+                    <el-table-column
+                      v-for="column in requestDatasetColumns"
+                      :key="column"
+                      :prop="column"
+                      :label="column"
+                      min-width="120"
+                      show-overflow-tooltip
+                    />
+                  </el-table>
+                  <AppPagination
+                    v-if="requestDatasetRows.length > requestDatasetSize"
+                    v-model:current-page="requestDatasetPage"
+                    v-model:page-size="requestDatasetSize"
+                    :page-sizes="[20, 50, 100, 200]"
+                    :total="requestDatasetRows.length"
+                  />
+                </template>
+                <el-empty v-else description="暂无训练数据" />
+              </el-tab-pane>
+              <el-tab-pane label="指标概览" name="metrics" lazy>
+                <el-table v-if="resultMetricRows.length" :data="resultMetricRows" border stripe height="220px">
+                  <el-table-column prop="label" label="指标" min-width="180" />
+                  <el-table-column prop="value" label="值" min-width="240" />
+                </el-table>
+                <el-empty v-else description="暂无指标" />
+              </el-tab-pane>
+              <el-tab-pane label="候选模型" name="candidates" lazy>
+                <el-table v-if="candidateRows.length" :data="candidateRows" border stripe height="320px">
+                  <el-table-column prop="rank" label="排名" width="80" />
+                  <el-table-column prop="model_name" label="模型名称" min-width="180" show-overflow-tooltip />
+                  <el-table-column prop="model_type" label="类型" min-width="110" />
+                  <el-table-column prop="selected" label="选中" min-width="90" />
+                  <el-table-column prop="score" label="综合评分" min-width="110" align="right" />
+                  <el-table-column prop="rmse" label="RMSE" min-width="110" align="right" />
+                  <el-table-column prop="mape" label="MAPE" min-width="100" align="right" />
+                  <el-table-column prop="wmape" label="WMAPE" min-width="100" align="right" />
+                  <el-table-column prop="mae" label="MAE" min-width="100" align="right" />
+                  <el-table-column prop="r2" label="R²" min-width="90" align="right" />
+                </el-table>
+                <el-empty v-else description="暂无候选模型" />
+              </el-tab-pane>
+              <el-tab-pane label="回测结果" name="backtests" lazy>
+                <div v-if="backtestRows.length" class="result-view-toolbar">
+                  <el-radio-group v-model="backtestResultView" size="small">
+                    <el-radio-button value="table">数据</el-radio-button>
+                    <el-radio-button value="chart">图表</el-radio-button>
+                  </el-radio-group>
+                </div>
+                <el-table
+                  v-if="backtestRows.length && backtestResultView === 'table'"
+                  :data="backtestRows"
+                  border
+                  stripe
+                  height="320px"
+                >
+                  <el-table-column prop="stat_date" label="日期" min-width="110" fixed />
+                  <el-table-column prop="model_name" label="模型" min-width="160" show-overflow-tooltip />
+                  <el-table-column prop="season" label="周期" min-width="160" show-overflow-tooltip />
+                  <el-table-column prop="actual_value" label="实际值" min-width="110" align="right" />
+                  <el-table-column prop="predicted_value" label="预测值" min-width="110" align="right" />
+                  <el-table-column prop="absolute_error" label="绝对误差" min-width="110" align="right" />
+                  <el-table-column prop="error_rate" label="误差率" min-width="100" align="right" />
+                </el-table>
+                <div v-else-if="backtestRows.length" ref="backtestChartRef" class="result-chart" />
+                <el-empty v-else description="暂无回测结果" />
+              </el-tab-pane>
+              <el-tab-pane label="问题列表" name="issues" lazy>
+                <el-table v-if="issueRows.length" :data="issueRows" border stripe height="260px">
+                  <el-table-column prop="severity" label="级别" min-width="90" />
+                  <el-table-column prop="stage" label="阶段" min-width="120" />
+                  <el-table-column prop="category" label="类别" min-width="120" />
+                  <el-table-column prop="message" label="信息" min-width="360" show-overflow-tooltip />
+                </el-table>
+                <el-empty v-else description="暂无问题" />
+              </el-tab-pane>
+              <el-tab-pane label="原始 JSON" name="json" lazy>
+                <el-alert
+                  v-if="rawJsonTruncated"
+                  title="为避免页面卡顿，超大数组仅展示前 100 条；完整训练数据可在“训练数据”页签中分页查看。"
+                  type="info"
+                  :closable="false"
+                  show-icon
                 />
-              </el-table>
-              <AppPagination
-                v-if="requestDatasetRows.length > requestDatasetSize"
-                v-model:current-page="requestDatasetPage"
-                v-model:page-size="requestDatasetSize"
-                :page-sizes="[20, 50, 100, 200]"
-                :total="requestDatasetRows.length"
-              />
-            </template>
-            <el-empty v-else description="暂无训练数据" />
-          </el-tab-pane>
-          <el-tab-pane label="指标概览" name="metrics" lazy>
-            <el-table v-if="resultMetricRows.length" :data="resultMetricRows" border stripe height="220px">
-              <el-table-column prop="label" label="指标" min-width="180" />
-              <el-table-column prop="value" label="值" min-width="240" />
-            </el-table>
-            <el-empty v-else description="暂无指标" />
-          </el-tab-pane>
-          <el-tab-pane label="候选模型" name="candidates" lazy>
-            <el-table v-if="candidateRows.length" :data="candidateRows" border stripe height="320px">
-              <el-table-column prop="rank" label="排名" width="80" />
-              <el-table-column prop="model_name" label="模型名称" min-width="180" show-overflow-tooltip />
-              <el-table-column prop="model_type" label="类型" min-width="110" />
-              <el-table-column prop="selected" label="选中" min-width="90" />
-              <el-table-column prop="score" label="综合评分" min-width="110" align="right" />
-              <el-table-column prop="rmse" label="RMSE" min-width="110" align="right" />
-              <el-table-column prop="mape" label="MAPE" min-width="100" align="right" />
-              <el-table-column prop="wmape" label="WMAPE" min-width="100" align="right" />
-              <el-table-column prop="mae" label="MAE" min-width="100" align="right" />
-              <el-table-column prop="r2" label="R²" min-width="90" align="right" />
-            </el-table>
-            <el-empty v-else description="暂无候选模型" />
-          </el-tab-pane>
-          <el-tab-pane label="回测结果" name="backtests" lazy>
-            <div v-if="backtestRows.length" class="result-view-toolbar">
-              <el-radio-group v-model="backtestResultView" size="small">
-                <el-radio-button value="table">数据</el-radio-button>
-                <el-radio-button value="chart">图表</el-radio-button>
-              </el-radio-group>
-            </div>
-            <el-table v-if="backtestRows.length && backtestResultView === 'table'" :data="backtestRows" border stripe height="320px">
-              <el-table-column prop="stat_date" label="日期" min-width="110" fixed />
-              <el-table-column prop="model_name" label="模型" min-width="160" show-overflow-tooltip />
-              <el-table-column prop="season" label="周期" min-width="160" show-overflow-tooltip />
-              <el-table-column prop="actual_value" label="实际值" min-width="110" align="right" />
-              <el-table-column prop="predicted_value" label="预测值" min-width="110" align="right" />
-              <el-table-column prop="absolute_error" label="绝对误差" min-width="110" align="right" />
-              <el-table-column prop="error_rate" label="误差率" min-width="100" align="right" />
-            </el-table>
-            <div v-else-if="backtestRows.length" ref="backtestChartRef" class="result-chart" />
-            <el-empty v-else description="暂无回测结果" />
-          </el-tab-pane>
-          <el-tab-pane label="问题列表" name="issues" lazy>
-            <el-table v-if="issueRows.length" :data="issueRows" border stripe height="260px">
-              <el-table-column prop="severity" label="级别" min-width="90" />
-              <el-table-column prop="stage" label="阶段" min-width="120" />
-              <el-table-column prop="category" label="类别" min-width="120" />
-              <el-table-column prop="message" label="信息" min-width="360" show-overflow-tooltip />
-            </el-table>
-            <el-empty v-else description="暂无问题" />
-          </el-tab-pane>
-          <el-tab-pane label="原始 JSON" name="json" lazy>
-            <el-alert
-              v-if="rawJsonTruncated"
-              title="为避免页面卡顿，超大数组仅展示前 100 条；完整训练数据可在“训练数据”页签中分页查看。"
-              type="info"
-              :closable="false"
-              show-icon
-            />
-            <div class="json-grid">
-              <section>
-                <div class="result-subtitle">请求 JSON</div>
-                <pre v-if="trainRequestJsonText" class="result-json">{{ trainRequestJsonText }}</pre>
-                <el-empty v-else description="暂无请求参数" />
-              </section>
-              <section>
-                <div class="result-subtitle">结果 JSON</div>
-                <pre v-if="trainResultJsonText" class="result-json">{{ trainResultJsonText }}</pre>
-                <el-empty v-else description="暂无结果数据" />
-              </section>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
+                <div class="json-grid">
+                  <section>
+                    <div class="result-subtitle">请求 JSON</div>
+                    <pre v-if="trainRequestJsonText" class="result-json">{{ trainRequestJsonText }}</pre>
+                    <el-empty v-else description="暂无请求参数" />
+                  </section>
+                  <section>
+                    <div class="result-subtitle">结果 JSON</div>
+                    <pre v-if="trainResultJsonText" class="result-json">{{ trainResultJsonText }}</pre>
+                    <el-empty v-else description="暂无结果数据" />
+                  </section>
+                </div>
+              </el-tab-pane>
+            </el-tabs>
           </main>
         </div>
         <el-empty v-else-if="!trainResultLoading" description="暂无训练结果" />
@@ -408,7 +513,22 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Aim, Cpu, DataLine, Document, Filter, Histogram, Odometer, PieChart, Plus, RefreshRight, Search, Tickets, TrendCharts, View } from '@element-plus/icons-vue'
+import {
+  Aim,
+  Cpu,
+  DataLine,
+  Document,
+  Filter,
+  Histogram,
+  Odometer,
+  PieChart,
+  Plus,
+  RefreshRight,
+  Search,
+  Tickets,
+  TrendCharts,
+  View
+} from '@element-plus/icons-vue'
 import { createRow, deleteRow, getJson, listPage, postJson, updateRow, type PageRequest } from '@/api/management'
 import { usePageQuery } from '@/composables/usePageQuery'
 import AppDialog from '@/components/AppDialog.vue'
@@ -480,14 +600,20 @@ interface PlatformModel {
 }
 
 const config = computed(() => props.pageConfig)
-const visibleFormFields = computed(() => config.value.formFields.filter((field) => {
-  if (!field.visibleWhen) {
-    return true
-  }
-  return form[field.visibleWhen.prop] === field.visibleWhen.value
-}))
-const dialogTitle = computed(() => `${executionMode.value ? '执行' : editingId.value ? '编辑' : '新增'}${config.value.title.replace('管理', '')}`)
-const selectedPlatformModel = computed(() => platformModels.value.find(item => item.model_code === form.modelCode) || null)
+const visibleFormFields = computed(() =>
+  config.value.formFields.filter((field) => {
+    if (!field.visibleWhen) {
+      return true
+    }
+    return form[field.visibleWhen.prop] === field.visibleWhen.value
+  })
+)
+const dialogTitle = computed(
+  () => `${executionMode.value ? '执行' : editingId.value ? '编辑' : '新增'}${config.value.title.replace('管理', '')}`
+)
+const selectedPlatformModel = computed(
+  () => platformModels.value.find((item) => item.model_code === form.modelCode) || null
+)
 const previewTimeRange = computed(() => {
   if (!executionConfig.value) {
     return '-'
@@ -498,7 +624,11 @@ const previewTimeRange = computed(() => {
   return `${executionConfig.value.trainStartDate || '-'} 至 ${executionConfig.value.trainEndDate || '-'}`
 })
 const selectedTrainResult = computed(() => {
-  return trainResultBatches.value.find((item) => item.batchNo === selectedTrainBatchNo.value) || trainResultBatches.value[0] || null
+  return (
+    trainResultBatches.value.find((item) => item.batchNo === selectedTrainBatchNo.value) ||
+    trainResultBatches.value[0] ||
+    null
+  )
 })
 const trainBatchStatusTabs: Array<{ label: string; value: 'all' | 'running' | 'success' | 'failed' }> = [
   { label: '全部', value: 'all' },
@@ -538,7 +668,10 @@ const filteredTrainResultBatches = computed(() => {
       item.train_start_date,
       item.trainEndDate,
       item.train_end_date
-    ].filter((value) => value !== undefined && value !== null).join(' ').toLowerCase()
+    ]
+      .filter((value) => value !== undefined && value !== null)
+      .join(' ')
+      .toLowerCase()
     return searchable.includes(keyword)
   })
 })
@@ -603,11 +736,25 @@ const resultOverviewRows = computed(() => {
   const source = trainResultSource.value || {}
   const rows = [
     { label: '训练批次号', value: textValue(result.batchNo, result.batch_no) },
-    { label: '智能体', value: agentText(result.agentName, result.agent_name, source.agentName, source.agentLabel, result.agentCode, result.agent_code, source.agentCode) },
+    {
+      label: '智能体',
+      value: agentText(
+        result.agentName,
+        result.agent_name,
+        source.agentName,
+        source.agentLabel,
+        result.agentCode,
+        result.agent_code,
+        source.agentCode
+      )
+    },
     { label: '区域名称', value: textValue(result.regionName, result.region_name, source.regionName) },
     { label: '客户名称', value: textValue(result.customerName, result.customer_name, source.customerName) },
     { label: '所属行业名字', value: textValue(result.industryName, result.industry_name, source.industryName) },
-    { label: '训练数据开始日期', value: textValue(result.trainStartDate, result.train_start_date, source.trainStartDate) },
+    {
+      label: '训练数据开始日期',
+      value: textValue(result.trainStartDate, result.train_start_date, source.trainStartDate)
+    },
     { label: '训练数据截止日期', value: textValue(result.trainEndDate, result.train_end_date, source.trainEndDate) },
     { label: '训练耗时', value: durationText(result.trainDurationSeconds ?? result.train_duration_seconds) },
     { label: '训练状态', value: statusText(result.status), tone: statusTone(result.status) },
@@ -618,9 +765,7 @@ const resultOverviewRows = computed(() => {
   if (errorMessage !== '-') {
     rows.push({ label: '错误信息', value: errorMessage })
   }
-  return [
-    ...rows
-  ]
+  return [...rows]
 })
 const resultMetricCards = computed(() => {
   const result = selectedTrainResult.value || {}
@@ -634,10 +779,10 @@ const resultMetricCards = computed(() => {
   ]
 })
 const asRecord = (value: unknown): Record<string, any> => {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, any>) : {}
 }
 const asArray = (value: unknown): Record<string, any>[] => {
-  return Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') as Record<string, any>[] : []
+  return Array.isArray(value) ? (value.filter((item) => item && typeof item === 'object') as Record<string, any>[]) : []
 }
 const JSON_ARRAY_PREVIEW_LIMIT = 100
 const rawJsonTruncated = computed(() => {
@@ -645,11 +790,15 @@ const rawJsonTruncated = computed(() => {
     if (Array.isArray(value)) {
       return value.length > JSON_ARRAY_PREVIEW_LIMIT || value.some(hasLargeArray)
     }
-    return Boolean(value && typeof value === 'object' && Object.values(value as Record<string, unknown>).some(hasLargeArray))
+    return Boolean(
+      value && typeof value === 'object' && Object.values(value as Record<string, unknown>).some(hasLargeArray)
+    )
   }
-  return Boolean(selectedRequestJson.value.dataset_truncated)
-    || hasLargeArray(selectedTrainResult.value?.requestJson)
-    || hasLargeArray(selectedTrainResult.value?.resultJson)
+  return (
+    Boolean(selectedRequestJson.value.dataset_truncated) ||
+    hasLargeArray(selectedTrainResult.value?.requestJson) ||
+    hasLargeArray(selectedTrainResult.value?.resultJson)
+  )
 })
 const jsonPreview = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -660,7 +809,9 @@ const jsonPreview = (value: unknown): unknown => {
     ]
   }
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, jsonPreview(item)]))
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, jsonPreview(item)])
+    )
   }
   return value
 }
@@ -687,7 +838,9 @@ const isBatchRunning = (status: unknown) => {
 }
 const isBatchFailed = (status: unknown) => String(status || '').toUpperCase() === 'FAILED'
 const canRetrainSelectedBatch = computed(() => {
-  return Boolean(selectedTrainResult.value && trainResultSource.value?.trainCode && !isBatchRunning(selectedTrainResult.value.status))
+  return Boolean(
+    selectedTrainResult.value && trainResultSource.value?.trainCode && !isBatchRunning(selectedTrainResult.value.status)
+  )
 })
 const retrainTip = computed(() => {
   if (!selectedTrainResult.value) {
@@ -718,10 +871,19 @@ const retrainFromSelectedBatch = async () => {
   )
   retraining.value = true
   try {
-    const retryBatchNo = failedRetry ? selectedTrainResult.value?.batchNo || selectedTrainResult.value?.batch_no : undefined
-    const result = await postJson('/model-train-execution/execute', { trainCode: trainResultSource.value?.trainCode, retryBatchNo })
+    const retryBatchNo = failedRetry
+      ? selectedTrainResult.value?.batchNo || selectedTrainResult.value?.batch_no
+      : undefined
+    const result = await postJson('/model-train-execution/execute', {
+      trainCode: trainResultSource.value?.trainCode,
+      retryBatchNo
+    })
     const data = (result as any).data || {}
-    ElMessage.success(failedRetry ? `已重新提交训练批次：${data.trainBatchNo || data.train_batch_no || '-'}` : `已创建新的训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`)
+    ElMessage.success(
+      failedRetry
+        ? `已重新提交训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`
+        : `已创建新的训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`
+    )
     if (trainResultSource.value) {
       await openTrainResult(trainResultSource.value)
       selectedTrainBatchNo.value = data.trainBatchNo || data.train_batch_no || selectedTrainBatchNo.value
@@ -824,11 +986,13 @@ const candidateRows = computed<Record<string, any>[]>(() => {
     ])
     return { ...row, score: Number(score.toFixed(2)) }
   })
-  return scoredRows.sort((a, b) => {
-    if (a.selected !== b.selected) return a.selected === '是' ? -1 : 1
-    if (b.score !== a.score) return b.score - a.score
-    return (Number(a.rank) || Number.MAX_SAFE_INTEGER) - (Number(b.rank) || Number.MAX_SAFE_INTEGER)
-  }).map((row, index) => ({ ...row, rank: index + 1 }))
+  return scoredRows
+    .sort((a, b) => {
+      if (a.selected !== b.selected) return a.selected === '是' ? -1 : 1
+      if (b.score !== a.score) return b.score - a.score
+      return (Number(a.rank) || Number.MAX_SAFE_INTEGER) - (Number(b.rank) || Number.MAX_SAFE_INTEGER)
+    })
+    .map((row, index) => ({ ...row, rank: index + 1 }))
 })
 const backtestRows = computed(() => asArray(selectedResultJson.value.rolling_backtest_results))
 const issueRows = computed(() => asArray(selectedResultJson.value.issues))
@@ -840,41 +1004,59 @@ const renderBacktestChart = () => {
   if (!chart) return
   const labels = backtestRows.value.map((row) => row.stat_date || row.date || '-')
   const visiblePercent = labels.length > 18 ? Math.max(20, Math.round(1800 / labels.length)) : 100
-  chart.setOption({
-    color: ['#2563eb', '#16a34a', '#f59e0b'],
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'cross', snap: true },
-      formatter: (params: any) => {
-        const items = Array.isArray(params) ? params : [params]
-        const dataIndex = items[0]?.dataIndex ?? 0
-        const row = backtestRows.value[dataIndex] || {}
-        return [
-          `<strong>${row.stat_date || row.date || '-'}</strong>`,
-          `实际值：${row.actual_value ?? '-'}`,
-          `预测值：${row.predicted_value ?? '-'}`,
-          `绝对误差：${row.absolute_error ?? '-'}`,
-          `误差率：${row.error_rate ?? '-'}`
-        ].join('<br/>')
-      }
+  chart.setOption(
+    {
+      color: ['#2563eb', '#16a34a', '#f59e0b'],
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross', snap: true },
+        formatter: (params: any) => {
+          const items = Array.isArray(params) ? params : [params]
+          const dataIndex = items[0]?.dataIndex ?? 0
+          const row = backtestRows.value[dataIndex] || {}
+          return [
+            `<strong>${row.stat_date || row.date || '-'}</strong>`,
+            `实际值：${row.actual_value ?? '-'}`,
+            `预测值：${row.predicted_value ?? '-'}`,
+            `绝对误差：${row.absolute_error ?? '-'}`,
+            `误差率：${row.error_rate ?? '-'}`
+          ].join('<br/>')
+        }
+      },
+      legend: { top: 0 },
+      grid: { left: 56, right: 56, top: 48, bottom: 82 },
+      dataZoom: [
+        { type: 'slider', xAxisIndex: 0, bottom: 24, height: 18, start: 0, end: visiblePercent },
+        { type: 'inside', xAxisIndex: 0, start: 0, end: visiblePercent }
+      ],
+      xAxis: { type: 'category', data: labels, axisPointer: { show: true, snap: true } },
+      yAxis: [
+        { type: 'value', name: '气量' },
+        { type: 'value', name: '误差' }
+      ],
+      series: [
+        {
+          name: '实际值',
+          type: 'line',
+          smooth: true,
+          data: backtestRows.value.map((row) => toNumber(row.actual_value))
+        },
+        {
+          name: '预测值',
+          type: 'line',
+          smooth: true,
+          data: backtestRows.value.map((row) => toNumber(row.predicted_value))
+        },
+        {
+          name: '绝对误差',
+          type: 'bar',
+          yAxisIndex: 1,
+          data: backtestRows.value.map((row) => toNumber(row.absolute_error))
+        }
+      ]
     },
-    legend: { top: 0 },
-    grid: { left: 56, right: 56, top: 48, bottom: 82 },
-    dataZoom: [
-      { type: 'slider', xAxisIndex: 0, bottom: 24, height: 18, start: 0, end: visiblePercent },
-      { type: 'inside', xAxisIndex: 0, start: 0, end: visiblePercent }
-    ],
-    xAxis: { type: 'category', data: labels, axisPointer: { show: true, snap: true } },
-    yAxis: [
-      { type: 'value', name: '气量' },
-      { type: 'value', name: '误差' }
-    ],
-    series: [
-      { name: '实际值', type: 'line', smooth: true, data: backtestRows.value.map((row) => toNumber(row.actual_value)) },
-      { name: '预测值', type: 'line', smooth: true, data: backtestRows.value.map((row) => toNumber(row.predicted_value)) },
-      { name: '绝对误差', type: 'bar', yAxisIndex: 1, data: backtestRows.value.map((row) => toNumber(row.absolute_error)) }
-    ]
-  }, true)
+    true
+  )
 }
 const renderVisibleResultChart = async () => {
   await nextTick()
@@ -891,10 +1073,18 @@ const formRules = computed<FormRules>(() => {
   visibleFormFields.value.forEach((field) => {
     const fieldRules = []
     if (field.required) {
-      fieldRules.push({ required: true, message: `请输入${field.label}`, trigger: field.type === 'select' || field.type === 'radio' ? 'change' : 'blur' })
+      fieldRules.push({
+        required: true,
+        message: `请输入${field.label}`,
+        trigger: field.type === 'select' || field.type === 'radio' ? 'change' : 'blur'
+      })
     }
     if (field.maxLength) {
-      fieldRules.push({ max: field.maxLength, message: `${field.label}不能超过${field.maxLength}个字符`, trigger: 'blur' })
+      fieldRules.push({
+        max: field.maxLength,
+        message: `${field.label}不能超过${field.maxLength}个字符`,
+        trigger: 'blur'
+      })
     }
     if (field.pattern) {
       fieldRules.push({ pattern: new RegExp(field.pattern), message: `${field.label}格式不正确`, trigger: 'blur' })
@@ -920,14 +1110,15 @@ const {
   rowIndex
 } = usePageQuery<Record<string, any>>({
   errorMessage: '列表加载失败',
-  fetcher: ({ page, size, keyword }) => listPage(config.value.endpoint, {
-    page,
-    size,
-    keyword: keyword || undefined,
-    sortField: sortField.value || undefined,
-    sortOrder: sortOrder.value || undefined,
-    ...filterPayload.value
-  })
+  fetcher: ({ page, size, keyword }) =>
+    listPage(config.value.endpoint, {
+      page,
+      size,
+      keyword: keyword || undefined,
+      sortField: sortField.value || undefined,
+      sortOrder: sortOrder.value || undefined,
+      ...filterPayload.value
+    })
 })
 
 const filterPayload = computed(() => {
@@ -974,27 +1165,28 @@ const formatSourceOption = (row: Record<string, any>, field: BaseDataFieldConfig
   }
   const value = row[source.valueProp]
   const code = row.configCode || row[source.valueProp]
-  const label = source.labelTemplate === 'nameWithCode'
-    ? `${row[source.labelProp] || '-'} (${code || '-'})`
-    : row[source.labelProp]
+  const label =
+    source.labelTemplate === 'nameWithCode' ? `${row[source.labelProp] || '-'} (${code || '-'})` : row[source.labelProp]
   return { label, value, raw: row }
 }
 
 const loadFormOptions = async () => {
   const sourceFields = config.value.formFields.filter((field) => field.optionSource)
-  await Promise.all(sourceFields.map(async (field) => {
-    const source = field.optionSource
-    if (!source) {
-      return
-    }
-    try {
-      const data = await listPage(source.endpoint, { page: 1, size: source.size || 1000 })
-      formOptionMap[field.prop] = data.records.map((row) => formatSourceOption(row, field))
-    } catch (error) {
-      ElMessage.error(`${field.label}选项加载失败`)
-      formOptionMap[field.prop] = []
-    }
-  }))
+  await Promise.all(
+    sourceFields.map(async (field) => {
+      const source = field.optionSource
+      if (!source) {
+        return
+      }
+      try {
+        const data = await listPage(source.endpoint, { page: 1, size: source.size || 1000 })
+        formOptionMap[field.prop] = data.records.map((row) => formatSourceOption(row, field))
+      } catch (error) {
+        ElMessage.error(`${field.label}选项加载失败`)
+        formOptionMap[field.prop] = []
+      }
+    })
+  )
 }
 
 const handleFormOptionSelect = (field: BaseDataFieldConfig, option?: Option) => {
@@ -1039,7 +1231,11 @@ const openTrainResult = async (row: Record<string, any>) => {
   try {
     const result = await postJson('/model-train-execution/result', row)
     const data = (result as any).data || {}
-    trainResultBatches.value = Array.isArray(data.details) ? data.details : Array.isArray(data.batches) ? data.batches : []
+    trainResultBatches.value = Array.isArray(data.details)
+      ? data.details
+      : Array.isArray(data.batches)
+        ? data.batches
+        : []
     selectedTrainBatchNo.value = data.selectedBatchNo || trainResultBatches.value[0]?.batchNo || ''
     trainResultLoading.value = false
     if (selectedTrainBatchNo.value) {
@@ -1092,7 +1288,7 @@ const handleTrainBatchSizeChange = () => {
   trainBatchPage.value = 1
 }
 
-const handleSortChange = ({ prop, order }: { prop: string, order: string | null }) => {
+const handleSortChange = ({ prop, order }: { prop: string; order: string | null }) => {
   sortField.value = prop || ''
   sortOrder.value = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : ''
   searchData()
@@ -1254,7 +1450,8 @@ const loadPlatformModels = async () => {
   }
 }
 
-const platformFrequencyText = (value?: string) => ({ day: '日', tenday: '旬', month: '月' }[value || ''] || value || '-')
+const platformFrequencyText = (value?: string) =>
+  ({ day: '日', tenday: '旬', month: '月' })[value || ''] || value || '-'
 
 const removeRow = async (row: Record<string, any>) => {
   await ElMessageBox.confirm('删除后不可恢复，确认删除这条数据？', '删除确认', { type: 'warning' })
@@ -1267,14 +1464,17 @@ const removeRow = async (row: Record<string, any>) => {
   }
 }
 
-watch(() => props.pageConfig, () => {
-  keyword.value = ''
-  page.value = 1
-  resetFilters()
-  resetForm()
-  void loadFormOptions()
-  void loadData()
-})
+watch(
+  () => props.pageConfig,
+  () => {
+    keyword.value = ''
+    page.value = 1
+    resetFilters()
+    resetForm()
+    void loadFormOptions()
+    void loadData()
+  }
+)
 
 watch(trainBatchKeyword, () => {
   trainBatchPage.value = 1
@@ -1292,13 +1492,7 @@ watch(filteredTrainResultBatches, (rows) => {
 })
 
 watch(
-  [
-    trainResultVisible,
-    activeTrainResultTab,
-    backtestResultView,
-    selectedTrainBatchNo,
-    () => backtestRows.value.length
-  ],
+  [trainResultVisible, activeTrainResultTab, backtestResultView, selectedTrainBatchNo, () => backtestRows.value.length],
   () => {
     void renderVisibleResultChart()
   }
@@ -1537,14 +1731,17 @@ defineExpose({ loadData })
   color: #475467;
   text-align: left;
   cursor: pointer;
-  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .result-batch-card:hover,
 .result-batch-card.active {
   border-color: #409eff;
   background: #eff6ff;
-  box-shadow: 0 8px 20px rgba(16, 24, 40, .08);
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
 }
 
 .batch-card-top {
@@ -1609,7 +1806,7 @@ defineExpose({ loadData })
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
-  box-shadow: 0 10px 24px rgba(16, 24, 40, .04);
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.04);
 }
 
 .result-hero {
@@ -1642,7 +1839,7 @@ defineExpose({ loadData })
   background: linear-gradient(135deg, #dbeafe, #eff6ff);
   color: #2563eb;
   font-size: 22px;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, .16);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
 }
 
 .result-hero-title {
@@ -1917,12 +2114,41 @@ defineExpose({ loadData })
   background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
 }
 
-.requirement-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #1e3a5f; font-weight: 700; }
-.training-requirement-card > p { margin: 10px 0 12px; color: #52657d; font-size: 13px; line-height: 1.6; }
-.requirement-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.requirement-grid > span { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border: 1px solid #e1ebf7; border-radius: 6px; background: rgba(255, 255, 255, .82); }
-.requirement-grid small { color: #8492a6; }
-.requirement-grid strong { color: #243b5a; font-size: 13px; }
+.requirement-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #1e3a5f;
+  font-weight: 700;
+}
+.training-requirement-card > p {
+  margin: 10px 0 12px;
+  color: #52657d;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.requirement-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.requirement-grid > span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid #e1ebf7;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.82);
+}
+.requirement-grid small {
+  color: #8492a6;
+}
+.requirement-grid strong {
+  color: #243b5a;
+  font-size: 13px;
+}
 
 @media (max-width: 760px) {
   .search-input {
@@ -1965,6 +2191,8 @@ defineExpose({ loadData })
     grid-template-columns: 1fr;
   }
 
-  .requirement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .requirement-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

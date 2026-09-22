@@ -26,7 +26,13 @@
           <div class="card-icon-wrap">
             <div class="card-icon">
               <svg viewBox="0 0 24 24" fill="none" class="icon-svg">
-                <path :d="agent.iconPath" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path
+                  :d="agent.iconPath"
+                  stroke="white"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </div>
             <span class="card-tag">{{ agent.tag }}</span>
@@ -48,7 +54,13 @@
             <span class="card-action">
               进入工作台
               <svg class="arrow-svg" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path
+                  d="M3 8H13M13 8L9 4M13 8L9 12"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </span>
           </div>
@@ -106,7 +118,8 @@ const agents: Agent[] = [
     features: ['客户聚类', '短期预测', '行为分析'],
     theme: 'theme-amber',
     animationClass: 'delay-2',
-    iconPath: 'M17 21V19C17 16 15 14 12 14C9 14 7 16 7 19V21 M12 11C13.66 11 15 9.66 15 8C15 6.34 13.66 5 12 5C10.34 5 9 6.34 9 8C9 9.66 10.34 11 12 11Z M5 21V19C5 17 6 15 8 14 M19 21V19C19 17 18 15 16 14'
+    iconPath:
+      'M17 21V19C17 16 15 14 12 14C9 14 7 16 7 19V21 M12 11C13.66 11 15 9.66 15 8C15 6.34 13.66 5 12 5C10.34 5 9 6.34 9 8C9 9.66 10.34 11 12 11Z M5 21V19C5 17 6 15 8 14 M19 21V19C19 17 18 15 16 14'
   }
 ]
 
@@ -132,12 +145,12 @@ const goToAgent = (agentId: string) => {
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  background: #F0F9FF;
-  border: 1px solid #BAE6FD;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   border-radius: 100px;
   font-size: 12px;
   font-weight: 600;
-  color: #0284C7;
+  color: #0284c7;
   letter-spacing: 0.02em;
   margin-bottom: 20px;
 }
@@ -145,7 +158,7 @@ const goToAgent = (agentId: string) => {
 .hero-title {
   font-size: 40px;
   font-weight: 700;
-  color: #0F172A;
+  color: #0f172a;
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin-bottom: 14px;
@@ -153,7 +166,7 @@ const goToAgent = (agentId: string) => {
 
 .hero-subtitle {
   font-size: 16px;
-  color: #64748B;
+  color: #64748b;
   line-height: 1.6;
   max-width: 520px;
   margin: 0 auto;
@@ -173,7 +186,7 @@ const goToAgent = (agentId: string) => {
 .agent-card {
   position: relative;
   background: white;
-  border: 1px solid #F1F5F9;
+  border: 1px solid #f1f5f9;
   border-radius: 20px;
   padding: 28px 24px 24px;
   cursor: pointer;
@@ -195,7 +208,9 @@ const goToAgent = (agentId: string) => {
 
 .agent-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 12px 32px -8px rgba(0, 0, 0, 0.08),
+    0 4px 12px -4px rgba(0, 0, 0, 0.04);
 }
 
 .agent-card:hover .card-decoration .deco-1 {
@@ -279,14 +294,14 @@ const goToAgent = (agentId: string) => {
 .card-title {
   font-size: 18px;
   font-weight: 600;
-  color: #0F172A;
+  color: #0f172a;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
 }
 
 .card-desc {
   font-size: 13px;
-  color: #64748B;
+  color: #64748b;
   line-height: 1.6;
   margin-bottom: 16px;
   min-height: 42px;
@@ -304,8 +319,8 @@ const goToAgent = (agentId: string) => {
   font-size: 11px;
   font-weight: 500;
   color: #475569;
-  background: #F8FAFC;
-  border: 1px solid #F1F5F9;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -313,7 +328,7 @@ const goToAgent = (agentId: string) => {
 /* Footer */
 .card-footer {
   padding-top: 16px;
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid #f1f5f9;
 }
 
 .card-action {
@@ -338,57 +353,57 @@ const goToAgent = (agentId: string) => {
 }
 
 .theme-sky:hover {
-  border-color: #0EA5E9;
+  border-color: #0ea5e9;
 }
 
 .theme-sky .card-icon {
-  background: #0EA5E9;
+  background: #0ea5e9;
 }
 
 .theme-sky .deco-circle,
 .theme-sky .card-tag {
-  background: #E0F2FE;
+  background: #e0f2fe;
 }
 
 .theme-sky .card-tag,
 .theme-sky .card-action {
-  color: #0EA5E9;
+  color: #0ea5e9;
 }
 
 .theme-green:hover {
-  border-color: #10B981;
+  border-color: #10b981;
 }
 
 .theme-green .card-icon {
-  background: #10B981;
+  background: #10b981;
 }
 
 .theme-green .deco-circle,
 .theme-green .card-tag {
-  background: #D1FAE5;
+  background: #d1fae5;
 }
 
 .theme-green .card-tag,
 .theme-green .card-action {
-  color: #10B981;
+  color: #10b981;
 }
 
 .theme-amber:hover {
-  border-color: #F59E0B;
+  border-color: #f59e0b;
 }
 
 .theme-amber .card-icon {
-  background: #F59E0B;
+  background: #f59e0b;
 }
 
 .theme-amber .deco-circle,
 .theme-amber .card-tag {
-  background: #FEF3C7;
+  background: #fef3c7;
 }
 
 .theme-amber .card-tag,
 .theme-amber .card-action {
-  color: #F59E0B;
+  color: #f59e0b;
 }
 
 .arrow-svg {

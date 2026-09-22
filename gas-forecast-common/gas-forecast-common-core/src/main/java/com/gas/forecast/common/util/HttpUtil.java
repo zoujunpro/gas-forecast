@@ -12,8 +12,7 @@ public final class HttpUtil {
 
     private static final RestTemplate REST_TEMPLATE = new RestTemplate();
 
-    private HttpUtil() {
-    }
+    private HttpUtil() {}
 
     public static JsonNode postJson(String url, JsonNode body) {
         if (!TextUtils.hasText(url)) {

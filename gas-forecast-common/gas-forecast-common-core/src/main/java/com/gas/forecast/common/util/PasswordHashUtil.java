@@ -6,8 +6,7 @@ import java.security.NoSuchAlgorithmException;
 
 public final class PasswordHashUtil {
 
-    private PasswordHashUtil() {
-    }
+    private PasswordHashUtil() {}
 
     public static String hash(String username, String password, String salt) {
         try {

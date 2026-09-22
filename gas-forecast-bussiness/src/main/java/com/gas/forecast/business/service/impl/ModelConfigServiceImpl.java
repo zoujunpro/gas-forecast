@@ -16,6 +16,7 @@ import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.BusinessResponseCode;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.enums.ForecastAgentEnum;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.BaseIndustryTb;
@@ -473,7 +474,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             ref.setRequiredFlag(item.requiredFlag() == null ? 0 : item.requiredFlag());
             ref.setFeatureOrder(item.featureOrder() == null ? index : item.featureOrder());
             ref.setCreatedAt(new Date());
-            ref.setCreatedBy(0L);
+            ref.setCreatedBy(SecurityContextHolder.getUserId());
             modelFeatureRefMapper.insert(ref);
             index++;
         }

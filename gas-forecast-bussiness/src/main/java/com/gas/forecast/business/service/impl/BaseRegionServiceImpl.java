@@ -13,6 +13,7 @@ import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.BaseRegionService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
@@ -60,8 +61,8 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         region.setRegionCode(baseCodeGenerateService.nextCode(BaseCodeType.REGION));
         region.setCreatedAt(now);
         region.setUpdatedAt(now);
-        region.setCreatedBy("system");
-        region.setCreatedByName("系统");
+        region.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+        region.setCreatedByName(SecurityContextHolder.getUserName());
         baseRegionTbMapper.insert(region);
         return toResp(region);
     }
@@ -72,8 +73,8 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         Long id = reqDTO.id();
         region.setId(id);
         region.setUpdatedAt(new Date());
-        region.setUpdatedBy("system");
-        region.setUpdatedByName("系统");
+        region.setUpdatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+        region.setUpdatedByName(SecurityContextHolder.getUserName());
         baseRegionTbMapper.updateById(region);
         return toResp(baseRegionTbMapper.selectById(id));
     }

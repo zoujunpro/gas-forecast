@@ -18,11 +18,21 @@
       </template>
 
       <template #actions>
-        <PermissionButton type="primary" :icon="Plus" permission="model:config:create" @click="openCreate">新增模型</PermissionButton>
+        <PermissionButton type="primary" :icon="Plus" permission="model:config:create" @click="openCreate"
+          >新增模型</PermissionButton
+        >
       </template>
 
       <AppTable v-loading="loading" :data="records" stripe border>
-        <el-table-column type="index" :index="rowIndex" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
+        <el-table-column
+          type="index"
+          :index="rowIndex"
+          label="序号"
+          width="72"
+          fixed
+          class-name="id-column"
+          label-class-name="id-column"
+        />
         <el-table-column
           v-for="field in modelConfigTableFields"
           :key="field.prop"
@@ -43,11 +53,28 @@
             <ManagementTableCell :field="field" :row="row" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right" class-name="action-column" label-class-name="action-column">
+        <el-table-column
+          label="操作"
+          width="210"
+          fixed="right"
+          class-name="action-column"
+          label-class-name="action-column"
+        >
           <template #default="{ row }">
-            <PermissionButton link type="primary" :icon="Edit" permission="model:config:update" @click="openEdit(row)">编辑</PermissionButton>
-            <PermissionButton link type="success" :icon="Setting" permission="model:config:update" @click="openConfig(row)">配置</PermissionButton>
-            <PermissionButton link type="danger" :icon="Delete" permission="model:config:delete" @click="removeRow(row)">删除</PermissionButton>
+            <PermissionButton link type="primary" :icon="Edit" permission="model:config:update" @click="openEdit(row)"
+              >编辑</PermissionButton
+            >
+            <PermissionButton
+              link
+              type="success"
+              :icon="Setting"
+              permission="model:config:update"
+              @click="openConfig(row)"
+              >配置</PermissionButton
+            >
+            <PermissionButton link type="danger" :icon="Delete" permission="model:config:delete" @click="removeRow(row)"
+              >删除</PermissionButton
+            >
           </template>
         </el-table-column>
       </AppTable>
@@ -64,7 +91,13 @@
       </template>
     </AppTablePanel>
 
-    <AppDialog v-model="dialogVisible" eyebrow="模型管理" :title="dialogTitle" width="min(960px, calc(100vw - 32px))" align-center>
+    <AppDialog
+      v-model="dialogVisible"
+      eyebrow="模型管理"
+      :title="dialogTitle"
+      width="min(960px, calc(100vw - 32px))"
+      align-center
+    >
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
         <el-form-item label="模型编码" prop="configCode">
           <el-select
@@ -109,7 +142,13 @@
       </template>
     </AppDialog>
 
-    <AppDialog v-model="configDialogVisible" eyebrow="模型配置" :title="configDialogTitle" width="min(1080px, calc(100vw - 32px))" align-center>
+    <AppDialog
+      v-model="configDialogVisible"
+      eyebrow="模型配置"
+      :title="configDialogTitle"
+      width="min(1080px, calc(100vw - 32px))"
+      align-center
+    >
       <div class="config-overview">
         <div class="model-avatar">
           <el-icon><Setting /></el-icon>
@@ -177,7 +216,9 @@
             </div>
             <div class="feature-actions">
               <el-tag class="selected-count" effect="plain">已选 {{ selectedFeatureCount }}</el-tag>
-              <el-button plain :disabled="!configForm.featureRefs.length" @click="clearSelectedFeatures">清空选择</el-button>
+              <el-button plain :disabled="!configForm.featureRefs.length" @click="clearSelectedFeatures"
+                >清空选择</el-button
+              >
             </div>
           </header>
           <div class="feature-picker-panel">
@@ -197,7 +238,11 @@
             >
               <el-table-column label="" width="48" align="center">
                 <template #default="{ row }">
-                  <el-checkbox :model-value="isFeatureSelected(row)" @click.stop @change="toggleFeatureSelection(row)" />
+                  <el-checkbox
+                    :model-value="isFeatureSelected(row)"
+                    @click.stop
+                    @change="toggleFeatureSelection(row)"
+                  />
                 </template>
               </el-table-column>
               <el-table-column type="index" label="序号" width="64" />
@@ -316,35 +361,24 @@ const formRules: FormRules = {
   sceneCode: [{ required: true, message: '请选择场景', trigger: 'change' }]
 }
 
-const {
-  loading,
-  keyword,
-  page,
-  size,
-  total,
-  records,
-  loadData,
-  searchData,
-  resetSearch,
-  handleSizeChange,
-  rowIndex
-} = usePageQuery<Record<string, any>>({
-  errorMessage: '模型列表加载失败',
-  fetcher: ({ page, size, keyword }) => listPage(endpoint, { page, size, keyword: keyword || undefined })
-})
+const { loading, keyword, page, size, total, records, loadData, searchData, resetSearch, handleSizeChange, rowIndex } =
+  usePageQuery<Record<string, any>>({
+    errorMessage: '模型列表加载失败',
+    fetcher: ({ page, size, keyword }) => listPage(endpoint, { page, size, keyword: keyword || undefined })
+  })
 
-const dialogTitle = computed(() => editingId.value ? '编辑模型' : '新增模型')
+const dialogTitle = computed(() => (editingId.value ? '编辑模型' : '新增模型'))
 const configDialogTitle = computed(() => `${configForm.configName || '模型'}配置`)
 const selectedAgent = computed(() => modelAgentOptions.find((item) => item.value === form.agentCode))
 const selectedFeatureCount = computed(() => configForm.featureRefs.length)
-const filteredPlatformModels = computed(() => platformModels.value.filter(item => item.agent_code === form.agentCode))
+const filteredPlatformModels = computed(() => platformModels.value.filter((item) => item.agent_code === form.agentCode))
 const syncSceneCode = () => {
   form.sceneCode = selectedAgent.value?.sceneCode || ''
 }
 
 const handleAgentChange = () => {
   syncSceneCode()
-  if (!filteredPlatformModels.value.some(item => item.model_code === form.configCode)) {
+  if (!filteredPlatformModels.value.some((item) => item.model_code === form.configCode)) {
     form.configCode = ''
   }
 }
@@ -363,7 +397,7 @@ const loadPlatformModels = async () => {
 }
 
 const handlePlatformModelChange = (modelCode: string) => {
-  const model = platformModels.value.find(item => item.model_code === modelCode)
+  const model = platformModels.value.find((item) => item.model_code === modelCode)
   if (!model) return
   form.configName = model.model_name
   form.modelVersion = model.model_version
@@ -392,16 +426,18 @@ const resetConfigForm = (row: Record<string, any>) => {
   configForm.sceneCode = row.sceneCode || ''
   configForm.regionCodes = row.regionCodes?.length ? [...row.regionCodes] : ['ALL']
   regionScopeMode.value = configForm.regionCodes.length && !configForm.regionCodes.includes('ALL') ? 'CUSTOM' : 'ALL'
-  configForm.featureRefs = (row.featureRefs || []).map((item: Record<string, any>, index: number) => ({
-    id: item.featureId,
-    featureId: item.featureId,
-    featureCode: item.featureCode,
-    featureName: item.featureName,
-    featureColumn: item.featureColumn,
-    timeGranularity: item.timeGranularity,
-    requiredFlag: item.requiredFlag ?? 0,
-    featureOrder: item.featureOrder ?? index + 1
-  })).sort(compareFeatureByColumn)
+  configForm.featureRefs = (row.featureRefs || [])
+    .map((item: Record<string, any>, index: number) => ({
+      id: item.featureId,
+      featureId: item.featureId,
+      featureCode: item.featureCode,
+      featureName: item.featureName,
+      featureColumn: item.featureColumn,
+      timeGranularity: item.timeGranularity,
+      requiredFlag: item.requiredFlag ?? 0,
+      featureOrder: item.featureOrder ?? index + 1
+    }))
+    .sort(compareFeatureByColumn)
   normalizeFeatureOrder()
   if (!configForm.regionCodes.length) {
     configForm.regionCodes = ['ALL']
@@ -410,10 +446,12 @@ const resetConfigForm = (row: Record<string, any>) => {
 
 const loadScopeOptions = async () => {
   const regions = await listPage('/base-region', { page: 1, size: 1000 })
-  regionOptions.value = regions.records.map((item: Record<string, any>) => ({
-    label: item.regionName || item.regionCode,
-    value: item.regionCode
-  })).filter((item: SelectOption) => item.value)
+  regionOptions.value = regions.records
+    .map((item: Record<string, any>) => ({
+      label: item.regionName || item.regionCode,
+      value: item.regionCode
+    }))
+    .filter((item: SelectOption) => item.value)
   if (regionScopeMode.value === 'ALL') {
     configForm.regionCodes = regionOptions.value.map((item) => item.value)
   }
@@ -499,9 +537,7 @@ const buildPayload = () => {
 }
 
 const handleRegionScopeModeChange = () => {
-  configForm.regionCodes = regionScopeMode.value === 'ALL'
-    ? regionOptions.value.map((item) => item.value)
-    : []
+  configForm.regionCodes = regionScopeMode.value === 'ALL' ? regionOptions.value.map((item) => item.value) : []
 }
 
 const handleRegionCodesChange = () => {
@@ -626,8 +662,15 @@ onMounted(() => {
   width: 100%;
 }
 
-.platform-model-option { display: flex; flex-direction: column; line-height: 1.35; }
-.platform-model-option small { color: #98a2b3; font-size: 11px; }
+.platform-model-option {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+.platform-model-option small {
+  color: #98a2b3;
+  font-size: 11px;
+}
 
 .form-wide {
   grid-column: 1 / -1;
@@ -640,8 +683,8 @@ onMounted(() => {
   gap: 14px;
   margin-bottom: 16px;
   padding: 14px;
-  background: #F8FAFC;
-  border: 1px solid #E6EAF0;
+  background: #f8fafc;
+  border: 1px solid #e6eaf0;
   border-radius: 8px;
 }
 
@@ -653,7 +696,7 @@ onMounted(() => {
   height: 44px;
   color: var(--app-primary);
   font-size: 22px;
-  background: #EAF4FF;
+  background: #eaf4ff;
   border-radius: 50%;
 }
 
@@ -714,7 +757,7 @@ onMounted(() => {
 }
 
 .config-section {
-  border: 1px solid #E6EAF0;
+  border: 1px solid #e6eaf0;
   border-radius: 8px;
   padding: 14px;
 }
@@ -767,8 +810,8 @@ onMounted(() => {
 .feature-picker-panel {
   margin-bottom: 12px;
   padding: 12px;
-  background: #F8FAFC;
-  border: 1px solid #D6E0EA;
+  background: #f8fafc;
+  border: 1px solid #d6e0ea;
   border-radius: 8px;
 }
 
@@ -801,11 +844,11 @@ onMounted(() => {
 }
 
 .feature-select-table :deep(.selected-feature-row) {
-  background: #F0F7FF;
+  background: #f0f7ff;
 }
 
 .feature-select-table :deep(.selected-feature-row td.el-table__cell) {
-  background: #F0F7FF;
+  background: #f0f7ff;
 }
 
 .scope-grid {
@@ -828,8 +871,8 @@ onMounted(() => {
 .scope-card {
   min-height: 260px;
   padding: 12px;
-  background: #F8FAFC;
-  border: 1px solid #E6EAF0;
+  background: #f8fafc;
+  border: 1px solid #e6eaf0;
   border-radius: 8px;
 }
 
@@ -850,8 +893,8 @@ onMounted(() => {
 .selected-region-panel {
   min-height: 234px;
   padding: 10px;
-  background: #FFFFFF;
-  border: 1px solid #E6EAF0;
+  background: #ffffff;
+  border: 1px solid #e6eaf0;
   border-radius: 8px;
 }
 
@@ -874,7 +917,7 @@ onMounted(() => {
 }
 
 .empty-selection {
-  color: #98A2B3;
+  color: #98a2b3;
   font-size: 13px;
 }
 

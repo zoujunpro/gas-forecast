@@ -1,7 +1,7 @@
 package com.gas.forecast.system.service.impl;
 
-import com.gas.forecast.system.service.PasswordHashService;
 import com.gas.forecast.common.util.PasswordHashUtil;
+import com.gas.forecast.system.service.PasswordHashService;
 import org.springframework.stereotype.Service;
 
 @Service

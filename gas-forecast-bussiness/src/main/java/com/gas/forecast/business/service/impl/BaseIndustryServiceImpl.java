@@ -13,6 +13,7 @@ import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.BaseIndustryService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.BaseIndustryTb;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
@@ -35,16 +36,15 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
     @Override
     public PageInfoDTO<BaseIndustryResponse> listPage(BaseIndustryPageRequest reqDTO) {
         LambdaQueryWrapper<BaseIndustryTb> query = Wrappers.lambdaQuery();
-        String keyword = reqDTO.keyword();
+        String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
             query.and(wrapper -> wrapper.like(BaseIndustryTb::getIndustryCode, keyword)
                     .or()
                     .like(BaseIndustryTb::getIndustryName, keyword));
         }
         query.orderByDesc(BaseIndustryTb::getUpdatedAt).orderByDesc(BaseIndustryTb::getId);
-        int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<BaseIndustryTb> result = baseIndustryTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        IPage<BaseIndustryTb> result =
+                baseIndustryTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);
         return PageUtils.toPage(
                 result, result.getRecords().stream().map(this::toResp).toList());
     }
@@ -58,7 +58,8 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
         industry.setIndustryCode(baseCodeGenerateService.nextCode(BaseCodeType.INDUSTRY));
         industry.setCreatedAt(now);
         industry.setUpdatedAt(now);
-        industry.setCreatedByName("系统");
+        industry.setCreatedBy(SecurityContextHolder.getUserId());
+        industry.setCreatedByName(SecurityContextHolder.getUserName());
         baseIndustryTbMapper.insert(industry);
         return toResp(industry);
     }
@@ -69,7 +70,8 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
         Long id = reqDTO.id();
         industry.setId(id);
         industry.setUpdatedAt(new Date());
-        industry.setUpdatedByName("系统");
+        industry.setUpdatedBy(SecurityContextHolder.getUserId());
+        industry.setUpdatedByName(SecurityContextHolder.getUserName());
         baseIndustryTbMapper.updateById(industry);
         return toResp(baseIndustryTbMapper.selectById(id));
     }
@@ -93,7 +95,7 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
 
     private BaseIndustryTb toEntity(BaseIndustryCreateRequest reqDTO) {
         BaseIndustryTb industry = new BaseIndustryTb();
-        industry.setIndustryName(reqDTO.industryName());
+        industry.setIndustryName(reqDTO.getIndustryName());
         return industry;
     }
 

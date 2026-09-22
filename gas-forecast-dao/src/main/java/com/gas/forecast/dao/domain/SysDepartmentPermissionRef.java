@@ -10,6 +10,7 @@ import lombok.Data;
 public class SysDepartmentPermissionRef {
     @TableId(type = IdType.AUTO)
     private Long id;
+
     private Long departmentId;
     private Long permissionId;
 }

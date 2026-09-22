@@ -14,6 +14,7 @@ import com.gas.forecast.business.service.ModelTrainConfigService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
@@ -91,8 +92,8 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         entity.setId(null);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
-        entity.setCreatedBy("system");
-        entity.setCreatedByName("系统");
+        entity.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+        entity.setCreatedByName(SecurityContextHolder.getUserName());
         modelTrainConfigTbMapper.insert(entity);
         return toResp(entity);
     }

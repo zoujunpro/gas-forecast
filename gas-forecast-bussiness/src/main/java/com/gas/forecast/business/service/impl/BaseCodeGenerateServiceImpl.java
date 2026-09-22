@@ -4,11 +4,10 @@ import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.dao.domain.SysCodeSequenceTb;
 import com.gas.forecast.dao.mapper.SysCodeSequenceTbMapper;
+import java.util.Date;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 @Service
 public class BaseCodeGenerateServiceImpl implements BaseCodeGenerateService {

@@ -29,7 +29,15 @@
       </template>
 
       <AppTable v-loading="loading" :data="records" stripe border>
-        <el-table-column type="index" :index="rowIndex" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
+        <el-table-column
+          type="index"
+          :index="rowIndex"
+          label="序号"
+          width="72"
+          fixed
+          class-name="id-column"
+          label-class-name="id-column"
+        />
         <el-table-column prop="statDate" :label="config.dateLabel" width="130" />
         <el-table-column prop="regionName" label="区域名称" min-width="130" />
         <el-table-column prop="industryName" label="行业名称" min-width="130" />
@@ -135,12 +143,15 @@ const resetSearch = () => {
 
 const formatValue = displayValue
 
-watch(() => route.path, () => {
-  keyword.value = ''
-  dateRange.value = null
-  page.value = 1
-  loadData()
-})
+watch(
+  () => route.path,
+  () => {
+    keyword.value = ''
+    dateRange.value = null
+    page.value = 1
+    loadData()
+  }
+)
 
 onMounted(loadData)
 </script>

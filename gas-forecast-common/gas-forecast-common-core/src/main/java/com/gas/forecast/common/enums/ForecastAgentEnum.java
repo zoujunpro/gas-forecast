@@ -7,7 +7,6 @@ import java.util.Optional;
  * 预测智能体枚举。
  */
 public enum ForecastAgentEnum {
-
     WINTER_SUPPLY("winter-supply", "WINTER_SUPPLY", "冬季保供预测智能体", "MULTI_SELECT"),
     MONTHLY_SALES("monthly-sales", "MONTHLY_SALES", "月度销量预测智能体", "SINGLE"),
     SHORT_CUSTOMER("short-term", "SHORT_CUSTOMER", "短期客户预测智能体", "SINGLE");

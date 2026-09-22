@@ -5,48 +5,48 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
-import com.gas.forecast.common.util.TextUtils;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.HttpUtil;
+import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.domain.ModelFeatureRef;
-import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
 import com.gas.forecast.dao.domain.ModelForecastConfigTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
-import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
+import com.gas.forecast.dao.domain.ModelTrainConfigTb;
+import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
+import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
+import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
 import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
-import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
-import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
+import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
-import java.math.BigDecimal;
+import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ModelForecastManagementService {
@@ -64,16 +64,17 @@ public class ModelForecastManagementService {
     @Value("${gas.agent.predict-url:http://127.0.0.1:8090/api/v1/predict}")
     private String predictUrl;
 
-    public ModelForecastManagementService(ModelForecastConfigTbMapper configMapper,
-                                          ModelForecastRecordTbMapper recordMapper,
-                                          ModelForecastResultTbMapper resultMapper,
-                                          ModelTrainConfigTbMapper trainConfigMapper,
-                                          ModelTrainBacktestTbMapper trainBacktestMapper,
-                                          ModelTrainRecordTbMapper trainDetailMapper,
-                                          ModelFeatureRefMapper featureRefMapper,
-                                          ModelFeatureDefinitionTbMapper featureDefinitionMapper,
-                                          ModelTrainFeatureDataTbMapper featureDataMapper,
-                                          ObjectMapper objectMapper) {
+    public ModelForecastManagementService(
+            ModelForecastConfigTbMapper configMapper,
+            ModelForecastRecordTbMapper recordMapper,
+            ModelForecastResultTbMapper resultMapper,
+            ModelTrainConfigTbMapper trainConfigMapper,
+            ModelTrainBacktestTbMapper trainBacktestMapper,
+            ModelTrainRecordTbMapper trainDetailMapper,
+            ModelFeatureRefMapper featureRefMapper,
+            ModelFeatureDefinitionTbMapper featureDefinitionMapper,
+            ModelTrainFeatureDataTbMapper featureDataMapper,
+            ObjectMapper objectMapper) {
         this.configMapper = configMapper;
         this.recordMapper = recordMapper;
         this.resultMapper = resultMapper;
@@ -93,7 +94,8 @@ public class ModelForecastManagementService {
             query.like(ModelForecastConfigTb::getForecastName, keyword);
         }
         eqText(query, ModelForecastConfigTb::getAgentCode, text(request, "agentCode"));
-        if (request.hasNonNull("enabled")) query.eq(ModelForecastConfigTb::getEnabled, request.get("enabled").asInt());
+        if (request.hasNonNull("enabled"))
+            query.eq(ModelForecastConfigTb::getEnabled, request.get("enabled").asInt());
         query.orderByDesc(ModelForecastConfigTb::getUpdatedAt).orderByDesc(ModelForecastConfigTb::getId);
         int page = positive(request, "page", 1);
         int size = positive(request, "size", 10);
@@ -120,8 +122,8 @@ public class ModelForecastManagementService {
         Date now = new Date();
         if (id == null) {
             entity.setCreatedAt(now);
-            entity.setCreatedBy("system");
-            entity.setCreatedByName("系统");
+            entity.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+            entity.setCreatedByName(SecurityContextHolder.getUserName());
         }
         entity.setForecastName(name);
         entity.setAgentCode(agentCode);
@@ -140,14 +142,16 @@ public class ModelForecastManagementService {
         entity.setEnabled(request.path("enabled").asInt(1));
         entity.setRemark(text(request, "remark"));
         entity.setUpdatedAt(now);
-        if (id == null) configMapper.insert(entity); else configMapper.updateById(entity);
+        if (id == null) configMapper.insert(entity);
+        else configMapper.updateById(entity);
         return configMapper.selectById(entity.getId());
     }
 
     private ModelTrainConfigTb requireTrainConfig(String trainConfigCode) {
         if (!TextUtils.hasText(trainConfigCode)) throw new BusinessException("请选择模型训练配置");
         ModelTrainConfigTb trainConfig = trainConfigMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery()
-                .eq(ModelTrainConfigTb::getTrainCode, trainConfigCode).last("limit 1"));
+                .eq(ModelTrainConfigTb::getTrainCode, trainConfigCode)
+                .last("limit 1"));
         if (trainConfig == null) throw new BusinessException("模型训练配置不存在");
         if (trainConfig.getEnabled() != null && trainConfig.getEnabled() == 0) throw new BusinessException("模型训练配置已停用");
         return trainConfig;
@@ -167,16 +171,21 @@ public class ModelForecastManagementService {
         eqText(query, ModelTrainRecordTb::getRegionCode, config.getRegionCode());
         eqText(query, ModelTrainRecordTb::getIndustryCode, config.getIndustryCode());
         eqText(query, ModelTrainRecordTb::getCustomerCode, config.getCustomerCode());
-        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1");
+        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId)
+                .last("limit 1");
         ModelTrainRecordTb detail = trainDetailMapper.selectOne(query);
         return detail == null ? null : detail.getBatchNo();
     }
 
     @Transactional
-    public void deleteConfig(Long id) { configMapper.deleteById(id); }
+    public void deleteConfig(Long id) {
+        configMapper.deleteById(id);
+    }
 
     public JsonNode execute(JsonNode request) throws Exception {
-        Long forecastId = request.hasNonNull("forecastId") ? request.get("forecastId").asLong() : null;
+        Long forecastId =
+                request.hasNonNull("forecastId") ? request.get("forecastId").asLong() : null;
         if (forecastId == null) throw new BusinessException("预测配置ID不能为空");
         ModelForecastConfigTb config = configMapper.selectById(forecastId);
         if (config == null) throw new BusinessException("预测配置不存在");
@@ -210,17 +219,26 @@ public class ModelForecastManagementService {
             JsonNode data = response != null && response.has("data") ? response.get("data") : response;
             if (data == null || !data.path("points").isArray()) throw new BusinessException("模型平台预测响应缺少 points");
             saveForecastResults(forecastBatchNo, data.path("points"));
-            record.setResponseParam(response == null ? null : response.toString().getBytes(StandardCharsets.UTF_8));
+            record.setResponseParam(
+                    response == null ? null : response.toString().getBytes(StandardCharsets.UTF_8));
             record.setStatus(2);
-            record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            record.setForecastEndTime(
+                    java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
-            return objectMapper.createObjectNode().put("forecastId", forecastId)
-                    .put("forecastBatchNo", forecastBatchNo).put("resultCount", data.path("points").size());
+            return objectMapper
+                    .createObjectNode()
+                    .put("forecastId", forecastId)
+                    .put("forecastBatchNo", forecastBatchNo)
+                    .put("resultCount", data.path("points").size());
         } catch (Exception exception) {
             record.setStatus(3);
-            record.setResponseParam(exception.getMessage() == null ? null : exception.getMessage().getBytes(StandardCharsets.UTF_8));
-            record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            record.setResponseParam(
+                    exception.getMessage() == null
+                            ? null
+                            : exception.getMessage().getBytes(StandardCharsets.UTF_8));
+            record.setForecastEndTime(
+                    java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
             throw exception;
@@ -249,29 +267,36 @@ public class ModelForecastManagementService {
         record.setResponseParam(null);
         record.setForecastEndTime(null);
         record.setRemark(config.getRemark());
-        record.setCreatedBy("system");
-        record.setCreatedByName("系统");
+        record.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+        record.setCreatedByName(SecurityContextHolder.getUserName());
         record.setCreatedAt(now);
         record.setUpdatedAt(now);
         recordMapper.insert(record);
-        record.setForecastBatchNo("forecast-" + java.time.LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + String.format("%06d", record.getId()));
+        record.setForecastBatchNo(
+                "forecast-" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
+                        + String.format("%06d", record.getId()));
         recordMapper.updateById(record);
         return record;
     }
 
-    private ObjectNode buildPredictPayload(ModelForecastConfigTb config, ModelTrainConfigTb trainConfig,
-                                           String trainBatchNo, String forecastBatchNo, JsonNode dataset) {
+    private ObjectNode buildPredictPayload(
+            ModelForecastConfigTb config,
+            ModelTrainConfigTb trainConfig,
+            String trainBatchNo,
+            String forecastBatchNo,
+            JsonNode dataset) {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("model_code", trainConfig.getModelCode());
         payload.put("train_batch_no", trainBatchNo);
         payload.put("forecast_batch_no", forecastBatchNo);
         payload.put("forecast_horizon", config.getForecastHorizon());
-        payload.put("forecast_unit", switch (config.getForecastFrequency()) {
-            case "TENDAY" -> "tenday";
-            case "MONTHLY" -> "month";
-            default -> "day";
-        });
+        payload.put(
+                "forecast_unit",
+                switch (config.getForecastFrequency()) {
+                    case "TENDAY" -> "tenday";
+                    case "MONTHLY" -> "month";
+                    default -> "day";
+                });
         payload.set("params", objectMapper.createObjectNode());
         payload.set("dataset", dataset.deepCopy());
         return payload;
@@ -284,17 +309,25 @@ public class ModelForecastManagementService {
         eqText(query, ModelTrainFeatureDataTb::getRegionCode, trainConfig.getRegionCode());
         eqText(query, ModelTrainFeatureDataTb::getIndustryCode, trainConfig.getIndustryCode());
         eqText(query, ModelTrainFeatureDataTb::getCustomerCode, trainConfig.getCustomerCode());
-        query.orderByAsc(ModelTrainFeatureDataTb::getStatDate).orderByAsc(ModelTrainFeatureDataTb::getId)
+        query.orderByAsc(ModelTrainFeatureDataTb::getStatDate)
+                .orderByAsc(ModelTrainFeatureDataTb::getId)
                 .last("limit " + config.getForecastHorizon());
         List<ModelTrainFeatureDataTb> rows = featureDataMapper.selectList(query);
         if (rows.size() < config.getForecastHorizon()) {
-            throw new BusinessException("预测开始日期之后的特征数据不足，需要 " + config.getForecastHorizon() + " 条，实际 " + rows.size() + " 条");
+            throw new BusinessException(
+                    "预测开始日期之后的特征数据不足，需要 " + config.getForecastHorizon() + " 条，实际 " + rows.size() + " 条");
         }
         List<ModelFeatureRef> refs = featureRefMapper.selectList(Wrappers.<ModelFeatureRef>lambdaQuery()
-                .eq(ModelFeatureRef::getModelId, trainConfig.getModelId()).orderByAsc(ModelFeatureRef::getFeatureOrder));
-        Map<Long, ModelFeatureDefinitionTb> definitions = featureDefinitionMapper.selectBatchIds(
-                        refs.stream().map(ModelFeatureRef::getFeatureId).distinct().toList()).stream()
-                .collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity()));
+                .eq(ModelFeatureRef::getModelId, trainConfig.getModelId())
+                .orderByAsc(ModelFeatureRef::getFeatureOrder));
+        Map<Long, ModelFeatureDefinitionTb> definitions =
+                featureDefinitionMapper
+                        .selectBatchIds(refs.stream()
+                                .map(ModelFeatureRef::getFeatureId)
+                                .distinct()
+                                .toList())
+                        .stream()
+                        .collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity()));
         ArrayNode dataset = objectMapper.createArrayNode();
         for (ModelTrainFeatureDataTb row : rows) {
             ObjectNode item = objectMapper.createObjectNode().put("date", row.getStatDate());
@@ -310,8 +343,8 @@ public class ModelForecastManagementService {
     }
 
     private void saveForecastResults(String batchNo, JsonNode points) {
-        resultMapper.delete(Wrappers.<ModelForecastResultTb>lambdaQuery()
-                .eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
+        resultMapper.delete(
+                Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
         Date now = new Date();
         for (JsonNode point : points) {
             ModelForecastResultTb result = new ModelForecastResultTb();
@@ -328,7 +361,11 @@ public class ModelForecastManagementService {
     }
 
     private String frequencyToGranularity(String frequency) {
-        return switch (frequency) { case "TENDAY" -> "TENDAY"; case "MONTHLY" -> "MONTH"; default -> "DAY"; };
+        return switch (frequency) {
+            case "TENDAY" -> "TENDAY";
+            case "MONTHLY" -> "MONTH";
+            default -> "DAY";
+        };
     }
 
     private Double readFeatureValue(ModelTrainFeatureDataTb row, String column) {
@@ -337,11 +374,15 @@ public class ModelForecastManagementService {
             StringBuilder camel = new StringBuilder();
             boolean upper = false;
             for (char ch : column.toCharArray()) {
-                if (ch == '_') { upper = true; continue; }
+                if (ch == '_') {
+                    upper = true;
+                    continue;
+                }
                 camel.append(upper ? Character.toUpperCase(ch) : ch);
                 upper = false;
             }
-            Method getter = ModelTrainFeatureDataTb.class.getMethod("get" + Character.toUpperCase(camel.charAt(0)) + camel.substring(1));
+            Method getter = ModelTrainFeatureDataTb.class.getMethod(
+                    "get" + Character.toUpperCase(camel.charAt(0)) + camel.substring(1));
             Object value = getter.invoke(row);
             return value instanceof Number number ? number.doubleValue() : null;
         } catch (Exception exception) {
@@ -370,39 +411,46 @@ public class ModelForecastManagementService {
                 .last("limit 1"));
         if (record == null) throw new BusinessException("预测批次不存在");
 
-        String granularity = switch (defaultText(record.getForecastFrequency(), "DAILY").toUpperCase()) {
-            case "TENDAY" -> "TENDAY";
-            case "MONTHLY", "MONTH" -> "MONTH";
-            default -> "DAY";
-        };
+        String granularity =
+                switch (defaultText(record.getForecastFrequency(), "DAILY").toUpperCase()) {
+                    case "TENDAY" -> "TENDAY";
+                    case "MONTHLY", "MONTH" -> "MONTH";
+                    default -> "DAY";
+                };
         int historyPredictionSize = historyPredictionSize(record.getForecastFrequency(), record.getForecastHorizon());
         int historyActualSize = historyActualSize(record.getForecastFrequency());
         var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery()
                 .eq(ModelTrainFeatureDataTb::getTimeGranularity, granularity)
-                .lt(TextUtils.hasText(record.getForecastStartDate()), ModelTrainFeatureDataTb::getStatDate, record.getForecastStartDate())
+                .lt(
+                        TextUtils.hasText(record.getForecastStartDate()),
+                        ModelTrainFeatureDataTb::getStatDate,
+                        record.getForecastStartDate())
                 .isNotNull(ModelTrainFeatureDataTb::getGasSales);
         eqText(query, ModelTrainFeatureDataTb::getRegionCode, record.getRegionCode());
         eqText(query, ModelTrainFeatureDataTb::getIndustryCode, record.getIndustryCode());
         eqText(query, ModelTrainFeatureDataTb::getCustomerCode, record.getCustomerCode());
-        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId)
+        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate)
+                .orderByDesc(ModelTrainFeatureDataTb::getId)
                 .last("limit " + historyActualSize);
 
         List<ModelTrainFeatureDataTb> rows = new ArrayList<>(featureDataMapper.selectList(query));
         Collections.reverse(rows);
         String trainBatchNo = trainBatchNoForRecord(record);
-        Map<String, BigDecimal> rollingPredictions = loadRollingPredictions(
-                trainBatchNo, record.getForecastStartDate(), historyPredictionSize);
+        Map<String, BigDecimal> rollingPredictions =
+                loadRollingPredictions(trainBatchNo, record.getForecastStartDate(), historyPredictionSize);
         // 历史实际值与滚动预测值用于同区间对比：存在滚动预测时，两条线必须从同一天开始。
-        String comparisonStartDate = rollingPredictions.keySet().stream().findFirst().orElse(null);
+        String comparisonStartDate =
+                rollingPredictions.keySet().stream().findFirst().orElse(null);
         return rows.stream()
                 .filter(row -> comparisonStartDate == null || row.getStatDate().compareTo(comparisonStartDate) >= 0)
                 .map(row -> {
-            Map<String, Object> point = new LinkedHashMap<>();
-            point.put("date", row.getStatDate());
-            point.put("actualValue", row.getGasSales());
-            point.put("predictedValue", rollingPredictions.get(row.getStatDate()));
-            return point;
-        }).toList();
+                    Map<String, Object> point = new LinkedHashMap<>();
+                    point.put("date", row.getStatDate());
+                    point.put("actualValue", row.getGasSales());
+                    point.put("predictedValue", rollingPredictions.get(row.getStatDate()));
+                    return point;
+                })
+                .toList();
     }
 
     /** H = min(max(F, lower), upper), F 为未来预测步长，H 为历史滚动预测步长。 */
@@ -439,7 +487,9 @@ public class ModelForecastManagementService {
         eqText(query, ModelTrainRecordTb::getRegionCode, record.getRegionCode());
         eqText(query, ModelTrainRecordTb::getIndustryCode, record.getIndustryCode());
         eqText(query, ModelTrainRecordTb::getCustomerCode, record.getCustomerCode());
-        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1");
+        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId)
+                .last("limit 1");
         ModelTrainRecordTb detail = trainDetailMapper.selectOne(query);
         return detail == null ? null : detail.getBatchNo();
     }
@@ -452,7 +502,8 @@ public class ModelForecastManagementService {
         if (TextUtils.hasText(forecastStartDate)) {
             query.lt(ModelTrainBacktestTb::getTrainDate, java.sql.Date.valueOf(forecastStartDate));
         }
-        query.orderByDesc(ModelTrainBacktestTb::getTrainDate).orderByDesc(ModelTrainBacktestTb::getId)
+        query.orderByDesc(ModelTrainBacktestTb::getTrainDate)
+                .orderByDesc(ModelTrainBacktestTb::getId)
                 .last("limit " + size);
         List<ModelTrainBacktestTb> points = new ArrayList<>(trainBacktestMapper.selectList(query));
         Collections.reverse(points);
@@ -467,20 +518,36 @@ public class ModelForecastManagementService {
 
     public PageInfoDTO<ModelForecastRecordTb> listRecords(JsonNode request) {
         var query = Wrappers.<ModelForecastRecordTb>lambdaQuery();
-        if (request.hasNonNull("forecastId")) query.eq(ModelForecastRecordTb::getForecastId, request.get("forecastId").asLong());
+        if (request.hasNonNull("forecastId"))
+            query.eq(
+                    ModelForecastRecordTb::getForecastId,
+                    request.get("forecastId").asLong());
         String forecastBatchNo = text(request, "forecastBatchNo");
         if (TextUtils.hasText(forecastBatchNo)) query.eq(ModelForecastRecordTb::getForecastBatchNo, forecastBatchNo);
-        if (request.hasNonNull("status")) query.eq(ModelForecastRecordTb::getStatus, request.get("status").asInt());
+        if (request.hasNonNull("status"))
+            query.eq(ModelForecastRecordTb::getStatus, request.get("status").asInt());
         query.orderByDesc(ModelForecastRecordTb::getCreatedAt).orderByDesc(ModelForecastRecordTb::getId);
         int page = positive(request, "page", 1), size = positive(request, "size", 10);
         IPage<ModelForecastRecordTb> result = recordMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
     }
 
-    private String text(JsonNode node, String field) { return node.hasNonNull(field) ? node.get(field).asText().trim() : null; }
-    private int positive(JsonNode node, String field, int fallback) { return Math.max(node.path(field).asInt(fallback), 1); }
-    private String defaultText(String value, String fallback) { return TextUtils.hasText(value) ? value : fallback; }
-    private <T> void eqText(LambdaQueryWrapper<T> query, com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, ?> field, String value) {
+    private String text(JsonNode node, String field) {
+        return node.hasNonNull(field) ? node.get(field).asText().trim() : null;
+    }
+
+    private int positive(JsonNode node, String field, int fallback) {
+        return Math.max(node.path(field).asInt(fallback), 1);
+    }
+
+    private String defaultText(String value, String fallback) {
+        return TextUtils.hasText(value) ? value : fallback;
+    }
+
+    private <T> void eqText(
+            LambdaQueryWrapper<T> query,
+            com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, ?> field,
+            String value) {
         if (TextUtils.hasText(value)) query.eq(field, value);
     }
 }

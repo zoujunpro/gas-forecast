@@ -3,6 +3,7 @@ package com.gas.forecast.common.core.dto;
 import com.alibaba.excel.write.handler.SheetWriteHandler;
 import com.alibaba.excel.write.metadata.holder.WriteSheetHolder;
 import com.alibaba.excel.write.metadata.holder.WriteWorkbookHolder;
+import java.util.Map;
 import lombok.Data;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
@@ -12,8 +13,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddressList;
 
-import java.util.Map;
-
 @Data
 public class SelectedSheetWriteHandler implements SheetWriteHandler {
 
@@ -22,8 +21,7 @@ public class SelectedSheetWriteHandler implements SheetWriteHandler {
     private final int columnSelectMaxLength = 255;
 
     @Override
-    public void beforeSheetCreate(WriteWorkbookHolder writeWorkbookHolder, WriteSheetHolder writeSheetHolder) {
-    }
+    public void beforeSheetCreate(WriteWorkbookHolder writeWorkbookHolder, WriteSheetHolder writeSheetHolder) {}
 
     @Override
     public void afterSheetCreate(WriteWorkbookHolder writeWorkbookHolder, WriteSheetHolder writeSheetHolder) {
@@ -42,7 +40,8 @@ public class SelectedSheetWriteHandler implements SheetWriteHandler {
                 Name categoryName = workbook.createName();
                 categoryName.setNameName(sheetName);
                 categoryName.setRefersToFormula(sheetName + "!$A$1:$A$" + source.length);
-                CellRangeAddressList addressList = new CellRangeAddressList(selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
+                CellRangeAddressList addressList = new CellRangeAddressList(
+                        selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
                 DataValidationConstraint constraint = helper.createFormulaListConstraint(sheetName);
                 DataValidation validation = helper.createValidation(constraint, addressList);
                 validation.setErrorStyle(DataValidation.ErrorStyle.STOP);
@@ -51,7 +50,8 @@ public class SelectedSheetWriteHandler implements SheetWriteHandler {
                 validation.createErrorBox("提示", "请输入下拉选项中的内容");
                 sheet.addValidationData(validation);
             } else {
-                CellRangeAddressList rangeList = new CellRangeAddressList(selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
+                CellRangeAddressList rangeList = new CellRangeAddressList(
+                        selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
                 DataValidationConstraint constraint = helper.createExplicitListConstraint(source);
                 DataValidation validation = helper.createValidation(constraint, rangeList);
                 validation.setErrorStyle(DataValidation.ErrorStyle.STOP);

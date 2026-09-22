@@ -2,10 +2,9 @@ package com.gas.forecast.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.gas.forecast.dao.domain.SysUserRoleRef;
+import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
-
-import java.util.List;
 
 public interface SysUserRoleRefMapper extends BaseMapper<SysUserRoleRef> {
     @Select("""

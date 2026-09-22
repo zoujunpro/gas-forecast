@@ -5,14 +5,17 @@ import java.sql.Statement;
 
 public class SqlInspector {
     public static void main(String[] args) throws Exception {
-        String url = "jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
+        String url =
+                "jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
         try (Connection connection = DriverManager.getConnection(url, "root", "mysql2026");
-             Statement statement = connection.createStatement()) {
+                Statement statement = connection.createStatement()) {
             printSingle(statement, "select @@hostname, @@port, @@version, database()");
             printRows(statement, "show tables");
             printRows(statement, "select area_code, area_name from gas_area order by id");
             printRows(statement, "select province_code, province_name, area_code from gas_province order by id");
-            printRows(statement, "select customer_code, customer_name, customer_type from gas_customer order by id limit 5");
+            printRows(
+                    statement,
+                    "select customer_code, customer_name, customer_type from gas_customer order by id limit 5");
         }
     }
 

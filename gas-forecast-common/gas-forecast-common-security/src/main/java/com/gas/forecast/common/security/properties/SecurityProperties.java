@@ -1,9 +1,8 @@
 package com.gas.forecast.common.security.properties;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "gas.security")
 public class SecurityProperties {
@@ -19,8 +18,7 @@ public class SecurityProperties {
             "/forecast/**",
             "/agents/**",
             "/predict",
-            "/chat"
-    ));
+            "/chat"));
     private List<String> excludePathPatterns = new ArrayList<>(List.of(
             "/auth/captcha",
             "/auth/rsa-public-key",
@@ -28,8 +26,7 @@ public class SecurityProperties {
             "/auth/logout",
             "/monthly-results/**",
             "/short-term-results/**",
-            "/winter-supply-results/**"
-    ));
+            "/winter-supply-results/**"));
 
     public List<String> getIncludePathPatterns() {
         return includePathPatterns;

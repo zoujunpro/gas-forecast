@@ -53,18 +53,6 @@ public class DataFileInfoCreateRequest {
     @Size(max = 2000, message = "处理异常信息长度不能超过2000个字符")
     private String errorMessage;
 
-    /**
-     * 创建人。
-     */
-    @Size(max = 64, message = "创建人长度不能超过64个字符")
-    private String createdBy;
-
-    /**
-     * 创建人名字。
-     */
-    @Size(max = 128, message = "创建人名字长度不能超过128个字符")
-    private String createdByName;
-
     public String fileName() {
         return fileName;
     }
@@ -87,13 +75,5 @@ public class DataFileInfoCreateRequest {
 
     public String errorMessage() {
         return errorMessage;
-    }
-
-    public String createdBy() {
-        return createdBy;
-    }
-
-    public String createdByName() {
-        return createdByName;
     }
 }

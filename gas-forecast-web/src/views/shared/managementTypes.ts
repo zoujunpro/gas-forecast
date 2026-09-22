@@ -6,7 +6,8 @@ export interface Option {
   raw?: Record<string, any>
 }
 
-export type FieldDisplayType = 'text' | 'array' | 'enabled' | 'status' | 'permissionType' | 'hash' | 'tag' | 'date' | 'datetime'
+export type FieldDisplayType =
+  'text' | 'array' | 'enabled' | 'status' | 'permissionType' | 'hash' | 'tag' | 'date' | 'datetime'
 
 export interface DisplayFieldConfig {
   displayType?: FieldDisplayType

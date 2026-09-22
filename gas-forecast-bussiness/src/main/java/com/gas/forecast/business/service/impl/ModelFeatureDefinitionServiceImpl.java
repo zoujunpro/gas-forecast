@@ -12,6 +12,7 @@ import com.gas.forecast.business.service.ModelFeatureDefinitionService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
@@ -65,8 +66,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         entity.setId(null);
         entity.setFeatureColumn(resolveFeatureColumn(reqDTO.featureColumn(), null));
         entity.setCreatedAt(new Date());
-        entity.setCreatedBy(0L);
-        entity.setUpdatedByName("系统");
+        entity.setCreatedBy(SecurityContextHolder.getUserId());
         modelFeatureDefinitionTbMapper.insert(entity);
         return toResp(entity);
     }
@@ -87,7 +87,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
                         : exists.getFeatureColumn());
         entity.setCreatedAt(exists.getCreatedAt());
         entity.setCreatedBy(exists.getCreatedBy());
-        entity.setUpdatedByName("系统");
+        entity.setUpdatedByName(SecurityContextHolder.getUserName());
         modelFeatureDefinitionTbMapper.updateById(entity);
         return toResp(modelFeatureDefinitionTbMapper.selectById(reqDTO.id()));
     }

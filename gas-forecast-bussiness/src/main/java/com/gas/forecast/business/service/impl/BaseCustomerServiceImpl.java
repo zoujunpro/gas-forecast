@@ -14,6 +14,7 @@ import com.gas.forecast.business.service.BaseCustomerService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.BaseIndustryTb;
@@ -53,7 +54,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
     @Override
     public PageInfoDTO<BaseCustomerResponse> listPage(BaseCustomerPageRequest reqDTO) {
         LambdaQueryWrapper<BaseCustomerTb> query = Wrappers.lambdaQuery();
-        String keyword = reqDTO.keyword();
+        String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
             query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword)
                     .or()
@@ -64,9 +65,9 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
                     .like(BaseCustomerTb::getIndustryName, keyword));
         }
         query.orderByDesc(BaseCustomerTb::getUpdatedAt).orderByDesc(BaseCustomerTb::getId);
-        int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<BaseCustomerTb> result = baseCustomerTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+
+        IPage<BaseCustomerTb> result =
+                baseCustomerTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);
         return PageUtils.toPage(
                 result, result.getRecords().stream().map(this::toResp).toList());
     }
@@ -83,7 +84,8 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         customer.setCustomerCode(baseCodeGenerateService.nextCode(BaseCodeType.CUSTOMER));
         customer.setCreatedAt(now);
         customer.setUpdatedAt(now);
-        customer.setCreatedByName("系统");
+        customer.setCreatedByName(SecurityContextHolder.getUserName());
+        customer.setCreatedBy(SecurityContextHolder.getUserId());
         baseCustomerTbMapper.insert(customer);
         return toResp(customer);
     }
@@ -97,7 +99,8 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         Long id = reqDTO.id();
         customer.setId(id);
         customer.setUpdatedAt(new Date());
-        customer.setUpdatedByName("系统");
+        customer.setUpdatedByName(SecurityContextHolder.getUserName());
+        customer.setUpdatedBy(SecurityContextHolder.getUserId());
         baseCustomerTbMapper.updateById(customer);
         return toResp(baseCustomerTbMapper.selectById(id));
     }
@@ -129,46 +132,50 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
     }
 
     private BaseCustomerTb toEntity(BaseCustomerCreateRequest reqDTO) {
+        BaseRegionTb region = requireRegion(reqDTO.getRegionCode());
+        BaseIndustryTb industry = requireIndustry(reqDTO.getIndustryCode());
         BaseCustomerTb customer = new BaseCustomerTb();
         customer.setCustomerName(reqDTO.getCustomerName());
-        customer.setIndustryName(reqDTO.getIndustryName());
-        customer.setRegionName(reqDTO.getRegionName());
-        customer.setIndustryCode(resolveIndustryCode(reqDTO.getIndustryName()));
-        customer.setRegionCode(resolveRegionCode(reqDTO.getRegionName()));
+        customer.setIndustryCode(industry.getIndustryCode());
+        customer.setIndustryName(industry.getIndustryName());
+        customer.setRegionCode(region.getRegionCode());
+        customer.setRegionName(region.getRegionName());
         customer.setRawRegionName(reqDTO.getRawRegionName());
         customer.setRawIndustryName(reqDTO.getRawIndustryName());
         return customer;
     }
 
     private BaseCustomerTb toEntity(BaseCustomerUpdateRequest reqDTO) {
+        BaseRegionTb region = requireRegion(reqDTO.getRegionCode());
+        BaseIndustryTb industry = requireIndustry(reqDTO.getIndustryCode());
         BaseCustomerTb customer = new BaseCustomerTb();
-        customer.setCustomerName(reqDTO.customerName());
-        customer.setIndustryName(reqDTO.industryName());
-        customer.setRegionName(reqDTO.regionName());
-        customer.setIndustryCode(resolveIndustryCode(reqDTO.industryName()));
-        customer.setRegionCode(resolveRegionCode(reqDTO.regionName()));
-        customer.setRawRegionName(reqDTO.rawRegionName());
-        customer.setRawIndustryName(reqDTO.rawIndustryName());
+        customer.setCustomerName(reqDTO.getCustomerName());
+        customer.setIndustryCode(industry.getIndustryCode());
+        customer.setIndustryName(industry.getIndustryName());
+        customer.setRegionCode(region.getRegionCode());
+        customer.setRegionName(region.getRegionName());
+        customer.setRawRegionName(reqDTO.getRawRegionName());
+        customer.setRawIndustryName(reqDTO.getRawIndustryName());
         return customer;
     }
 
-    private String resolveRegionCode(String regionName) {
+    private BaseRegionTb requireRegion(String regionCode) {
         BaseRegionTb region = baseRegionTbMapper.selectOne(Wrappers.<BaseRegionTb>lambdaQuery()
-                .eq(BaseRegionTb::getRegionName, regionName)
+                .eq(BaseRegionTb::getRegionCode, regionCode)
                 .last("limit 1"));
         if (region == null) {
-            throw new BusinessException("区域不存在: " + regionName);
+            throw new BusinessException("区域不存在: " + regionCode);
         }
-        return region.getRegionCode();
+        return region;
     }
 
-    private String resolveIndustryCode(String industryName) {
+    private BaseIndustryTb requireIndustry(String industryCode) {
         BaseIndustryTb industry = baseIndustryTbMapper.selectOne(Wrappers.<BaseIndustryTb>lambdaQuery()
-                .eq(BaseIndustryTb::getIndustryName, industryName)
+                .eq(BaseIndustryTb::getIndustryCode, industryCode)
                 .last("limit 1"));
         if (industry == null) {
-            throw new BusinessException("行业不存在: " + industryName);
+            throw new BusinessException("行业不存在: " + industryCode);
         }
-        return industry.getIndustryCode();
+        return industry;
     }
 }

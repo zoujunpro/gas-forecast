@@ -42,12 +42,44 @@ export const customersDataConfig: BaseDataPageConfig = {
   ],
   formFields: [
     { prop: 'customerName', label: '客户名称', required: true, maxLength: 120 },
-    { prop: 'regionName', label: '区域名称', required: true },
-    { prop: 'industryName', label: '行业名称', required: true },
+    {
+      prop: 'regionCode',
+      label: '所属区域',
+      type: 'select',
+      required: true,
+      optionSource: {
+        endpoint: '/base-region',
+        valueProp: 'regionCode',
+        labelProp: 'regionName',
+        labelTemplate: 'nameWithCode'
+      },
+      fillProps: { regionName: 'regionName' }
+    },
+    {
+      prop: 'industryCode',
+      label: '所属行业',
+      type: 'select',
+      required: true,
+      optionSource: {
+        endpoint: '/base-industry',
+        valueProp: 'industryCode',
+        labelProp: 'industryName',
+        labelTemplate: 'nameWithCode'
+      },
+      fillProps: { industryName: 'industryName' }
+    },
     { prop: 'rawRegionName', label: '原始区域' },
     { prop: 'rawIndustryName', label: '原始行业' }
   ],
-  emptyForm: { customerName: '', regionName: '', industryName: '', rawRegionName: '', rawIndustryName: '' },
+  emptyForm: {
+    customerName: '',
+    regionCode: '',
+    regionName: '',
+    industryCode: '',
+    industryName: '',
+    rawRegionName: '',
+    rawIndustryName: ''
+  },
   permissions: { create: 'base:customer:create', update: 'base:customer:update', delete: 'base:customer:delete' }
 }
 
@@ -61,9 +93,7 @@ export const industriesDataConfig: BaseDataPageConfig = {
     { prop: 'createdAt', label: '创建时间', minWidth: 170, displayType: 'datetime' },
     { prop: 'updatedAt', label: '更新时间', minWidth: 170, displayType: 'datetime' }
   ],
-  formFields: [
-    { prop: 'industryName', label: '行业名称', required: true, maxLength: 120 }
-  ],
+  formFields: [{ prop: 'industryName', label: '行业名称', required: true, maxLength: 120 }],
   emptyForm: { industryName: '' },
   permissions: { create: 'base:industry:create', update: 'base:industry:update', delete: 'base:industry:delete' }
 }
@@ -75,7 +105,14 @@ export const fileInfoDataConfig: BaseDataPageConfig = {
   tableFields: [
     { prop: 'fileCode', label: '文件编码', minWidth: 130 },
     { prop: 'fileName', label: '文件名称', minWidth: 220 },
-    { prop: 'status', label: '处理状态', minWidth: 110, displayType: 'tag', enumMap: { UPLOADED: '已上传', PROCESSING: '处理中', SUCCESS: '处理成功', FAILED: '处理失败' }, tagTypeMap: { UPLOADED: 'info', PROCESSING: 'warning', SUCCESS: 'success', FAILED: 'danger' } },
+    {
+      prop: 'status',
+      label: '处理状态',
+      minWidth: 110,
+      displayType: 'tag',
+      enumMap: { UPLOADED: '已上传', PROCESSING: '处理中', SUCCESS: '处理成功', FAILED: '处理失败' },
+      tagTypeMap: { UPLOADED: 'info', PROCESSING: 'warning', SUCCESS: 'success', FAILED: 'danger' }
+    },
     { prop: 'totalCount', label: '数据条数', minWidth: 110 },
     { prop: 'objectKey', label: '存储路径', minWidth: 260 },
     { prop: 'fileHash', label: '文件Hash', minWidth: 180, displayType: 'hash' },
@@ -90,10 +127,15 @@ export const fileInfoDataConfig: BaseDataPageConfig = {
     { prop: 'fileHash', label: '文件Hash', required: true },
     { prop: 'status', label: '处理状态', type: 'select', options: fileStatusOptions, required: true },
     { prop: 'totalCount', label: '数据条数', type: 'number', min: 0 },
-    { prop: 'createdBy', label: '创建人账号' },
-    { prop: 'createdByName', label: '创建人姓名' },
     { prop: 'errorMessage', label: '异常信息', inputType: 'textarea' }
   ],
-  emptyForm: { fileName: '', objectKey: '', fileHash: '', status: 'UPLOADED', totalCount: 0, errorMessage: '', createdBy: '', createdByName: '' },
+  emptyForm: {
+    fileName: '',
+    objectKey: '',
+    fileHash: '',
+    status: 'UPLOADED',
+    totalCount: 0,
+    errorMessage: ''
+  },
   permissions: { create: 'data:file:create', update: 'data:file:update', delete: 'data:file:delete' }
 }

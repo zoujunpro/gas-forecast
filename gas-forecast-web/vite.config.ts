@@ -37,11 +37,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
-      '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution)/.*': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        rewrite: (path) => `/gas-forecast${path}`
-      },
+      '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution)/.*':
+        {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (path) => `/gas-forecast${path}`
+        },
       '^/model-platform/.*': {
         target: 'http://localhost:8080',
         changeOrigin: true,

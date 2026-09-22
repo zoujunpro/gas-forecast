@@ -15,6 +15,7 @@ import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelPlatformService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.BusinessException;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.HttpUtil;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelConfigScopeTb;
@@ -661,8 +662,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 result == null ? objectMapper.createObjectNode().put("message", "训练任务已创建，等待模型系统回写结果。") : result;
         detail.setResultJson(jsonText(resultJson));
         detail.setRequestParam(payload == null ? null : payload.toString().getBytes(StandardCharsets.UTF_8));
-        detail.setCreatedBy("system");
-        detail.setCreatedByName("系统");
+        detail.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+        detail.setCreatedByName(SecurityContextHolder.getUserName());
         detail.setCreatedAt(now);
         detail.setUpdatedAt(now);
         modelTrainDetailTbMapper.insert(detail);

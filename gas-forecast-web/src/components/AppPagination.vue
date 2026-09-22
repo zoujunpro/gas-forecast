@@ -17,12 +17,15 @@ defineOptions({
   name: 'AppPagination'
 })
 
-withDefaults(defineProps<{
-  total: number
-  pageSizes?: number[]
-}>(), {
-  pageSizes: () => [10, 20, 50]
-})
+withDefaults(
+  defineProps<{
+    total: number
+    pageSizes?: number[]
+  }>(),
+  {
+    pageSizes: () => [10, 20, 50]
+  }
+)
 
 defineEmits<{
   (event: 'current-change'): void

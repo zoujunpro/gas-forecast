@@ -1,7 +1,6 @@
 package com.gas.forecast.common.core;
 
 public enum BusinessResponseCode implements ResponseCode {
-
     SUCCESS("0000", "成功"),
     SYSTEM_ERROR("9999", "系统繁忙，请稍后再试"),
     FAIL("9998", "异常"),

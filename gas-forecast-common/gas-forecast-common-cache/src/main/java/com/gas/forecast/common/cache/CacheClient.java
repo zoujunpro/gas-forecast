@@ -1,7 +1,6 @@
 package com.gas.forecast.common.cache;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-
 import java.time.Duration;
 import java.util.function.Supplier;
 

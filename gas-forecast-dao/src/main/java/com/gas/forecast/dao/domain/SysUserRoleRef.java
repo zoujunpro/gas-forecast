@@ -10,6 +10,7 @@ import lombok.Data;
 public class SysUserRoleRef {
     @TableId(type = IdType.AUTO)
     private Long id;
+
     private Long userId;
     private Long roleId;
 }

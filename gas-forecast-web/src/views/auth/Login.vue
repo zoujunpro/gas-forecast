@@ -189,7 +189,7 @@ onMounted(() => {
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background: #4DAAFF;
+  background: #4daaff;
 }
 
 .login-shell {
@@ -226,7 +226,7 @@ onMounted(() => {
   width: min(390px, calc(100vw - 48px));
   padding: 32px 34px 34px;
   border-radius: 6px;
-  background: #FFFFFF;
+  background: #ffffff;
   box-shadow: 0 22px 58px rgba(17, 78, 138, 0.22);
   transform: translateY(-46%);
 }
@@ -255,7 +255,7 @@ onMounted(() => {
 
 .brand-area p {
   margin: 5px 0 0;
-  color: #1F2937;
+  color: #1f2937;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -275,7 +275,7 @@ onMounted(() => {
 }
 
 .panel-title small {
-  color: #94A3B8;
+  color: #94a3b8;
   font-size: 13px;
 }
 
@@ -286,7 +286,7 @@ onMounted(() => {
 
 .login-panel :deep(.el-input__wrapper) {
   border-radius: 4px;
-  box-shadow: 0 0 0 1px #DDE5EF inset;
+  box-shadow: 0 0 0 1px #dde5ef inset;
 }
 
 .login-button {
@@ -294,13 +294,13 @@ onMounted(() => {
   margin-top: 18px;
   border: none;
   border-radius: 4px;
-  background: #2196F3;
+  background: #2196f3;
   font-weight: 700;
 }
 
 .login-button:hover,
 .login-button:focus {
-  background: #1687E0;
+  background: #1687e0;
 }
 
 .captcha-row {
@@ -313,10 +313,10 @@ onMounted(() => {
 .captcha-image {
   height: 40px;
   overflow: hidden;
-  border: 1px solid #DCDFE6;
+  border: 1px solid #dcdfe6;
   border-radius: 4px;
-  background: #F6F8FB;
-  color: #64748B;
+  background: #f6f8fb;
+  color: #64748b;
   cursor: pointer;
 }
 
@@ -328,7 +328,7 @@ onMounted(() => {
 
 @media (max-width: 900px) {
   .login-page {
-    background: #F0F2F5;
+    background: #f0f2f5;
   }
 
   .mobile-bg,

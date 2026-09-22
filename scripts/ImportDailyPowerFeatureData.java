@@ -1,11 +1,3 @@
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -25,9 +17,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.xml.parsers.DocumentBuilderFactory;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 public class ImportDailyPowerFeatureData {
-    private static final String URL = "jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String URL =
+            "jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
     private static final String USER = "root";
     private static final String PASSWORD = "mysql2026";
     private static final Path DEFAULT_FILE = Path.of("/Users/zoujun/Documents/江苏发电/发电/test.xlsx");
@@ -72,7 +72,8 @@ public class ImportDailyPowerFeatureData {
             Set<String> trainColumns = columns(connection, "model_train_feature_data_tb");
             String regionCode = findOrCreateRegion(connection, REGION_NAME);
             String industryCode = findOrCreateIndustry(connection, INDUSTRY_NAME);
-            Map<String, String> featureSlotByCode = ensureFeatureDefinitions(connection, featureColumns, rows.get(0).features().keySet());
+            Map<String, String> featureSlotByCode = ensureFeatureDefinitions(
+                    connection, featureColumns, rows.get(0).features().keySet());
 
             int inserted = 0;
             int updated = 0;
@@ -87,17 +88,20 @@ public class ImportDailyPowerFeatureData {
             }
             connection.commit();
             System.out.println("file=" + file);
-            System.out.println("region=" + REGION_NAME + "(" + regionCode + "), industry=" + INDUSTRY_NAME + "(" + industryCode + ")");
+            System.out.println("region=" + REGION_NAME + "(" + regionCode + "), industry=" + INDUSTRY_NAME + "("
+                    + industryCode + ")");
             System.out.println("rows=" + rows.size() + ", inserted=" + inserted + ", updated=" + updated);
             printImportedRange(connection, regionCode, industryCode);
         }
     }
 
-    private static Map<String, String> ensureFeatureDefinitions(Connection connection, Set<String> tableColumns, Set<String> featureCodes) throws Exception {
+    private static Map<String, String> ensureFeatureDefinitions(
+            Connection connection, Set<String> tableColumns, Set<String> featureCodes) throws Exception {
         Set<String> usedSlots = new HashSet<>();
         Map<String, String> slotByCode = new LinkedHashMap<>();
         try (Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery("select feature_code, feature_column, time_granularity from model_feature_definition_tb")) {
+                ResultSet rs = statement.executeQuery(
+                        "select feature_code, feature_column, time_granularity from model_feature_definition_tb")) {
             while (rs.next()) {
                 String column = rs.getString("feature_column");
                 if (column != null && !column.isBlank()) {
@@ -123,7 +127,8 @@ public class ImportDailyPowerFeatureData {
         return slotByCode;
     }
 
-    private static void insertFeatureDefinition(Connection connection, Set<String> tableColumns, String featureCode, String slot) throws Exception {
+    private static void insertFeatureDefinition(
+            Connection connection, Set<String> tableColumns, String featureCode, String slot) throws Exception {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("id", nextId(connection, "model_feature_definition_tb"));
         values.put("feature_code", featureCode);
@@ -138,7 +143,8 @@ public class ImportDailyPowerFeatureData {
         insertByColumns(connection, "model_feature_definition_tb", tableColumns, values);
     }
 
-    private static void updateFeatureDefinition(Connection connection, Set<String> tableColumns, String featureCode, String slot) throws Exception {
+    private static void updateFeatureDefinition(
+            Connection connection, Set<String> tableColumns, String featureCode, String slot) throws Exception {
         List<String> sets = new ArrayList<>();
         List<Object> params = new ArrayList<>();
         setIfColumn(tableColumns, sets, params, "feature_name", featureName(featureCode));
@@ -149,7 +155,8 @@ public class ImportDailyPowerFeatureData {
         }
         params.add(featureCode);
         params.add(TIME_GRANULARITY);
-        try (PreparedStatement ps = connection.prepareStatement("update model_feature_definition_tb set " + String.join(", ", sets) + " where feature_code = ? and time_granularity = ?")) {
+        try (PreparedStatement ps = connection.prepareStatement("update model_feature_definition_tb set "
+                + String.join(", ", sets) + " where feature_code = ? and time_granularity = ?")) {
             bind(ps, params);
             ps.executeUpdate();
         }
@@ -188,7 +195,8 @@ public class ImportDailyPowerFeatureData {
         throw new IllegalStateException("No free feature slot in feature_001..feature_200");
     }
 
-    private static boolean existsTrainRow(Connection connection, ImportRow row, String regionCode, String industryCode) throws Exception {
+    private static boolean existsTrainRow(Connection connection, ImportRow row, String regionCode, String industryCode)
+            throws Exception {
         try (PreparedStatement ps = connection.prepareStatement("""
                 select id from model_train_feature_data_tb
                 where region_code = ? and industry_code = ? and stat_date = ? and time_granularity = ?
@@ -204,19 +212,38 @@ public class ImportDailyPowerFeatureData {
         }
     }
 
-    private static void insertTrainRow(Connection connection, Set<String> tableColumns, Map<String, String> featureSlotByCode, ImportRow row, String regionCode, String industryCode) throws Exception {
+    private static void insertTrainRow(
+            Connection connection,
+            Set<String> tableColumns,
+            Map<String, String> featureSlotByCode,
+            ImportRow row,
+            String regionCode,
+            String industryCode)
+            throws Exception {
         Map<String, Object> values = trainValues(featureSlotByCode, row, regionCode, industryCode);
         values.put("id", nextId(connection, "model_train_feature_data_tb"));
         insertByColumns(connection, "model_train_feature_data_tb", tableColumns, values);
     }
 
-    private static void updateTrainRow(Connection connection, Set<String> tableColumns, Map<String, String> featureSlotByCode, ImportRow row, String regionCode, String industryCode) throws Exception {
+    private static void updateTrainRow(
+            Connection connection,
+            Set<String> tableColumns,
+            Map<String, String> featureSlotByCode,
+            ImportRow row,
+            String regionCode,
+            String industryCode)
+            throws Exception {
         Map<String, Object> values = trainValues(featureSlotByCode, row, regionCode, industryCode);
         List<String> sets = new ArrayList<>();
         List<Object> params = new ArrayList<>();
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             String column = entry.getKey();
-            if (!tableColumns.contains(column) || column.equals("region_code") || column.equals("industry_code") || column.equals("stat_date") || column.equals("time_granularity") || column.equals("create_time")) {
+            if (!tableColumns.contains(column)
+                    || column.equals("region_code")
+                    || column.equals("industry_code")
+                    || column.equals("stat_date")
+                    || column.equals("time_granularity")
+                    || column.equals("create_time")) {
                 continue;
             }
             sets.add(column + " = " + (entry.getValue() == RawSql.NOW ? "now()" : "?"));
@@ -228,13 +255,16 @@ public class ImportDailyPowerFeatureData {
         params.add(industryCode);
         params.add(row.statDate());
         params.add(TIME_GRANULARITY);
-        try (PreparedStatement ps = connection.prepareStatement("update model_train_feature_data_tb set " + String.join(", ", sets) + " where region_code = ? and industry_code = ? and stat_date = ? and time_granularity = ?")) {
+        try (PreparedStatement ps =
+                connection.prepareStatement("update model_train_feature_data_tb set " + String.join(", ", sets)
+                        + " where region_code = ? and industry_code = ? and stat_date = ? and time_granularity = ?")) {
             bind(ps, params);
             ps.executeUpdate();
         }
     }
 
-    private static Map<String, Object> trainValues(Map<String, String> featureSlotByCode, ImportRow row, String regionCode, String industryCode) {
+    private static Map<String, Object> trainValues(
+            Map<String, String> featureSlotByCode, ImportRow row, String regionCode, String industryCode) {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("stat_date", row.statDate());
         values.put("time_granularity", TIME_GRANULARITY);
@@ -258,7 +288,8 @@ public class ImportDailyPowerFeatureData {
             List<String> sharedStrings = readSharedStrings(zipFile);
             String sheetPath = firstSheetPath(zipFile);
             Document sheet = parse(zipFile.getInputStream(zipFile.getEntry(sheetPath)));
-            NodeList rowNodes = sheet.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "row");
+            NodeList rowNodes =
+                    sheet.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "row");
             List<String> headers = null;
             List<ImportRow> rows = new ArrayList<>();
             for (int i = 0; i < rowNodes.getLength(); i++) {
@@ -282,11 +313,7 @@ public class ImportDailyPowerFeatureData {
                     }
                     features.put(header, decimal(byHeader.get(header)));
                 }
-                rows.add(new ImportRow(
-                        excelDate(byHeader.get("日期")),
-                        decimal(byHeader.get("y")),
-                        features
-                ));
+                rows.add(new ImportRow(excelDate(byHeader.get("日期")), decimal(byHeader.get("y")), features));
             }
             return rows;
         }
@@ -298,11 +325,13 @@ public class ImportDailyPowerFeatureData {
             return List.of();
         }
         Document document = parse(zipFile.getInputStream(entry));
-        NodeList items = document.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "si");
+        NodeList items =
+                document.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "si");
         List<String> values = new ArrayList<>();
         for (int i = 0; i < items.getLength(); i++) {
             Element item = (Element) items.item(i);
-            NodeList texts = item.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "t");
+            NodeList texts =
+                    item.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "t");
             StringBuilder text = new StringBuilder();
             for (int j = 0; j < texts.getLength(); j++) {
                 text.append(texts.item(j).getTextContent());
@@ -315,9 +344,13 @@ public class ImportDailyPowerFeatureData {
     private static String firstSheetPath(ZipFile zipFile) throws Exception {
         Document workbook = parse(zipFile.getInputStream(zipFile.getEntry("xl/workbook.xml")));
         Document rels = parse(zipFile.getInputStream(zipFile.getEntry("xl/_rels/workbook.xml.rels")));
-        Element firstSheet = (Element) workbook.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "sheet").item(0);
-        String relId = firstSheet.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
-        NodeList relationships = rels.getElementsByTagNameNS("http://schemas.openxmlformats.org/package/2006/relationships", "Relationship");
+        Element firstSheet = (Element)
+                workbook.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "sheet")
+                        .item(0);
+        String relId =
+                firstSheet.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+        NodeList relationships = rels.getElementsByTagNameNS(
+                "http://schemas.openxmlformats.org/package/2006/relationships", "Relationship");
         for (int i = 0; i < relationships.getLength(); i++) {
             Element relationship = (Element) relationships.item(i);
             if (relId.equals(relationship.getAttribute("Id"))) {
@@ -329,7 +362,8 @@ public class ImportDailyPowerFeatureData {
     }
 
     private static List<String> readRow(Element rowElement, List<String> sharedStrings) {
-        NodeList cells = rowElement.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "c");
+        NodeList cells =
+                rowElement.getElementsByTagNameNS("http://schemas.openxmlformats.org/spreadsheetml/2006/main", "c");
         List<String> values = new ArrayList<>();
         int lastIndex = -1;
         for (int i = 0; i < cells.getLength(); i++) {
@@ -401,7 +435,10 @@ public class ImportDailyPowerFeatureData {
 
     private static boolean blank(List<String> cells, List<String> headers, String column) {
         int index = headers.indexOf(column);
-        return index < 0 || index >= cells.size() || cells.get(index) == null || cells.get(index).isBlank();
+        return index < 0
+                || index >= cells.size()
+                || cells.get(index) == null
+                || cells.get(index).isBlank();
     }
 
     private static String findOrCreateRegion(Connection connection, String regionName) throws Exception {
@@ -452,8 +489,10 @@ public class ImportDailyPowerFeatureData {
         return code;
     }
 
-    private static String findCode(Connection connection, String table, String nameColumn, String codeColumn, String name) throws Exception {
-        try (PreparedStatement ps = connection.prepareStatement("select " + codeColumn + " from " + table + " where " + nameColumn + " = ? order by id limit 1")) {
+    private static String findCode(
+            Connection connection, String table, String nameColumn, String codeColumn, String name) throws Exception {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "select " + codeColumn + " from " + table + " where " + nameColumn + " = ? order by id limit 1")) {
             ps.setString(1, name);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -464,9 +503,12 @@ public class ImportDailyPowerFeatureData {
         return null;
     }
 
-    private static String nextCode(Connection connection, String table, String codeColumn, String prefix) throws Exception {
+    private static String nextCode(Connection connection, String table, String codeColumn, String prefix)
+            throws Exception {
         try (Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery("select coalesce(max(cast(substr(" + codeColumn + ", " + (prefix.length() + 1) + ") as unsigned)), 0) + 1 from " + table + " where " + codeColumn + " regexp '^" + prefix + "[0-9]+$'")) {
+                ResultSet rs = statement.executeQuery("select coalesce(max(cast(substr(" + codeColumn + ", "
+                        + (prefix.length() + 1) + ") as unsigned)), 0) + 1 from " + table + " where " + codeColumn
+                        + " regexp '^" + prefix + "[0-9]+$'")) {
             rs.next();
             return prefix + String.format("%06d", rs.getLong(1));
         }
@@ -474,7 +516,7 @@ public class ImportDailyPowerFeatureData {
 
     private static long nextId(Connection connection, String table) throws Exception {
         try (Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery("select coalesce(max(id), 0) + 1 from " + table)) {
+                ResultSet rs = statement.executeQuery("select coalesce(max(id), 0) + 1 from " + table)) {
             rs.next();
             return rs.getLong(1);
         }
@@ -499,7 +541,9 @@ public class ImportDailyPowerFeatureData {
         return columns;
     }
 
-    private static void insertByColumns(Connection connection, String table, Set<String> tableColumns, Map<String, Object> values) throws Exception {
+    private static void insertByColumns(
+            Connection connection, String table, Set<String> tableColumns, Map<String, Object> values)
+            throws Exception {
         List<String> columns = new ArrayList<>();
         List<String> placeholders = new ArrayList<>();
         List<Object> params = new ArrayList<>();
@@ -515,13 +559,15 @@ public class ImportDailyPowerFeatureData {
                 params.add(entry.getValue());
             }
         }
-        try (PreparedStatement ps = connection.prepareStatement("insert into " + table + " (" + String.join(", ", columns) + ") values (" + String.join(", ", placeholders) + ")")) {
+        try (PreparedStatement ps = connection.prepareStatement("insert into " + table + " ("
+                + String.join(", ", columns) + ") values (" + String.join(", ", placeholders) + ")")) {
             bind(ps, params);
             ps.executeUpdate();
         }
     }
 
-    private static void setIfColumn(Set<String> tableColumns, List<String> sets, List<Object> params, String column, Object value) {
+    private static void setIfColumn(
+            Set<String> tableColumns, List<String> sets, List<Object> params, String column, Object value) {
         if (tableColumns.contains(column)) {
             sets.add(column + " = ?");
             params.add(value);
@@ -534,7 +580,8 @@ public class ImportDailyPowerFeatureData {
         }
     }
 
-    private static void printImportedRange(Connection connection, String regionCode, String industryCode) throws Exception {
+    private static void printImportedRange(Connection connection, String regionCode, String industryCode)
+            throws Exception {
         try (PreparedStatement ps = connection.prepareStatement("""
                 select count(*) rows_count, min(stat_date) min_date, max(stat_date) max_date
                 from model_train_feature_data_tb
@@ -545,7 +592,8 @@ public class ImportDailyPowerFeatureData {
             ps.setString(3, TIME_GRANULARITY);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    System.out.println("importedRange rows=" + rs.getLong("rows_count") + ", minDate=" + rs.getString("min_date") + ", maxDate=" + rs.getString("max_date"));
+                    System.out.println("importedRange rows=" + rs.getLong("rows_count") + ", minDate="
+                            + rs.getString("min_date") + ", maxDate=" + rs.getString("max_date"));
                 }
             }
         }

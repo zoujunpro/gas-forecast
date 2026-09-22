@@ -2,8 +2,8 @@ package com.gas.forecast.common.cache.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.common.cache.CacheClient;
-import com.gas.forecast.common.cache.properties.CacheProperties;
 import com.gas.forecast.common.cache.RedisLocalFallbackCacheClient;
+import com.gas.forecast.common.cache.properties.CacheProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,8 +17,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class CacheConfiguration {
 
     @Bean
-    public RedisTemplate<String, Object> appRedisTemplate(RedisConnectionFactory redisConnectionFactory,
-                                                          ObjectMapper objectMapper) {
+    public RedisTemplate<String, Object> appRedisTemplate(
+            RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         redisTemplate.setKeySerializer(new StringRedisSerializer());
@@ -31,9 +31,10 @@ public class CacheConfiguration {
     }
 
     @Bean
-    public CacheClient cacheClient(RedisTemplate<String, Object> appRedisTemplate,
-                                   ObjectMapper objectMapper,
-                                   CacheProperties cacheProperties) {
+    public CacheClient cacheClient(
+            RedisTemplate<String, Object> appRedisTemplate,
+            ObjectMapper objectMapper,
+            CacheProperties cacheProperties) {
         return new RedisLocalFallbackCacheClient(appRedisTemplate, objectMapper, cacheProperties);
     }
 }

@@ -1,7 +1,6 @@
 package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
@@ -12,11 +11,11 @@ import lombok.Data;
  * 旬度预测结果
  * @TableName model_forecast_result_tb
  */
-@TableName(value ="model_forecast_result_tb")
+@TableName(value = "model_forecast_result_tb")
 @Data
 public class ModelForecastResultTb {
     /**
-     * 
+     *
      */
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -40,5 +39,4 @@ public class ModelForecastResultTb {
      * 创建时间
      */
     private Date createdAt;
-
 }

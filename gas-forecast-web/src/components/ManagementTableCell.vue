@@ -11,7 +11,9 @@
   </el-tag>
   <span v-else-if="displayType === 'array'">{{ Array.isArray(value) ? value.join('、') : displayValue(value) }}</span>
   <span v-else-if="displayType === 'date' || displayType === 'datetime'">{{ formatDateTime(value, displayType) }}</span>
-  <span v-else :class="['cell-text', { 'mono-text': displayType === 'hash' }]">{{ displayType === 'hash' ? compactHash(value) : mappedValue }}</span>
+  <span v-else :class="['cell-text', { 'mono-text': displayType === 'hash' }]">{{
+    displayType === 'hash' ? compactHash(value) : mappedValue
+  }}</span>
 </template>
 
 <script setup lang="ts">

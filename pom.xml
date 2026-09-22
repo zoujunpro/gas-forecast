@@ -129,6 +129,10 @@
                 <version>${spotless-maven-plugin.version}</version>
                 <configuration>
                     <java>
+                        <includes>
+                            <include>src/**/*.java</include>
+                            <include>scripts/**/*.java</include>
+                        </includes>
                         <palantirJavaFormat/>
                         <removeUnusedImports/>
                         <trimTrailingWhitespace/>

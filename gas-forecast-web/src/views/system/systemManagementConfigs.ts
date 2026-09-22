@@ -36,7 +36,17 @@ export const usersSystemConfig: SystemPageConfig = {
     { prop: 'departmentIds', label: '部门', type: 'select', multiple: true, optionKey: 'departments' },
     { prop: 'status', label: '状态', type: 'select', options: statusOptions }
   ],
-  emptyForm: { username: '', password: '', realName: '', phone: '', email: '', orgCode: 'GAS', roleIds: [], departmentIds: [], status: 1 },
+  emptyForm: {
+    username: '',
+    password: '',
+    realName: '',
+    phone: '',
+    email: '',
+    orgCode: 'GAS',
+    roleIds: [],
+    departmentIds: [],
+    status: 1
+  },
   permissions: { create: 'system:user:create', update: 'system:user:update', delete: 'system:user:delete' }
 }
 
@@ -109,9 +119,38 @@ export const permissionsSystemConfig: SystemPageConfig = {
     { prop: 'buttonCode', label: '按钮标识' },
     { prop: 'icon', label: '图标' },
     { prop: 'sortNo', label: '排序', type: 'number' },
-    { prop: 'hidden', label: '侧边栏显示', type: 'switch', activeValue: 0, inactiveValue: 1, activeText: '显示', inactiveText: '隐藏' },
-    { prop: 'status', label: '启用状态', type: 'switch', activeValue: 1, inactiveValue: 0, activeText: '启用', inactiveText: '停用' }
+    {
+      prop: 'hidden',
+      label: '侧边栏显示',
+      type: 'switch',
+      activeValue: 0,
+      inactiveValue: 1,
+      activeText: '显示',
+      inactiveText: '隐藏'
+    },
+    {
+      prop: 'status',
+      label: '启用状态',
+      type: 'switch',
+      activeValue: 1,
+      inactiveValue: 0,
+      activeText: '启用',
+      inactiveText: '停用'
+    }
   ],
-  emptyForm: { permissionName: '', uiPermissionKind: 'DIRECTORY', permissionType: 'DIRECTORY', parentId: undefined, path: '', component: '', perms: '', buttonCode: '', icon: '', sortNo: 0, hidden: 0, status: 1 },
+  emptyForm: {
+    permissionName: '',
+    uiPermissionKind: 'DIRECTORY',
+    permissionType: 'DIRECTORY',
+    parentId: undefined,
+    path: '',
+    component: '',
+    perms: '',
+    buttonCode: '',
+    icon: '',
+    sortNo: 0,
+    hidden: 0,
+    status: 1
+  },
   permissions: { create: 'sys:permission:save', update: 'sys:permission:save', delete: 'sys:permission:delete' }
 }

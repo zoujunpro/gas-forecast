@@ -28,7 +28,8 @@ public class ExcelSelectedResolve {
         Class<? extends ExcelDynamicSelect>[] classes = excelSelected.sourceClass();
         if (classes.length > 0) {
             try {
-                ExcelDynamicSelect excelDynamicSelect = classes[0].getDeclaredConstructor().newInstance();
+                ExcelDynamicSelect excelDynamicSelect =
+                        classes[0].getDeclaredConstructor().newInstance();
                 String[] dynamicSelectSource = excelDynamicSelect.getSource();
                 if (dynamicSelectSource != null && dynamicSelectSource.length > 0) {
                     return dynamicSelectSource;

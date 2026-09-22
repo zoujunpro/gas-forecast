@@ -122,12 +122,15 @@ const pageMap: Record<string, { module: string; title: string; description: stri
   }
 }
 
-const page = computed(() => pageMap[String(route.name)] || {
-  module: '平台功能',
-  title: '功能页面',
-  description: '当前页面为静态菜单占位，后续接入具体数据和操作。',
-  scopes: ['列表展示', '条件筛选', '数据维护']
-})
+const page = computed(
+  () =>
+    pageMap[String(route.name)] || {
+      module: '平台功能',
+      title: '功能页面',
+      description: '当前页面为静态菜单占位，后续接入具体数据和操作。',
+      scopes: ['列表展示', '条件筛选', '数据维护']
+    }
+)
 
 const moduleName = computed(() => page.value.module)
 const title = computed(() => page.value.title)
@@ -144,8 +147,8 @@ const scopes = computed(() => page.value.scopes)
 
 .summary-panel,
 .section-panel {
-  background: #FFFFFF;
-  border: 1px solid #E6EAF0;
+  background: #ffffff;
+  border: 1px solid #e6eaf0;
   border-radius: 8px;
 }
 
@@ -161,7 +164,7 @@ const scopes = computed(() => page.value.scopes)
   margin-bottom: 8px;
   font-size: 12px;
   font-weight: 700;
-  color: #0284C7;
+  color: #0284c7;
 }
 
 h1 {
@@ -200,7 +203,7 @@ p {
 }
 
 .panel-head span {
-  color: #98A2B3;
+  color: #98a2b3;
   font-size: 12px;
   font-weight: 700;
 }

@@ -20,11 +20,7 @@
         @contextmenu.prevent="openContextMenu($event, tab.path)"
       >
         <span class="tab-title">{{ tab.title }}</span>
-        <el-icon
-          v-if="isClosable(tab.path)"
-          class="tab-close"
-          @click.stop="closeTab(tab.path)"
-        >
+        <el-icon v-if="isClosable(tab.path)" class="tab-close" @click.stop="closeTab(tab.path)">
           <Close />
         </el-icon>
       </button>
@@ -46,9 +42,7 @@
       </button>
       <template #dropdown>
         <el-dropdown-menu>
-          <el-dropdown-item command="current" :disabled="!isClosable(route.path)">
-            关闭当前
-          </el-dropdown-item>
+          <el-dropdown-item command="current" :disabled="!isClosable(route.path)"> 关闭当前 </el-dropdown-item>
           <el-dropdown-item command="others">关闭其他</el-dropdown-item>
           <el-dropdown-item command="right" :disabled="!hasRightTabs">关闭右侧</el-dropdown-item>
           <el-dropdown-item command="left" :disabled="!hasLeftTabs">关闭左侧</el-dropdown-item>
@@ -241,7 +235,8 @@ const navigateAfterClosing = (closedPath: string, closedIndex: number) => {
     return
   }
 
-  const nextTab = tabs.value[closedIndex] ?? tabs.value[closedIndex - 1] ?? tabs.value.find((tab) => tab.path === homePath)
+  const nextTab =
+    tabs.value[closedIndex] ?? tabs.value[closedIndex - 1] ?? tabs.value.find((tab) => tab.path === homePath)
   void router.push(nextTab.path)
 }
 
@@ -250,7 +245,8 @@ const navigateAfterBulkClosing = (fallbackPath = homePath) => {
     return
   }
 
-  const fallbackTab = tabs.value.find((tab) => tab.path === fallbackPath) ?? tabs.value.find((tab) => tab.path === homePath)
+  const fallbackTab =
+    tabs.value.find((tab) => tab.path === fallbackPath) ?? tabs.value.find((tab) => tab.path === homePath)
   if (fallbackTab) {
     void router.push(fallbackTab.path)
   }
@@ -384,8 +380,8 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 0 12px;
   overflow: hidden;
-  background: #FFFFFF;
-  border-bottom: 1px solid #E6EAF0;
+  background: #ffffff;
+  border-bottom: 1px solid #e6eaf0;
 }
 
 .page-tabs :deep(.el-dropdown) {
@@ -399,24 +395,27 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border: 1px solid #E6EAF0;
+  border: 1px solid #e6eaf0;
   border-radius: 6px;
-  background: #FFFFFF;
+  background: #ffffff;
   color: #536071;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .tabs-nav-button:hover:not(:disabled) {
-  color: #0284C7;
-  border-color: #BAE6FD;
-  background: #F0F9FF;
+  color: #0284c7;
+  border-color: #bae6fd;
+  background: #f0f9ff;
 }
 
 .tabs-nav-button:disabled {
-  color: #B5BECA;
+  color: #b5beca;
   cursor: not-allowed;
-  background: #F8FAFC;
+  background: #f8fafc;
 }
 
 .tabs-scroll {
@@ -448,21 +447,24 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   min-width: 0;
   padding: 0 10px;
-  border: 1px solid #E6EAF0;
+  border: 1px solid #e6eaf0;
   border-radius: 6px;
-  background: #F8FAFC;
+  background: #f8fafc;
   color: #536071;
   font-family: inherit;
   font-size: 13px;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .tab-item.active {
-  color: #0284C7;
-  border-color: #BAE6FD;
-  background: #EAF6FD;
+  color: #0284c7;
+  border-color: #bae6fd;
+  background: #eaf6fd;
   font-weight: 600;
 }
 
@@ -478,7 +480,7 @@ onBeforeUnmount(() => {
   height: 14px;
   flex-shrink: 0;
   border-radius: 50%;
-  color: #8A95A6;
+  color: #8a95a6;
 }
 
 .tab-close:hover {
@@ -493,17 +495,17 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid #E6EAF0;
+  border: 1px solid #e6eaf0;
   border-radius: 6px;
-  background: #FFFFFF;
+  background: #ffffff;
   color: #536071;
   cursor: pointer;
 }
 
 .tabs-action:hover {
-  color: #0284C7;
-  border-color: #BAE6FD;
-  background: #F0F9FF;
+  color: #0284c7;
+  border-color: #bae6fd;
+  background: #f0f9ff;
 }
 
 .tab-context-menu {
@@ -511,9 +513,9 @@ onBeforeUnmount(() => {
   z-index: 3000;
   width: 120px;
   padding: 4px;
-  border: 1px solid #E6EAF0;
+  border: 1px solid #e6eaf0;
   border-radius: 6px;
-  background: #FFFFFF;
+  background: #ffffff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
@@ -534,18 +536,18 @@ onBeforeUnmount(() => {
 }
 
 .context-menu-item:hover:not(:disabled) {
-  color: #0284C7;
-  background: #F0F9FF;
+  color: #0284c7;
+  background: #f0f9ff;
 }
 
 .context-menu-item:disabled {
-  color: #B5BECA;
+  color: #b5beca;
   cursor: not-allowed;
 }
 
 .context-menu-item.divided {
   margin-top: 4px;
-  border-top: 1px solid #EEF2F6;
+  border-top: 1px solid #eef2f6;
   border-radius: 0 0 4px 4px;
 }
 </style>

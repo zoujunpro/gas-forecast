@@ -38,9 +38,15 @@
         <el-button type="info" plain @click="resetAllFilters">重置</el-button>
       </template>
       <template #actions>
-        <el-button v-if="config.mode === 'permissions'" plain :icon="Expand" @click="setTreeExpanded(true)">展开全部</el-button>
-        <el-button v-if="config.mode === 'permissions'" plain :icon="Fold" @click="setTreeExpanded(false)">折叠全部</el-button>
-        <PermissionButton type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">{{ config.mode === 'permissions' ? '新增菜单' : '新增' }}</PermissionButton>
+        <el-button v-if="config.mode === 'permissions'" plain :icon="Expand" @click="setTreeExpanded(true)"
+          >展开全部</el-button
+        >
+        <el-button v-if="config.mode === 'permissions'" plain :icon="Fold" @click="setTreeExpanded(false)"
+          >折叠全部</el-button
+        >
+        <PermissionButton type="primary" :icon="Plus" :permission="config.permissions?.create" @click="openCreate">{{
+          config.mode === 'permissions' ? '新增菜单' : '新增'
+        }}</PermissionButton>
       </template>
       <AppTable
         :key="tableKey"
@@ -52,7 +58,16 @@
         stripe
         border
       >
-        <el-table-column v-if="config.mode !== 'permissions'" type="index" :index="rowIndex" label="序号" width="72" fixed class-name="id-column" label-class-name="id-column" />
+        <el-table-column
+          v-if="config.mode !== 'permissions'"
+          type="index"
+          :index="rowIndex"
+          label="序号"
+          width="72"
+          fixed
+          class-name="id-column"
+          label-class-name="id-column"
+        />
         <el-table-column
           v-for="field in config.tableFields"
           :key="field.prop"
@@ -88,7 +103,13 @@
             <ManagementTableCell v-else :field="field" :row="row" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right" class-name="action-column" label-class-name="action-column">
+        <el-table-column
+          label="操作"
+          width="210"
+          fixed="right"
+          class-name="action-column"
+          label-class-name="action-column"
+        >
           <template #default="{ row }">
             <template v-if="config.mode === 'departments'">
               <el-button link type="primary" @click="moveDepartment(row, -1)">上移</el-button>
@@ -103,8 +124,12 @@
             >
               新增
             </PermissionButton>
-            <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)">编辑</PermissionButton>
-            <PermissionButton link type="danger" :permission="config.permissions?.delete" @click="removeRow(row)">删除</PermissionButton>
+            <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)"
+              >编辑</PermissionButton
+            >
+            <PermissionButton link type="danger" :permission="config.permissions?.delete" @click="removeRow(row)"
+              >删除</PermissionButton
+            >
           </template>
         </el-table-column>
       </AppTable>
@@ -124,14 +149,25 @@
     <AppDialog v-model="dialogVisible" :eyebrow="config.title" :title="dialogTitle" width="720px" align-center>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
         <el-form-item v-for="field in config.formFields" :key="field.prop" :label="field.label" :prop="field.prop">
-          <FormFieldRenderer :field="field" :model="form" :option-map="optionMap" :tree-data="treeSelectData(field.optionKey)">
+          <FormFieldRenderer
+            :field="field"
+            :model="form"
+            :option-map="optionMap"
+            :tree-data="treeSelectData(field.optionKey)"
+          >
             <div class="permission-tree-toolbar">
               <span class="permission-tree-count">已选 {{ selectedPermissionCount }} 项</span>
               <div class="permission-tree-actions">
                 <el-button type="primary" plain size="small" :icon="Check" @click="checkAllPermissions">全选</el-button>
-                <el-button type="warning" plain size="small" :icon="RefreshLeft" @click="clearPermissionChecks">清空</el-button>
-                <el-button type="info" plain size="small" :icon="Expand" @click="expandPermissionTree(true)">全部展开</el-button>
-                <el-button type="info" plain size="small" :icon="Fold" @click="expandPermissionTree(false)">全部收起</el-button>
+                <el-button type="warning" plain size="small" :icon="RefreshLeft" @click="clearPermissionChecks"
+                  >清空</el-button
+                >
+                <el-button type="info" plain size="small" :icon="Expand" @click="expandPermissionTree(true)"
+                  >全部展开</el-button
+                >
+                <el-button type="info" plain size="small" :icon="Fold" @click="expandPermissionTree(false)"
+                  >全部收起</el-button
+                >
               </div>
             </div>
             <el-tree
@@ -200,10 +236,18 @@ const formRules = computed<FormRules>(() => {
   config.value.formFields.forEach((field) => {
     const fieldRules = []
     if (field.required) {
-      fieldRules.push({ required: true, message: `请输入${field.label}`, trigger: field.type === 'select' || field.type === 'treeSelect' ? 'change' : 'blur' })
+      fieldRules.push({
+        required: true,
+        message: `请输入${field.label}`,
+        trigger: field.type === 'select' || field.type === 'treeSelect' ? 'change' : 'blur'
+      })
     }
     if (field.maxLength) {
-      fieldRules.push({ max: field.maxLength, message: `${field.label}不能超过${field.maxLength}个字符`, trigger: 'blur' })
+      fieldRules.push({
+        max: field.maxLength,
+        message: `${field.label}不能超过${field.maxLength}个字符`,
+        trigger: 'blur'
+      })
     }
     if (field.pattern) {
       fieldRules.push({ pattern: new RegExp(field.pattern), message: `${field.label}格式不正确`, trigger: 'blur' })
@@ -214,41 +258,30 @@ const formRules = computed<FormRules>(() => {
   })
   return rules
 })
-const {
-  loading,
-  keyword,
-  page,
-  size,
-  total,
-  records,
-  loadData,
-  searchData,
-  resetSearch,
-  handleSizeChange,
-  rowIndex
-} = usePageQuery<Record<string, any>>({
-  errorMessage: '加载失败',
-  fetcher: async ({ page, size, keyword }) => {
-    if (config.value.paged) {
-      const result = await listPage(config.value.endpoint, { page, size, keyword: keyword || undefined })
+const { loading, keyword, page, size, total, records, loadData, searchData, resetSearch, handleSizeChange, rowIndex } =
+  usePageQuery<Record<string, any>>({
+    errorMessage: '加载失败',
+    fetcher: async ({ page, size, keyword }) => {
+      if (config.value.paged) {
+        const result = await listPage(config.value.endpoint, { page, size, keyword: keyword || undefined })
+        return {
+          records: result.records,
+          total: result.total
+        }
+      }
+
+      const sourceRecords = await listAll(config.value.endpoint, keyword)
+      flatRecords.value = config.value.mode === 'permissions' ? filterPermissionRows(sourceRecords) : sourceRecords
+      const treeRecords = buildTree(flatRecords.value)
+      if (config.value.mode === 'departments') {
+        departmentTree.value = buildTree(flatRecords.value)
+      }
       return {
-        records: result.records,
-        total: result.total
+        records: treeRecords,
+        total: flatRecords.value.length
       }
     }
-
-    const sourceRecords = await listAll(config.value.endpoint, keyword)
-    flatRecords.value = config.value.mode === 'permissions' ? filterPermissionRows(sourceRecords) : sourceRecords
-    const treeRecords = buildTree(flatRecords.value)
-    if (config.value.mode === 'departments') {
-      departmentTree.value = buildTree(flatRecords.value)
-    }
-    return {
-      records: treeRecords,
-      total: flatRecords.value.length
-    }
-  }
-})
+  })
 
 const loadOptions = async () => {
   const response = await fetch('/system/options')
@@ -337,7 +370,11 @@ const removeRow = async (row: Record<string, any>) => {
     ElMessage.warning('请先删除子菜单或按钮')
     return
   }
-  await ElMessageBox.confirm(`确认删除 ${row.permissionName || row.departmentName || row.roleName || row.username}？`, '删除确认', { type: 'warning' })
+  await ElMessageBox.confirm(
+    `确认删除 ${row.permissionName || row.departmentName || row.roleName || row.username}？`,
+    '删除确认',
+    { type: 'warning' }
+  )
   await deleteRow(config.value.endpoint, row.id)
   ElMessage.success('删除成功')
   await loadOptions()
@@ -488,12 +525,15 @@ const derivePermissionKind = (row: Record<string, any>) => {
   return 'DIRECTORY'
 }
 
-watch(() => props.pageConfig, async () => {
-  keyword.value = ''
-  page.value = 1
-  await loadOptions()
-  await loadData()
-})
+watch(
+  () => props.pageConfig,
+  async () => {
+    keyword.value = ''
+    page.value = 1
+    await loadOptions()
+    await loadData()
+  }
+)
 
 onMounted(async () => {
   await loadOptions()
@@ -584,8 +624,8 @@ onMounted(async () => {
   max-height: 420px;
   overflow: auto;
   padding: 10px 12px;
-  background: #F8FAFC;
-  border: 1px solid #E6EAF0;
+  background: #f8fafc;
+  border: 1px solid #e6eaf0;
   border-radius: 8px;
 }
 
@@ -595,7 +635,7 @@ onMounted(async () => {
 }
 
 .permission-tree :deep(.el-tree-node__content:hover) {
-  background: #EAF6FF;
+  background: #eaf6ff;
 }
 
 .column-header-with-tip {
@@ -624,7 +664,7 @@ onMounted(async () => {
   bottom: -13px;
   left: 50%;
   width: 1px;
-  background: #D6E0EA;
+  background: #d6e0ea;
   content: '';
 }
 
@@ -638,7 +678,7 @@ onMounted(async () => {
   left: 50%;
   width: 12px;
   height: 1px;
-  background: #D6E0EA;
+  background: #d6e0ea;
   content: '';
 }
 

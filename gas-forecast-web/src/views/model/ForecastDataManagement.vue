@@ -13,7 +13,13 @@
         <el-table-column prop="createdAt" label="创建时间" min-width="180" />
       </AppTable>
       <template #footer>
-        <AppPagination v-model:current-page="page" v-model:page-size="size" :total="total" @current-change="loadData" @size-change="loadData" />
+        <AppPagination
+          v-model:current-page="page"
+          v-model:page-size="size"
+          :total="total"
+          @current-change="loadData"
+          @size-change="loadData"
+        />
       </template>
     </AppTablePanel>
   </section>
@@ -40,7 +46,11 @@ const total = ref(0)
 const loadData = async () => {
   loading.value = true
   try {
-    const result = await listPage('/model-forecast-result', { page: page.value, size: size.value, forecastBatchNo: keyword.value })
+    const result = await listPage('/model-forecast-result', {
+      page: page.value,
+      size: size.value,
+      forecastBatchNo: keyword.value
+    })
     rows.value = result.records
     total.value = result.total
   } finally {
@@ -48,10 +58,21 @@ const loadData = async () => {
   }
 }
 
-watch(() => route.fullPath, () => { keyword.value = String(route.query.batchNo || ''); page.value = 1; void loadData() })
+watch(
+  () => route.fullPath,
+  () => {
+    keyword.value = String(route.query.batchNo || '')
+    page.value = 1
+    void loadData()
+  }
+)
 onMounted(loadData)
 </script>
 
 <style scoped>
-.forecast-data-page { display: flex; flex-direction: column; gap: 14px; }
+.forecast-data-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 </style>

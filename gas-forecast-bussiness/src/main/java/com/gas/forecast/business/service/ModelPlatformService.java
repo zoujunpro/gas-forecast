@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.HttpUtil;
 import com.gas.forecast.common.util.TextUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 /** 模型平台元数据查询与训练数据预校验。 */
 @Service
@@ -46,9 +45,8 @@ public class ModelPlatformService {
                     if (TextUtils.hasText(message)) messages.add(message);
                 });
             }
-            throw new BusinessException(messages.isEmpty()
-                    ? "训练数据不满足当前模型要求"
-                    : "训练数据校验未通过：" + String.join("；", messages));
+            throw new BusinessException(
+                    messages.isEmpty() ? "训练数据不满足当前模型要求" : "训练数据校验未通过：" + String.join("；", messages));
         }
         return data;
     }

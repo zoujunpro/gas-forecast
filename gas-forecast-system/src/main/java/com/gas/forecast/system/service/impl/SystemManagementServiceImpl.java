@@ -4,8 +4,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.BusinessResponseCode;
 import com.gas.forecast.common.core.PageInfoDTO;
-import com.gas.forecast.system.service.PasswordHashService;
-import com.gas.forecast.system.service.SystemManagementService;
 import com.gas.forecast.dao.domain.SysDepartmentTb;
 import com.gas.forecast.dao.domain.SysPermissionTb;
 import com.gas.forecast.dao.domain.SysRolePermissionRef;
@@ -20,9 +18,8 @@ import com.gas.forecast.dao.mapper.SysRoleTbMapper;
 import com.gas.forecast.dao.mapper.SysUserDepartmentRefMapper;
 import com.gas.forecast.dao.mapper.SysUserRoleRefMapper;
 import com.gas.forecast.dao.mapper.SysUserTbMapper;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.gas.forecast.system.service.PasswordHashService;
+import com.gas.forecast.system.service.SystemManagementService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +30,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SystemManagementServiceImpl implements SystemManagementService {
@@ -45,14 +44,15 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     private final SysRolePermissionRefMapper rolePermissionRefMapper;
     private final PasswordHashService passwordHashService;
 
-    public SystemManagementServiceImpl(SysUserTbMapper userMapper,
-                                       SysRoleTbMapper roleMapper,
-                                       SysDepartmentTbMapper departmentMapper,
-                                       SysPermissionTbMapper permissionMapper,
-                                       SysUserRoleRefMapper userRoleRefMapper,
-                                       SysUserDepartmentRefMapper userDepartmentRefMapper,
-                                       SysRolePermissionRefMapper rolePermissionRefMapper,
-                                       PasswordHashService passwordHashService) {
+    public SystemManagementServiceImpl(
+            SysUserTbMapper userMapper,
+            SysRoleTbMapper roleMapper,
+            SysDepartmentTbMapper departmentMapper,
+            SysPermissionTbMapper permissionMapper,
+            SysUserRoleRefMapper userRoleRefMapper,
+            SysUserDepartmentRefMapper userDepartmentRefMapper,
+            SysRolePermissionRefMapper rolePermissionRefMapper,
+            PasswordHashService passwordHashService) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.departmentMapper = departmentMapper;
@@ -67,15 +67,22 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         long page = longValue(req.get("page"), 1);
         long size = longValue(req.get("size"), 10);
         String keyword = stringValue(req.get("keyword"));
-        List<SysUserTb> all = userMapper.selectList(Wrappers.<SysUserTb>lambdaQuery()
-                .eq(SysUserTb::getDeleted, 0)
-                .orderByAsc(SysUserTb::getId));
-        List<SysRoleTb> roles = roleMapper.selectList(Wrappers.<SysRoleTb>lambdaQuery().orderByAsc(SysRoleTb::getId));
-        List<SysDepartmentTb> departments = departmentMapper.selectList(Wrappers.<SysDepartmentTb>lambdaQuery().orderByAsc(SysDepartmentTb::getId));
+        List<SysUserTb> all = userMapper.selectList(
+                Wrappers.<SysUserTb>lambdaQuery().eq(SysUserTb::getDeleted, 0).orderByAsc(SysUserTb::getId));
+        List<SysRoleTb> roles =
+                roleMapper.selectList(Wrappers.<SysRoleTb>lambdaQuery().orderByAsc(SysRoleTb::getId));
+        List<SysDepartmentTb> departments = departmentMapper.selectList(
+                Wrappers.<SysDepartmentTb>lambdaQuery().orderByAsc(SysDepartmentTb::getId));
         List<SysUserRoleRef> userRoles = userRoleRefMapper.selectList(Wrappers.emptyWrapper());
         List<SysUserDepartmentRef> userDepartments = userDepartmentRefMapper.selectList(Wrappers.emptyWrapper());
         List<Map<String, Object>> rows = all.stream()
-                .filter(user -> matches(keyword, user.getUsername(), user.getRealName(), user.getEmail(), user.getPhone(), user.getOrgCode()))
+                .filter(user -> matches(
+                        keyword,
+                        user.getUsername(),
+                        user.getRealName(),
+                        user.getEmail(),
+                        user.getPhone(),
+                        user.getOrgCode()))
                 .map(user -> userRow(user, roles, departments, userRoles, userDepartments))
                 .toList();
         return page(rows, page, size);
@@ -89,7 +96,8 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         if (user == null) {
             throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "用户不存在");
         }
-        if (id == null && userMapper.selectCount(Wrappers.<SysUserTb>lambdaQuery().eq(SysUserTb::getUsername, username)) > 0) {
+        if (id == null
+                && userMapper.selectCount(Wrappers.<SysUserTb>lambdaQuery().eq(SysUserTb::getUsername, username)) > 0) {
             throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "用户名已存在");
         }
         user.setUsername(username);
@@ -130,20 +138,26 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         long size = longValue(req.get("size"), 10);
         String keyword = stringValue(req.get("keyword"));
         List<SysRolePermissionRef> refs = rolePermissionRefMapper.selectList(Wrappers.emptyWrapper());
-        List<Map<String, Object>> rows = roleMapper.selectList(Wrappers.<SysRoleTb>lambdaQuery().orderByAsc(SysRoleTb::getId)).stream()
-                .filter(role -> matches(keyword, role.getRoleCode(), role.getRoleName(), role.getDescription()))
-                .map(role -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("id", role.getId());
-                    row.put("roleCode", role.getRoleCode());
-                    row.put("roleName", role.getRoleName());
-                    row.put("description", role.getDescription());
-                    row.put("permissionIds", refs.stream().filter(ref -> ref.getRoleId().equals(role.getId())).map(SysRolePermissionRef::getPermissionId).toList());
-                    row.put("createdAt", role.getCreatedAt());
-                    row.put("updatedAt", role.getUpdatedAt());
-                    return row;
-                })
-                .toList();
+        List<Map<String, Object>> rows =
+                roleMapper.selectList(Wrappers.<SysRoleTb>lambdaQuery().orderByAsc(SysRoleTb::getId)).stream()
+                        .filter(role -> matches(keyword, role.getRoleCode(), role.getRoleName(), role.getDescription()))
+                        .map(role -> {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            row.put("id", role.getId());
+                            row.put("roleCode", role.getRoleCode());
+                            row.put("roleName", role.getRoleName());
+                            row.put("description", role.getDescription());
+                            row.put(
+                                    "permissionIds",
+                                    refs.stream()
+                                            .filter(ref -> ref.getRoleId().equals(role.getId()))
+                                            .map(SysRolePermissionRef::getPermissionId)
+                                            .toList());
+                            row.put("createdAt", role.getCreatedAt());
+                            row.put("updatedAt", role.getUpdatedAt());
+                            return row;
+                        })
+                        .toList();
         return page(rows, page, size);
     }
 
@@ -169,12 +183,15 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     @Transactional
     public void deleteRole(Long id) {
         roleMapper.deleteById(id);
-        rolePermissionRefMapper.delete(Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getRoleId, id));
+        rolePermissionRefMapper.delete(
+                Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getRoleId, id));
         userRoleRefMapper.delete(Wrappers.<SysUserRoleRef>lambdaQuery().eq(SysUserRoleRef::getRoleId, id));
     }
 
     public List<Map<String, Object>> listDepartments(String keyword) {
-        List<SysDepartmentTb> departments = departmentMapper.selectList(Wrappers.<SysDepartmentTb>lambdaQuery().orderByAsc(SysDepartmentTb::getSortNo).orderByAsc(SysDepartmentTb::getId));
+        List<SysDepartmentTb> departments = departmentMapper.selectList(Wrappers.<SysDepartmentTb>lambdaQuery()
+                .orderByAsc(SysDepartmentTb::getSortNo)
+                .orderByAsc(SysDepartmentTb::getId));
         return departments.stream()
                 .filter(item -> matches(keyword, item.getDepartmentName(), item.getOrgCode()))
                 .map(this::departmentRow)
@@ -206,9 +223,17 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     }
 
     public List<Map<String, Object>> listPermissions(String keyword) {
-        List<SysPermissionTb> permissions = permissionMapper.selectList(Wrappers.<SysPermissionTb>lambdaQuery().orderByAsc(SysPermissionTb::getSortNo).orderByAsc(SysPermissionTb::getId));
+        List<SysPermissionTb> permissions = permissionMapper.selectList(Wrappers.<SysPermissionTb>lambdaQuery()
+                .orderByAsc(SysPermissionTb::getSortNo)
+                .orderByAsc(SysPermissionTb::getId));
         return permissions.stream()
-                .filter(item -> matches(keyword, item.getPermissionName(), item.getPath(), item.getPerms(), item.getButtonCode(), item.getPermissionType()))
+                .filter(item -> matches(
+                        keyword,
+                        item.getPermissionName(),
+                        item.getPath(),
+                        item.getPerms(),
+                        item.getButtonCode(),
+                        item.getPermissionType()))
                 .map(this::permissionRow)
                 .toList();
     }
@@ -240,29 +265,49 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     }
 
     public void deletePermission(Long id) {
-        if (permissionMapper.selectCount(Wrappers.<SysPermissionTb>lambdaQuery().eq(SysPermissionTb::getParentId, id)) > 0) {
+        if (permissionMapper.selectCount(Wrappers.<SysPermissionTb>lambdaQuery().eq(SysPermissionTb::getParentId, id))
+                > 0) {
             throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "请先删除子菜单或按钮");
         }
         permissionMapper.deleteById(id);
-        rolePermissionRefMapper.delete(Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getPermissionId, id));
+        rolePermissionRefMapper.delete(
+                Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getPermissionId, id));
     }
 
     public Map<String, Object> options() {
         Map<String, Object> data = new HashMap<>();
-        data.put("roles", roleMapper.selectList(Wrappers.<SysRoleTb>lambdaQuery().orderByAsc(SysRoleTb::getId)).stream()
-                .map(role -> option(role.getId(), role.getRoleName() + " (" + role.getRoleCode() + ")"))
-                .toList());
-        data.put("departments", departmentMapper.selectList(Wrappers.<SysDepartmentTb>lambdaQuery().orderByAsc(SysDepartmentTb::getSortNo).orderByAsc(SysDepartmentTb::getId)).stream()
-                .map(department -> option(department.getId(), department.getDepartmentName()))
-                .toList());
+        data.put(
+                "roles",
+                roleMapper.selectList(Wrappers.<SysRoleTb>lambdaQuery().orderByAsc(SysRoleTb::getId)).stream()
+                        .map(role -> option(role.getId(), role.getRoleName() + " (" + role.getRoleCode() + ")"))
+                        .toList());
+        data.put(
+                "departments",
+                departmentMapper
+                        .selectList(Wrappers.<SysDepartmentTb>lambdaQuery()
+                                .orderByAsc(SysDepartmentTb::getSortNo)
+                                .orderByAsc(SysDepartmentTb::getId))
+                        .stream()
+                        .map(department -> option(department.getId(), department.getDepartmentName()))
+                        .toList());
         data.put("permissions", listPermissions(""));
         return data;
     }
 
-    private Map<String, Object> userRow(SysUserTb user, List<SysRoleTb> roles, List<SysDepartmentTb> departments,
-                                        List<SysUserRoleRef> userRoles, List<SysUserDepartmentRef> userDepartments) {
-        Set<Long> roleIds = userRoles.stream().filter(ref -> ref.getUserId().equals(user.getId())).map(SysUserRoleRef::getRoleId).collect(Collectors.toSet());
-        Set<Long> departmentIds = userDepartments.stream().filter(ref -> ref.getUserId().equals(user.getId())).map(SysUserDepartmentRef::getDepartmentId).collect(Collectors.toSet());
+    private Map<String, Object> userRow(
+            SysUserTb user,
+            List<SysRoleTb> roles,
+            List<SysDepartmentTb> departments,
+            List<SysUserRoleRef> userRoles,
+            List<SysUserDepartmentRef> userDepartments) {
+        Set<Long> roleIds = userRoles.stream()
+                .filter(ref -> ref.getUserId().equals(user.getId()))
+                .map(SysUserRoleRef::getRoleId)
+                .collect(Collectors.toSet());
+        Set<Long> departmentIds = userDepartments.stream()
+                .filter(ref -> ref.getUserId().equals(user.getId()))
+                .map(SysUserDepartmentRef::getDepartmentId)
+                .collect(Collectors.toSet());
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", user.getId());
         row.put("username", user.getUsername());
@@ -272,9 +317,19 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         row.put("orgCode", user.getOrgCode());
         row.put("status", user.getStatus());
         row.put("roleIds", new ArrayList<>(roleIds));
-        row.put("roleNames", roles.stream().filter(role -> roleIds.contains(role.getId())).map(SysRoleTb::getRoleName).toList());
+        row.put(
+                "roleNames",
+                roles.stream()
+                        .filter(role -> roleIds.contains(role.getId()))
+                        .map(SysRoleTb::getRoleName)
+                        .toList());
         row.put("departmentIds", new ArrayList<>(departmentIds));
-        row.put("departmentNames", departments.stream().filter(department -> departmentIds.contains(department.getId())).map(SysDepartmentTb::getDepartmentName).toList());
+        row.put(
+                "departmentNames",
+                departments.stream()
+                        .filter(department -> departmentIds.contains(department.getId()))
+                        .map(SysDepartmentTb::getDepartmentName)
+                        .toList());
         row.put("createdAt", user.getCreatedAt());
         row.put("updatedAt", user.getUpdatedAt());
         return row;
@@ -320,7 +375,8 @@ public class SystemManagementServiceImpl implements SystemManagementService {
             ref.setRoleId(roleId);
             userRoleRefMapper.insert(ref);
         });
-        userDepartmentRefMapper.delete(Wrappers.<SysUserDepartmentRef>lambdaQuery().eq(SysUserDepartmentRef::getUserId, userId));
+        userDepartmentRefMapper.delete(
+                Wrappers.<SysUserDepartmentRef>lambdaQuery().eq(SysUserDepartmentRef::getUserId, userId));
         departmentIds.forEach(departmentId -> {
             SysUserDepartmentRef ref = new SysUserDepartmentRef();
             ref.setUserId(userId);
@@ -330,7 +386,8 @@ public class SystemManagementServiceImpl implements SystemManagementService {
     }
 
     private void replaceRolePermissions(Long roleId, List<Long> permissionIds) {
-        rolePermissionRefMapper.delete(Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getRoleId, roleId));
+        rolePermissionRefMapper.delete(
+                Wrappers.<SysRolePermissionRef>lambdaQuery().eq(SysRolePermissionRef::getRoleId, roleId));
         Set<Long> distinct = new HashSet<>(permissionIds);
         distinct.forEach(permissionId -> {
             SysRolePermissionRef ref = new SysRolePermissionRef();
@@ -406,6 +463,9 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         if (!(value instanceof List<?> list)) {
             return List.of();
         }
-        return list.stream().map(item -> ((Number) item).longValue()).sorted(Comparator.naturalOrder()).toList();
+        return list.stream()
+                .map(item -> ((Number) item).longValue())
+                .sorted(Comparator.naturalOrder())
+                .toList();
     }
 }

@@ -21,16 +21,16 @@ public class AuthInterceptor implements HandlerInterceptor {
     private final PermissionChecker permissionChecker;
     private final ObjectMapper objectMapper;
 
-    public AuthInterceptor(AuthTokenService authTokenService,
-                           PermissionChecker permissionChecker,
-                           ObjectMapper objectMapper) {
+    public AuthInterceptor(
+            AuthTokenService authTokenService, PermissionChecker permissionChecker, ObjectMapper objectMapper) {
         this.authTokenService = authTokenService;
         this.permissionChecker = permissionChecker;
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         String token = resolveToken(request);
         AuthTokenPayload payload = authTokenService.parse(token);
         if (payload == null) {
@@ -41,7 +41,8 @@ public class AuthInterceptor implements HandlerInterceptor {
         ThreadLocalUtil.setLoginUser(payload.userId(), payload.username(), token);
         RequirePermission requirePermission = resolveRequirePermission(handler);
         if (requirePermission != null
-                && permissionChecker.hasPermissions(payload.username(), requirePermission.value(), requirePermission.logical())) {
+                && permissionChecker.hasPermissions(
+                        payload.username(), requirePermission.value(), requirePermission.logical())) {
             writeError(response, HttpServletResponse.SC_FORBIDDEN, "403", "无权访问该功能");
             return false;
         }
@@ -78,7 +79,8 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(
+            HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         AuthContext.clear();
         ThreadLocalUtil.clear();
     }

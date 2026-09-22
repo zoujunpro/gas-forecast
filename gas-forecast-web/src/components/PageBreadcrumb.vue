@@ -25,7 +25,9 @@ const breadcrumbItems = computed(() => {
   return [String(route.meta.title || '功能页面')]
 })
 
-const title = computed(() => breadcrumbItems.value[breadcrumbItems.value.length - 1] || String(route.meta.title || '功能页面'))
+const title = computed(
+  () => breadcrumbItems.value[breadcrumbItems.value.length - 1] || String(route.meta.title || '功能页面')
+)
 </script>
 
 <style scoped>
@@ -40,7 +42,7 @@ const title = computed(() => breadcrumbItems.value[breadcrumbItems.value.length 
 }
 
 .separator {
-  color: #98A2B3;
+  color: #98a2b3;
   padding: 0 6px;
 }
 

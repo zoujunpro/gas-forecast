@@ -5,8 +5,7 @@ package com.gas.forecast.common.security.contants;
  *
  * @author zoujun
  */
-public class SecurityConstants
-{
+public class SecurityConstants {
     /**
      * 用户ID字段
      */
@@ -33,7 +32,7 @@ public class SecurityConstants
     /**
      * 用户唯一键
      */
-    public static final String  USER_KEY= "user_key";
+    public static final String USER_KEY = "user_key";
 
     /**
      * 授权信息字段
@@ -60,7 +59,7 @@ public class SecurityConstants
      */
     public static final String ROLE_PERMISSION = "role_permission";
 
-    public static final String TRACE_ID_HEADER="x-traceId";
+    public static final String TRACE_ID_HEADER = "x-traceId";
 
-    public static final String TRACE_USER_HEADER="x-user";
+    public static final String TRACE_USER_HEADER = "x-user";
 }

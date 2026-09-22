@@ -45,13 +45,27 @@ export const modelFeatureDefinitionConfig: BaseDataPageConfig = {
   endpoint: '/model-feature-definition',
   searchPlaceholder: '搜索特征编号、名称、宽表字段、时间跨度',
   filterFields: [
-    { prop: 'timeGranularity', label: '时间跨度', type: 'select', options: timeGranularityOptions, placeholder: '时间跨度', width: 130 }
+    {
+      prop: 'timeGranularity',
+      label: '时间跨度',
+      type: 'select',
+      options: timeGranularityOptions,
+      placeholder: '时间跨度',
+      width: 130
+    }
   ],
   tableFields: [
     { prop: 'featureCode', label: '特征编号', minWidth: 150 },
     { prop: 'featureName', label: '特征名称', minWidth: 180 },
     { prop: 'featureColumn', label: '宽表字段', minWidth: 150 },
-    { prop: 'timeGranularity', label: '时间跨度', minWidth: 110, displayType: 'tag', enumMap: { DAY: '日', TENDAY: '旬', MONTH: '月', YEAR: '年' }, tagTypeMap: { DAY: 'success', TENDAY: 'warning', MONTH: 'primary', YEAR: 'info' } },
+    {
+      prop: 'timeGranularity',
+      label: '时间跨度',
+      minWidth: 110,
+      displayType: 'tag',
+      enumMap: { DAY: '日', TENDAY: '旬', MONTH: '月', YEAR: '年' },
+      tagTypeMap: { DAY: 'success', TENDAY: 'warning', MONTH: 'primary', YEAR: 'info' }
+    },
     { prop: 'enabled', label: '启用状态', minWidth: 110, displayType: 'enabled' },
     { prop: 'description', label: '描述', minWidth: 220 },
     { prop: 'createdAt', label: '创建时间', minWidth: 170, displayType: 'datetime' },
@@ -61,11 +75,24 @@ export const modelFeatureDefinitionConfig: BaseDataPageConfig = {
     { prop: 'featureCode', label: '特征编号', required: true, maxLength: 64 },
     { prop: 'featureName', label: '特征名称', required: true, maxLength: 128 },
     { prop: 'timeGranularity', label: '时间跨度', type: 'select', options: timeGranularityOptions, required: true },
-    { prop: 'enabled', label: '启用状态', type: 'select', options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }], required: true },
+    {
+      prop: 'enabled',
+      label: '启用状态',
+      type: 'select',
+      options: [
+        { label: '启用', value: 1 },
+        { label: '停用', value: 0 }
+      ],
+      required: true
+    },
     { prop: 'description', label: '描述', inputType: 'textarea', maxLength: 500 }
   ],
   emptyForm: { featureCode: '', featureName: '', timeGranularity: 'DAY', enabled: 1, description: '' },
-  permissions: { create: 'model:feature-definition:create', update: 'model:feature-definition:update', delete: 'model:feature-definition:delete' }
+  permissions: {
+    create: 'model:feature-definition:create',
+    update: 'model:feature-definition:update',
+    delete: 'model:feature-definition:delete'
+  }
 }
 
 export const modelTrainConfigConfig: BaseDataPageConfig = {
@@ -73,19 +100,54 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
   endpoint: '/model-train-config',
   searchPlaceholder: '搜索配置编码、名称、智能体、模型、范围',
   filterFields: [
-    { prop: 'agentCode', label: '智能体', type: 'select', options: modelAgentOptions, placeholder: '智能体', width: 190 },
-    { prop: 'timeGranularity', label: '时间格式', type: 'select', options: trainTimeGranularityOptions, placeholder: '时间格式', width: 130 }
+    {
+      prop: 'agentCode',
+      label: '智能体',
+      type: 'select',
+      options: modelAgentOptions,
+      placeholder: '智能体',
+      width: 190
+    },
+    {
+      prop: 'timeGranularity',
+      label: '时间格式',
+      type: 'select',
+      options: trainTimeGranularityOptions,
+      placeholder: '时间格式',
+      width: 130
+    }
   ],
   tableFields: [
     { prop: 'trainCode', label: '训练配置编码', minWidth: 180 },
     { prop: 'trainName', label: '训练名称', minWidth: 190 },
-    { prop: 'agentCode', label: '智能体', minWidth: 150, displayType: 'tag', enumMap: { 'winter-supply': '冬季保供', 'monthly-sales': '月度销量', 'short-term': '短期客户' }, tagTypeMap: { 'winter-supply': 'warning', 'monthly-sales': 'primary', 'short-term': 'success' } },
+    {
+      prop: 'agentCode',
+      label: '智能体',
+      minWidth: 150,
+      displayType: 'tag',
+      enumMap: { 'winter-supply': '冬季保供', 'monthly-sales': '月度销量', 'short-term': '短期客户' },
+      tagTypeMap: { 'winter-supply': 'warning', 'monthly-sales': 'primary', 'short-term': 'success' }
+    },
     { prop: 'modelName', label: '所属模型', minWidth: 180 },
     { prop: 'regionName', label: '训练区域', minWidth: 120 },
     { prop: 'industryName', label: '训练行业', minWidth: 120 },
     { prop: 'customerName', label: '训练客户', minWidth: 150 },
-    { prop: 'trainMode', label: '训练方式', minWidth: 120, displayType: 'tag', enumMap: { RECENT: '最近时间', RANGE: '指定时间范围' }, tagTypeMap: { RECENT: 'success', RANGE: 'primary' } },
-    { prop: 'timeGranularity', label: '时间格式', minWidth: 110, displayType: 'tag', enumMap: { DAY: '日', TENDAY: '旬', MONTH: '月' }, tagTypeMap: { DAY: 'success', TENDAY: 'warning', MONTH: 'primary' } },
+    {
+      prop: 'trainMode',
+      label: '训练方式',
+      minWidth: 120,
+      displayType: 'tag',
+      enumMap: { RECENT: '最近时间', RANGE: '指定时间范围' },
+      tagTypeMap: { RECENT: 'success', RANGE: 'primary' }
+    },
+    {
+      prop: 'timeGranularity',
+      label: '时间格式',
+      minWidth: 110,
+      displayType: 'tag',
+      enumMap: { DAY: '日', TENDAY: '旬', MONTH: '月' },
+      tagTypeMap: { DAY: 'success', TENDAY: 'warning', MONTH: 'primary' }
+    },
     { prop: 'recentPeriods', label: '最近数量', minWidth: 110, align: 'right' },
     { prop: 'trainStartDate', label: '开始日期', minWidth: 120 },
     { prop: 'trainEndDate', label: '结束日期', minWidth: 120 },
@@ -99,7 +161,12 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
       prop: 'modelId',
       label: '模型编码/名称',
       type: 'select',
-      optionSource: { endpoint: '/model-config', valueProp: 'id', labelProp: 'configName', labelTemplate: 'nameWithCode' },
+      optionSource: {
+        endpoint: '/model-config',
+        valueProp: 'id',
+        labelProp: 'configName',
+        labelTemplate: 'nameWithCode'
+      },
       fillProps: { modelCode: 'configCode', modelName: 'configName' }
     },
     {
@@ -107,7 +174,12 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
       label: '训练区域编码/名称',
       type: 'select',
       maxLength: 64,
-      optionSource: { endpoint: '/base-region', valueProp: 'regionCode', labelProp: 'regionName', labelTemplate: 'nameWithCode' },
+      optionSource: {
+        endpoint: '/base-region',
+        valueProp: 'regionCode',
+        labelProp: 'regionName',
+        labelTemplate: 'nameWithCode'
+      },
       fillProps: { regionName: 'regionName' }
     },
     {
@@ -115,7 +187,12 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
       label: '训练行业编码/名称',
       type: 'select',
       maxLength: 64,
-      optionSource: { endpoint: '/base-industry', valueProp: 'industryCode', labelProp: 'industryName', labelTemplate: 'nameWithCode' },
+      optionSource: {
+        endpoint: '/base-industry',
+        valueProp: 'industryCode',
+        labelProp: 'industryName',
+        labelTemplate: 'nameWithCode'
+      },
       fillProps: { industryName: 'industryName' }
     },
     {
@@ -123,15 +200,58 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
       label: '训练客户编码/名称',
       type: 'select',
       maxLength: 64,
-      optionSource: { endpoint: '/base-customer', valueProp: 'customerCode', labelProp: 'customerName', labelTemplate: 'nameWithCode' },
+      optionSource: {
+        endpoint: '/base-customer',
+        valueProp: 'customerCode',
+        labelProp: 'customerName',
+        labelTemplate: 'nameWithCode'
+      },
       fillProps: { customerName: 'customerName' }
     },
     { prop: 'trainMode', label: '模型训练方式', type: 'radio', options: trainModeOptions, required: true },
-    { prop: 'timeGranularity', label: '时间格式', type: 'select', options: trainTimeGranularityOptions, required: true },
-    { prop: 'recentPeriods', label: '最近数量', type: 'number', min: 1, required: true, visibleWhen: { prop: 'trainMode', value: 'RECENT' } },
-    { prop: 'trainStartDate', label: '训练开始日期', type: 'granularityDate', granularityProp: 'timeGranularity', maxLength: 32, required: true, visibleWhen: { prop: 'trainMode', value: 'RANGE' } },
-    { prop: 'trainEndDate', label: '训练结束日期', type: 'granularityDate', granularityProp: 'timeGranularity', maxLength: 32, required: true, visibleWhen: { prop: 'trainMode', value: 'RANGE' } },
-    { prop: 'enabled', label: '启用状态', type: 'select', options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }], required: true },
+    {
+      prop: 'timeGranularity',
+      label: '时间格式',
+      type: 'select',
+      options: trainTimeGranularityOptions,
+      required: true
+    },
+    {
+      prop: 'recentPeriods',
+      label: '最近数量',
+      type: 'number',
+      min: 1,
+      required: true,
+      visibleWhen: { prop: 'trainMode', value: 'RECENT' }
+    },
+    {
+      prop: 'trainStartDate',
+      label: '训练开始日期',
+      type: 'granularityDate',
+      granularityProp: 'timeGranularity',
+      maxLength: 32,
+      required: true,
+      visibleWhen: { prop: 'trainMode', value: 'RANGE' }
+    },
+    {
+      prop: 'trainEndDate',
+      label: '训练结束日期',
+      type: 'granularityDate',
+      granularityProp: 'timeGranularity',
+      maxLength: 32,
+      required: true,
+      visibleWhen: { prop: 'trainMode', value: 'RANGE' }
+    },
+    {
+      prop: 'enabled',
+      label: '启用状态',
+      type: 'select',
+      options: [
+        { label: '启用', value: 1 },
+        { label: '停用', value: 0 }
+      ],
+      required: true
+    },
     { prop: 'remark', label: '备注', inputType: 'textarea', maxLength: 512 }
   ],
   emptyForm: {
@@ -155,7 +275,12 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
     enabled: 1,
     remark: ''
   },
-  permissions: { create: 'model:train-config:create', update: 'model:train-config:update', delete: 'model:train-config:delete', execute: 'config:train:execute' },
+  permissions: {
+    create: 'model:train-config:create',
+    update: 'model:train-config:update',
+    delete: 'model:train-config:delete',
+    execute: 'config:train:execute'
+  },
   trainExecution: true
 }
 
@@ -166,12 +291,33 @@ export const modelTrainFeatureDataConfig: BaseDataPageConfig = {
   readonly: true,
   featureDetailProp: 'featureValues',
   filterFields: [
-    { prop: 'timeGranularity', label: '时间跨度', type: 'select', options: timeGranularityOptions, placeholder: '时间跨度', width: 130 },
-    { prop: 'statDateRange', label: '统计日期范围', type: 'dateRange', startProp: 'statDateStart', endProp: 'statDateEnd', width: 260 }
+    {
+      prop: 'timeGranularity',
+      label: '时间跨度',
+      type: 'select',
+      options: timeGranularityOptions,
+      placeholder: '时间跨度',
+      width: 130
+    },
+    {
+      prop: 'statDateRange',
+      label: '统计日期范围',
+      type: 'dateRange',
+      startProp: 'statDateStart',
+      endProp: 'statDateEnd',
+      width: 260
+    }
   ],
   tableFields: [
     { prop: 'statDate', label: '统计日期', minWidth: 120, sortable: 'custom' },
-    { prop: 'timeGranularity', label: '时间跨度', minWidth: 110, displayType: 'tag', enumMap: { DAY: '日', TENDAY: '旬', MONTH: '月', YEAR: '年' }, tagTypeMap: { DAY: 'success', TENDAY: 'warning', MONTH: 'primary', YEAR: 'info' } },
+    {
+      prop: 'timeGranularity',
+      label: '时间跨度',
+      minWidth: 110,
+      displayType: 'tag',
+      enumMap: { DAY: '日', TENDAY: '旬', MONTH: '月', YEAR: '年' },
+      tagTypeMap: { DAY: 'success', TENDAY: 'warning', MONTH: 'primary', YEAR: 'info' }
+    },
     { prop: 'regionName', label: '区域', minWidth: 120 },
     { prop: 'customerName', label: '客户', minWidth: 160 },
     { prop: 'industryName', label: '行业', minWidth: 120 },

@@ -20,19 +20,15 @@ public class BaseCustomerCreateRequest {
     @Size(max = 128, message = "客户名称长度不能超过128个字符")
     private String customerName;
 
-    /**
-     * 所属行业名称。
-     */
-    @NotBlank(message = "行业名称不能为空")
-    @Size(max = 128, message = "行业名称长度不能超过128个字符")
-    private String industryName;
+    /** 所属行业编码。 */
+    @NotBlank(message = "行业编码不能为空")
+    @Size(max = 64, message = "行业编码长度不能超过64个字符")
+    private String industryCode;
 
-    /**
-     * 所属区域名称。
-     */
-    @NotBlank(message = "区域名称不能为空")
-    @Size(max = 128, message = "区域名称长度不能超过128个字符")
-    private String regionName;
+    /** 所属区域编码。 */
+    @NotBlank(message = "区域编码不能为空")
+    @Size(max = 64, message = "区域编码长度不能超过64个字符")
+    private String regionCode;
 
     /**
      * 原始区域名称。

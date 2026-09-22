@@ -13,6 +13,7 @@ import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.DataFileInfoService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.PageInfoDTO;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.DataFileInfoTb;
 import com.gas.forecast.dao.mapper.DataFileInfoTbMapper;
@@ -75,6 +76,8 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         fileInfo.setFileCode(baseCodeGenerateService.nextCode(BaseCodeType.FILE));
         fileInfo.setCreatedAt(now);
         fileInfo.setUpdatedAt(now);
+        fileInfo.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+        fileInfo.setCreatedByName(SecurityContextHolder.getUserName());
         dataFileInfoTbMapper.insert(fileInfo);
         return toResp(fileInfo);
     }
@@ -127,8 +130,6 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         fileInfo.setStatus(reqDTO.status());
         fileInfo.setTotalCount(reqDTO.totalCount());
         fileInfo.setErrorMessage(reqDTO.errorMessage());
-        fileInfo.setCreatedBy(reqDTO.createdBy());
-        fileInfo.setCreatedByName(reqDTO.createdByName());
         return fileInfo;
     }
 
@@ -140,8 +141,6 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         fileInfo.setStatus(reqDTO.status());
         fileInfo.setTotalCount(reqDTO.totalCount());
         fileInfo.setErrorMessage(reqDTO.errorMessage());
-        fileInfo.setCreatedBy(reqDTO.createdBy());
-        fileInfo.setCreatedByName(reqDTO.createdByName());
         return fileInfo;
     }
 }

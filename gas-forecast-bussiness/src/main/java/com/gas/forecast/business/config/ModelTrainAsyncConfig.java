@@ -1,10 +1,9 @@
 package com.gas.forecast.business.config;
 
+import java.util.concurrent.Executor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
-import java.util.concurrent.Executor;
 
 /**
  * 模型训练任务耗时较长，使用独立线程池避免占用 Web 请求线程。

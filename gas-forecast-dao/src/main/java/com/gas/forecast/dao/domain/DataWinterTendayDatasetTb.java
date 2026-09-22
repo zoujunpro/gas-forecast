@@ -11,7 +11,7 @@ import lombok.Data;
  * 冬季保供旬度清洗建模数据集表，包含旬度销量目标值和气象等基础特征
  * @TableName data_winter_tenday_dataset_tb
  */
-@TableName(value ="data_winter_tenday_dataset_tb")
+@TableName(value = "data_winter_tenday_dataset_tb")
 @Data
 public class DataWinterTendayDatasetTb {
     /**
@@ -74,5 +74,4 @@ public class DataWinterTendayDatasetTb {
      * 更新时间
      */
     private Date updatedAt;
-
 }

@@ -3,11 +3,7 @@
   <div v-else class="app-shell">
     <aside :class="['sidebar', { collapsed: isSidebarCollapsed }]">
       <div class="brand" @click="goHome">
-        <el-tooltip
-          content="天然气预测平台"
-          placement="right"
-          :disabled="!isSidebarCollapsed"
-        >
+        <el-tooltip content="天然气预测平台" placement="right" :disabled="!isSidebarCollapsed">
           <div class="brand-mark">
             <img :src="logoUrl" alt="" />
           </div>
@@ -100,16 +96,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  Expand,
-  Fold,
-  Bell,
-  QuestionFilled,
-  Search,
-  Setting,
-  SwitchButton,
-  UserFilled
-} from '@element-plus/icons-vue'
+import { Expand, Fold, Bell, QuestionFilled, Search, Setting, SwitchButton, UserFilled } from '@element-plus/icons-vue'
 import PageTabs from '@/components/PageTabs.vue'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 import logoUrl from '@/assets/logo.png'
@@ -183,21 +170,21 @@ select {
 }
 
 .el-table {
-  --el-table-row-hover-bg-color: #DFF1FF;
+  --el-table-row-hover-bg-color: #dff1ff;
 }
 
 .el-table__body tr:hover > .el-table__cell,
 .el-table__body tr.hover-row > .el-table__cell,
 .el-table__body tr.hover-row.current-row > .el-table__cell,
 .el-table__body tr.hover-row.el-table__row--striped > .el-table__cell {
-  background-color: #DFF1FF !important;
+  background-color: #dff1ff !important;
 }
 
 .el-table__body tr:hover > .el-table-fixed-column--left,
 .el-table__body tr:hover > .el-table-fixed-column--right,
 .el-table__body tr.hover-row > .el-table-fixed-column--left,
 .el-table__body tr.hover-row > .el-table-fixed-column--right {
-  background-color: #DFF1FF !important;
+  background-color: #dff1ff !important;
 }
 </style>
 
@@ -263,7 +250,7 @@ select {
 .brand-text strong {
   display: block;
   overflow: hidden;
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
@@ -322,8 +309,8 @@ select {
 }
 
 .side-menu :deep(.el-menu-item.is-active) {
-  background: #EAF6FD;
-  color: #0284C7;
+  background: #eaf6fd;
+  color: #0284c7;
   font-weight: 600;
 }
 
@@ -342,8 +329,8 @@ select {
   justify-content: space-between;
   gap: 20px;
   padding: 0 24px;
-  background: #1890FF;
-  border-bottom: 1px solid #0F7FE5;
+  background: #1890ff;
+  border-bottom: 1px solid #0f7fe5;
 }
 
 .topbar-heading {
@@ -363,7 +350,7 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
+  color: #ffffff;
   cursor: pointer;
 }
 
@@ -373,7 +360,7 @@ select {
 }
 
 .header-slogan {
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 17px;
   line-height: 1;
   white-space: nowrap;
@@ -397,7 +384,7 @@ select {
   padding: 0 14px;
   border: none;
   background: transparent;
-  color: #FFFFFF;
+  color: #ffffff;
   font-family: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -422,7 +409,7 @@ select {
 }
 
 .user-avatar {
-  color: #1890FF;
+  color: #1890ff;
   background: rgba(255, 255, 255, 0.88);
 }
 
@@ -447,9 +434,9 @@ select {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: #FFFFFF;
-  border-top: 1px solid #E6EAF0;
-  color: #8A95A6;
+  background: #ffffff;
+  border-top: 1px solid #e6eaf0;
+  color: #8a95a6;
   font-size: 12px;
 }
 
