@@ -33,6 +33,13 @@ public class ModelTrainExecutionController {
         return ResponseResult.success(modelTrainExecutionService.execute(reqDTO));
     }
 
+    @PostMapping("validate")
+    @WebLog("校验模型训练数据")
+    @RequirePermission("config:train:execute")
+    public ResponseResult<JsonNode> validate(@Valid @RequestBody ModelTrainExecuteReqDTO reqDTO) {
+        return ResponseResult.success(modelTrainExecutionService.validateTrainingData(reqDTO));
+    }
+
     @PostMapping("callback")
     @WebLog("模型训练结果回调")
     public ResponseResult<ModelTrainExecuteRespDTO> callback(@RequestBody JsonNode reqDTO) {

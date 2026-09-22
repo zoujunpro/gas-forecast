@@ -26,4 +26,15 @@ public final class HttpUtil {
             throw new IllegalStateException("HTTP请求失败：" + e.getMessage(), e);
         }
     }
+
+    public static JsonNode getJson(String url) {
+        if (!TextUtils.hasText(url)) {
+            throw new IllegalArgumentException("HTTP请求地址不能为空");
+        }
+        try {
+            return REST_TEMPLATE.getForObject(url, JsonNode.class);
+        } catch (RestClientException e) {
+            throw new IllegalStateException("HTTP请求失败：" + e.getMessage(), e);
+        }
+    }
 }

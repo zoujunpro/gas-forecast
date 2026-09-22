@@ -116,6 +116,22 @@
           <FormFieldRenderer :field="field" :model="form" :option-map="formOptionMap" @option-select="handleFormOptionSelect" />
         </el-form-item>
       </el-form>
+      <section v-if="config.trainExecution" class="training-requirement-card" v-loading="platformModelsLoading">
+        <template v-if="selectedPlatformModel">
+          <div class="requirement-title">
+            <span>当前模型数据要求</span>
+            <el-tag type="primary" effect="light">{{ selectedPlatformModel.model_name }}</el-tag>
+          </div>
+          <p>{{ selectedPlatformModel.training_data_range?.description || '模型平台未提供详细的数据范围说明。' }}</p>
+          <div v-if="selectedPlatformModel.training_data_range" class="requirement-grid">
+            <span><small>数据频率</small><strong>{{ platformFrequencyText(selectedPlatformModel.training_data_range.frequency) }}</strong></span>
+            <span><small>最低数量</small><strong>{{ selectedPlatformModel.training_data_range.minimum }} 个周期</strong></span>
+            <span><small>建议数量</small><strong>{{ selectedPlatformModel.training_data_range.recommended ? `${selectedPlatformModel.training_data_range.recommended} 个周期` : '-' }}</strong></span>
+            <span><small>连续性</small><strong>{{ selectedPlatformModel.training_data_range.continuous === true ? '必须连续' : selectedPlatformModel.training_data_range.continuous === false ? '允许不连续' : '-' }}</strong></span>
+          </div>
+        </template>
+        <el-empty v-else :image-size="46" description="选择模型后显示训练数据要求" />
+      </section>
       <template #footer>
         <el-button type="info" plain @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="executionMode ? continueExecution() : saveData()">{{ executionMode ? '继续执行' : '保存' }}</el-button>
@@ -393,7 +409,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } 
 import * as echarts from 'echarts'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Aim, Cpu, DataLine, Document, Filter, Histogram, Odometer, PieChart, Plus, RefreshRight, Search, Tickets, TrendCharts, View } from '@element-plus/icons-vue'
-import { createRow, deleteRow, listPage, postJson, updateRow, type PageRequest } from '@/api/management'
+import { createRow, deleteRow, getJson, listPage, postJson, updateRow, type PageRequest } from '@/api/management'
 import { usePageQuery } from '@/composables/usePageQuery'
 import AppDialog from '@/components/AppDialog.vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -445,6 +461,23 @@ const previewTotal = ref(0)
 const previewPage = ref(1)
 const previewSize = ref(20)
 const formOptionMap = reactive<Record<string, Option[]>>({})
+const platformModelsLoading = ref(false)
+const platformModels = ref<PlatformModel[]>([])
+
+interface PlatformModel {
+  agent_code: string
+  model_code: string
+  model_name: string
+  model_version: string
+  training_data_range?: {
+    type: string
+    frequency: string
+    minimum: number
+    recommended?: number | null
+    continuous?: boolean | null
+    description?: string
+  } | null
+}
 
 const config = computed(() => props.pageConfig)
 const visibleFormFields = computed(() => config.value.formFields.filter((field) => {
@@ -454,6 +487,7 @@ const visibleFormFields = computed(() => config.value.formFields.filter((field) 
   return form[field.visibleWhen.prop] === field.visibleWhen.value
 }))
 const dialogTitle = computed(() => `${executionMode.value ? '执行' : editingId.value ? '编辑' : '新增'}${config.value.title.replace('管理', '')}`)
+const selectedPlatformModel = computed(() => platformModels.value.find(item => item.model_code === form.modelCode) || null)
 const previewTimeRange = computed(() => {
   if (!executionConfig.value) {
     return '-'
@@ -1069,6 +1103,7 @@ const openCreate = () => {
   editingId.value = null
   resetForm()
   void loadFormOptions()
+  if (config.value.trainExecution) void loadPlatformModels()
   dialogVisible.value = true
 }
 
@@ -1077,6 +1112,7 @@ const openEdit = (row: Record<string, any>) => {
   editingId.value = row.id
   resetForm(row)
   void loadFormOptions()
+  if (config.value.trainExecution) void loadPlatformModels()
   dialogVisible.value = true
 }
 
@@ -1085,6 +1121,7 @@ const openExecute = (row: Record<string, any>) => {
   editingId.value = row.id
   resetForm(row)
   void loadFormOptions()
+  void loadPlatformModels()
   dialogVisible.value = true
 }
 
@@ -1127,6 +1164,8 @@ const continueExecution = async () => {
   try {
     const saved = await persistCurrentForm()
     executionConfig.value = { ...form, ...saved }
+    await postJson('/model-train-execution/validate', { trainCode: executionConfig.value.trainCode })
+    ElMessage.success('训练数据校验通过')
     dialogVisible.value = false
     previewPage.value = 1
     await loadPreviewData()
@@ -1200,6 +1239,22 @@ const granularityText = (value: unknown) => {
   if (value === 'MONTH') return '月'
   return '-'
 }
+
+const loadPlatformModels = async () => {
+  if (platformModels.value.length || platformModelsLoading.value) return
+  platformModelsLoading.value = true
+  try {
+    const response = await getJson<PlatformModel[]>('/model-platform/models')
+    platformModels.value = Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    platformModels.value = []
+    ElMessage.error(error instanceof Error ? error.message : '模型数据要求加载失败')
+  } finally {
+    platformModelsLoading.value = false
+  }
+}
+
+const platformFrequencyText = (value?: string) => ({ day: '日', tenday: '旬', month: '月' }[value || ''] || value || '-')
 
 const removeRow = async (row: Record<string, any>) => {
   await ElMessageBox.confirm('删除后不可恢复，确认删除这条数据？', '删除确认', { type: 'warning' })
@@ -1854,6 +1909,21 @@ defineExpose({ loadData })
   word-break: break-word;
 }
 
+.training-requirement-card {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+}
+
+.requirement-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #1e3a5f; font-weight: 700; }
+.training-requirement-card > p { margin: 10px 0 12px; color: #52657d; font-size: 13px; line-height: 1.6; }
+.requirement-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.requirement-grid > span { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border: 1px solid #e1ebf7; border-radius: 6px; background: rgba(255, 255, 255, .82); }
+.requirement-grid small { color: #8492a6; }
+.requirement-grid strong { color: #243b5a; font-size: 13px; }
+
 @media (max-width: 760px) {
   .search-input {
     width: 100%;
@@ -1894,5 +1964,7 @@ defineExpose({ loadData })
   .json-grid {
     grid-template-columns: 1fr;
   }
+
+  .requirement-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 </style>

@@ -88,6 +88,19 @@
             <el-descriptions :column="4">
               <el-descriptions-item label="预测批次号">{{ activeRecord.forecastBatchNo }}</el-descriptions-item>
               <el-descriptions-item label="预测状态"><el-tag :type="recordStatus(activeRecord.status).type" :class="['forecast-status-tag', `status-${Number(activeRecord.status)}`]" size="small" effect="light">{{ recordStatus(activeRecord.status).label }}</el-tag></el-descriptions-item>
+              <el-descriptions-item label="预测名称">{{ selectedConfig?.forecastName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="预测模型">{{ activeRecord.modelName || selectedConfig?.modelName || agentLabel(activeRecord.agentCode || selectedConfig?.agentCode) }}</el-descriptions-item>
+              <el-descriptions-item label="未来预测开始">{{ predictionInfo.futureStart }}</el-descriptions-item>
+              <el-descriptions-item label="未来预测结束">{{ predictionInfo.futureEnd }}</el-descriptions-item>
+              <el-descriptions-item label="预测步长">{{ predictionInfo.futureCount }} {{ predictionInfo.unit }}</el-descriptions-item>
+              <el-descriptions-item label="时间颗粒度">{{ predictionInfo.frequency }}</el-descriptions-item>
+              <el-descriptions-item label="历史预测开始">{{ predictionInfo.historyPredictionStart }}</el-descriptions-item>
+              <el-descriptions-item label="历史预测结束">{{ predictionInfo.historyPredictionEnd }}</el-descriptions-item>
+              <el-descriptions-item label="历史预测数量">{{ predictionInfo.historyPredictionCount }} {{ predictionInfo.unit }}</el-descriptions-item>
+              <el-descriptions-item label="历史实际区间">{{ predictionInfo.historyActualRange }}</el-descriptions-item>
+              <el-descriptions-item label="训练配置">{{ activeRecord.trainConfigCode || selectedConfig?.trainConfigCode || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="智能体">{{ agentLabel(activeRecord.agentCode || selectedConfig?.agentCode) }}</el-descriptions-item>
+              <el-descriptions-item label="预测创建时间">{{ activeRecord.createdAt || '-' }}</el-descriptions-item>
               <el-descriptions-item label="完成时间">{{ activeRecord.forecastEndTime || '-' }}</el-descriptions-item>
               <el-descriptions-item label="发起人">{{ activeRecord.createdByName || '-' }}</el-descriptions-item>
               <el-descriptions-item label="区域">{{ activeRecord.regionName || '全部' }}</el-descriptions-item>
@@ -147,6 +160,31 @@ const resultLoading = ref(false), resultRows = ref<Record<string, any>[]>([]), r
 const resultView = ref<'chart' | 'table'>('chart'), resultChartRef = ref<HTMLElement>(), chartRows = ref<Record<string, any>[]>([]), historyRows = ref<Record<string, any>[]>([])
 let resultChart: echarts.ECharts | null = null
 const recordPage = ref(1), recordSize = ref(10), currentForecastId = ref<number | null>(null)
+const predictionInfo = computed(() => {
+  const frequencyCode = String(activeRecord.value?.forecastFrequency || selectedConfig.value?.forecastFrequency || 'DAILY').toUpperCase()
+  const frequencyMap: Record<string, { label: string; unit: string }> = {
+    DAILY: { label: '日', unit: '天' }, DAY: { label: '日', unit: '天' },
+    TENDAY: { label: '旬', unit: '旬' }, MONTHLY: { label: '月', unit: '个月' }, MONTH: { label: '月', unit: '个月' }
+  }
+  const frequency = frequencyMap[frequencyCode] || { label: frequencyCode || '-', unit: '期' }
+  const futureDates = chartRows.value.map(item => String(item.forecastDate || '')).filter(Boolean).sort()
+  const historicalActualDates = historyRows.value.map(item => String(item.date || '')).filter(Boolean).sort()
+  const historicalPredictionDates = historyRows.value
+    .filter(item => item.predictedValue !== null && item.predictedValue !== undefined)
+    .map(item => String(item.date || '')).filter(Boolean).sort()
+  const plannedCount = Number(activeRecord.value?.forecastHorizon || selectedConfig.value?.forecastHorizon || 0)
+  return {
+    frequency: frequency.label,
+    unit: frequency.unit,
+    futureStart: futureDates[0] || activeRecord.value?.forecastStartDate || selectedConfig.value?.forecastStartDate || '-',
+    futureEnd: futureDates[futureDates.length - 1] || '-',
+    futureCount: futureDates.length || plannedCount || '-',
+    historyPredictionStart: historicalPredictionDates[0] || '-',
+    historyPredictionEnd: historicalPredictionDates[historicalPredictionDates.length - 1] || '-',
+    historyPredictionCount: historicalPredictionDates.length || '-',
+    historyActualRange: historicalActualDates.length ? `${historicalActualDates[0]} 至 ${historicalActualDates[historicalActualDates.length - 1]}` : '-'
+  }
+})
 const filteredRecordRows = computed(() => {
   const keywordValue = recordKeyword.value.trim().toLowerCase()
   const statusMap = { running: 1, success: 2, failed: 3 } as const
@@ -217,26 +255,32 @@ const renderResultChart = () => {
   const forecast = [...chartRows.value].sort((a, b) => String(a.forecastDate).localeCompare(String(b.forecastDate)))
   const dates = [...history.map(item => String(item.date)), ...forecast.map(item => String(item.forecastDate))]
   const historyValues = [...history.map(item => Number(item.actualValue)), ...forecast.map(() => null)]
-  const forecastValues = [...history.map(() => null), ...forecast.map(item => Number(item.forecastValue))]
-  const bridgeValues = dates.map(() => null as number | null)
+  const historicalForecastValues = [...history.map(item => item.predictedValue == null ? null : Number(item.predictedValue)), ...forecast.map(() => null)]
+  const firstHistoricalForecastIndex = historicalForecastValues.findIndex(value => value != null)
+  const futureForecastValues = [...history.map(() => null as number | null), ...forecast.map(item => Number(item.forecastValue))]
+  const forecastBridgeValues = dates.map(() => null as number | null)
   if (history.length && forecast.length) {
-    bridgeValues[history.length - 1] = Number(history[history.length - 1].actualValue)
-    bridgeValues[history.length] = Number(forecast[0].forecastValue)
+    const lastHistoricalPrediction = historicalForecastValues[history.length - 1]
+    if (lastHistoricalPrediction != null) {
+      forecastBridgeValues[history.length - 1] = lastHistoricalPrediction
+      forecastBridgeValues[history.length] = Number(forecast[0].forecastValue)
+    }
   }
   const forecastStart = forecast[0]?.forecastDate
   resultChart.setOption({
     color: ['#3b82f6', '#10b981'],
     animationDuration: 650,
-    legend: { top: 4, right: 16, itemWidth: 18, itemHeight: 3, textStyle: { color: '#64748b' }, data: ['历史实际值', '预测值'] },
+    legend: { top: 4, right: 16, itemWidth: 18, itemHeight: 3, textStyle: { color: '#64748b' }, data: ['历史实际值', '历史预测值', '未来预测值'] },
     tooltip: { trigger: 'axis', backgroundColor: 'rgba(15, 23, 42, .92)', borderWidth: 0, padding: [10, 12], textStyle: { color: '#fff' }, axisPointer: { type: 'line', lineStyle: { color: '#94a3b8', type: 'dashed' } } },
     grid: { left: 62, right: 30, top: 48, bottom: dates.length > 45 ? 72 : 42 },
-    xAxis: { type: 'category', boundaryGap: false, data: dates, axisLine: { lineStyle: { color: '#dbe4f0' } }, axisTick: { show: false }, axisLabel: { color: '#64748b', hideOverlap: true, rotate: dates.length > 35 ? 35 : 0, margin: 14 } },
+    xAxis: { type: 'category', boundaryGap: false, data: dates, axisLine: { lineStyle: { color: '#dbe4f0' } }, axisTick: { show: false }, axisLabel: { color: '#64748b', interval: 0, hideOverlap: false, rotate: dates.length > 20 ? 45 : 0, margin: 14, formatter: (value: string) => value.slice(5) } },
     yAxis: { type: 'value', name: '用气量', scale: true, nameGap: 18, nameTextStyle: { color: '#94a3b8' }, splitNumber: 5, splitLine: { lineStyle: { color: '#edf2f7' } }, axisLabel: { color: '#64748b' } },
     dataZoom: dates.length > 60 ? [{ type: 'inside', start: 20, end: 100 }, { type: 'slider', height: 16, bottom: 8, borderColor: 'transparent', backgroundColor: '#f1f5f9', fillerColor: 'rgba(59, 130, 246, .12)', handleStyle: { color: '#93c5fd' } }] : [],
     series: [
       { name: '历史实际值', type: 'line', smooth: .25, connectNulls: false, showSymbol: false, data: historyValues, lineStyle: { width: 2.5, color: '#3b82f6' }, itemStyle: { color: '#3b82f6' } },
-      { name: '历史与预测衔接', type: 'line', smooth: false, connectNulls: false, showSymbol: false, tooltip: { show: false }, data: bridgeValues, lineStyle: { width: 1.5, color: '#94a3b8', type: 'dashed' }, emphasis: { disabled: true } },
-      { name: '预测值', type: 'line', smooth: .25, connectNulls: false, showSymbol: false, data: forecastValues, lineStyle: { width: 2.5, color: '#10b981' }, itemStyle: { color: '#10b981' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(16, 185, 129, .14)' }, { offset: 1, color: 'rgba(16, 185, 129, 0)' }]) }, markLine: forecastStart ? { silent: true, symbol: 'none', label: { formatter: '预测起点', color: '#3b82f6', backgroundColor: '#dbeafe', borderRadius: 4, padding: [4, 7] }, lineStyle: { color: '#60a5fa', type: 'dashed', width: 1.5 }, data: [{ xAxis: forecastStart }] } : undefined }
+      { name: '历史预测值', type: 'line', smooth: .25, connectNulls: false, showSymbol: firstHistoricalForecastIndex >= 0, symbolSize: 5, data: historicalForecastValues, lineStyle: { width: 2, color: '#f59e0b', type: 'dashed' }, itemStyle: { color: '#f59e0b' } },
+      { name: '预测衔接', type: 'line', smooth: false, connectNulls: false, showSymbol: false, silent: true, tooltip: { show: false }, data: forecastBridgeValues, lineStyle: { width: 2, color: '#94a3b8', type: 'dashed' }, emphasis: { disabled: true } },
+      { name: '未来预测值', type: 'line', smooth: .25, connectNulls: false, showSymbol: false, data: futureForecastValues, lineStyle: { width: 2.5, color: '#10b981' }, itemStyle: { color: '#10b981' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(16, 185, 129, .14)' }, { offset: 1, color: 'rgba(16, 185, 129, 0)' }]) }, markLine: forecastStart ? { silent: true, symbol: 'none', label: { formatter: '未来预测起点', color: '#3b82f6', backgroundColor: '#dbeafe', borderRadius: 4, padding: [4, 7] }, lineStyle: { color: '#60a5fa', type: 'dashed', width: 1.5 }, data: [{ xAxis: forecastStart }] } : undefined }
     ]
   }, true)
 }

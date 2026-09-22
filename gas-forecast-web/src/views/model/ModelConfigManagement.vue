@@ -67,7 +67,26 @@
     <AppDialog v-model="dialogVisible" eyebrow="模型管理" :title="dialogTitle" width="min(960px, calc(100vw - 32px))" align-center>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
         <el-form-item label="模型编码" prop="configCode">
-          <el-input v-model="form.configCode" clearable maxlength="64" placeholder="请输入模型编码" />
+          <el-select
+            v-model="form.configCode"
+            class="form-control"
+            filterable
+            :loading="platformModelsLoading"
+            placeholder="请选择模型平台中的模型"
+            @change="handlePlatformModelChange"
+          >
+            <el-option
+              v-for="item in filteredPlatformModels"
+              :key="item.model_code"
+              :label="`${item.model_name}（${item.model_code}）`"
+              :value="item.model_code"
+            >
+              <div class="platform-model-option">
+                <span>{{ item.model_name }}</span>
+                <small>{{ item.model_code }} · {{ item.model_version }}</small>
+              </div>
+            </el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="模型名称" prop="configName">
           <el-input v-model="form.configName" clearable maxlength="128" />
@@ -213,7 +232,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Delete, Edit, Histogram, Location, Plus, Search, Setting } from '@element-plus/icons-vue'
-import { createRow, deleteRow, listPage, postJson, updateRow } from '@/api/management'
+import { createRow, deleteRow, getJson, listPage, postJson, updateRow } from '@/api/management'
 import { usePageQuery } from '@/composables/usePageQuery'
 import AppDialog from '@/components/AppDialog.vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -257,6 +276,18 @@ interface SelectOption {
   value: string
 }
 
+interface PlatformModel {
+  agent_code: string
+  model_code: string
+  model_version: string
+  model_name: string
+  description: string
+  capabilities: string[]
+  training_data_range?: {
+    description?: string
+  }
+}
+
 interface FeatureOption {
   id: number
   featureCode: string
@@ -274,10 +305,12 @@ interface FeatureRefRow extends FeatureOption {
 const regionOptions = ref<SelectOption[]>([])
 const featureOptions = ref<FeatureOption[]>([])
 const featureLoading = ref(false)
+const platformModels = ref<PlatformModel[]>([])
+const platformModelsLoading = ref(false)
 const regionScopeMode = ref<'ALL' | 'CUSTOM'>('ALL')
 
 const formRules: FormRules = {
-  configCode: [{ required: true, message: '请输入模型编码', trigger: 'blur' }],
+  configCode: [{ required: true, message: '请选择模型', trigger: 'change' }],
   configName: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
   agentCode: [{ required: true, message: '请选择所属智能体', trigger: 'change' }],
   sceneCode: [{ required: true, message: '请选择场景', trigger: 'change' }]
@@ -304,11 +337,38 @@ const dialogTitle = computed(() => editingId.value ? '编辑模型' : '新增模
 const configDialogTitle = computed(() => `${configForm.configName || '模型'}配置`)
 const selectedAgent = computed(() => modelAgentOptions.find((item) => item.value === form.agentCode))
 const selectedFeatureCount = computed(() => configForm.featureRefs.length)
+const filteredPlatformModels = computed(() => platformModels.value.filter(item => item.agent_code === form.agentCode))
 const syncSceneCode = () => {
   form.sceneCode = selectedAgent.value?.sceneCode || ''
 }
 
 const handleAgentChange = () => {
+  syncSceneCode()
+  if (!filteredPlatformModels.value.some(item => item.model_code === form.configCode)) {
+    form.configCode = ''
+  }
+}
+
+const loadPlatformModels = async () => {
+  platformModelsLoading.value = true
+  try {
+    const response = await getJson<PlatformModel[]>('/model-platform/models')
+    platformModels.value = Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    platformModels.value = []
+    ElMessage.error(error instanceof Error ? error.message : '模型平台列表加载失败')
+  } finally {
+    platformModelsLoading.value = false
+  }
+}
+
+const handlePlatformModelChange = (modelCode: string) => {
+  const model = platformModels.value.find(item => item.model_code === modelCode)
+  if (!model) return
+  form.configName = model.model_name
+  form.modelVersion = model.model_version
+  form.agentCode = model.agent_code
+  form.description = model.description
   syncSceneCode()
 }
 
@@ -380,14 +440,16 @@ const loadFeatureOptions = async () => {
   }
 }
 
-const openCreate = () => {
+const openCreate = async () => {
   resetForm()
   dialogVisible.value = true
+  if (!platformModels.value.length) await loadPlatformModels()
 }
 
-const openEdit = (row: Record<string, any>) => {
+const openEdit = async (row: Record<string, any>) => {
   resetForm(row)
   dialogVisible.value = true
+  if (!platformModels.value.length) await loadPlatformModels()
 }
 
 const openConfig = async (row: Record<string, any>) => {
@@ -563,6 +625,9 @@ onMounted(() => {
 .form-control {
   width: 100%;
 }
+
+.platform-model-option { display: flex; flex-direction: column; line-height: 1.35; }
+.platform-model-option small { color: #98a2b3; font-size: 11px; }
 
 .form-wide {
   grid-column: 1 / -1;

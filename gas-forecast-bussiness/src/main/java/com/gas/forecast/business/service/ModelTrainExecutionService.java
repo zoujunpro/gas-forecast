@@ -8,6 +8,8 @@ public interface ModelTrainExecutionService {
 
     ModelTrainExecuteRespDTO execute(ModelTrainExecuteReqDTO reqDTO);
 
+    JsonNode validateTrainingData(ModelTrainExecuteReqDTO reqDTO);
+
     ModelTrainExecuteRespDTO updateTrainResult(JsonNode reqDTO);
 
     JsonNode getTrainResult(JsonNode reqDTO);

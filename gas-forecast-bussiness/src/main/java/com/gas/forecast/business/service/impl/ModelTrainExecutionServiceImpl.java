@@ -13,6 +13,7 @@ import com.gas.forecast.business.dto.resp.ModelTrainExecuteRespDTO;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
+import com.gas.forecast.business.service.ModelPlatformService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.HttpUtil;
 import com.gas.forecast.common.util.TextUtils;
@@ -77,6 +78,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private final ObjectMapper objectMapper;
     private final Executor modelTrainTaskExecutor;
     private final TransactionTemplate transactionTemplate;
+    private final ModelPlatformService modelPlatformService;
 
     @Value("${gas.agent.train-url:http://127.0.0.1:8090/api/v1/train}")
     private String trainUrl;
@@ -92,7 +94,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                                           BaseCodeGenerateService baseCodeGenerateService,
                                           ObjectMapper objectMapper,
                                           @Qualifier("modelTrainTaskExecutor") Executor modelTrainTaskExecutor,
-                                          TransactionTemplate transactionTemplate) {
+                                          TransactionTemplate transactionTemplate,
+                                          ModelPlatformService modelPlatformService) {
         this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
         this.modelConfigTbMapper = modelConfigTbMapper;
         this.modelConfigScopeTbMapper = modelConfigScopeTbMapper;
@@ -105,6 +108,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         this.objectMapper = objectMapper;
         this.modelTrainTaskExecutor = modelTrainTaskExecutor;
         this.transactionTemplate = transactionTemplate;
+        this.modelPlatformService = modelPlatformService;
     }
 
     @Override
@@ -134,6 +138,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
         }
 
+        ModelTrainAgentTrainReqDTO validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
+        modelPlatformService.validateTrainingData(objectMapper.valueToTree(validationRequest));
+
         String retryBatchNo = reqDTO.retryBatchNo();
         String batchNo = TextUtils.hasText(retryBatchNo) ? validateRetryBatch(retryBatchNo) : generateTrainBatchNo();
         ModelTrainAgentTrainReqDTO trainRequest = buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features);
@@ -159,6 +166,34 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 requestPayload,
                 submitResponse
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JsonNode validateTrainingData(ModelTrainExecuteReqDTO reqDTO) {
+        String trainCode = TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode() : reqDTO.configCode();
+        if (!TextUtils.hasText(trainCode)) {
+            throw new BusinessException("训练配置编码不能为空");
+        }
+        ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery()
+                .eq(ModelTrainConfigTb::getTrainCode, trainCode));
+        if (trainConfig == null) {
+            throw new BusinessException("训练配置不存在");
+        }
+        if (trainConfig.getModelId() == null) {
+            throw new BusinessException("训练配置未配置所属模型");
+        }
+        ModelConfigTb modelConfig = modelConfigTbMapper.selectById(trainConfig.getModelId());
+        if (modelConfig == null) {
+            throw new BusinessException("所属模型不存在");
+        }
+        List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
+        List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig, features);
+        if (trainData.isEmpty()) {
+            throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
+        }
+        ModelTrainAgentTrainReqDTO validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
+        return modelPlatformService.validateTrainingData(objectMapper.valueToTree(validationRequest));
     }
 
     private String validateRetryBatch(String retryBatchNo) {

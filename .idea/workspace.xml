@@ -5,30 +5,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelPlatformController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelPlatformService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-platform/docs/java-api-reference.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/feature_routes.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/model_routes.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/routes.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/gas-forecast/debug/log-debug-2026-09-21.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/gas-forecast/info/log-info-2026-09-21.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/gas-forecast/warn/log-warn-2026-09-21.0.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastManagementController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastManagementController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/XqycAgentController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/XqycAgentController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelTrainExecutionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelTrainExecutionController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelTrainExecutionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelTrainExecutionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-core/src/main/java/com/gas/forecast/common/util/HttpUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-core/src/main/java/com/gas/forecast/common/util/HttpUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelConfigManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelConfigManagement.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelForecastManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelForecastManagement.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/docs/model-handler-template.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/docs/model-handler-template.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/docs/model-integration-standard.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/docs/model-integration-standard.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/v1/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/v1/feature_routes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/v1/model_routes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/api/v1/routes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/base.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/contract.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/contract.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_jiangshu_dianli_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_jiangshu_dianli_v1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/winter_agent/winter_agent_v1/handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/winter_agent/winter_agent_v1/handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/schemas/modeling.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/schemas/modeling.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/runtime.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/runtime.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_api_response.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_api_response.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_model_contract.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_model_contract.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_model_jiangshu_dianli_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_model_jiangshu_dianli_v1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_winter_agent_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_winter_agent_v1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" afterDir="false" />
@@ -233,7 +231,7 @@
       <workItem from="1789871622251" duration="19796000" />
       <workItem from="1789960035813" duration="13448000" />
       <workItem from="1789983420865" duration="1134000" />
-      <workItem from="1790035677121" duration="11686000" />
+      <workItem from="1790035677121" duration="15353000" />
     </task>
     <task id="LOCAL-00001" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -267,7 +265,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790035745791</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1790054980454</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1790054980454</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

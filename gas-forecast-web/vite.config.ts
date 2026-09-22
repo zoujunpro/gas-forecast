@@ -42,6 +42,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
+      '^/model-platform/.*': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => `/gas-forecast${path}`
+      },
       '^/(model-forecast-config|model-forecast-execution|model-forecast-record|model-forecast-result)/.*': {
         target: 'http://localhost:8080',
         changeOrigin: true,

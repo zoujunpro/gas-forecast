@@ -19,11 +19,13 @@ import com.gas.forecast.dao.domain.ModelForecastConfigTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
+import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
@@ -52,6 +54,7 @@ public class ModelForecastManagementService {
     private final ModelForecastRecordTbMapper recordMapper;
     private final ModelForecastResultTbMapper resultMapper;
     private final ModelTrainConfigTbMapper trainConfigMapper;
+    private final ModelTrainBacktestTbMapper trainBacktestMapper;
     private final ModelTrainRecordTbMapper trainDetailMapper;
     private final ModelFeatureRefMapper featureRefMapper;
     private final ModelFeatureDefinitionTbMapper featureDefinitionMapper;
@@ -65,6 +68,7 @@ public class ModelForecastManagementService {
                                           ModelForecastRecordTbMapper recordMapper,
                                           ModelForecastResultTbMapper resultMapper,
                                           ModelTrainConfigTbMapper trainConfigMapper,
+                                          ModelTrainBacktestTbMapper trainBacktestMapper,
                                           ModelTrainRecordTbMapper trainDetailMapper,
                                           ModelFeatureRefMapper featureRefMapper,
                                           ModelFeatureDefinitionTbMapper featureDefinitionMapper,
@@ -74,6 +78,7 @@ public class ModelForecastManagementService {
         this.recordMapper = recordMapper;
         this.resultMapper = resultMapper;
         this.trainConfigMapper = trainConfigMapper;
+        this.trainBacktestMapper = trainBacktestMapper;
         this.trainDetailMapper = trainDetailMapper;
         this.featureRefMapper = featureRefMapper;
         this.featureDefinitionMapper = featureDefinitionMapper;
@@ -370,6 +375,8 @@ public class ModelForecastManagementService {
             case "MONTHLY", "MONTH" -> "MONTH";
             default -> "DAY";
         };
+        int historyPredictionSize = historyPredictionSize(record.getForecastFrequency(), record.getForecastHorizon());
+        int historyActualSize = historyActualSize(record.getForecastFrequency());
         var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery()
                 .eq(ModelTrainFeatureDataTb::getTimeGranularity, granularity)
                 .lt(TextUtils.hasText(record.getForecastStartDate()), ModelTrainFeatureDataTb::getStatDate, record.getForecastStartDate())
@@ -377,16 +384,85 @@ public class ModelForecastManagementService {
         eqText(query, ModelTrainFeatureDataTb::getRegionCode, record.getRegionCode());
         eqText(query, ModelTrainFeatureDataTb::getIndustryCode, record.getIndustryCode());
         eqText(query, ModelTrainFeatureDataTb::getCustomerCode, record.getCustomerCode());
-        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId).last("limit 30");
+        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId)
+                .last("limit " + historyActualSize);
 
         List<ModelTrainFeatureDataTb> rows = new ArrayList<>(featureDataMapper.selectList(query));
         Collections.reverse(rows);
-        return rows.stream().map(row -> {
+        String trainBatchNo = trainBatchNoForRecord(record);
+        Map<String, BigDecimal> rollingPredictions = loadRollingPredictions(
+                trainBatchNo, record.getForecastStartDate(), historyPredictionSize);
+        // 历史实际值与滚动预测值用于同区间对比：存在滚动预测时，两条线必须从同一天开始。
+        String comparisonStartDate = rollingPredictions.keySet().stream().findFirst().orElse(null);
+        return rows.stream()
+                .filter(row -> comparisonStartDate == null || row.getStatDate().compareTo(comparisonStartDate) >= 0)
+                .map(row -> {
             Map<String, Object> point = new LinkedHashMap<>();
             point.put("date", row.getStatDate());
             point.put("actualValue", row.getGasSales());
+            point.put("predictedValue", rollingPredictions.get(row.getStatDate()));
             return point;
         }).toList();
+    }
+
+    /** H = min(max(F, lower), upper), F 为未来预测步长，H 为历史滚动预测步长。 */
+    private int historyPredictionSize(String frequency, Integer forecastHorizon) {
+        int horizon = forecastHorizon == null ? 1 : Math.max(forecastHorizon, 1);
+        return switch (defaultText(frequency, "DAILY").toUpperCase()) {
+            case "MONTHLY", "MONTH" -> Math.min(Math.max(horizon, 6), 12);
+            case "TENDAY" -> Math.min(Math.max(horizon, 6), 9);
+            default -> Math.min(Math.max(horizon, 14), 30);
+        };
+    }
+
+    private int historyActualSize(String frequency) {
+        return switch (defaultText(frequency, "DAILY").toUpperCase()) {
+            case "MONTHLY", "MONTH" -> 24;
+            case "TENDAY" -> 18;
+            default -> 90;
+        };
+    }
+
+    private String trainBatchNoForRecord(ModelForecastRecordTb record) {
+        if (record.getRequestParam() != null && record.getRequestParam().length > 0) {
+            try {
+                JsonNode request = objectMapper.readTree(record.getRequestParam());
+                String batchNo = text(request, "train_batch_no");
+                if (TextUtils.hasText(batchNo)) return batchNo;
+            } catch (Exception ignored) {
+                // 兼容没有请求快照的历史记录，继续按范围查找最近成功训练批次。
+            }
+        }
+        var query = Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                .eq(ModelTrainRecordTb::getAgentCode, record.getAgentCode())
+                .eq(ModelTrainRecordTb::getStatus, "SUCCESS");
+        eqText(query, ModelTrainRecordTb::getRegionCode, record.getRegionCode());
+        eqText(query, ModelTrainRecordTb::getIndustryCode, record.getIndustryCode());
+        eqText(query, ModelTrainRecordTb::getCustomerCode, record.getCustomerCode());
+        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1");
+        ModelTrainRecordTb detail = trainDetailMapper.selectOne(query);
+        return detail == null ? null : detail.getBatchNo();
+    }
+
+    private Map<String, BigDecimal> loadRollingPredictions(String trainBatchNo, String forecastStartDate, int size) {
+        if (!TextUtils.hasText(trainBatchNo)) return Collections.emptyMap();
+        var query = Wrappers.<ModelTrainBacktestTb>lambdaQuery()
+                .eq(ModelTrainBacktestTb::getTrainBatchNo, trainBatchNo)
+                .isNotNull(ModelTrainBacktestTb::getPredictedValue);
+        if (TextUtils.hasText(forecastStartDate)) {
+            query.lt(ModelTrainBacktestTb::getTrainDate, java.sql.Date.valueOf(forecastStartDate));
+        }
+        query.orderByDesc(ModelTrainBacktestTb::getTrainDate).orderByDesc(ModelTrainBacktestTb::getId)
+                .last("limit " + size);
+        List<ModelTrainBacktestTb> points = new ArrayList<>(trainBacktestMapper.selectList(query));
+        Collections.reverse(points);
+        Map<String, BigDecimal> result = new LinkedHashMap<>();
+        for (ModelTrainBacktestTb point : points) {
+            if (point.getTrainDate() == null) continue;
+            String date = new java.text.SimpleDateFormat("yyyy-MM-dd").format(point.getTrainDate());
+            result.put(date, point.getPredictedValue());
+        }
+        return result;
     }
 
     public PageInfoDTO<ModelForecastRecordTb> listRecords(JsonNode request) {

@@ -311,16 +311,20 @@
             </div>
             <div class="data-summary" v-if="currentResult.future_dates">
               <div class="summary-item" v-if="currentResult.dates">
-                <span class="summary-label">回测数据点</span>
-                <span class="summary-value">{{ currentResult.dates.length }} 天</span>
+                <span class="summary-label">历史预测区间</span>
+                <span class="summary-value">{{ currentResult.dates[0] }} 至 {{ currentResult.dates[currentResult.dates.length - 1] }}</span>
               </div>
               <div class="summary-item">
-                <span class="summary-label">未来预测</span>
+                <span class="summary-label">历史预测数量</span>
+                <span class="summary-value">{{ currentResult.dates?.length || 0 }} 天</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">未来预测数量</span>
                 <span class="summary-value">{{ currentResult.future_dates.length }} 天</span>
               </div>
               <div class="summary-item">
-                <span class="summary-label">预测起始</span>
-                <span class="summary-value">{{ currentResult.future_dates[0] }}</span>
+                <span class="summary-label">未来预测区间</span>
+                <span class="summary-value">{{ currentResult.future_dates[0] }} 至 {{ currentResult.future_dates[currentResult.future_dates.length - 1] }}</span>
               </div>
             </div>
           </section>
@@ -1053,24 +1057,42 @@ const initMonthlyChart = (data: any) => {
   // === 下图：历史与未来预测 ===
   if (chartRefBottom.value && data.future_dates) {
     const chartB = echarts.init(chartRefBottom.value)
-    // 使用完整历史数据 + 未来预测
-    const histDates = data.history_dates || data.dates
-    const histValues = data.history_values || data.actual
-    const allDates = [...histDates, ...(data.future_dates || [])]
-    const histPadding = (data.future_dates || []).map(() => null)
-    const futurePadding = histDates.map(() => null)
-    const futurePred = [...futurePadding, ...(data.future_predicted || [])]
+    // 与模型预测结果页保持一致：历史实际、历史滚动预测、未来预测三段展示。
+    const histDates = data.dates || data.history_dates || []
+    const histActual = data.actual || data.history_values || []
+    const histPredicted = data.predicted || []
+    const futureDates = data.future_dates || []
+    const futureValues = data.future_predicted || []
+    const allDates = [...histDates, ...futureDates]
+    const futureNulls = futureDates.map(() => null)
+    const historyNulls = histDates.map(() => null)
+    const bridge = allDates.map(() => null as number | null)
+    if (histDates.length && futureDates.length && histPredicted.length) {
+      bridge[histDates.length - 1] = histPredicted[histPredicted.length - 1]
+      bridge[histDates.length] = futureValues[0]
+    }
 
     const seriesB: any[] = [
       {
-        name: '历史数据', type: 'line', smooth: true,
-        data: [...histValues, ...histPadding],
-        itemStyle: { color: '#10b981' }, lineStyle: { width: 1.2 }, symbol: 'none', connectNulls: false
+        name: '历史实际值', type: 'line', smooth: 0.25,
+        data: [...histActual, ...futureNulls],
+        itemStyle: { color: '#3b82f6' }, lineStyle: { width: 2.5, color: '#3b82f6' }, symbol: 'none', connectNulls: false
       },
       {
-        name: '未来预测', type: 'line', smooth: true,
-        data: futurePred,
-        itemStyle: { color: '#f59e0b' }, lineStyle: { width: 2 }, symbol: 'circle', symbolSize: 3, connectNulls: false
+        name: '历史预测值', type: 'line', smooth: 0.25,
+        data: [...histPredicted, ...futureNulls],
+        itemStyle: { color: '#f59e0b' }, lineStyle: { width: 2, color: '#f59e0b', type: 'dashed' }, symbol: 'circle', symbolSize: 4, connectNulls: false
+      },
+      {
+        name: '预测衔接', type: 'line', smooth: false, silent: true,
+        data: bridge, tooltip: { show: false },
+        lineStyle: { width: 2, color: '#94a3b8', type: 'dashed' }, symbol: 'none', connectNulls: false
+      },
+      {
+        name: '未来预测值', type: 'line', smooth: 0.25,
+        data: [...historyNulls, ...futureValues],
+        itemStyle: { color: '#10b981' }, lineStyle: { width: 2.5, color: '#10b981' }, symbol: 'none', connectNulls: false,
+        areaStyle: { color: 'rgba(16,185,129,0.10)' }
       }
     ]
     // 预测起点标记
@@ -1079,11 +1101,11 @@ const initMonthlyChart = (data: any) => {
       silent: true,
       data: [{ xAxis: data.future_dates?.[0], lineStyle: { color: '#f59e0b', type: 'dashed', width: 1.5 }, label: { show: true, formatter: '预测起点', color: '#f59e0b', fontSize: 10, position: 'start' } }]
     }
-    seriesB[1].markLine = markLine
+    seriesB[3].markLine = markLine
 
     chartB.setOption({
       tooltip: { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#E2E8F0', textStyle: { color: '#0F172A', fontSize: 12 } },
-      legend: { bottom: 0, textStyle: { color: '#64748B', fontSize: 11 }, data: ['历史数据', '未来预测'] },
+      legend: { bottom: 0, textStyle: { color: '#64748B', fontSize: 11 }, data: ['历史实际值', '历史预测值', '未来预测值'] },
       grid: { left: '2%', right: '4%', top: '3%', bottom: 50, containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: allDates, axisLine: { lineStyle: { color: '#E2E8F0' } }, axisLabel: { color: '#94A3B8', fontSize: 10, rotate: 30 } },
       yAxis: { type: 'value', name: '万m³', splitLine: { lineStyle: { color: '#F1F5F9' } }, axisLabel: { color: '#94A3B8', fontSize: 11 } },

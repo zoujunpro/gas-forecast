@@ -12,6 +12,12 @@ export interface PageData<T = Record<string, any>> {
   total: number
 }
 
+export interface ResponseData<T = any> {
+  data?: T
+  code?: string
+  message?: string
+}
+
 export const postJson = async <T = any>(url: string, data: Record<string, any> = {}) => {
   const response = await fetch(url, {
     method: 'POST',
@@ -19,6 +25,11 @@ export const postJson = async <T = any>(url: string, data: Record<string, any> =
     body: JSON.stringify(data)
   })
   return readResponseResult<T>(response)
+}
+
+export const getJson = async <T = any>(url: string): Promise<ResponseData<T>> => {
+  const response = await fetch(url)
+  return readResponseResult<ResponseData<T>>(response)
 }
 
 export const listPage = async <T = Record<string, any>>(endpoint: string, params: PageRequest): Promise<PageData<T>> => {
