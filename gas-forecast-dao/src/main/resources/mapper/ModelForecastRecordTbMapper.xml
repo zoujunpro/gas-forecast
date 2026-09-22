@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper">
+
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelForecastRecordTb">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="forecastId" column="forecast_id" jdbcType="BIGINT"/>
+            <result property="forecastBatchNo" column="forecast_batch_no" jdbcType="VARCHAR"/>
+            <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
+            <result property="scopeType" column="scope_type" jdbcType="VARCHAR"/>
+            <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
+            <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
+            <result property="industryCode" column="industry_code" jdbcType="VARCHAR"/>
+            <result property="industryName" column="industry_name" jdbcType="VARCHAR"/>
+            <result property="customerCode" column="customer_code" jdbcType="VARCHAR"/>
+            <result property="customerName" column="customer_name" jdbcType="VARCHAR"/>
+            <result property="forecastStartDate" column="forecast_start_date" jdbcType="VARCHAR"/>
+            <result property="forecastHorizon" column="forecast_horizon" jdbcType="INTEGER"/>
+            <result property="forecastFrequency" column="forecast_frequency" jdbcType="VARCHAR"/>
+            <result property="autoForecast" column="auto_forecast" jdbcType="TINYINT"/>
+            <result property="featureSnapshot" column="feature_snapshot" jdbcType="LONGVARBINARY"/>
+            <result property="requestParam" column="request_param" jdbcType="LONGVARBINARY"/>
+            <result property="responseParam" column="response_param" jdbcType="LONGVARBINARY"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="remark" column="remark" jdbcType="VARCHAR"/>
+            <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
+            <result property="createdByName" column="created_by_name" jdbcType="VARCHAR"/>
+            <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+            <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+            <result property="forecastEndTime" column="forecast_end_time" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,forecast_id,forecast_batch_no,agent_code,scope_type,region_code,
+        region_name,industry_code,industry_name,customer_code,customer_name,
+        forecast_start_date,forecast_horizon,forecast_frequency,auto_forecast,
+        status,
+        remark,created_by,created_by_name,created_at,updated_at,
+        feature_snapshot,request_param,response_param,forecast_end_time
+    </sql>
+</mapper>

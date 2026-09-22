@@ -3,15 +3,7 @@ package com.gas.forecast.business.service;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gas.forecast.dao.domain.BaseCustomerTb;
-import com.gas.forecast.dao.domain.BaseIndustryTb;
-import com.gas.forecast.dao.domain.BaseRegionTb;
-import com.gas.forecast.dao.domain.ModelForecastBatchTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
-import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
-import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
-import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
-import com.gas.forecast.dao.mapper.ModelForecastBatchTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -35,24 +27,12 @@ public class XqycForecastPersistenceService {
 
     private static final DateTimeFormatter BATCH_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
-    private final BaseRegionTbMapper baseRegionTbMapper;
-    private final BaseCustomerTbMapper baseCustomerTbMapper;
-    private final BaseIndustryTbMapper baseIndustryTbMapper;
-    private final ModelForecastBatchTbMapper modelForecastBatchTbMapper;
     private final ModelForecastResultTbMapper modelForecastResultTbMapper;
     private final ObjectMapper objectMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
-    public XqycForecastPersistenceService(BaseRegionTbMapper baseRegionTbMapper,
-                                          BaseCustomerTbMapper baseCustomerTbMapper,
-                                          BaseIndustryTbMapper baseIndustryTbMapper,
-                                          ModelForecastBatchTbMapper modelForecastBatchTbMapper,
-                                          ModelForecastResultTbMapper modelForecastResultTbMapper,
+    public XqycForecastPersistenceService(ModelForecastResultTbMapper modelForecastResultTbMapper,
                                           ObjectMapper objectMapper) {
-        this.baseRegionTbMapper = baseRegionTbMapper;
-        this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.baseIndustryTbMapper = baseIndustryTbMapper;
-        this.modelForecastBatchTbMapper = modelForecastBatchTbMapper;
         this.modelForecastResultTbMapper = modelForecastResultTbMapper;
         this.objectMapper = objectMapper;
     }
@@ -70,6 +50,8 @@ public class XqycForecastPersistenceService {
             return filename == null ? "" : filename;
         }));
         String requestedProvince = request.path("province").asText(request.path("region_name").asText(""));
+        String requestedIndustry = normalizeIndustry(request.path("industry").asText(request.path("industry_name").asText("")));
+        String requestedCustomer = request.path("customer").asText(request.path("customer_name").asText(""));
         AtomicInteger sequence = new AtomicInteger(1);
         int batchCount = 0;
         int resultCount = 0;
@@ -84,19 +66,24 @@ public class XqycForecastPersistenceService {
             FileParts fileParts = parseName(resource.getFilename());
             String industry = result.path("industry").asText(fileParts.industry() == null ? "全部行业" : fileParts.industry());
             String customer = result.path("customer").asText(fileParts.customer() == null ? "全部客户" : fileParts.customer());
+            if (!requestedIndustry.isBlank() && !"全部行业".equals(requestedIndustry)
+                    && !requestedIndustry.equals(normalizeIndustry(industry))) {
+                continue;
+            }
+            if (!requestedCustomer.isBlank() && !"全部客户".equals(requestedCustomer)
+                    && !requestedCustomer.equals(customer)) {
+                continue;
+            }
             List<ModelForecastResultTb> points = buildResultRecords(agentId, batchTime, sequence.get(), result);
             if (points.isEmpty()) {
                 continue;
             }
 
-            ModelForecastBatchTb batch = buildBatch(agentId, request, result, province, industry, customer,
-                    batchTime, sequence.get(), points);
+            String batchNo = batchNo(agentId, batchTime, sequence.get());
             if (replaceBatch) {
-                deleteForecastResults(batch.getBatchNo());
-                deleteForecastBatch(batch.getBatchNo());
+                deleteForecastResults(batchNo);
             }
-            modelForecastBatchTbMapper.insert(batch);
-            deleteForecastResults(batch.getBatchNo());
+            deleteForecastResults(batchNo);
             points.forEach(modelForecastResultTbMapper::insert);
             batchCount++;
             resultCount += points.size();
@@ -105,79 +92,9 @@ public class XqycForecastPersistenceService {
         return new PersistSummary(batchCount, resultCount);
     }
 
-    private ModelForecastBatchTb buildBatch(String agentId,
-                                            JsonNode request,
-                                            JsonNode result,
-                                            String province,
-                                            String industry,
-                                            String customer,
-                                            String batchTime,
-                                            int sequence,
-                                            List<ModelForecastResultTb> points) throws Exception {
-        ModelForecastBatchTb batch = new ModelForecastBatchTb();
-        batch.setBatchNo(batchNo(agentId, batchTime, sequence));
-        batch.setTrainBatchNo("XQTRAIN-" + agentId + "-" + province);
-        batch.setAgentCode(agentId);
-        batch.setRegionCode(resolveRegionCode(province));
-        batch.setRegionName(province);
-        batch.setCustomerCode("全部客户".equals(customer) ? "ALL" : resolveCustomerCode(customer, province));
-        batch.setCustomerName(customer);
-        batch.setIndustryCode("全部行业".equals(industry) ? "ALL" : resolveIndustryCode(industry));
-        batch.setIndustryName(industry);
-        batch.setForecastHorizon(points.size());
-        batch.setForecastStartDate(Integer.parseInt(points.getFirst().getForecastDate().replace("-", "")));
-        batch.setForecastEndDate(points.getLast().getForecastDate());
-        batch.setStatus("SUCCESS");
-        batch.setRequestJson(buildRequestJson(request, result, industry, customer));
-        batch.setCreatedBy("system");
-        batch.setCreatedByName("系统");
-        return batch;
-    }
-
     private void deleteForecastResults(String batchNo) {
         modelForecastResultTbMapper.delete(Wrappers.<ModelForecastResultTb>lambdaQuery()
                 .eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
-    }
-
-    private void deleteForecastBatch(String batchNo) {
-        modelForecastBatchTbMapper.delete(Wrappers.<ModelForecastBatchTb>lambdaQuery()
-                .eq(ModelForecastBatchTb::getBatchNo, batchNo));
-    }
-
-    private String resolveRegionCode(String province) {
-        BaseRegionTb region = baseRegionTbMapper.selectOne(Wrappers.<BaseRegionTb>lambdaQuery()
-                .eq(BaseRegionTb::getRegionName, province)
-                .last("limit 1"));
-        return region == null ? province : region.getRegionCode();
-    }
-
-    private String resolveCustomerCode(String customer, String province) {
-        BaseCustomerTb customerTb = baseCustomerTbMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery()
-                .eq(BaseCustomerTb::getCustomerName, customer)
-                .eq(BaseCustomerTb::getRegionName, province)
-                .last("limit 1"));
-        return customerTb == null ? customer : customerTb.getCustomerCode();
-    }
-
-    private String resolveIndustryCode(String industry) {
-        String normalizedIndustry = normalizeIndustry(industry);
-        BaseIndustryTb industryTb = baseIndustryTbMapper.selectOne(Wrappers.<BaseIndustryTb>lambdaQuery()
-                .eq(BaseIndustryTb::getIndustryName, normalizedIndustry)
-                .last("limit 1"));
-        return industryTb == null ? normalizedIndustry : industryTb.getIndustryCode();
-    }
-
-    private String buildRequestJson(JsonNode request, JsonNode result, String industry, String customer) throws Exception {
-        JsonNode copy = request.deepCopy();
-        if (copy instanceof com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
-            objectNode.put("model_name", result.path("model_name").asText(""));
-            objectNode.put("industry", industry);
-            objectNode.put("customer", customer);
-            if (result.has("metrics")) {
-                objectNode.set("metrics", result.get("metrics"));
-            }
-        }
-        return objectMapper.writeValueAsString(copy);
     }
 
     private List<ModelForecastResultTb> buildResultRecords(String agentId,

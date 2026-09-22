@@ -16,7 +16,7 @@ def test_contract_rejects_handler_with_missing_method() -> None:
     handler = SimpleNamespace(
         info=ModelInfo(
             agent_code="short-term",
-            model_code="MODEL_BROKEN_V1",
+            model_code="MODEL_BROKEN_V1.0",
             model_version="1.0.0",
             model_name="不完整模型",
             description="用于验证契约校验。",
@@ -27,14 +27,14 @@ def test_contract_rejects_handler_with_missing_method() -> None:
     )
 
     with pytest.raises(ModelContractError, match="predict"):
-        validate_model_handler("MODEL_BROKEN_V1", handler)
+        validate_model_handler("MODEL_BROKEN_V1.0", handler)
 
 
 def test_contract_rejects_non_semantic_version() -> None:
     handler = SimpleNamespace(
         info=ModelInfo(
             agent_code="short-term",
-            model_code="MODEL_BROKEN_V1",
+            model_code="MODEL_BROKEN_V1.0",
             model_version="V1",
             model_name="版本错误模型",
             description="用于验证版本校验。",
@@ -46,7 +46,7 @@ def test_contract_rejects_non_semantic_version() -> None:
     )
 
     with pytest.raises(ModelContractError, match="x.y.z"):
-        validate_model_handler("MODEL_BROKEN_V1", handler)
+        validate_model_handler("MODEL_BROKEN_V1.0", handler)
 
 
 def test_contract_rejects_model_code_without_version() -> None:
@@ -64,5 +64,5 @@ def test_contract_rejects_model_code_without_version() -> None:
         predict=lambda context: None,
     )
 
-    with pytest.raises(ModelContractError, match="MODEL_<业务名>_V<主版本>"):
+    with pytest.raises(ModelContractError, match="<模型名称>_V<主版本>.<次版本>"):
         validate_model_handler("BROKEN_MODEL", handler)

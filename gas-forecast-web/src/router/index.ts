@@ -36,14 +36,6 @@ const routeMeta = (path: string) => {
     return { agentId: agentMatch[1] }
   }
 
-  const configMatch = path.match(/^\/config\/(train|forecast)\/([^/]+)$/)
-  if (configMatch) {
-    return {
-      configType: configMatch[1],
-      agentId: configMatch[2]
-    }
-  }
-
   return {}
 }
 

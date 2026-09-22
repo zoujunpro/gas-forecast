@@ -49,7 +49,6 @@ update data_monthly_sales_tb t join tmp_region_code_fix m on t.region_code = m.o
 update data_daily_sales_tb t join tmp_region_code_fix m on t.region_code = m.old_code set t.region_code = m.new_code;
 update model_train_feature_data_tb t join tmp_region_code_fix m on t.region_code = m.old_code set t.region_code = m.new_code;
 update model_train_batch_tb t join tmp_region_code_fix m on t.region_code = m.old_code set t.region_code = m.new_code;
-update model_forecast_batch_tb t join tmp_region_code_fix m on t.region_code = m.old_code set t.region_code = m.new_code;
 update model_config_scope_tb t
 join tmp_region_code_fix m on t.region_code = m.old_code collate utf8mb4_0900_ai_ci
 set t.region_code = m.new_code;

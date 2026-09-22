@@ -12,6 +12,7 @@ public record ModelTrainConfigRespDTO(
         String trainCode,
         String trainName,
         String agentCode,
+        Long modelId,
         String modelCode,
         String modelName,
         String regionCode,

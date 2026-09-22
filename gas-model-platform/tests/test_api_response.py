@@ -35,7 +35,7 @@ def test_request_validation_error_uses_unified_response() -> None:
         [
             {
                 "type": "missing",
-                "loc": ("body", "modelCode"),
+                "loc": ("body", "model_code"),
                 "msg": "Field required",
                 "input": {},
             }

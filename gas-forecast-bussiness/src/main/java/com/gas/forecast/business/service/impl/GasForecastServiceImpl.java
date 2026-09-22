@@ -14,16 +14,16 @@ import com.gas.forecast.business.dto.resp.ModelRankRespDTO;
 import com.gas.forecast.business.service.GasForecastService;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.BaseRegionTb;
-import com.gas.forecast.dao.domain.ModelForecastBatchTb;
+import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
-import com.gas.forecast.dao.domain.ModelTrainBatchTb;
+import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
-import com.gas.forecast.dao.mapper.ModelForecastBatchTbMapper;
+import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainBatchTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -35,7 +35,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,21 +45,21 @@ public class GasForecastServiceImpl implements GasForecastService {
 
     private final BaseRegionTbMapper baseRegionTbMapper;
     private final BaseCustomerTbMapper baseCustomerTbMapper;
-    private final ModelTrainBatchTbMapper modelTrainBatchTbMapper;
-    private final ModelForecastBatchTbMapper modelForecastBatchTbMapper;
+    private final ModelTrainRecordTbMapper modelTrainDetailTbMapper;
+    private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper modelForecastResultTbMapper;
     private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
 
     public GasForecastServiceImpl(BaseRegionTbMapper baseRegionTbMapper,
                                   BaseCustomerTbMapper baseCustomerTbMapper,
-                                  ModelTrainBatchTbMapper modelTrainBatchTbMapper,
-                                  ModelForecastBatchTbMapper modelForecastBatchTbMapper,
+                                  ModelTrainRecordTbMapper modelTrainDetailTbMapper,
+                                  ModelForecastRecordTbMapper forecastRecordMapper,
                                   ModelForecastResultTbMapper modelForecastResultTbMapper,
                                   ModelTrainBacktestTbMapper modelTrainBacktestTbMapper) {
         this.baseRegionTbMapper = baseRegionTbMapper;
         this.baseCustomerTbMapper = baseCustomerTbMapper;
-        this.modelTrainBatchTbMapper = modelTrainBatchTbMapper;
-        this.modelForecastBatchTbMapper = modelForecastBatchTbMapper;
+        this.modelTrainDetailTbMapper = modelTrainDetailTbMapper;
+        this.forecastRecordMapper = forecastRecordMapper;
         this.modelForecastResultTbMapper = modelForecastResultTbMapper;
         this.modelTrainBacktestTbMapper = modelTrainBacktestTbMapper;
     }
@@ -74,10 +73,10 @@ public class GasForecastServiceImpl implements GasForecastService {
 
     @Override
     public List<ForecastSummaryRespDTO> listSummaries() {
-        Map<String, ModelTrainBatchTb> trainBatchByRegionCode = selectWinnerTrainBatches().stream()
-                .collect(Collectors.toMap(ModelTrainBatchTb::getRegionCode, item -> item, (left, right) -> left));
+        Map<String, ModelTrainRecordTb> trainDetailByRegionCode = selectWinnerTrainDetails().stream()
+                .collect(Collectors.toMap(ModelTrainRecordTb::getRegionCode, item -> item, (left, right) -> left));
         return selectProvinceRegions().stream()
-                .map(province -> toSummaryDTO(trainBatchByRegionCode.get(province.getRegionCode()), province))
+                .map(province -> toSummaryDTO(trainDetailByRegionCode.get(province.getRegionCode()), province))
                 .toList();
     }
 
@@ -115,15 +114,15 @@ public class GasForecastServiceImpl implements GasForecastService {
     }
 
     private ForecastDashboardRespDTO dashboard(BaseRegionTb province, String customerCode) {
-        ModelTrainBatchTb trainBatch = selectWinnerTrainBatch(province);
+        ModelTrainRecordTb trainDetail = selectWinnerTrainDetail(province);
         List<ModelForecastResultTb> forecastResults = selectForecastResults(province);
         return new ForecastDashboardRespDTO(
-                toSummaryDTO(trainBatch, province),
+                toSummaryDTO(trainDetail, province),
                 forecastResults.stream().map(this::toForecastPointRespDTO).toList(),
                 toCustomerForecastPointRespDTOs(province, customerCode, forecastResults),
                 selectModelRanks(province).stream().map(this::toModelRankRespDTO).toList(),
                 List.<FeatureRankRespDTO>of(),
-                selectBacktestDetails(province).stream().map(this::toBacktestDetailRespDTO).toList()
+                selectBacktestDetails(province, trainDetail).stream().map(this::toBacktestDetailRespDTO).toList()
         );
     }
 
@@ -159,54 +158,61 @@ public class GasForecastServiceImpl implements GasForecastService {
         return baseCustomerTbMapper.selectList(wrapper);
     }
 
-    private List<ModelTrainBatchTb> selectWinnerTrainBatches() {
-        return modelTrainBatchTbMapper.selectList(Wrappers.<ModelTrainBatchTb>lambdaQuery()
-                .likeRight(ModelTrainBatchTb::getBatchNo, "WGTRAIN-"));
+    private List<ModelTrainRecordTb> selectWinnerTrainDetails() {
+        return modelTrainDetailTbMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-")
+                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId));
     }
 
-    private ModelTrainBatchTb selectWinnerTrainBatch(BaseRegionTb province) {
-        return modelTrainBatchTbMapper.selectOne(Wrappers.<ModelTrainBatchTb>lambdaQuery()
-                .eq(ModelTrainBatchTb::getRegionCode, province.getRegionCode())
-                .likeRight(ModelTrainBatchTb::getBatchNo, "WGTRAIN-")
+    private ModelTrainRecordTb selectWinnerTrainDetail(BaseRegionTb province) {
+        return modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                .eq(ModelTrainRecordTb::getRegionCode, province.getRegionCode())
+                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-")
+                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId)
                 .last("limit 1"));
     }
 
-    private List<ModelTrainBatchTb> selectModelRanks(BaseRegionTb province) {
-        return modelTrainBatchTbMapper.selectList(Wrappers.<ModelTrainBatchTb>lambdaQuery()
-                .eq(ModelTrainBatchTb::getRegionCode, province.getRegionCode())
-                .likeRight(ModelTrainBatchTb::getBatchNo, "WGTRAIN-")
+    private List<ModelTrainRecordTb> selectModelRanks(BaseRegionTb province) {
+        return modelTrainDetailTbMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                .eq(ModelTrainRecordTb::getRegionCode, province.getRegionCode())
+                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-")
+                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId)
                 .last("limit 10"));
     }
 
-    private List<ModelTrainBacktestTb> selectBacktestDetails(BaseRegionTb province) {
+    private List<ModelTrainBacktestTb> selectBacktestDetails(BaseRegionTb province, ModelTrainRecordTb trainDetail) {
+        String batchNo = trainDetail != null && StringUtils.hasText(trainDetail.getBatchNo())
+                ? trainDetail.getBatchNo()
+                : "WGTRAIN-" + province.getRegionName();
         return modelTrainBacktestTbMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
-                .eq(ModelTrainBacktestTb::getTrainBatchNo, "WGTRAIN-" + province.getRegionName())
+                .eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo)
                 .orderByAsc(ModelTrainBacktestTb::getTrainDate));
     }
 
     private List<ModelForecastResultTb> selectForecastResults(BaseRegionTb province) {
-        Optional<ModelForecastBatchTb> batch = modelForecastBatchTbMapper.selectList(Wrappers.<ModelForecastBatchTb>lambdaQuery()
-                        .eq(ModelForecastBatchTb::getRegionCode, province.getRegionCode())
-                        .orderByDesc(ModelForecastBatchTb::getCreatedAt)
-                        .orderByDesc(ModelForecastBatchTb::getId))
-                .stream()
-                .findFirst();
-        if (batch.isEmpty()) {
-            return List.of();
-        }
+        ModelForecastRecordTb latest = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .eq(ModelForecastRecordTb::getRegionCode, province.getRegionCode())
+                .eq(ModelForecastRecordTb::getStatus, 2)
+                .orderByDesc(ModelForecastRecordTb::getCreatedAt)
+                .orderByDesc(ModelForecastRecordTb::getId)
+                .last("limit 1"));
+        String batchNo = latest == null ? "WGFC-" + province.getRegionName() : latest.getForecastBatchNo();
         return modelForecastResultTbMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
-                .eq(ModelForecastResultTb::getForecastBatchNo, batch.get().getBatchNo())
+                .eq(ModelForecastResultTb::getForecastBatchNo, batchNo)
                 .orderByAsc(ModelForecastResultTb::getForecastDate));
     }
 
-    private ForecastSummaryRespDTO toSummaryDTO(ModelTrainBatchTb trainBatch, BaseRegionTb province) {
+    private ForecastSummaryRespDTO toSummaryDTO(ModelTrainRecordTb trainDetail, BaseRegionTb province) {
         return new ForecastSummaryRespDTO(
                 province.getRegionCode(),
                 province.getRegionName(),
-                trainBatch != null && StringUtils.hasText(trainBatch.getBestModel()) ? trainBatch.getBestModel() : "-",
-                trainBatch == null ? null : trainBatch.getMape(),
-                trainBatch == null ? null : trainBatch.getWmape(),
-                trainBatch == null ? null : trainBatch.getRmse(),
+                trainDetail != null && StringUtils.hasText(trainDetail.getBestModel()) ? trainDetail.getBestModel() : "-",
+                trainDetail == null ? null : trainDetail.getMape(),
+                trainDetail == null ? null : trainDetail.getWmape(),
+                trainDetail == null ? null : trainDetail.getRmse(),
                 null,
                 15,
                 "用户提供未来气象",
@@ -270,7 +276,7 @@ public class GasForecastServiceImpl implements GasForecastService {
         );
     }
 
-    private ModelRankRespDTO toModelRankRespDTO(ModelTrainBatchTb rank) {
+    private ModelRankRespDTO toModelRankRespDTO(ModelTrainRecordTb rank) {
         return new ModelRankRespDTO(
                 StringUtils.hasText(rank.getBestModel()) ? rank.getBestModel() : "winner-agent",
                 "ml",

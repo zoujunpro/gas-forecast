@@ -86,7 +86,7 @@ defineOptions({
 
 .app-table :deep(.mono-text) {
   color: #475467;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-family: inherit;
   font-size: 12px;
 }
 </style>

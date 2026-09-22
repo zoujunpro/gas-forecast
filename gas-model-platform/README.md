@@ -178,18 +178,20 @@ class ModelHandler(Protocol):
 除冬季保供智能体外，模型统一采用“业务模型名 + 版本号”命名，并保持一个
 模型对应一个 Python 实现文件，例如：
 
-- `MODEL_JIANGSHU_DIANLI_V1` → `short_agent/model_jiangshu_dianli_v1.py`
+- `MODEL_JIANGSHU_DIANLI_V1.0` → `short_agent/model_jiangshu_dianli_v1.py`
 
 冬季保供智能体算法较多，继续保留独立目录和多文件结构。
 
 ## 按模型编号路由
 
-Java 侧传 `modelCode` 和对应业务参数。注册中心以 `modelCode` 为唯一键，
+Java 侧传 `model_code` 和对应业务参数。注册中心以 `model_code` 为唯一键，
 直接映射到相应的模型处理器：
 
 ```json
 {
-  "modelCode": "WINTER_MODEL_001",
+  "model_code": "WINTER_MODEL_V1.0",
+  "train_batch_no": "WGTRAIN-xxxxxxxxxxxxxxxx",
+  "forecast_batch_no": "WGFC-xxxxxxxxxxxxxxxx",
   "forecast_horizon": 15,
   "forecast_unit": "tenday",
   "dataset": []
@@ -200,16 +202,24 @@ Java 侧传 `modelCode` 和对应业务参数。注册中心以 `modelCode` 为�
 各城市、候选模型、产物路径及训练配置等差异由具体处理器读取
 `region_code`、`region_name` 和 `params` 后自行处理。
 
-冬季保供对外统一使用 `modelCode=WINTER_MODEL_001`。内部当前包含 30 个
+冬季保供对外统一使用 `model_code=WINTER_MODEL_V1.0`。内部当前包含 30 个
 候选模型；训练时在独立评估回测季上按 MAPE、WMAPE 排序，同等精度优先
 选择结构更简单的单模型。训练响应中的 `selected_model_name`、
 `selection_reason`、`metrics`、`selected_model_params` 和
 `candidate_evaluations` 可直接用于 Java 侧记录最佳模型及选择依据。
 
-短期日级预测使用 `modelCode=MODEL_JIANGSHU_DIANLI_V1`，迁移自江苏发电预测智能体，
-采用 Prophet 基线与 LightGBM 残差融合模型。训练数据需要日级日期和目标值，
-标准字段为 `date`、`y`；预测时传入从训练结束日期次日起连续的未来日期，
-并使用 `forecast_unit=day`。
+短期日级预测使用 `model_code=MODEL_JIANGSHU_DIANLI_V1.0`，迁移自江苏发电预测智能体，
+采用 Prophet 基线与 LightGBM 残差融合模型。训练数据必须保留原始江苏发电
+数据中的全部字段：日级日期使用 `date`，对外目标值统一使用 `gas_sales`；
+江苏模型适配层会将其转换为原算法使用的 `y`，不改变算法业务逻辑。其余任意名称的
+数值字段都会自动作为 LightGBM 外部特征。模型产物会记录本批次实际使用的
+外部字段；预测时必须传入从训练结束日期次日起连续的未来日期，以及该批次
+训练时使用的全部未来外部特征，并使用
+`forecast_unit=day`。Postman 预测示例中的外部特征值仅用于演示请求结构，
+生产调用必须替换为对应预测日期的天气预报和能源价格数据。
+模型选参及最后120天留出集评估继续保持原脚本逻辑；评估完成后，平台使用
+最优参数和全部可建模历史数据重新拟合生产模型并保存，训练响应中的指标仍
+来自留出集，不会被全量重训结果覆盖。
 
 当前迁移内容：
 
@@ -222,11 +232,12 @@ Java 侧传 `modelCode` 和对应业务参数。注册中心以 `modelCode` 为�
 
 ```json
 {
-  "modelCode": "WINTER_MODEL_001",
+  "model_code": "WINTER_MODEL_V1.0",
   "region_name": "河北",
   "forecast_horizon": 15,
   "forecast_unit": "tenday",
   "train_batch_no": "WGTRAIN-xxxxxxxxxxxxxxxx",
+  "forecast_batch_no": "WGFC-xxxxxxxxxxxxxxxx",
   "dataset": [
     {
       "date": "2026-11-01",

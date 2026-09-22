@@ -3,20 +3,16 @@ use gas_data;
 alter table base_region_tb modify id bigint not null auto_increment;
 alter table base_customer_tb modify id bigint not null auto_increment;
 alter table base_industry_tb modify id bigint not null auto_increment;
-alter table model_forecast_batch_tb modify id bigint unsigned not null auto_increment;
 alter table model_forecast_result_tb modify id bigint unsigned not null auto_increment;
 alter table model_predict_winter_result_tb modify id bigint unsigned not null auto_increment;
 alter table model_train_backtest_tb modify id bigint unsigned not null auto_increment;
 alter table model_train_batch_tb modify id bigint unsigned not null auto_increment;
 alter table base_region_tb modify region_code varchar(64) not null;
-alter table model_forecast_batch_tb modify region_code varchar(64) not null;
 alter table model_train_batch_tb modify region_code varchar(64) not null;
 alter table model_predict_winter_result_tb modify province_code varchar(64) not null;
 
 delete from model_train_backtest_tb where train_batch_no like 'WGTRAIN-%';
 delete from model_forecast_result_tb where forecast_batch_no like 'WGFC-%';
-delete from model_predict_winter_result_tb where batch_id in (select id from model_forecast_batch_tb where batch_no like 'WGFC-%');
-delete from model_forecast_batch_tb where batch_no like 'WGFC-%';
 delete from model_train_batch_tb where batch_no like 'WGTRAIN-%';
 delete from data_winter_tenday_dataset_tb where region_code in ('40358db7-c191-526b-ab53-77a9ea7c0c7d', 'b774086f-36f2-5ce7-b12a-d4c6ea3d7950', '294aa550-2b81-50ff-9b51-62d49506d693', 'c87e0076-8dd2-5529-a791-a4e6cead38f1', '3f040f4b-9c2a-53a9-a518-b605292612f0', 'f8275a1c-a26f-57c3-91d8-6eb41610369e', 'a35a1225-95bf-5255-aff3-950649a45c9c');
 delete from base_customer_tb where customer_code in (select customer_code collate utf8mb4_0900_ai_ci from gas_customer);
@@ -1978,22 +1974,9 @@ insert into model_train_batch_tb (batch_no, agent_code, region_code, region_name
     ('WGTRAIN-河南', 'winner-agent', 'f8275a1c-a26f-57c3-91d8-6eb41610369e', '河南', 'ALL', '全部客户', 'ALL', '全部行业', '2016-04-01', '2026-06-21', 'SUCCESS', '', null, null, null, null, null, '{"source":"winner-agent"}', '{"createdBy":"邹军"}', 'zoujun', '邹军', now(), now(), now(), now()),
     ('WGTRAIN-陕西', 'winner-agent', 'a35a1225-95bf-5255-aff3-950649a45c9c', '陕西', 'ALL', '全部客户', 'ALL', '全部行业', '2016-04-01', '2026-06-21', 'SUCCESS', '', null, null, null, null, null, '{"source":"winner-agent"}', '{"createdBy":"邹军"}', 'zoujun', '邹军', now(), now(), now(), now());
 
-insert into model_forecast_batch_tb (batch_no, train_batch_no, agent_code, region_code, region_name, customer_code, customer_name, industry_code, industry_name, forecast_horizon, forecast_start_date, forecast_end_date, status, request_json, created_by, created_at, updated_at, created_by_name) values
-    ('WGFC-北京', 'WGTRAIN-北京', 'winner-agent', '40358db7-c191-526b-ab53-77a9ea7c0c7d', '北京', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军'),
-    ('WGFC-天津', 'WGTRAIN-天津', 'winner-agent', 'b774086f-36f2-5ce7-b12a-d4c6ea3d7950', '天津', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军'),
-    ('WGFC-山东', 'WGTRAIN-山东', 'winner-agent', '294aa550-2b81-50ff-9b51-62d49506d693', '山东', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军'),
-    ('WGFC-山西', 'WGTRAIN-山西', 'winner-agent', 'c87e0076-8dd2-5529-a791-a4e6cead38f1', '山西', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军'),
-    ('WGFC-河北', 'WGTRAIN-河北', 'winner-agent', '3f040f4b-9c2a-53a9-a518-b605292612f0', '河北', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军'),
-    ('WGFC-河南', 'WGTRAIN-河南', 'winner-agent', 'f8275a1c-a26f-57c3-91d8-6eb41610369e', '河南', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军'),
-    ('WGFC-陕西', 'WGTRAIN-陕西', 'winner-agent', 'a35a1225-95bf-5255-aff3-950649a45c9c', '陕西', 'ALL', '全部客户', 'ALL', '全部行业', 15, 20261101, '2027-03-21', 'SUCCESS', '{"source":"winner-agent"}', 'zoujun', now(), now(), '邹军');
-
 insert into model_forecast_result_tb (forecast_batch_no, forecast_date, forecast_value)
 select concat('WGFC-', province), date_format(forecast_date, '%Y-%m-%d'), prediction
 from gas_forecast_point;
-insert into model_predict_winter_result_tb (batch_id, province_code, forecast_date, forecast_value)
-select b.id, p.province_code, p.forecast_date, p.prediction
-from gas_forecast_point p
-join model_forecast_batch_tb b on b.batch_no = concat('WGFC-', p.province) collate utf8mb4_0900_ai_ci;
 insert into model_train_backtest_tb (train_batch_no, train_date, actual_value, predicted_value)
 select concat('WGTRAIN-', province), test_date, actual, prediction
 from gas_backtest_detail;

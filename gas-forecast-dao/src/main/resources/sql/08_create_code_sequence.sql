@@ -12,7 +12,10 @@ insert into sys_code_sequence_tb (code_type, current_value) values
     ('IND', 0),
     ('CUS', 0),
     ('FIL', 0),
-    ('MODEL', 0)
+    ('MODEL', 0),
+    ('TRCFG-', 0),
+    ('FCCFG-', 0),
+    ('TRBATCH-', 0)
 on duplicate key update code_type = values(code_type);
 
 alter table data_file_info_tb add column file_code varchar(64) null comment '文件编码' after id;

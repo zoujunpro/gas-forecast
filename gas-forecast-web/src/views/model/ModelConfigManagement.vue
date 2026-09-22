@@ -67,7 +67,7 @@
     <AppDialog v-model="dialogVisible" eyebrow="模型管理" :title="dialogTitle" width="min(960px, calc(100vw - 32px))" align-center>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
         <el-form-item label="模型编码" prop="configCode">
-          <el-input :model-value="form.configCode || '保存后自动生成'" disabled />
+          <el-input v-model="form.configCode" clearable maxlength="64" placeholder="请输入模型编码" />
         </el-form-item>
         <el-form-item label="模型名称" prop="configName">
           <el-input v-model="form.configName" clearable maxlength="128" />
@@ -277,6 +277,7 @@ const featureLoading = ref(false)
 const regionScopeMode = ref<'ALL' | 'CUSTOM'>('ALL')
 
 const formRules: FormRules = {
+  configCode: [{ required: true, message: '请输入模型编码', trigger: 'blur' }],
   configName: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
   agentCode: [{ required: true, message: '请选择所属智能体', trigger: 'change' }],
   sceneCode: [{ required: true, message: '请选择场景', trigger: 'change' }]

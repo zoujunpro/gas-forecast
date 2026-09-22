@@ -13,7 +13,7 @@ from gas_model_platform.schemas.modeling import ModelInfo
 
 
 MODEL_CODE_PATTERN = re.compile(
-    r"^(?:MODEL_[A-Z0-9]+(?:_[A-Z0-9]+)*_V[1-9]\d*|WINTER_MODEL_001)$"
+    r"^(?:MODEL_[A-Z0-9]+(?:_[A-Z0-9]+)*|WINTER_MODEL)_V[1-9]\d*\.\d+$"
 )
 SEMANTIC_VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 REQUIRED_CAPABILITIES = frozenset({"train", "backtest", "predict"})
@@ -36,7 +36,7 @@ def validate_model_handler(model_code: str, handler: Any) -> None:
     if not MODEL_CODE_PATTERN.fullmatch(model_code):
         raise ModelContractError(
             f"model_code 格式不正确: {model_code}; "
-            "普通模型必须使用 MODEL_<业务名>_V<主版本>"
+            "模型必须使用 <模型名称>_V<主版本>.<次版本>"
         )
     if not SEMANTIC_VERSION_PATTERN.fullmatch(info.model_version):
         raise ModelContractError(

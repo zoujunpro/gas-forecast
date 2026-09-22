@@ -141,14 +141,6 @@ insert ignore into sys_permission_tb (id, parent_id, permission_name, path, comp
     (11, 10, '冬季保供预测', '/agent/winter-supply', 'views/agent/AgentDetail.vue', 'MENU', null, null, 11, 0, 1),
     (12, 10, '月度销量预测', '/agent/monthly-sales', 'views/agent/AgentDetail.vue', 'MENU', null, null, 12, 0, 1),
     (13, 10, '短期客户预测', '/agent/short-term', 'views/agent/AgentDetail.vue', 'MENU', null, null, 13, 0, 1),
-    (20, null, '预测配置', '/config/forecast', null, 'MENU', null, 'Operation', 20, 0, 1),
-    (21, 20, '冬季保供预测配置', '/config/forecast/winter-supply', 'views/agent/AgentConfig.vue', 'MENU', null, null, 21, 0, 1),
-    (22, 20, '月度销量预测配置', '/config/forecast/monthly-sales', 'views/agent/AgentConfig.vue', 'MENU', null, null, 22, 0, 1),
-    (23, 20, '短期客户预测配置', '/config/forecast/short-term', 'views/agent/AgentConfig.vue', 'MENU', null, null, 23, 0, 1),
-    (30, null, '训练配置', '/config/train', null, 'MENU', null, 'DocumentChecked', 30, 0, 1),
-    (31, 30, '冬季保供训练配置', '/config/train/winter-supply', 'views/agent/AgentConfig.vue', 'MENU', null, null, 31, 0, 1),
-    (32, 30, '月度销量训练配置', '/config/train/monthly-sales', 'views/agent/AgentConfig.vue', 'MENU', null, null, 32, 0, 1),
-    (33, 30, '短期客户训练配置', '/config/train/short-term', 'views/agent/AgentConfig.vue', 'MENU', null, null, 33, 0, 1),
     (40, null, '后台数据管理', '/data', null, 'MENU', null, 'Grid', 40, 0, 1),
     (41, 40, '区域表管理', '/data/regions', 'views/business/base/BaseRegionManagement.vue', 'MENU', 'base:region:list', null, 41, 0, 1),
     (42, 40, '客户表管理', '/data/customers', 'views/business/base/BaseCustomerManagement.vue', 'MENU', 'base:customer:list', null, 42, 0, 1),
@@ -156,13 +148,13 @@ insert ignore into sys_permission_tb (id, parent_id, permission_name, path, comp
     (49, 40, '原始数据文件管理', '/data/file-info', 'views/business/file/BaseFileInfoManagement.vue', 'MENU', 'data:file-info:list', null, 49, 0, 1),
     (44, 40, '日销量标准数据', '/data/daily-sales', 'views/business/sales/StandardSalesData.vue', 'MENU', 'data:daily-sales:list', null, 44, 0, 1),
     (45, 40, '月销量标准数据', '/data/monthly-sales', 'views/business/sales/StandardSalesData.vue', 'MENU', 'data:monthly-sales:list', null, 45, 0, 1),
-    (46, 40, '预测批次表', '/data/forecast-batches', 'views/common/Placeholder.vue', 'MENU', null, null, 46, 0, 1),
-    (47, 40, '预测结果表', '/data/forecast-results', 'views/common/Placeholder.vue', 'MENU', null, null, 47, 0, 1),
+    (47, 40, '预测结果表', '/data/forecast-results', 'views/model/ForecastDataManagement.vue', 'MENU', null, null, 47, 0, 1),
     (48, 40, '训练批次表', '/data/train-batches', 'views/common/Placeholder.vue', 'MENU', null, null, 48, 0, 1),
     (60, null, '模型管理', '/model', null, 'MENU', null, 'DataAnalysis', 60, 0, 1),
     (61, 60, '模型列表', '/model/list', 'views/model/ModelConfigManagement.vue', 'MENU', 'model:config:list', null, 61, 0, 1),
     (62, 60, '训练数据管理', '/model/train-feature-data', 'views/model/ModelTrainFeatureDataManagement.vue', 'MENU', 'model:train-feature-data:list', null, 62, 0, 1),
     (63, 60, '特征定义管理', '/model/feature-definitions', 'views/model/ModelFeatureDefinitionManagement.vue', 'MENU', 'model:feature-definition:list', null, 63, 0, 1),
+    (65, 60, '预测管理', '/model/forecast-management', 'views/model/ModelForecastManagement.vue', 'MENU', 'model:forecast:list', null, 65, 0, 1),
     (50, null, '系统管理', '/system', null, 'MENU', null, 'Setting', 50, 0, 1),
     (51, 50, '用户管理', '/system/users', 'views/system/SystemUserManagement.vue', 'MENU', 'sys:user:list', null, 51, 0, 1),
     (52, 50, '角色权限', '/system/roles', 'views/system/SystemRoleManagement.vue', 'MENU', 'sys:role:list', null, 52, 0, 1),
@@ -178,12 +170,14 @@ update sys_permission_tb set permission_name = '原始数据文件管理', path 
 update sys_permission_tb set component = 'views/business/sales/StandardSalesData.vue', perms = 'data:daily-sales:list' where id = 44;
 update sys_permission_tb set component = 'views/business/sales/StandardSalesData.vue', perms = 'data:monthly-sales:list' where id = 45;
 update sys_permission_tb set component = 'views/agent/AgentDetail.vue' where id in (11, 12, 13);
-update sys_permission_tb set component = 'views/agent/AgentConfig.vue' where id in (21, 22, 23, 31, 32, 33);
-update sys_permission_tb set component = 'views/common/Placeholder.vue' where id in (46, 47, 48, 55, 56);
+update sys_permission_tb set component = 'views/model/ForecastDataManagement.vue' where id = 47;
+update sys_permission_tb set component = 'views/common/Placeholder.vue' where id in (48, 55, 56);
 update sys_permission_tb set permission_name = '模型管理', path = '/model', component = null, perms = null, icon = 'DataAnalysis', sort_no = 60 where id = 60;
 update sys_permission_tb set permission_name = '模型列表', path = '/model/list', component = 'views/model/ModelConfigManagement.vue', perms = 'model:config:list', sort_no = 61 where id = 61;
 update sys_permission_tb set permission_name = '训练数据管理', path = '/model/train-feature-data', component = 'views/model/ModelTrainFeatureDataManagement.vue', perms = 'model:train-feature-data:list', sort_no = 62 where id = 62;
 update sys_permission_tb set permission_name = '特征定义管理', path = '/model/feature-definitions', component = 'views/model/ModelFeatureDefinitionManagement.vue', perms = 'model:feature-definition:list', sort_no = 63 where id = 63;
+insert ignore into sys_permission_tb (id, parent_id, permission_name, path, component, permission_type, perms, icon, sort_no, hidden, status)
+values (65, 60, '预测管理', '/model/forecast-management', 'views/model/ModelForecastManagement.vue', 'MENU', 'model:forecast:list', null, 65, 0, 1);
 update sys_permission_tb set component = 'views/system/SystemUserManagement.vue', perms = 'sys:user:list' where id = 51;
 update sys_permission_tb set component = 'views/system/SystemRoleManagement.vue', perms = 'sys:role:list' where id = 52;
 update sys_permission_tb set permission_name = '部门管理', path = '/system/departments', component = 'views/system/SystemDepartmentManagement.vue', perms = 'sys:department:list', sort_no = 53 where id = 53;

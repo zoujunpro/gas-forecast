@@ -12,7 +12,7 @@ public class InspectFinalTables {
             printRows(statement, "show columns from base_customer_tb where Field = 'id'");
             printRows(statement, "show columns from base_industry_tb where Field = 'id'");
             printRows(statement, "show columns from model_train_batch_tb where Field = 'id'");
-            printRows(statement, "show columns from model_forecast_batch_tb where Field = 'id'");
+            printRows(statement, "show columns from model_forecast_record_tb where Field = 'id'");
             printRows(statement, "show columns from model_predict_winter_result_tb where Field = 'id'");
             printRows(statement, "show tables like 'gas_%'");
             printRows(statement, "select region_code, region_name, region_type, created_by_name from base_region_tb where remark like 'winner-agent%' order by id limit 12");

@@ -12,7 +12,6 @@ import logging
 from pathlib import Path
 import re
 from typing import Any
-from uuid import uuid4
 
 import joblib
 import numpy as np
@@ -40,7 +39,15 @@ logger = logging.getLogger(__name__)
 
 ALIASES = {
     "ds": ["ds", "date", "日期", "时间", "stat_date", "statDate"],
-    "y": ["y", "power", "power_generation", "generation", "发电", "发电量"],
+    "y": [
+        "y",
+        "gas_sales",
+        "power",
+        "power_generation",
+        "generation",
+        "发电",
+        "发电量",
+    ],
 }
 
 DEFAULT_CANDIDATES = [
@@ -77,6 +84,7 @@ class JiangshuDianliV1Artifact:
     train_end: str
     residual_lower: float
     residual_upper: float
+    external_feature_names: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     model_version: str = "1.0.0"
     artifact_version: str = "1.0"
@@ -102,7 +110,7 @@ def _prophet_class():
         from prophet import Prophet
     except ImportError as exc:
         raise RuntimeError(
-            "MODEL_JIANGSHU_DIANLI_V1 需要安装 prophet 依赖，请重新安装项目依赖"
+            "MODEL_JIANGSHU_DIANLI_V1.0 需要安装 prophet 依赖，请重新安装项目依赖"
         ) from exc
     return Prophet
 
@@ -126,13 +134,16 @@ def prepare_training_data(data: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"短期模型训练数据缺少必要字段: {missing}")
     frame["ds"] = pd.to_datetime(frame["ds"], errors="coerce")
     frame["y"] = pd.to_numeric(frame["y"], errors="coerce")
-    # 与原脚本 load_jiangsu_power_data 保持一致：仅清除无效行，不聚合、
-    # 不重排。数据顺序本身就是后续 shift 和 Walk-Forward 的时间顺序。
-    frame = frame.dropna(subset=["ds", "y"])[["ds", "y"]]
+    # 与原脚本 load_jiangsu_power_data 保持一致：保留 Excel 中除日期和
+    # 目标值之外的全部业务特征，仅清除日期或目标值无效的行。
+    frame = frame.dropna(subset=["ds", "y"])
     return frame.reset_index(drop=True)
 
 
-def prepare_future_data(data: pd.DataFrame) -> pd.DataFrame:
+def prepare_future_data(
+    data: pd.DataFrame,
+    required_external_features: list[str] | None = None,
+) -> pd.DataFrame:
     frame = _rename_columns(data.copy())
     if "ds" not in frame.columns:
         raise ValueError("短期模型预测数据缺少必要字段 date")
@@ -141,7 +152,17 @@ def prepare_future_data(data: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("短期模型预测数据中存在无效日期")
     if frame["ds"].duplicated().any():
         raise ValueError("短期模型预测日期不能重复")
-    return frame[["ds"]].sort_values("ds").reset_index(drop=True)
+    required = list(required_external_features or [])
+    missing = [column for column in required if column not in frame.columns]
+    if missing:
+        raise ValueError(f"短期模型预测数据缺少未来外部特征: {missing}")
+    for column in required:
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    invalid = [column for column in required if frame[column].isna().any()]
+    if invalid:
+        raise ValueError(f"短期模型预测数据的未来外部特征存在空值或非数值: {invalid}")
+    columns = ["ds", *required]
+    return frame[columns].sort_values("ds").reset_index(drop=True)
 
 
 def _calendar_features(frame: pd.DataFrame, start_date: pd.Timestamp) -> pd.DataFrame:
@@ -267,19 +288,27 @@ def predict_with_artifact(
     artifact: JiangshuDianliV1Artifact,
     future_data: pd.DataFrame,
 ) -> list[dict[str, Any]]:
-    future = prepare_future_data(future_data)
+    external_feature_names = list(
+        getattr(artifact, "external_feature_names", []) or []
+    )
+    future = prepare_future_data(future_data, external_feature_names)
     train_end = pd.Timestamp(artifact.train_end)
     if (future["ds"] <= train_end).any():
         raise ValueError("短期模型预测日期必须晚于模型训练结束日期")
     expected = pd.date_range(train_end + pd.Timedelta(days=1), periods=len(future), freq="D")
-    if not future["ds"].reset_index(drop=True).equals(pd.Series(expected)):
+    actual_dates = future["ds"].dt.date.tolist()
+    expected_dates = list(expected.date)
+    if actual_dates != expected_dates:
         raise ValueError("短期模型预测日期必须从训练结束日期次日起按天连续")
 
     history = list(artifact.history_values)
     results: list[dict[str, Any]] = []
     components = _prophet_components(artifact.prophet_model, future["ds"])
     for index, date_value in enumerate(future["ds"]):
-        row = _calendar_features(pd.DataFrame({"ds": [date_value]}), pd.Timestamp(artifact.start_date))
+        row = _calendar_features(
+            future.iloc[[index]].reset_index(drop=True),
+            pd.Timestamp(artifact.start_date),
+        )
         row = _add_climatology(
             row,
             artifact.climatology_mean,
@@ -340,7 +369,7 @@ def _original_walk_forward_splits(
         start += 90
     if not splits:
         raise ValueError(
-            "MODEL_JIANGSHU_DIANLI_V1 至少需要 880 条连续日级数据，"
+            "MODEL_JIANGSHU_DIANLI_V1.0 至少需要 880 条连续日级数据，"
             "才能执行原始 730/120/90 Walk-Forward 逻辑"
         )
     return splits
@@ -370,10 +399,6 @@ def _fit_and_predict_original_split(
     train: pd.DataFrame,
     validation: pd.DataFrame,
     params: dict[str, Any],
-    prophet_cache: dict[
-        tuple[int, float], tuple[pd.DataFrame, pd.DataFrame]
-    ] | None = None,
-    cache_key: tuple[int, float] | None = None,
 ) -> tuple[np.ndarray, dict[str, float]]:
     train_with_climate, means, stds, fallback_mean, fallback_std = (
         _features_with_climatology(train, train)
@@ -385,17 +410,11 @@ def _fit_and_predict_original_split(
         fallback_mean,
         fallback_std,
     )
-    cached = prophet_cache.get(cache_key) if prophet_cache is not None and cache_key else None
-    if cached is None:
-        prophet_model = _fit_prophet(train_with_climate[["ds", "y"]], params["cps"])
-        prophet_train = _prophet_components(prophet_model, train_with_climate["ds"])
-        prophet_validation = _prophet_components(
-            prophet_model, validation_with_climate["ds"]
-        )
-        if prophet_cache is not None and cache_key is not None:
-            prophet_cache[cache_key] = (prophet_train, prophet_validation)
-    else:
-        prophet_train, prophet_validation = cached
+    prophet_model = _fit_prophet(train_with_climate[["ds", "y"]], params["cps"])
+    prophet_train = _prophet_components(prophet_model, train_with_climate["ds"])
+    prophet_validation = _prophet_components(
+        prophet_model, validation_with_climate["ds"]
+    )
     train_features = _merge_prophet_features(train_with_climate, prophet_train)
     validation_features = _merge_prophet_features(
         validation_with_climate, prophet_validation
@@ -458,6 +477,9 @@ def _run_original_baseline(clean: pd.DataFrame) -> dict[str, float]:
 def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
     """原样执行演示脚本的训练、进化搜索和最终测试逻辑。"""
     clean = prepare_training_data(data)
+    external_feature_names = [
+        column for column in clean.columns if column not in {"ds", "y"}
+    ]
     baseline_metrics = _run_original_baseline(clean)
     start_date = clean["ds"].min()
     full_features = _calendar_features(clean, start_date)
@@ -470,7 +492,6 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
     best_params: dict[str, Any] | None = None
     best_score = float("inf")
     best_fold_metrics: list[dict[str, Any]] = []
-    prophet_cache: dict[tuple[int, float], tuple[pd.DataFrame, pd.DataFrame]] = {}
     total_candidates = 4 * len(population)
     completed_candidates = 0
 
@@ -499,8 +520,6 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
                         train,
                         validation,
                         params,
-                        prophet_cache=prophet_cache,
-                        cache_key=(fold_index, round(float(params["cps"]), 12)),
                     )
                 except Exception:
                     logger.exception(
@@ -550,7 +569,7 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
             completed_candidates += 1
             logger.info(
                 "江苏电力模型训练进度 generation=%d/4 candidate=%d/%d "
-                "completed=%d/%d folds=%d rmse=%.6f prophet_fit_count=%d",
+                "completed=%d/%d folds=%d rmse=%.6f",
                 generation + 1,
                 candidate_index + 1,
                 len(population),
@@ -558,7 +577,6 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
                 total_candidates,
                 len(fold_rmses),
                 average_rmse,
-                len(prophet_cache),
             )
             if average_rmse < best_score:
                 best_score = average_rmse
@@ -631,17 +649,31 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
     }
 
     cutoff = full_features["ds"].max() - pd.Timedelta(days=119)
-    train_final = full_features[full_features["ds"] < cutoff].copy().reset_index(drop=True)
-    test_final = full_features[full_features["ds"] >= cutoff].copy().reset_index(drop=True)
-    train_final, means, stds, fallback_mean, fallback_std = (
-        _features_with_climatology(train_final, train_final)
+    train_final = (
+        full_features[full_features["ds"] < cutoff].copy().reset_index(drop=True)
     )
+    test_final = (
+        full_features[full_features["ds"] >= cutoff].copy().reset_index(drop=True)
+    )
+    (
+        train_final,
+        evaluation_means,
+        evaluation_stds,
+        evaluation_fallback_mean,
+        evaluation_fallback_std,
+    ) = _features_with_climatology(train_final, train_final)
     test_final = _add_climatology(
-        test_final, means, stds, fallback_mean, fallback_std
+        test_final,
+        evaluation_means,
+        evaluation_stds,
+        evaluation_fallback_mean,
+        evaluation_fallback_std,
     )
-    prophet_model = _fit_prophet(train_final[["ds", "y"]], best_params["cps"])
-    prophet_train = _prophet_components(prophet_model, train_final["ds"])
-    prophet_test = _prophet_components(prophet_model, test_final["ds"])
+    evaluation_prophet_model = _fit_prophet(
+        train_final[["ds", "y"]], best_params["cps"]
+    )
+    prophet_train = _prophet_components(evaluation_prophet_model, train_final["ds"])
+    prophet_test = _prophet_components(evaluation_prophet_model, test_final["ds"])
     train_matrix = _merge_prophet_features(train_final, prophet_train)
     test_matrix = _merge_prophet_features(test_final, prophet_test)
     feature_names = [
@@ -653,22 +685,50 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
         train_final["y"].astype(float).reset_index(drop=True)
         - prophet_train["yhat"].astype(float).reset_index(drop=True)
     )
-    residual_model = _new_residual_model(best_params)
-    residual_model.fit(train_matrix[feature_names], residual_target)
+    evaluation_residual_model = _new_residual_model(best_params)
+    evaluation_residual_model.fit(train_matrix[feature_names], residual_target)
     predicted = (
         prophet_test["yhat"].astype(float).to_numpy()
-        + residual_model.predict(test_matrix[feature_names])
+        + evaluation_residual_model.predict(test_matrix[feature_names])
     )
     actual = test_final["y"].to_numpy(dtype=float)
     final_metrics = calculate_metrics(actual, predicted)
     logger.info(
-        "江苏电力模型训练完成 candidates=%d folds=%d prophet_fit_count=%d rmse=%.6f",
+        "江苏电力模型训练完成 candidates=%d folds=%d rmse=%.6f",
         completed_candidates,
         len(splits),
-        len(prophet_cache) + 2,
         final_metrics["rmse"],
     )
     residuals = actual - predicted
+
+    # 评估指标仍严格来自原脚本最后120天留出集。选参和评估完成后，再使用
+    # 全部可用于建模的历史数据拟合生产模型，避免线上预测丢失最近120天信息。
+    production_features, means, stds, fallback_mean, fallback_std = (
+        _features_with_climatology(full_features, full_features)
+    )
+    prophet_model = _fit_prophet(
+        production_features[["ds", "y"]], best_params["cps"]
+    )
+    production_prophet = _prophet_components(
+        prophet_model, production_features["ds"]
+    )
+    production_matrix = _merge_prophet_features(
+        production_features, production_prophet
+    )
+    feature_names = [
+        column
+        for column in production_matrix.columns
+        if column not in {"ds", "y", "doy"}
+    ]
+    production_residual_target = (
+        production_features["y"].astype(float).reset_index(drop=True)
+        - production_prophet["yhat"].astype(float).reset_index(drop=True)
+    )
+    residual_model = _new_residual_model(best_params)
+    residual_model.fit(
+        production_matrix[feature_names], production_residual_target
+    )
+
     artifact = JiangshuDianliV1Artifact(
         prophet_model=prophet_model,
         residual_model=residual_model,
@@ -681,14 +741,21 @@ def train_model(data: pd.DataFrame) -> JiangshuDianliV1TrainingOutput:
         climatology_fallback_mean=fallback_mean,
         climatology_fallback_std=fallback_std,
         start_date=str(start_date.date()),
-        train_start=str(train_final["ds"].min().date()),
+        train_start=str(production_features["ds"].min().date()),
         train_end=str(clean["ds"].max().date()),
         residual_lower=float(np.quantile(residuals, 0.05)),
         residual_upper=float(np.quantile(residuals, 0.95)),
+        external_feature_names=external_feature_names,
         metadata={
             "selection_method": "four_generation_walk_forward_rmse",
             "security_checks": security_checks,
             "walk_forward_rmse": best_score,
+            "external_feature_names": external_feature_names,
+            "production_refit_full_history": True,
+            "production_training_rows": len(production_features),
+            "evaluation_train_end": str(train_final["ds"].max().date()),
+            "evaluation_test_start": str(test_final["ds"].min().date()),
+            "evaluation_test_end": str(test_final["ds"].max().date()),
         },
     )
     fold_label = f"{test_final['ds'].min().date()}~{test_final['ds'].max().date()}"
@@ -723,7 +790,7 @@ class ModelJiangshuDianliV1Handler:
 
     info = ModelInfo(
         agent_code="short-term",
-        model_code="MODEL_JIANGSHU_DIANLI_V1",
+        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
         model_version="1.0.0",
         model_name="江苏电力日级预测模型 V1",
         description="Prophet 与 LightGBM 残差融合，使用 Walk-Forward 回测选择参数。",
@@ -793,6 +860,7 @@ class ModelJiangshuDianliV1Handler:
                 "security_checks": output.security_checks,
                 "walk_forward_fold_count": output.n_folds,
                 "walk_forward_rmse": output.walk_forward_rmse,
+                "external_feature_names": output.artifact.external_feature_names,
             },
         )
 
@@ -823,18 +891,23 @@ class ModelJiangshuDianliV1Handler:
 
     def predict(self, context: ModelContext) -> PredictResult:
         if context.forecast_unit != "day":
-            raise ValueError("MODEL_JIANGSHU_DIANLI_V1 的 forecast_unit 必须是 day")
+            raise ValueError("MODEL_JIANGSHU_DIANLI_V1.0 的 forecast_unit 必须是 day")
         if not context.train_batch_no:
             raise ValueError("江苏电力模型预测需要提供顶层 train_batch_no")
+        if not context.forecast_batch_no:
+            raise ValueError("江苏电力模型预测需要提供顶层 forecast_batch_no")
         if len(context.dataset) < context.forecast_horizon:
             raise ValueError("江苏电力模型预测日期条数不能少于 forecast_horizon")
         artifact = self._load_artifact(self._artifact_path(context.train_batch_no))
-        future = prepare_future_data(pd.DataFrame(context.dataset)).iloc[:context.forecast_horizon]
+        future = prepare_future_data(
+            pd.DataFrame(context.dataset),
+            artifact.external_feature_names,
+        ).iloc[:context.forecast_horizon]
         forecast = predict_with_artifact(artifact, future)
         return PredictResult(
             agent_code=self.info.agent_code,
             model_code=self.info.model_code,
-            forecast_batch_no=f"JIANGSHUFC-{uuid4().hex[:16]}",
+            forecast_batch_no=context.forecast_batch_no,
             points=[
                 ForecastPoint(
                     forecast_date=pd.Timestamp(row["date"]).date(),
@@ -879,7 +952,7 @@ class ModelJiangshuDianliV1Handler:
             raise FileNotFoundError(f"训练批次对应的模型产物不存在: {path}")
         artifact = joblib.load(path)
         if not isinstance(artifact, JiangshuDianliV1Artifact):
-            raise TypeError("文件不是 MODEL_JIANGSHU_DIANLI_V1 的模型产物")
+            raise TypeError("文件不是 MODEL_JIANGSHU_DIANLI_V1.0 的模型产物")
         if artifact.artifact_version != "1.0":
             raise ValueError(f"不支持的江苏电力模型产物版本: {artifact.artifact_version}")
         return artifact

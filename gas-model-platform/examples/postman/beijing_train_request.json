@@ -1,5 +1,5 @@
 {
-  "modelCode": "WINTER_MODEL_001",
+  "model_code": "WINTER_MODEL_V1.0",
   "train_batch_no": "WGTRAIN-请替换为Java生成的训练批次号",
   "dataset": [
     {

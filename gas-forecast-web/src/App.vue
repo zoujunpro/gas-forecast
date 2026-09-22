@@ -163,11 +163,23 @@ watch(
   box-sizing: border-box;
 }
 
+html,
+body,
+#app {
+  font-family: var(--app-font-family);
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--app-bg);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }
 
 .el-table {

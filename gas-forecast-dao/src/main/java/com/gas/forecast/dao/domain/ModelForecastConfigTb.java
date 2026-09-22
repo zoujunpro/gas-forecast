@@ -7,7 +7,7 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 智能体预测配置表
+ * 模型预测配置表
  * @TableName model_forecast_config_tb
  */
 @TableName(value ="model_forecast_config_tb")
@@ -19,15 +19,8 @@ public class ModelForecastConfigTb {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 配置编码
-     */
-    private String configCode;
-
-    /**
-     * 配置名称
-     */
-    private String configName;
+    /** 预测名称 */
+    private String forecastName;
 
     /**
      * 智能体编码
@@ -80,7 +73,7 @@ public class ModelForecastConfigTb {
     private Integer forecastHorizon;
 
     /**
-     * 预测频率：DAILY/WEEKLY/MONTHLY/SEASONAL/MANUAL
+     * 时间颗粒度：DAILY/TENDAY/MONTHLY
      */
     private String forecastFrequency;
 
@@ -93,21 +86,6 @@ public class ModelForecastConfigTb {
      * 关联训练配置
      */
     private String trainConfigCode;
-
-    /**
-     * 指定模型批次，为空则取最新成功模型
-     */
-    private String modelBatchNo;
-
-    /**
-     * 气象来源
-     */
-    private String weatherSource;
-
-    /**
-     * 业务预测参数
-     */
-    private Object bizConfigJson;
 
     /**
      * 是否启用

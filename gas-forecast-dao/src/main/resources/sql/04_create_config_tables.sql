@@ -64,7 +64,7 @@ create table if not exists model_train_config_tb (
     key idx_train_config_scope (agent_code, scope_type, region_code, customer_code, industry_code)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci comment='智能体训练配置表';
 
-create table if not exists model_forecast_config_tb (
+create table if not exists model_forecast_record_tb (
     id bigint unsigned not null auto_increment comment '主键ID',
     config_code varchar(64) not null comment '配置编码',
     config_name varchar(128) not null comment '配置名称',
@@ -76,11 +76,11 @@ create table if not exists model_forecast_config_tb (
     industry_name varchar(64) default null comment '行业名称',
     customer_code varchar(64) default null comment '客户编号',
     customer_name varchar(128) default null comment '客户名称',
-    forecast_start_date varchar(32) default null comment '预测开始日期',
-    forecast_horizon int default null comment '预测步长',
-    forecast_frequency varchar(32) default null comment '预测频率：DAILY/WEEKLY/MONTHLY/SEASONAL/MANUAL',
-    auto_forecast tinyint not null default 1 comment '是否自动预测',
-    train_config_code varchar(64) default null comment '关联训练配置',
+    forecast_start_date varchar(16) not null comment '预测开始日期，yyyy-MM-dd',
+    forecast_horizon int not null comment '预测步长',
+    forecast_frequency varchar(16) not null comment '时间颗粒度：DAILY/TENDAY/MONTHLY',
+    auto_forecast tinyint not null default 0 comment '是否自动预测',
+    train_config_code varchar(64) not null comment '关联模型训练配置编码',
     model_batch_no varchar(64) default null comment '指定模型批次，为空则取最新成功模型',
     weather_source varchar(64) default null comment '气象来源',
     biz_config_json json default null comment '业务预测参数',

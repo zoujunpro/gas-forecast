@@ -5,7 +5,6 @@ import re
 from datetime import date
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 import pandas as pd
 
@@ -53,7 +52,7 @@ class WinterAgentV1Handler:
 
     info = ModelInfo(
         agent_code="winter-supply",
-        model_code="WINTER_MODEL_001",
+        model_code="WINTER_MODEL_V1.0",
         model_version=MODEL_VERSION,
         model_name="冬季保供模型总入口",
         description="训练多类冬供旬预测候选模型，滚动回测后自动选择最佳模型。",
@@ -182,6 +181,8 @@ class WinterAgentV1Handler:
                 "params.train_batch_no 不再支持，请传顶层 train_batch_no"
             )
         train_batch_no = context.train_batch_no
+        if not context.forecast_batch_no:
+            raise ValueError("冬季保供预测需要提供顶层 forecast_batch_no")
         if not context.dataset:
             raise ValueError("冬季保供预测需要在 dataset 中提供未来旬日期和气象数据")
         if context.forecast_unit != "tenday":
@@ -218,7 +219,7 @@ class WinterAgentV1Handler:
         return PredictResult(
             agent_code=context.agent_code,
             model_code=self.info.model_code,
-            forecast_batch_no=f"WGFC-{uuid4().hex[:16]}",
+            forecast_batch_no=context.forecast_batch_no,
             points=self._window(points, context.forecast_horizon),
             metadata={
                 "province": artifact.province,
@@ -293,9 +294,8 @@ class WinterAgentV1Handler:
         return PredictResult(
             agent_code=context.agent_code,
             model_code=self.info.model_code,
-            forecast_batch_no=f"WGFC-{result.province}",
+            forecast_batch_no=context.forecast_batch_no,
             points=self._window(points, context.forecast_horizon),
-            metrics=self._metrics(result.metrics),
             metadata=self._stored_metadata(result, context),
         )
 

@@ -13,7 +13,7 @@
               <span class="section-badge">01</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">数据选择</h2>
+                  <h2 class="section-title"><el-icon><DataAnalysis /></el-icon>数据选择</h2>
                   <p class="section-hint">配置数据来源与筛选条件</p>
                 </div>
                 <button class="refresh-result-btn" :disabled="loadingResult" @click="refreshLatestResult">
@@ -53,7 +53,7 @@
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">行业选择</h2>
+                <h2 class="section-title"><el-icon><Grid /></el-icon>行业选择</h2>
                 <p class="section-hint">选择行业查看预测结果</p>
               </div>
             </div>
@@ -82,29 +82,33 @@
             <div class="section-head">
               <span class="section-badge">03</span>
               <div>
-                <h2 class="section-title">推荐模型</h2>
+                <h2 class="section-title"><el-icon><Cpu /></el-icon>推荐模型</h2>
                 <p class="section-hint">基于回测精度自动推荐最优模型</p>
               </div>
             </div>
             <div class="model-info-card">
               <div class="model-info-header">
-                <div class="model-info-name">{{ currentResult.model_name }}</div>
+                <div class="model-info-name"><el-icon><MagicStick /></el-icon>{{ currentResult.model_name }}</div>
                 <div class="model-info-tag">最佳模型</div>
               </div>
               <div class="metrics-grid">
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><TrendCharts /></el-icon>
                   <span class="metric-label">MAPE</span>
                   <span class="metric-value" :class="mapeClass(currentResult.metrics.mape)">{{ currentResult.metrics.mape }}%</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><DataLine /></el-icon>
                   <span class="metric-label">MAE</span>
                   <span class="metric-value">{{ currentResult.metrics.mae }}</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><Histogram /></el-icon>
                   <span class="metric-label">RMSE</span>
                   <span class="metric-value">{{ currentResult.metrics.rmse }}</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><Finished /></el-icon>
                   <span class="metric-label">R²</span>
                   <span class="metric-value">{{ currentResult.metrics.r2 ?? '-' }}</span>
                 </div>
@@ -118,7 +122,7 @@
               <span class="section-badge">04</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">可视化输出</h2>
+                  <h2 class="section-title"><el-icon><PieChart /></el-icon>可视化输出</h2>
                   <p class="section-hint">实际值 vs 预测值对比</p>
                 </div>
                 <div class="chart-toggle">
@@ -167,7 +171,7 @@
               <span class="section-badge">01</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">区域选择</h2>
+                  <h2 class="section-title"><el-icon><Location /></el-icon>区域选择</h2>
                   <p class="section-hint">选择省份查看短期预测结果</p>
                 </div>
                 <button class="refresh-result-btn" :disabled="loadingResult" @click="refreshLatestResult">
@@ -192,7 +196,7 @@
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">行业选择</h2>
+                <h2 class="section-title"><el-icon><Grid /></el-icon>行业选择</h2>
                 <p class="section-hint">选择行业查看短期预测结果</p>
               </div>
             </div>
@@ -221,7 +225,7 @@
             <div class="section-head">
               <span class="section-badge">03</span>
               <div>
-                <h2 class="section-title">客户选择</h2>
+                <h2 class="section-title"><el-icon><User /></el-icon>客户选择</h2>
                 <p class="section-hint">选择具体客户查看预测（可选）</p>
               </div>
             </div>
@@ -244,29 +248,33 @@
             <div class="section-head">
               <span class="section-badge">{{ stCustomers.length > 0 ? '04' : '03' }}</span>
               <div>
-                <h2 class="section-title">推荐模型</h2>
+                <h2 class="section-title"><el-icon><Cpu /></el-icon>推荐模型</h2>
                 <p class="section-hint">基于回测精度自动推荐最优模型</p>
               </div>
             </div>
             <div class="model-info-card">
               <div class="model-info-header">
-                <div class="model-info-name">{{ currentResult.model_name }}</div>
+                <div class="model-info-name"><el-icon><MagicStick /></el-icon>{{ currentResult.model_name }}</div>
                 <div class="model-info-tag">最佳模型</div>
               </div>
               <div class="metrics-grid">
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><TrendCharts /></el-icon>
                   <span class="metric-label">MAPE</span>
                   <span class="metric-value" :class="mapeClass(currentResult.metrics.mape)">{{ currentResult.metrics.mape }}%</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><DataLine /></el-icon>
                   <span class="metric-label">MAE</span>
                   <span class="metric-value">{{ currentResult.metrics.mae }}</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><Histogram /></el-icon>
                   <span class="metric-label">RMSE</span>
                   <span class="metric-value">{{ currentResult.metrics.rmse }}</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><Finished /></el-icon>
                   <span class="metric-label">R²</span>
                   <span class="metric-value">{{ currentResult.metrics.r2 ?? '-' }}</span>
                 </div>
@@ -280,7 +288,7 @@
               <span class="section-badge">{{ stCustomers.length > 0 ? '05' : '04' }}</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">可视化输出</h2>
+                  <h2 class="section-title"><el-icon><PieChart /></el-icon>可视化输出</h2>
                   <p class="section-hint">实际值 vs 预测值对比</p>
                 </div>
                 <div class="chart-toggle">
@@ -329,7 +337,7 @@
               <span class="section-badge">01</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">区域选择</h2>
+                  <h2 class="section-title"><el-icon><Location /></el-icon>区域选择</h2>
                   <p class="section-hint">选择省份查看冬供预测结果</p>
                 </div>
                 <button class="refresh-result-btn" :disabled="loadingResult" @click="refreshLatestResult">
@@ -355,32 +363,36 @@
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">推荐模型</h2>
+                <h2 class="section-title"><el-icon><Cpu /></el-icon>推荐模型</h2>
                 <p class="section-hint">基于回测精度自动推荐最优模型</p>
               </div>
             </div>
             <div class="model-info-card">
               <div class="model-info-header">
                 <div>
-                  <div class="model-info-name">{{ currentResult.model_name }}</div>
+                  <div class="model-info-name"><el-icon><MagicStick /></el-icon>{{ currentResult.model_name }}</div>
                   <div class="model-info-desc" v-if="currentResult.formula">{{ currentResult.formula }}</div>
                 </div>
                 <div class="model-info-tag">最佳模型</div>
               </div>
               <div class="metrics-grid">
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><TrendCharts /></el-icon>
                   <span class="metric-label">MAPE</span>
                   <span class="metric-value" :class="mapeClass(currentResult.metrics.mape)">{{ currentResult.metrics.mape }}%</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><Finished /></el-icon>
                   <span class="metric-label">R²</span>
                   <span class="metric-value">{{ currentResult.metrics.r2 ?? '-' }}</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><Histogram /></el-icon>
                   <span class="metric-label">RMSE</span>
                   <span class="metric-value">{{ currentResult.metrics.rmse }}</span>
                 </div>
                 <div class="metric-item">
+                  <el-icon class="metric-icon"><DataLine /></el-icon>
                   <span class="metric-label">MAE</span>
                   <span class="metric-value">{{ currentResult.metrics.mae }}</span>
                 </div>
@@ -394,7 +406,7 @@
               <span class="section-badge">03</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">可视化输出</h2>
+                  <h2 class="section-title"><el-icon><PieChart /></el-icon>可视化输出</h2>
                   <p class="section-hint">实际值 vs 预测值对比（旬度）</p>
                 </div>
                 <div class="chart-toggle">
@@ -442,7 +454,7 @@
             <div class="section-head">
               <span class="section-badge">01</span>
               <div>
-                <h2 class="section-title">数据选择</h2>
+                <h2 class="section-title"><el-icon><DataAnalysis /></el-icon>数据选择</h2>
                 <p class="section-hint">配置数据来源与筛选条件</p>
               </div>
             </div>
@@ -476,7 +488,7 @@
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">模型选择</h2>
+                <h2 class="section-title"><el-icon><Cpu /></el-icon>模型选择</h2>
                 <p class="section-hint">选择算法并调整参数</p>
               </div>
             </div>
@@ -505,7 +517,7 @@
             <div class="section-head">
               <span class="section-badge">03</span>
               <div>
-                <h2 class="section-title">运行模型</h2>
+                <h2 class="section-title"><el-icon><VideoPlay /></el-icon>运行模型</h2>
                 <p class="section-hint">启动预测流程</p>
               </div>
             </div>
@@ -531,14 +543,17 @@
               </div>
               <div v-if="modelResult" class="result-cards">
                 <div class="result-card">
+                  <el-icon class="result-icon"><TrendCharts /></el-icon>
                   <span class="result-label">{{ totalLabel }}</span>
                   <span class="result-value">{{ modelResult.total_volume }}<small> 万m³</small></span>
                 </div>
                 <div class="result-card">
+                  <el-icon class="result-icon"><DataLine /></el-icon>
                   <span class="result-label">MAE</span>
                   <span class="result-value">{{ modelResult.model_metrics?.mae || '-' }}</span>
                 </div>
                 <div class="result-card">
+                  <el-icon class="result-icon"><Finished /></el-icon>
                   <span class="result-label">R²</span>
                   <span class="result-value">{{ modelResult.model_metrics?.r2 || '-' }}</span>
                 </div>
@@ -552,7 +567,7 @@
               <span class="section-badge">04</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">可视化输出</h2>
+                  <h2 class="section-title"><el-icon><PieChart /></el-icon>可视化输出</h2>
                   <p class="section-hint">预测结果趋势图</p>
                 </div>
                 <div class="chart-toggle">
@@ -624,6 +639,7 @@ import { ref, reactive, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import * as echarts from 'echarts'
 import { marked } from 'marked'
+import { Cpu, DataAnalysis, DataLine, Finished, Grid, Histogram, Location, MagicStick, PieChart, TrendCharts, User, VideoPlay } from '@element-plus/icons-vue'
 import type { ChatMessage } from '@/types'
 
 const renderMarkdown = (source: string): string => marked(source, { async: false })
@@ -1453,8 +1469,42 @@ watch(chartType, () => {
   justify-content: center;
   flex-shrink: 0;
 }
-.section-title { font-size: 17px; font-weight: 700; color: #0F172A; letter-spacing: -0.02em; margin-bottom: 2px; }
-.section-hint { font-size: 12px; color: #94A3B8; }
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: 0;
+  margin-bottom: 3px;
+}
+.section-title .el-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #E0F2FE;
+  color: #0284C7;
+  font-size: 17px;
+  flex: 0 0 auto;
+}
+.section-block:nth-of-type(4n + 1) .section-title .el-icon {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+.section-block:nth-of-type(4n + 2) .section-title .el-icon {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+.section-block:nth-of-type(4n + 3) .section-title .el-icon {
+  background: #FEF3C7;
+  color: #D97706;
+}
+.section-block:nth-of-type(4n) .section-title .el-icon {
+  background: #F3E8FF;
+  color: #7C3AED;
+}
+.section-hint { font-size: 12px; color: #94A3B8; font-weight: 500; }
 .refresh-result-btn {
   display: inline-flex;
   align-items: center;
@@ -1616,8 +1666,25 @@ watch(chartType, () => {
   align-items: center;
   margin-bottom: 16px;
 }
-.model-info-name { font-size: 16px; font-weight: 700; color: #0F172A; }
-.model-info-desc { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+.model-info-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: 0;
+}
+.model-info-name .el-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #E0F2FE, #DCFCE7);
+  color: #0284C7;
+  font-size: 17px;
+  flex: 0 0 auto;
+}
+.model-info-desc { font-size: 13px; color: #64748B; margin-top: 6px; font-weight: 500; }
 .model-info-tag {
   padding: 4px 12px;
   background: linear-gradient(135deg, #0EA5E9, #0284C7);
@@ -1635,14 +1702,38 @@ watch(chartType, () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px;
+  gap: 6px;
+  padding: 14px 12px 16px;
   background: white;
   border-radius: 10px;
   border: 1px solid #F1F5F9;
 }
-.metric-label { font-size: 11px; color: #94A3B8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.metric-value { font-size: 20px; font-weight: 700; color: #0F172A; }
+.metric-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #F0F9FF;
+  color: #0284C7;
+  font-size: 17px;
+}
+.metric-item:nth-child(1) .metric-icon {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+.metric-item:nth-child(2) .metric-icon {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+.metric-item:nth-child(3) .metric-icon {
+  background: #FEF3C7;
+  color: #D97706;
+}
+.metric-item:nth-child(4) .metric-icon {
+  background: #F3E8FF;
+  color: #7C3AED;
+}
+.metric-label { font-size: 12px; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0; }
+.metric-value { font-size: 24px; font-weight: 800; color: #0F172A; line-height: 1.1; }
 .metric-value.metric-good { color: #10B981; }
 .metric-value.metric-ok { color: #F59E0B; }
 .metric-value.metric-bad { color: #EF4444; }
@@ -1706,9 +1797,30 @@ watch(chartType, () => {
 .tracker-text { font-size: 13px; font-weight: 500; }
 
 .result-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 500px; }
-.result-card { padding: 16px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
-.result-label { font-size: 11px; color: #0EA5E9; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-.result-value { font-size: 22px; font-weight: 700; color: #0F172A; letter-spacing: -0.02em; }
+.result-card { padding: 16px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.result-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: white;
+  color: #0284C7;
+  font-size: 17px;
+  box-shadow: 0 1px 2px rgba(14,165,233,0.12);
+}
+.result-card:nth-child(1) .result-icon {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+.result-card:nth-child(2) .result-icon {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+.result-card:nth-child(3) .result-icon {
+  background: #F3E8FF;
+  color: #7C3AED;
+}
+.result-label { font-size: 12px; color: #0284C7; font-weight: 700; text-transform: uppercase; letter-spacing: 0; }
+.result-value { font-size: 25px; font-weight: 800; color: #0F172A; letter-spacing: 0; line-height: 1.1; }
 .result-value small { font-size: 12px; font-weight: 500; color: #94A3B8; }
 
 /* 图表 */

@@ -4,18 +4,18 @@
 
 ## 1. 基本原则
 
-1. 一个对外 `modelCode` 只对应一个 Handler。
+1. 一个对外 `model_code` 只对应一个 Handler。
 2. 除冬季智能体外，一个模型、一个版本、一个 Python 实现文件。
 3. 原模型迁移时必须保持业务算法不变；接口适配、产物保存和日志属于框架层。
 4. 所有模型必须提供训练、回测、预测三个能力，并返回平台统一对象。
-5. Java 或前端不接触模型文件路径，只保存并回传 `modelCode + train_batch_no`。
+5. Java 或前端不接触模型文件路径，只保存并回传 `model_code + train_batch_no`。
 
 ## 2. 命名和目录
 
 普通模型统一使用：
 
 ```text
-modelCode: MODEL_<业务名称>_V<主版本>
+model_code: MODEL_<业务名称>_V<主版本>.<次版本>
 文件名:    model_<业务名称小写>_v<主版本>.py
 类名:      Model<业务名称驼峰>V<主版本>Handler
 ```
@@ -23,7 +23,7 @@ modelCode: MODEL_<业务名称>_V<主版本>
 示例：
 
 ```text
-MODEL_JIANGSHU_DIANLI_V1
+MODEL_JIANGSHU_DIANLI_V1.0
 models/short_agent/model_jiangshu_dianli_v1.py
 ModelJiangshuDianliV1Handler
 ```
@@ -32,7 +32,7 @@ ModelJiangshuDianliV1Handler
 
 冬季智能体是唯一允许保留多文件 `engine/` 结构的现有例外。分类目录为
 `winter_agent`，V1模型包为 `winter_agent/winter_agent_v1`，对外编号为
-`WINTER_MODEL_001`。
+`WINTER_MODEL_V1.0`。
 如果增加新的 `agent_code` 分类，还必须同步扩展 `schemas/modeling.py` 中的
 `AgentCode`，不能由单个模型私自定义。
 
@@ -57,13 +57,24 @@ class ExampleHandler:
 
 | 字段 | 用途 | 规则 |
 |---|---|---|
-| `modelCode` | 唯一模型路由键 | 必填 |
+| `model_code` | 唯一模型路由键 | 必填 |
 | `train_batch_no` | 训练产物批次 | 训练、预测必填，禁止放入 `params` |
+| `forecast_batch_no` | 本次预测任务批次 | 预测必填，由调用方生成，响应原样返回 |
 | `forecast_horizon` | 预测期数 | 预测必填 |
 | `forecast_unit` | `day`、`tenday`、`month` | 必须与模型一致 |
 | `region_code/region_name` | 地区维度 | 仅业务需要时校验 |
 | `dataset` | 训练或预测数据 | 使用 JSON 记录数组 |
 | `params` | 模型专属可选参数 | 不得放公共字段或文件路径 |
+
+训练 `dataset` 中日期字段统一使用 `date`，目标值字段统一使用 `gas_sales`。
+模型原算法使用其他内部字段名（例如 `y`）时，由 Handler 边界适配层完成转换，
+不得因此修改原模型的核心算法逻辑。
+
+训练与预测数据行使用固定实体：
+
+- `TrainDatasetRow`：固定包含 `date`、`gas_sales`，其余同级字段为模型动态特征。
+- `PredictDatasetRow`：固定包含 `date`，其余同级字段为模型未来动态特征；不要求提供 `gas_sales`。
+- 动态特征保持扁平结构，不再额外包装为 `features` 对象。
 
 模型可以在边界层接受字段别名，但进入算法前必须转换成模型内部唯一的标准字段。字段是否必填、单位、频率和缺失值规则必须写入模型文档并由代码校验。
 
@@ -88,7 +99,9 @@ class ExampleHandler:
 
 ### 预测
 
-必须返回 `PredictResult`。预测点统一使用 `forecast_date`、`prediction`、`lower_value`、`upper_value`。
+必须返回 `PredictResult`。顶层统一返回调用方传入的 `forecast_batch_no`；预测点统一使用
+`forecast_date`、`prediction`、`lower_value`、`upper_value`。预测阶段没有真实值，
+因此不得返回 MAPE、WMAPE、sMAPE、RMSE、MAE、R2 等评估指标。
 
 所有HTTP接口继续由平台包装为：
 
@@ -111,7 +124,7 @@ class ExampleHandler:
 3. 产物必须记录 `model_version` 和 `artifact_version`。
 4. 加载时校验产物类型和版本。
 5. 训练响应返回产物 SHA-256，不返回服务器文件路径。
-6. 预测通过 `train_batch_no` 定位产物，`modelCode` 只负责选择处理器并校验产物类型。
+6. 预测通过 `train_batch_no` 定位产物，`model_code` 只负责选择处理器并校验产物类型。
 
 
 ## 7. 迁移要求
@@ -137,7 +150,7 @@ class ExampleHandler:
 
 ```python
 MODEL_REGISTRY = {
-    "MODEL_EXAMPLE_V1": ModelExampleV1Handler(),
+    "MODEL_EXAMPLE_V1.0": ModelExampleV1Handler(),
 }
 ```
 

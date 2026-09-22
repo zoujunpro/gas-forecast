@@ -52,7 +52,7 @@ def list_models() -> ApiResponse[list[ModelInfo]]:
 
 @router.post("/train", response_model=ApiResponse[TrainResult])
 def train(request: TrainRequest) -> ApiResponse[TrainResult]:
-    """按 modelCode 找到模型处理器并执行训练。"""
+    """按 model_code 找到模型处理器并执行训练。"""
     logger.info("model train started model_code=%s region=%s", request.model_code, request.region_code or request.region_name)
     result = _execute(lambda: runtime.train(request))
     logger.info("model train completed model_code=%s batch_no=%s", result.model_code, result.train_batch_no)
@@ -61,7 +61,7 @@ def train(request: TrainRequest) -> ApiResponse[TrainResult]:
 
 @router.post("/backtest", response_model=ApiResponse[BacktestResult])
 def backtest(request: BacktestRequest) -> ApiResponse[BacktestResult]:
-    """按 modelCode 找到模型处理器并执行回测。"""
+    """按 model_code 找到模型处理器并执行回测。"""
     logger.info("model backtest started model_code=%s region=%s", request.model_code, request.region_code or request.region_name)
     result = _execute(lambda: runtime.backtest(request))
     logger.info("model backtest completed model_code=%s points=%d", result.model_code, len(result.points))
@@ -70,7 +70,7 @@ def backtest(request: BacktestRequest) -> ApiResponse[BacktestResult]:
 
 @router.post("/predict", response_model=ApiResponse[PredictResult])
 def predict(request: PredictRequest) -> ApiResponse[PredictResult]:
-    """按 modelCode 找到模型处理器并执行预测。"""
+    """按 model_code 找到模型处理器并执行预测。"""
     logger.info("model predict started model_code=%s region=%s", request.model_code, request.region_code or request.region_name)
     result = _execute(lambda: runtime.predict(request))
     logger.info("model predict completed model_code=%s batch_no=%s points=%d", result.model_code, result.forecast_batch_no, len(result.points))

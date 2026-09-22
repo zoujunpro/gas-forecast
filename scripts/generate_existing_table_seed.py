@@ -63,20 +63,16 @@ def main():
         "alter table base_region_tb modify id bigint not null auto_increment;",
         "alter table base_customer_tb modify id bigint not null auto_increment;",
         "alter table base_industry_tb modify id bigint not null auto_increment;",
-        "alter table model_forecast_batch_tb modify id bigint unsigned not null auto_increment;",
         "alter table model_forecast_result_tb modify id bigint unsigned not null auto_increment;",
         "alter table model_predict_winter_result_tb modify id bigint unsigned not null auto_increment;",
         "alter table model_train_backtest_tb modify id bigint unsigned not null auto_increment;",
         "alter table model_train_batch_tb modify id bigint unsigned not null auto_increment;",
         "alter table base_region_tb modify region_code varchar(64) not null;",
-        "alter table model_forecast_batch_tb modify region_code varchar(64) not null;",
         "alter table model_train_batch_tb modify region_code varchar(64) not null;",
         "alter table model_predict_winter_result_tb modify province_code varchar(64) not null;",
         "",
         "delete from model_train_backtest_tb where train_batch_no like 'WGTRAIN-%';",
         "delete from model_forecast_result_tb where forecast_batch_no like 'WGFC-%';",
-        "delete from model_predict_winter_result_tb where batch_id in (select id from model_forecast_batch_tb where batch_no like 'WGFC-%');",
-        "delete from model_forecast_batch_tb where batch_no like 'WGFC-%';",
         "delete from model_train_batch_tb where batch_no like 'WGTRAIN-%';",
         "delete from data_winter_tenday_dataset_tb where region_code in (" + ", ".join(q(province_codes[p]) for p in provinces) + ");",
         "delete from base_customer_tb where customer_code in (select customer_code collate utf8mb4_0900_ai_ci from gas_customer);",
@@ -211,10 +207,8 @@ join gas_province p on p.province_code = c.province_code;""")
         sql.append("")
 
     batch_rows = []
-    forecast_batch_rows = []
     for province in provinces:
         train_no = f"WGTRAIN-{province}"
-        forecast_no = f"WGFC-{province}"
         batch_rows.append({
             "batch_no": q(train_no),
             "agent_code": q("winner-agent"),
@@ -242,26 +236,6 @@ join gas_province p on p.province_code = c.province_code;""")
             "created_at": "now()",
             "updated_at": "now()",
         })
-        forecast_batch_rows.append({
-            "batch_no": q(forecast_no),
-            "train_batch_no": q(train_no),
-            "agent_code": q("winner-agent"),
-            "region_code": q(province_codes[province]),
-            "region_name": q(province),
-            "customer_code": q("ALL"),
-            "customer_name": q("全部客户"),
-            "industry_code": q("ALL"),
-            "industry_name": q("全部行业"),
-            "forecast_horizon": "15",
-            "forecast_start_date": "20261101",
-            "forecast_end_date": q("2027-03-21"),
-            "status": q("SUCCESS"),
-            "request_json": q('{"source":"winner-agent"}'),
-            "created_by": q("zoujun"),
-            "created_at": "now()",
-            "updated_at": "now()",
-            "created_by_name": q("邹军"),
-        })
     sql.extend(emit_insert("model_train_batch_tb", [
         "batch_no", "agent_code", "region_code", "region_name", "customer_code", "customer_name",
         "industry_code", "industry_name", "train_start_date", "train_end_date", "status", "best_model",
@@ -269,20 +243,9 @@ join gas_province p on p.province_code = c.province_code;""")
         "created_by_name", "started_at", "completed_at", "created_at", "updated_at"
     ], batch_rows))
     sql.append("")
-    sql.extend(emit_insert("model_forecast_batch_tb", [
-        "batch_no", "train_batch_no", "agent_code", "region_code", "region_name", "customer_code",
-        "customer_name", "industry_code", "industry_name", "forecast_horizon", "forecast_start_date",
-        "forecast_end_date", "status", "request_json", "created_by", "created_at", "updated_at", "created_by_name"
-    ], forecast_batch_rows))
-    sql.append("")
-
     sql.append("""insert into model_forecast_result_tb (forecast_batch_no, forecast_date, forecast_value)
 select concat('WGFC-', province), date_format(forecast_date, '%Y-%m-%d'), prediction
 from gas_forecast_point;""")
-    sql.append("""insert into model_predict_winter_result_tb (batch_id, province_code, forecast_date, forecast_value)
-select b.id, p.province_code, p.forecast_date, p.prediction
-from gas_forecast_point p
-join model_forecast_batch_tb b on b.batch_no = concat('WGFC-', p.province) collate utf8mb4_0900_ai_ci;""")
     sql.append("""insert into model_train_backtest_tb (train_batch_no, train_date, actual_value, predicted_value)
 select concat('WGTRAIN-', province), test_date, actual, prediction
 from gas_backtest_detail;""")

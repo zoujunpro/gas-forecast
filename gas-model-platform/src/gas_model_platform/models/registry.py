@@ -35,8 +35,8 @@ class ModelRegistry:
 
 
 MODEL_REGISTRY: dict[str, ModelHandler] = {
-    "WINTER_MODEL_001": WinterAgentV1Handler(),
-    "MODEL_JIANGSHU_DIANLI_V1": ModelJiangshuDianliV1Handler(),
+    "WINTER_MODEL_V1.0": WinterAgentV1Handler(),
+    "MODEL_JIANGSHU_DIANLI_V1.0": ModelJiangshuDianliV1Handler(),
 }
 
 registry = ModelRegistry(MODEL_REGISTRY)

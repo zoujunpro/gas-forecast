@@ -10,6 +10,9 @@ public record ModelTrainExecuteReqDTO(
         String trainCode,
 
         @Size(max = 64, message = "训练配置编码长度不能超过64个字符")
-        String configCode
+        String configCode,
+
+        @Size(max = 64, message = "训练批次号长度不能超过64个字符")
+        String retryBatchNo
 ) {
 }

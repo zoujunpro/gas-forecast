@@ -21,7 +21,12 @@ public class ModelConfigScopeTb {
     private Long id;
 
     /**
-     * 模型配置编码
+     * 模型ID
+     */
+    private Long modelId;
+
+    /**
+     * 模型配置编码，仅保留兼容历史数据。
      */
     private String modelCode;
 

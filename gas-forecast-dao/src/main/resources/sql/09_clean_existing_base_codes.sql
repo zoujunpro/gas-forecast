@@ -57,20 +57,17 @@ update base_customer_tb t join tmp_region_code_map m on t.region_code = m.old_co
 update data_monthly_sales_tb t join tmp_region_code_map m on t.region_code = m.old_code set t.region_code = m.new_code;
 update data_daily_sales_tb t join tmp_region_code_map m on t.region_code = m.old_code set t.region_code = m.new_code;
 update model_train_batch_tb t join tmp_region_code_map m on t.region_code = m.old_code set t.region_code = m.new_code;
-update model_forecast_batch_tb t join tmp_region_code_map m on t.region_code = m.old_code set t.region_code = m.new_code;
 update base_region_tb t join tmp_region_code_map m on t.region_code = m.old_code set t.region_code = m.new_code;
 
 update base_customer_tb t join tmp_industry_code_map m on t.industry_code = m.old_code set t.industry_code = m.new_code;
 update data_monthly_sales_tb t join tmp_industry_code_map m on t.industry_code = m.old_code set t.industry_code = m.new_code;
 update data_daily_sales_tb t join tmp_industry_code_map m on t.industry_code = m.old_code set t.industry_code = m.new_code;
 update model_train_batch_tb t join tmp_industry_code_map m on t.industry_code = m.old_code set t.industry_code = m.new_code;
-update model_forecast_batch_tb t join tmp_industry_code_map m on t.industry_code = m.old_code set t.industry_code = m.new_code;
 update base_industry_tb t join tmp_industry_code_map m on t.industry_code = m.old_code set t.industry_code = m.new_code;
 
 update data_monthly_sales_tb t join tmp_customer_code_map m on t.customer_code = m.old_code set t.customer_code = m.new_code;
 update data_daily_sales_tb t join tmp_customer_code_map m on t.customer_code = m.old_code set t.customer_code = m.new_code;
 update model_train_batch_tb t join tmp_customer_code_map m on t.customer_code = m.old_code set t.customer_code = m.new_code;
-update model_forecast_batch_tb t join tmp_customer_code_map m on t.customer_code = m.old_code set t.customer_code = m.new_code;
 update base_customer_tb t join tmp_customer_code_map m on t.customer_code = m.old_code set t.customer_code = m.new_code;
 
 update sys_code_sequence_tb

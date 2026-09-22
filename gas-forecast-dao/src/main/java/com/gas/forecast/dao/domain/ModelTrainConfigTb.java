@@ -35,7 +35,12 @@ public class ModelTrainConfigTb {
     private String agentCode;
 
     /**
-     * 所属模型编码
+     * 所属模型ID
+     */
+    private Long modelId;
+
+    /**
+     * 所属模型编码，仅保留展示和兼容历史数据。
      */
     private String modelCode;
 

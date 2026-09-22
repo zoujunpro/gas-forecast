@@ -20,34 +20,84 @@ from gas_model_platform.models.winter_agent.winter_agent_v1.engine.model_zoo imp
 from gas_model_platform.models.winter_agent.winter_agent_v1.handler import (
     WinterAgentV1Handler,
 )
-from gas_model_platform.schemas.modeling import ModelIssue, PredictRequest, TrainRequest, TrainResult
+from gas_model_platform.schemas.modeling import (
+    ForecastPoint,
+    ModelIssue,
+    PredictRequest,
+    PredictResult,
+    TrainRequest,
+    TrainResult,
+)
 
 
 def test_train_request_requires_training_batch() -> None:
     with pytest.raises(ValueError, match="train_batch_no"):
         TrainRequest(
-            modelCode="WINTER_MODEL_001",
+            model_code="WINTER_MODEL_V1.0",
+            dataset=[{"date": "2020-01-01", "gas_sales": 1.0}],
+        )
+
+
+def test_train_request_rejects_legacy_model_code_name() -> None:
+    with pytest.raises(ValueError, match="model_code"):
+        TrainRequest(
+            modelCode="WINTER_MODEL_V1.0",
+            train_batch_no="T00001",
             dataset=[{"date": "2020-01-01", "gas_sales": 1.0}],
         )
 
 
 def test_model_code_is_used_as_direct_registry_key() -> None:
     request = TrainRequest(
-        modelCode="WINTER_MODEL_001",
+        model_code="WINTER_MODEL_V1.0",
         train_batch_no="T00001",
         dataset=[{"date": "2020-01-01", "gas_sales": 1.0}],
     )
 
     assert request.agent_code is None
-    assert request.model_code == "WINTER_MODEL_001"
+    assert request.model_code == "WINTER_MODEL_V1.0"
     assert WinterAgentV1Handler()._safe_batch_no(request.train_batch_no) == "T00001"
     assert WinterAgentV1Handler()._province(request) is None
+
+
+def test_train_dataset_row_has_fixed_fields_and_keeps_model_features() -> None:
+    request = TrainRequest(
+        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+        train_batch_no="T00001",
+        dataset=[
+            {
+                "date": "2026-01-01",
+                "gas_sales": 100.0,
+                "任意外部特征": 20.0,
+            }
+        ],
+    )
+
+    row = request.dataset[0].model_dump()
+    assert row["date"].isoformat() == "2026-01-01"
+    assert row["gas_sales"] == 100.0
+    assert row["任意外部特征"] == 20.0
+
+
+def test_predict_dataset_row_has_fixed_date_and_keeps_model_features() -> None:
+    request = PredictRequest(
+        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+        train_batch_no="T00001",
+        forecast_batch_no="F00001",
+        forecast_horizon=1,
+        forecast_unit="day",
+        dataset=[{"date": "2026-01-02", "未来天气": 18.5}],
+    )
+
+    row = request.dataset[0].model_dump()
+    assert row["date"].isoformat() == "2026-01-02"
+    assert row["未来天气"] == 18.5
 
 
 def test_predict_request_requires_training_batch() -> None:
     with pytest.raises(ValueError, match="train_batch_no"):
         PredictRequest(
-            modelCode="WINTER_MODEL_001",
+            model_code="WINTER_MODEL_V1.0",
             region_name="河北",
             forecast_unit="tenday",
             forecast_horizon=2,
@@ -55,12 +105,35 @@ def test_predict_request_requires_training_batch() -> None:
         )
 
 
+def test_predict_request_requires_forecast_batch() -> None:
+    with pytest.raises(ValueError, match="forecast_batch_no"):
+        PredictRequest(
+            model_code="WINTER_MODEL_V1.0",
+            train_batch_no="WGTRAIN-test",
+            forecast_unit="tenday",
+            forecast_horizon=1,
+            dataset=[{"date": "2026-11-01"}],
+        )
+
+
+def test_predict_result_does_not_include_metrics() -> None:
+    result = PredictResult(
+        agent_code="short-term",
+        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+        forecast_batch_no="JS-FC-001",
+        points=[ForecastPoint(forecast_date="2026-05-26", prediction=100.0)],
+    )
+
+    assert "metrics" not in result.model_dump()
+
+
 def test_predict_rejects_training_batch_inside_params() -> None:
     with pytest.raises(HTTPException) as raised:
         predict(
             PredictRequest(
-                modelCode="WINTER_MODEL_001",
+                model_code="WINTER_MODEL_V1.0",
                 train_batch_no="WGTRAIN-top-level",
+                forecast_batch_no="WGFC-test",
                 region_name="河北",
                 forecast_unit="tenday",
                 forecast_horizon=1,
@@ -75,10 +148,10 @@ def test_predict_rejects_training_batch_inside_params() -> None:
 
 def test_registry_rejects_duplicate_model_registration() -> None:
     model_registry = ModelRegistry()
-    model_registry.register("WINTER_MODEL_001", WinterAgentV1Handler())
+    model_registry.register("WINTER_MODEL_V1.0", WinterAgentV1Handler())
 
     with pytest.raises(ValueError, match="already registered"):
-        model_registry.register("WINTER_MODEL_001", WinterAgentV1Handler())
+        model_registry.register("WINTER_MODEL_V1.0", WinterAgentV1Handler())
 
 
 def test_training_config_accepts_profile_and_model_names() -> None:
@@ -98,8 +171,9 @@ def test_predict_requires_training_batch_instead_of_artifact_path() -> None:
     with pytest.raises(HTTPException) as raised:
         predict(
             PredictRequest(
-                modelCode="WINTER_MODEL_001",
+                model_code="WINTER_MODEL_V1.0",
                 train_batch_no="WGTRAIN-test",
+                forecast_batch_no="WGFC-test",
                 forecast_unit="tenday",
                 forecast_horizon=1,
                 params={"artifact_path": "/tmp/untrusted.joblib"},
@@ -129,10 +203,11 @@ def test_predict_locates_artifact_by_training_batch() -> None:
     with pytest.raises(HTTPException) as raised:
         predict(
             PredictRequest(
-                modelCode="WINTER_MODEL_001",
+                model_code="WINTER_MODEL_V1.0",
                 region_code="beijing",
                 region_name="北京",
                 train_batch_no="WGTRAIN-not-found",
+                forecast_batch_no="WGFC-test",
                 forecast_unit="tenday",
                 forecast_horizon=1,
                 dataset=[{"date": "2026-11-01"}],
@@ -147,7 +222,7 @@ def test_winter_agent_v1_exposes_model_version() -> None:
     handler = WinterAgentV1Handler()
 
     assert handler.info.model_version == "1.0.0"
-    assert handler.info.model_code == "WINTER_MODEL_001"
+    assert handler.info.model_code == "WINTER_MODEL_V1.0"
 
 
 def test_candidate_evaluations_expose_ranking_and_metrics() -> None:
@@ -240,7 +315,7 @@ def test_candidate_warning_is_returned_as_structured_issue(monkeypatch) -> None:
 def test_train_result_exposes_issues_at_top_level() -> None:
     result = TrainResult(
         agent_code="winter-supply",
-        model_code="WINTER_MODEL_001",
+        model_code="WINTER_MODEL_V1.0",
         train_batch_no="WGTRAIN-test",
         issues=[
             ModelIssue(

@@ -43,7 +43,7 @@ class ModelRuntime:
     ) -> ModelContext:
         if request.agent_code and request.agent_code != handler.info.agent_code:
             raise ValueError(
-                f"agent_code={request.agent_code} 与 modelCode={request.model_code} 不匹配"
+                f"agent_code={request.agent_code} 与 model_code={request.model_code} 不匹配"
             )
         data = request.model_dump()
         data["agent_code"] = handler.info.agent_code
@@ -53,7 +53,7 @@ class ModelRuntime:
     def _selection_metadata(self, requested_model_code: str | None, selected_model_code: str) -> dict[str, str | bool]:
         return {
             "auto_selected": False,
-            "selection_scope": "modelCode",
+            "selection_scope": "model_code",
             "requested_model_code": requested_model_code or "auto",
             "selected_model_code": selected_model_code,
         }

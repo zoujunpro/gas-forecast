@@ -6,6 +6,7 @@
 
     <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelConfigScopeTb">
             <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="modelId" column="model_id" jdbcType="BIGINT"/>
             <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
             <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
             <result property="industryCode" column="industry_code" jdbcType="VARCHAR"/>
@@ -17,7 +18,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,model_code,region_code,industry_code,customer_code,created_by,
+        id,model_id,model_code,region_code,industry_code,customer_code,created_by,
         created_at,updated_at,created_by_name
     </sql>
 </mapper>

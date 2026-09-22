@@ -27,7 +27,7 @@ public class SqlImporter {
             printCount(connection, "gas_data.data_daily_sales_tb");
             printCount(connection, "gas_data.data_winter_tenday_dataset_tb");
             printCount(connection, "gas_data.model_train_batch_tb");
-            printCount(connection, "gas_data.model_forecast_batch_tb");
+            printCount(connection, "gas_data.model_forecast_record_tb");
             printCount(connection, "gas_data.model_forecast_result_tb");
             printCount(connection, "gas_data.model_predict_winter_result_tb");
             printCount(connection, "gas_data.model_train_backtest_tb");

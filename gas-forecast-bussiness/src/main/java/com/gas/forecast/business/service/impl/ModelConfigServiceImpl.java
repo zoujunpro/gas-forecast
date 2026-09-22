@@ -10,8 +10,6 @@ import com.gas.forecast.business.dto.req.ModelConfigScopeUpdateReqDTO;
 import com.gas.forecast.business.dto.req.ModelConfigUpdateReqDTO;
 import com.gas.forecast.business.dto.resp.ModelConfigRespDTO;
 import com.gas.forecast.business.dto.resp.ModelFeatureRefRespDTO;
-import com.gas.forecast.business.enums.BaseCodeType;
-import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelConfigService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
@@ -58,7 +56,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     private final ModelFeatureRefMapper modelFeatureRefMapper;
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
-    private final BaseCodeGenerateService baseCodeGenerateService;
 
     public ModelConfigServiceImpl(ModelConfigTbMapper modelConfigTbMapper,
                                   ModelConfigScopeTbMapper modelConfigScopeTbMapper,
@@ -67,8 +64,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                                   BaseCustomerTbMapper baseCustomerTbMapper,
                                   ModelFeatureRefMapper modelFeatureRefMapper,
                                   ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper,
-                                  ModelTrainConfigTbMapper modelTrainConfigTbMapper,
-                                  BaseCodeGenerateService baseCodeGenerateService) {
+                                  ModelTrainConfigTbMapper modelTrainConfigTbMapper) {
         this.modelConfigTbMapper = modelConfigTbMapper;
         this.modelConfigScopeTbMapper = modelConfigScopeTbMapper;
         this.baseRegionTbMapper = baseRegionTbMapper;
@@ -77,7 +73,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         this.modelFeatureRefMapper = modelFeatureRefMapper;
         this.modelFeatureDefinitionTbMapper = modelFeatureDefinitionTbMapper;
         this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
-        this.baseCodeGenerateService = baseCodeGenerateService;
     }
 
     @Override
@@ -108,13 +103,15 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     public ModelConfigRespDTO create(ModelConfigCreateReqDTO reqDTO) {
         ForecastAgentEnum agent = validateAgent(reqDTO.agentCode(), reqDTO.sceneCode());
         ModelConfigTb modelConfig = toEntity(reqDTO);
+        String modelCode = modelConfig.getModelCode().trim();
+        ensureModelCodeUnique(modelCode, null);
         Date now = new Date();
         modelConfig.setId(null);
-        modelConfig.setModelCode(baseCodeGenerateService.nextCode(BaseCodeType.MODEL_CONFIG));
+        modelConfig.setModelCode(modelCode);
         modelConfig.setCreatedAt(now);
         modelConfig.setUpdatedAt(now);
         modelConfigTbMapper.insert(modelConfig);
-        saveScopes(modelConfig.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(),
+        saveScopes(modelConfig.getId(), modelConfig.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(),
                 reqDTO.regionCodes(), reqDTO.industryCodes(), reqDTO.customerCodes());
         return toResp(modelConfig, loadScopeContext(List.of(modelConfig)));
     }
@@ -128,10 +125,15 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             throw new BusinessException("模型配置不存在");
         }
         ModelConfigTb modelConfig = toEntity(reqDTO);
-        modelConfig.setModelCode(exists.getModelCode());
+        String modelCode = TextUtils.hasText(modelConfig.getModelCode())
+                ? modelConfig.getModelCode().trim()
+                : exists.getModelCode();
+        ensureModelCodeUnique(modelCode, reqDTO.id());
+        modelConfig.setModelCode(modelCode);
         modelConfig.setUpdatedAt(new Date());
         modelConfigTbMapper.updateById(modelConfig);
         ModelConfigTb updated = modelConfigTbMapper.selectById(reqDTO.id());
+        syncTrainConfigModelDisplay(updated);
         return toResp(updated, loadScopeContext(List.of(updated)));
     }
 
@@ -144,7 +146,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         }
         ForecastAgentEnum agent = ForecastAgentEnum.ofAgentCode(exists.getAgentCode())
                 .orElseThrow(() -> new BusinessException("智能体编码不合法"));
-        saveScopes(exists.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(),
+        saveScopes(exists.getId(), exists.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(),
                 reqDTO.regionCodes(), reqDTO.industryCodes(), reqDTO.customerCodes());
         saveFeatureRefs(reqDTO.id(), reqDTO.featureRefs());
         ModelConfigTb updated = modelConfigTbMapper.selectById(reqDTO.id());
@@ -159,12 +161,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             return;
         }
         long trainConfigCount = modelTrainConfigTbMapper.selectCount(Wrappers.<ModelTrainConfigTb>lambdaQuery()
-                .eq(ModelTrainConfigTb::getModelCode, exists.getModelCode()));
+                .eq(ModelTrainConfigTb::getModelId, exists.getId()));
         if (trainConfigCount > 0) {
             throw new BusinessException("模型已被训练配置使用，不能删除");
         }
         modelConfigScopeTbMapper.delete(Wrappers.<ModelConfigScopeTb>lambdaQuery()
-                .eq(ModelConfigScopeTb::getModelCode, exists.getModelCode()));
+                .eq(ModelConfigScopeTb::getModelId, exists.getId()));
         modelFeatureRefMapper.delete(Wrappers.<ModelFeatureRef>lambdaQuery()
                 .eq(ModelFeatureRef::getModelId, exists.getId()));
         modelConfigTbMapper.deleteById(reqDTO.id());
@@ -260,15 +262,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             return ScopeContext.empty();
         }
         List<Long> configIds = configs.stream().map(ModelConfigTb::getId).toList();
-        List<String> configCodes = configs.stream().map(ModelConfigTb::getModelCode).filter(TextUtils::hasText).toList();
-        Map<String, Long> configIdByCode = configs.stream()
-                .filter(item -> TextUtils.hasText(item.getModelCode()))
-                .collect(Collectors.toMap(ModelConfigTb::getModelCode, ModelConfigTb::getId, (left, right) -> left));
         List<ModelConfigScopeTb> scopes = modelConfigScopeTbMapper.selectList(Wrappers.<ModelConfigScopeTb>lambdaQuery()
-                .in(ModelConfigScopeTb::getModelCode, configCodes)
+                .in(ModelConfigScopeTb::getModelId, configIds)
                 .orderByDesc(ModelConfigScopeTb::getId));
         Map<Long, List<ModelConfigScopeTb>> scopeByConfigId = scopes.stream()
-                .collect(Collectors.groupingBy(scope -> configIdByCode.get(scope.getModelCode())));
+                .filter(scope -> scope.getModelId() != null)
+                .collect(Collectors.groupingBy(ModelConfigScopeTb::getModelId));
         List<ModelFeatureRef> featureRefs = modelFeatureRefMapper.selectList(Wrappers.<ModelFeatureRef>lambdaQuery()
                 .in(ModelFeatureRef::getModelId, configIds)
                 .orderByAsc(ModelFeatureRef::getFeatureOrder)
@@ -301,7 +300,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         return new ScopeContext(scopeByConfigId, regions, industries, customers, featureRefsByModelId, features);
     }
 
-    private void saveScopes(String modelCode,
+    private void saveScopes(Long modelId,
+                            String modelCode,
                             ForecastAgentEnum agent,
                             String regionCode,
                             String industryCode,
@@ -310,7 +310,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                             List<String> industryCodes,
                             List<String> customerCodes) {
         modelConfigScopeTbMapper.delete(Wrappers.<ModelConfigScopeTb>lambdaQuery()
-                .eq(ModelConfigScopeTb::getModelCode, modelCode));
+                .eq(ModelConfigScopeTb::getModelId, modelId));
 
         List<String> normalizedRegionCodes = normalizeCodes(regionCodes, regionCode);
         List<String> normalizedIndustryCodes = normalizeCodes(industryCodes, industryCode);
@@ -318,7 +318,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
 
         if (agent == ForecastAgentEnum.WINTER_SUPPLY) {
             for (String code : normalizedRegionCodes) {
-                insertScope(modelCode, code, null, null);
+                insertScope(modelId, modelCode, code, null, null);
             }
             return;
         }
@@ -337,22 +337,23 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                 if (customer == null) {
                     throw new BusinessException(BusinessResponseCode.PARAM_ERROR, "客户不存在: " + scopedCustomerCode);
                 }
-                insertScope(modelCode, customer.getRegionCode(), customer.getIndustryCode(), customer.getCustomerCode());
+                insertScope(modelId, modelCode, customer.getRegionCode(), customer.getIndustryCode(), customer.getCustomerCode());
             }
             return;
         }
 
-        List<String> regionScopeCodes = normalizedRegionCodes.isEmpty() ? List.of((String) null) : normalizedRegionCodes;
-        List<String> industryScopeCodes = normalizedIndustryCodes.isEmpty() ? List.of((String) null) : normalizedIndustryCodes;
+        List<String> regionScopeCodes = normalizedRegionCodes.isEmpty() ? Collections.singletonList(null) : normalizedRegionCodes;
+        List<String> industryScopeCodes = normalizedIndustryCodes.isEmpty() ? Collections.singletonList(null) : normalizedIndustryCodes;
         for (String scopedRegionCode : regionScopeCodes) {
             for (String scopedIndustryCode : industryScopeCodes) {
-                insertScope(modelCode, scopedRegionCode, scopedIndustryCode, null);
+                insertScope(modelId, modelCode, scopedRegionCode, scopedIndustryCode, null);
             }
         }
     }
 
-    private void insertScope(String modelCode, String regionCode, String industryCode, String customerCode) {
+    private void insertScope(Long modelId, String modelCode, String regionCode, String industryCode, String customerCode) {
         ModelConfigScopeTb scope = new ModelConfigScopeTb();
+        scope.setModelId(modelId);
         scope.setModelCode(modelCode);
         scope.setRegionCode(regionCode);
         scope.setIndustryCode(industryCode);
@@ -426,6 +427,34 @@ public class ModelConfigServiceImpl implements ModelConfigService {
 
     private String firstOrNull(List<String> values) {
         return values == null || values.isEmpty() ? null : values.get(0);
+    }
+
+    private void ensureModelCodeUnique(String modelCode, Long excludeId) {
+        if (!TextUtils.hasText(modelCode)) {
+            throw new BusinessException("模型编码不能为空");
+        }
+        LambdaQueryWrapper<ModelConfigTb> query = Wrappers.<ModelConfigTb>lambdaQuery()
+                .eq(ModelConfigTb::getModelCode, modelCode);
+        if (excludeId != null) {
+            query.ne(ModelConfigTb::getId, excludeId);
+        }
+        if (modelConfigTbMapper.selectCount(query) > 0) {
+            throw new BusinessException("模型编码已存在");
+        }
+    }
+
+    private void syncTrainConfigModelDisplay(ModelConfigTb modelConfig) {
+        if (modelConfig == null || modelConfig.getId() == null) {
+            return;
+        }
+        List<ModelTrainConfigTb> trainConfigs = modelTrainConfigTbMapper.selectList(Wrappers.<ModelTrainConfigTb>lambdaQuery()
+                .eq(ModelTrainConfigTb::getModelId, modelConfig.getId()));
+        for (ModelTrainConfigTb trainConfig : trainConfigs) {
+            trainConfig.setModelCode(modelConfig.getModelCode());
+            trainConfig.setModelName(modelConfig.getModelName());
+            trainConfig.setUpdatedAt(new Date());
+            modelTrainConfigTbMapper.updateById(trainConfig);
+        }
     }
 
     private record ScopeContext(

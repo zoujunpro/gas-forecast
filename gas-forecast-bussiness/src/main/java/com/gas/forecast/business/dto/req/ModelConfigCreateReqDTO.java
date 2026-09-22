@@ -10,6 +10,7 @@ import java.util.List;
  * 模型配置新增请求参数。
  */
 public record ModelConfigCreateReqDTO(
+        @NotBlank(message = "配置编码不能为空")
         @Size(max = 64, message = "配置编码长度不能超过64个字符")
         String configCode,
 

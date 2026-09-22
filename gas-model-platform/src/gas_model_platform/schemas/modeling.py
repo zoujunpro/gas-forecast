@@ -1,10 +1,27 @@
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 AgentCode = Literal["winter-supply", "monthly-sales", "short-term"]
 ForecastUnit = Literal["day", "tenday", "month"]
+
+
+class TrainDatasetRow(BaseModel):
+    """统一训练数据行；模型专属特征作为同级扩展字段保留。"""
+
+    model_config = ConfigDict(extra="allow")
+
+    date: date
+    gas_sales: float
+
+
+class PredictDatasetRow(BaseModel):
+    """统一预测数据行；模型专属未来特征作为同级扩展字段保留。"""
+
+    model_config = ConfigDict(extra="allow")
+
+    date: date
 
 
 class ModelInfo(BaseModel):
@@ -18,12 +35,9 @@ class ModelInfo(BaseModel):
 
 class ModelContext(BaseModel):
     agent_code: AgentCode | None = None
-    model_code: str = Field(
-        validation_alias=AliasChoices("modelCode", "model_code"),
-        serialization_alias="modelCode",
-        min_length=1,
-    )
+    model_code: str = Field(min_length=1)
     train_batch_no: str | None = None
+    forecast_batch_no: str | None = None
     region_code: str | None = None
     region_name: str | None = None
     industry_code: str | None = None
@@ -37,7 +51,7 @@ class ModelContext(BaseModel):
 
 class TrainRequest(ModelContext):
     train_batch_no: str
-    dataset: list[dict[str, Any]] = Field(min_length=1)
+    dataset: list[TrainDatasetRow] = Field(min_length=1)
 
 
 class BacktestRequest(ModelContext):
@@ -46,9 +60,10 @@ class BacktestRequest(ModelContext):
 
 class PredictRequest(ModelContext):
     train_batch_no: str
+    forecast_batch_no: str = Field(min_length=1, max_length=65)
     forecast_horizon: int = Field(ge=1, le=366)
     forecast_unit: ForecastUnit
-    dataset: list[dict[str, Any]] = Field(min_length=1, max_length=366)
+    dataset: list[PredictDatasetRow] = Field(min_length=1, max_length=366)
 
 
 class FeatureComputeRequest(BaseModel):
@@ -184,7 +199,6 @@ class PredictResult(BaseModel):
     model_code: str
     forecast_batch_no: str
     points: list[ForecastPoint]
-    metrics: MetricSet = Field(default_factory=MetricSet)
     metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.now)
 

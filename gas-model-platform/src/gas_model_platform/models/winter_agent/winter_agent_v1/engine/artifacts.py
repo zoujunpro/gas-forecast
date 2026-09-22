@@ -15,7 +15,7 @@ from .version import ARTIFACT_VERSION, MODEL_VERSION
 class ModelArtifact:
     """训练与预测之间传递的模型产物。"""
 
-    # 可选业务元数据；模型由 modelCode + train_batch_no 定位，不依赖省份。
+    # 可选业务元数据；模型由 model_code + train_batch_no 定位，不依赖省份。
     province: str | None
     best_model: str
     models: Dict[str, FittedForecastModel]

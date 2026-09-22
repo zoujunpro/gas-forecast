@@ -23,7 +23,9 @@ public record ModelTrainConfigUpdateReqDTO(
         @Size(max = 64, message = "智能体编码长度不能超过64个字符")
         String agentCode,
 
-        @Size(max = 64, message = "所属模型编码长度不能超过64个字符")
+        @NotNull(message = "所属模型不能为空")
+        Long modelId,
+
         String modelCode,
 
         @Size(max = 128, message = "所属模型名称长度不能超过128个字符")

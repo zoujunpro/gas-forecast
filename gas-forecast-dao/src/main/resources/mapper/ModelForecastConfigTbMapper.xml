@@ -6,8 +6,7 @@
 
     <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelForecastConfigTb">
             <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="configCode" column="config_code" jdbcType="VARCHAR"/>
-            <result property="configName" column="config_name" jdbcType="VARCHAR"/>
+            <result property="forecastName" column="forecast_name" jdbcType="VARCHAR"/>
             <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
             <result property="scopeType" column="scope_type" jdbcType="VARCHAR"/>
             <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
@@ -21,9 +20,6 @@
             <result property="forecastFrequency" column="forecast_frequency" jdbcType="VARCHAR"/>
             <result property="autoForecast" column="auto_forecast" jdbcType="TINYINT"/>
             <result property="trainConfigCode" column="train_config_code" jdbcType="VARCHAR"/>
-            <result property="modelBatchNo" column="model_batch_no" jdbcType="VARCHAR"/>
-            <result property="weatherSource" column="weather_source" jdbcType="VARCHAR"/>
-            <result property="bizConfigJson" column="biz_config_json" jdbcType="OTHER"/>
             <result property="enabled" column="enabled" jdbcType="TINYINT"/>
             <result property="remark" column="remark" jdbcType="VARCHAR"/>
             <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
@@ -33,10 +29,9 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,config_code,config_name,agent_code,scope_type,region_code,
+        id,forecast_name,agent_code,scope_type,region_code,
         region_name,industry_code,industry_name,customer_code,customer_name,
         forecast_start_date,forecast_horizon,forecast_frequency,auto_forecast,
-        train_config_code,model_batch_no,weather_source,biz_config_json,enabled,
-        remark,created_by,created_by_name,created_at,updated_at
+        train_config_code,enabled,remark,created_by,created_by_name,created_at,updated_at
     </sql>
 </mapper>

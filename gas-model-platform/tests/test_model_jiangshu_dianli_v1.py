@@ -1,3 +1,5 @@
+from datetime import date
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,6 +15,7 @@ from gas_model_platform.models.short_agent.model_jiangshu_dianli_v1 import (
     train_model,
 )
 from gas_model_platform.models.short_agent import model_jiangshu_dianli_v1 as short_engine
+from gas_model_platform.schemas.modeling import ModelContext
 
 
 class FakeProphet:
@@ -53,7 +56,7 @@ class FakeResidualModel:
 
 
 def test_jiangshu_dianli_v1_is_registered_by_model_code() -> None:
-    handler = registry.resolve("MODEL_JIANGSHU_DIANLI_V1")
+    handler = registry.resolve("MODEL_JIANGSHU_DIANLI_V1.0")
 
     assert isinstance(handler, ModelJiangshuDianliV1Handler)
     assert handler.info.agent_code == "short-term"
@@ -61,18 +64,95 @@ def test_jiangshu_dianli_v1_is_registered_by_model_code() -> None:
 
 def test_jiangshu_dianli_v1_training_aliases_are_normalized() -> None:
     dates = pd.date_range("2025-01-01", periods=150, freq="D")
-    frame = pd.DataFrame({"日期": dates, "发电量": np.arange(150) + 100.0})
+    frame = pd.DataFrame(
+        {
+            "日期": dates,
+            "发电量": np.arange(150) + 100.0,
+            "任意外部字段": np.arange(150) + 10.0,
+            "液化气市场价（日）": np.arange(150) + 3000.0,
+        }
+    )
 
     clean = prepare_training_data(frame)
 
-    assert list(clean.columns) == ["ds", "y"]
+    assert list(clean.columns) == ["ds", "y", "任意外部字段", "液化气市场价（日）"]
     assert len(clean) == 150
+
+
+def test_jiangshu_dianli_v1_maps_unified_gas_sales_to_internal_y() -> None:
+    clean = prepare_training_data(
+        pd.DataFrame({"date": ["2025-01-01"], "gas_sales": [100.0]})
+    )
+
+    assert list(clean.columns) == ["ds", "y"]
+    assert clean.loc[0, "y"] == 100.0
+
+
+def test_jiangshu_dianli_v1_allows_training_without_external_features() -> None:
+    clean = prepare_training_data(
+        pd.DataFrame({"date": ["2025-01-01"], "gas_sales": [100.0]})
+    )
+
+    assert list(clean.columns) == ["ds", "y"]
 
 
 def test_jiangshu_dianli_v1_future_date_alias_is_supported() -> None:
     future = prepare_future_data(pd.DataFrame({"statDate": ["2026-01-01"]}))
 
     assert future.loc[0, "ds"] == pd.Timestamp("2026-01-01")
+
+
+def test_jiangshu_dianli_v1_future_external_features_are_required() -> None:
+    with pytest.raises(ValueError, match="tempmax"):
+        prepare_future_data(
+            pd.DataFrame({"date": ["2026-01-01"]}),
+            ["tempmax"],
+        )
+
+    future = prepare_future_data(
+        pd.DataFrame({"date": ["2026-01-01"], "tempmax": [12.5]}),
+        ["tempmax"],
+    )
+    assert future.loc[0, "tempmax"] == 12.5
+
+
+def test_jiangshu_handler_keeps_future_external_features(monkeypatch) -> None:
+    history_dates = pd.date_range("2025-01-01", periods=40, freq="D")
+    artifact = JiangshuDianliV1Artifact(
+        prophet_model=FakeProphet(),
+        residual_model=FakeResidualModel(),
+        feature_names=[],
+        selected_params={},
+        history_dates=[str(value.date()) for value in history_dates],
+        history_values=[100.0] * len(history_dates),
+        climatology_mean={},
+        climatology_std={},
+        climatology_fallback_mean=100.0,
+        climatology_fallback_std=1.0,
+        start_date="2025-01-01",
+        train_start="2025-01-01",
+        train_end="2025-02-09",
+        residual_lower=-5.0,
+        residual_upper=5.0,
+        external_feature_names=["tempmax"],
+    )
+    handler = ModelJiangshuDianliV1Handler()
+    monkeypatch.setattr(handler, "_load_artifact", lambda _: artifact)
+
+    result = handler.predict(
+        ModelContext(
+            agent_code="short-term",
+            model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+            train_batch_no="T00001",
+            forecast_batch_no="F00001",
+            forecast_horizon=1,
+            forecast_unit="day",
+            dataset=[{"date": date(2025, 2, 10), "tempmax": 18.5}],
+        )
+    )
+
+    assert result.forecast_batch_no == "F00001"
+    assert result.points[0].forecast_date.isoformat() == "2025-02-10"
 
 
 def test_jiangshu_dianli_v1_keeps_artifacts_by_batch_only() -> None:
@@ -145,7 +225,13 @@ def test_jiangshu_dianli_v1_smoke_training_pipeline(monkeypatch) -> None:
     values = 100 + np.sin(np.arange(880) * 2 * np.pi / 7) * 10
 
     output = train_model(
-        pd.DataFrame({"date": dates, "y": values}),
+        pd.DataFrame(
+            {
+                "date": dates,
+                "gas_sales": values,
+                "任意外部字段": np.arange(880, dtype=float),
+            }
+        ),
     )
 
     assert output.artifact.train_end == str(dates[-1].date())
@@ -154,5 +240,10 @@ def test_jiangshu_dianli_v1_smoke_training_pipeline(monkeypatch) -> None:
     assert len(output.candidate_evaluations) == 16
     assert output.n_folds == 1
     assert output.metrics["mape"] >= 0
-    # 相同回测折和相同 cps 复用 Prophet，避免原实现的 18 次重复拟合。
-    assert FakeProphet.fit_count <= 15
+    assert output.artifact.external_feature_names == ["任意外部字段"]
+    assert "任意外部字段" in output.artifact.feature_names
+    assert output.artifact.metadata["production_refit_full_history"] is True
+    assert output.artifact.metadata["production_training_rows"] == 850
+    assert np.isclose(output.artifact.prophet_model.level, values[30:].mean())
+    # 原流程18次拟合保持不变，另增加1次全量历史生产模型拟合。
+    assert FakeProphet.fit_count == 19

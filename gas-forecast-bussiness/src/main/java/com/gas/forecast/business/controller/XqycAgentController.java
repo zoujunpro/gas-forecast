@@ -148,7 +148,7 @@ public class XqycAgentController {
             data.put("batch_count", persistSummary.batchCount());
             data.put("result_count", persistSummary.resultCount());
             data.put("total_volume", persistSummary.resultCount());
-            data.put("summary", "预测结果已写入 model_forecast_batch_tb 和 model_forecast_result_tb。");
+            data.put("summary", "预测结果已写入 model_forecast_result_tb。");
             writeEvent(outputStream, event("result", null, null, data, agentName + "运行完成。"));
         };
     }

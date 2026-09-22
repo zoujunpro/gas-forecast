@@ -10,7 +10,9 @@ public class DescribeExistingTables {
                 "base_region_tb",
                 "base_customer_tb",
                 "base_industry_tb",
-                "model_forecast_batch_tb",
+                "model_forecast_config_tb",
+                "model_forecast_record_tb",
+                "model_train_record_tb",
                 "model_train_batch_tb",
                 "model_forecast_result_tb",
                 "model_predict_winter_result_tb",
@@ -21,10 +23,14 @@ public class DescribeExistingTables {
              Statement statement = connection.createStatement()) {
             for (String table : tables) {
                 System.out.println("TABLE " + table);
-                try (ResultSet rs = statement.executeQuery("show columns from " + table)) {
-                    while (rs.next()) {
-                        System.out.println(rs.getString("Field") + "\t" + rs.getString("Type") + "\t" + rs.getString("Null") + "\t" + rs.getString("Key") + "\t" + rs.getString("Default"));
+                try {
+                    try (ResultSet rs = statement.executeQuery("show columns from " + table)) {
+                        while (rs.next()) {
+                            System.out.println(rs.getString("Field") + "\t" + rs.getString("Type") + "\t" + rs.getString("Null") + "\t" + rs.getString("Key") + "\t" + rs.getString("Default"));
+                        }
                     }
+                } catch (Exception exception) {
+                    System.out.println("NOT FOUND");
                 }
             }
         }

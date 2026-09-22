@@ -6,6 +6,7 @@ import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,5 +31,17 @@ public class ModelTrainExecutionController {
     @RequirePermission("config:train:execute")
     public ResponseResult<ModelTrainExecuteRespDTO> execute(@Valid @RequestBody ModelTrainExecuteReqDTO reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.execute(reqDTO));
+    }
+
+    @PostMapping("callback")
+    @WebLog("模型训练结果回调")
+    public ResponseResult<ModelTrainExecuteRespDTO> callback(@RequestBody JsonNode reqDTO) {
+        return ResponseResult.success(modelTrainExecutionService.updateTrainResult(reqDTO));
+    }
+
+    @PostMapping("result")
+    @WebLog("查看模型训练结果")
+    public ResponseResult<JsonNode> result(@RequestBody JsonNode reqDTO) {
+        return ResponseResult.success(modelTrainExecutionService.getTrainResult(reqDTO));
     }
 }

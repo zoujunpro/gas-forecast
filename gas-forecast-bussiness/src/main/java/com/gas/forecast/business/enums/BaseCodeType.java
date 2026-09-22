@@ -6,7 +6,9 @@ public enum BaseCodeType {
     CUSTOMER("CUS", 6),
     FILE("FIL", 6),
     MODEL_CONFIG("MODEL", 6),
-    TRAIN_BATCH("T", 5);
+    MODEL_TRAIN_CONFIG("TRCFG-", 5),
+    MODEL_FORECAST_CONFIG("FCCFG-", 5),
+    TRAIN_BATCH("TRBATCH-", 5);
 
     private final String prefix;
     private final int width;

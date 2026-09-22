@@ -77,7 +77,7 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
     { prop: 'timeGranularity', label: '时间格式', type: 'select', options: trainTimeGranularityOptions, placeholder: '时间格式', width: 130 }
   ],
   tableFields: [
-    { prop: 'trainCode', label: '训练编码', minWidth: 180 },
+    { prop: 'trainCode', label: '训练配置编码', minWidth: 180 },
     { prop: 'trainName', label: '训练名称', minWidth: 190 },
     { prop: 'agentCode', label: '智能体', minWidth: 150, displayType: 'tag', enumMap: { 'winter-supply': '冬季保供', 'monthly-sales': '月度销量', 'short-term': '短期客户' }, tagTypeMap: { 'winter-supply': 'warning', 'monthly-sales': 'primary', 'short-term': 'success' } },
     { prop: 'modelName', label: '所属模型', minWidth: 180 },
@@ -96,12 +96,11 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
     { prop: 'trainName', label: '训练名称', required: true, maxLength: 128 },
     { prop: 'agentCode', label: '智能体', type: 'select', options: modelAgentOptions, required: true },
     {
-      prop: 'modelCode',
+      prop: 'modelId',
       label: '模型编码/名称',
       type: 'select',
-      maxLength: 64,
-      optionSource: { endpoint: '/model-config', valueProp: 'configCode', labelProp: 'configName', labelTemplate: 'nameWithCode' },
-      fillProps: { modelName: 'configName' }
+      optionSource: { endpoint: '/model-config', valueProp: 'id', labelProp: 'configName', labelTemplate: 'nameWithCode' },
+      fillProps: { modelCode: 'configCode', modelName: 'configName' }
     },
     {
       prop: 'regionCode',
@@ -139,6 +138,7 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
     trainCode: '',
     trainName: '',
     agentCode: 'winter-supply',
+    modelId: undefined,
     modelCode: '',
     modelName: '',
     regionCode: '',

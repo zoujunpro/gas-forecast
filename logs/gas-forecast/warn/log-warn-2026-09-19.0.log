@@ -1,0 +1,4 @@
+[2026-09-19 13:02:27.822] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=58s484ms).
+[2026-09-19 13:09:25.801] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=6m27s954ms).
+[2026-09-19 13:24:53.651] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=15m27s850ms).
+[2026-09-19 14:59:25.036] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [HikariPool-1 housekeeper] [WARN] - HikariPool-1 - Retrograde clock change detected (housekeeper delta=29s839ms), soft-evicting connections from pool.

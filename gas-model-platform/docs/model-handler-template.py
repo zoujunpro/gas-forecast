@@ -16,7 +16,7 @@ from gas_model_platform.schemas.modeling import (
 class ModelExampleV1Handler:
     info = ModelInfo(
         agent_code="short-term",
-        model_code="MODEL_EXAMPLE_V1",
+        model_code="MODEL_EXAMPLE_V1.0",
         model_version="1.0.0",
         model_name="示例模型 V1",
         description="请填写模型用途、数据频率和核心算法。",
