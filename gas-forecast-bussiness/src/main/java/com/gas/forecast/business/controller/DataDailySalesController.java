@@ -1,7 +1,7 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.DataSalesPageReqDTO;
-import com.gas.forecast.business.dto.resp.DataSalesRespDTO;
+import com.gas.forecast.business.dto.request.DataSalesPageRequest;
+import com.gas.forecast.business.dto.response.DataSalesResponse;
 import com.gas.forecast.business.service.DataDailySalesService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -32,7 +32,7 @@ public class DataDailySalesController {
     @PostMapping("listPage")
     @WebLog("日销量标准数据分页查询")
     @RequirePermission("data:daily-sales:list")
-    public ResponseResult<PageInfoDTO<DataSalesRespDTO>> listPage(@Valid @RequestBody DataSalesPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<DataSalesResponse>> listPage(@Valid @RequestBody DataSalesPageRequest reqDTO) {
         return ResponseResult.success(dataDailySalesService.listPage(reqDTO));
     }
 }

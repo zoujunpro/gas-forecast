@@ -3,11 +3,11 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.BaseRegionCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseRegionDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseRegionPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseRegionUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseRegionRespDTO;
+import com.gas.forecast.business.dto.request.BaseRegionCreateRequest;
+import com.gas.forecast.business.dto.request.BaseRegionDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseRegionPageRequest;
+import com.gas.forecast.business.dto.request.BaseRegionUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseRegionResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.BaseRegionService;
@@ -16,10 +16,9 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
+import java.util.Date;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 @Service
 public class BaseRegionServiceImpl implements BaseRegionService {
@@ -27,19 +26,18 @@ public class BaseRegionServiceImpl implements BaseRegionService {
     private final BaseRegionTbMapper baseRegionTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
-    public BaseRegionServiceImpl(BaseRegionTbMapper baseRegionTbMapper,
-                                 BaseCodeGenerateService baseCodeGenerateService) {
+    public BaseRegionServiceImpl(
+            BaseRegionTbMapper baseRegionTbMapper, BaseCodeGenerateService baseCodeGenerateService) {
         this.baseRegionTbMapper = baseRegionTbMapper;
         this.baseCodeGenerateService = baseCodeGenerateService;
     }
 
     @Override
-    public PageInfoDTO<BaseRegionRespDTO> listPage(BaseRegionPageReqDTO reqDTO) {
+    public PageInfoDTO<BaseRegionResponse> listPage(BaseRegionPageRequest reqDTO) {
         LambdaQueryWrapper<BaseRegionTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(BaseRegionTb::getRegionCode, keyword)
+            query.and(wrapper -> wrapper.like(BaseRegionTb::getRegionCode, keyword)
                     .or()
                     .like(BaseRegionTb::getRegionName, keyword)
                     .or()
@@ -49,12 +47,13 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<BaseRegionTb> result = baseRegionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
     @Transactional
-    public BaseRegionRespDTO createRegion(BaseRegionCreateReqDTO reqDTO) {
+    public BaseRegionResponse createRegion(BaseRegionCreateRequest reqDTO) {
         BaseRegionTb region = toEntity(reqDTO);
         Date now = new Date();
         region.setId(null);
@@ -68,7 +67,7 @@ public class BaseRegionServiceImpl implements BaseRegionService {
     }
 
     @Override
-    public BaseRegionRespDTO update(BaseRegionUpdateReqDTO reqDTO) {
+    public BaseRegionResponse update(BaseRegionUpdateRequest reqDTO) {
         BaseRegionTb region = toEntity(reqDTO);
         Long id = reqDTO.id();
         region.setId(id);
@@ -80,32 +79,31 @@ public class BaseRegionServiceImpl implements BaseRegionService {
     }
 
     @Override
-    public void delete(BaseRegionDeleteReqDTO reqDTO) {
+    public void delete(BaseRegionDeleteRequest reqDTO) {
         baseRegionTbMapper.deleteById(reqDTO.id());
     }
 
-    private BaseRegionRespDTO toResp(BaseRegionTb region) {
+    private BaseRegionResponse toResp(BaseRegionTb region) {
         if (region == null) {
             return null;
         }
-        return new BaseRegionRespDTO(
+        return new BaseRegionResponse(
                 region.getId(),
                 region.getRegionCode(),
                 region.getRegionName(),
                 region.getRemark(),
                 region.getCreatedAt(),
-                region.getUpdatedAt()
-        );
+                region.getUpdatedAt());
     }
 
-    private BaseRegionTb toEntity(BaseRegionCreateReqDTO reqDTO) {
+    private BaseRegionTb toEntity(BaseRegionCreateRequest reqDTO) {
         BaseRegionTb region = new BaseRegionTb();
         region.setRegionName(reqDTO.regionName());
         region.setRemark(reqDTO.remark());
         return region;
     }
 
-    private BaseRegionTb toEntity(BaseRegionUpdateReqDTO reqDTO) {
+    private BaseRegionTb toEntity(BaseRegionUpdateRequest reqDTO) {
         BaseRegionTb region = new BaseRegionTb();
         region.setRegionName(reqDTO.regionName());
         region.setRemark(reqDTO.remark());

@@ -1,19 +1,19 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.BaseIndustryCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseIndustryDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseIndustryPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseIndustryUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseIndustryRespDTO;
+import com.gas.forecast.business.dto.request.BaseIndustryCreateRequest;
+import com.gas.forecast.business.dto.request.BaseIndustryDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseIndustryPageRequest;
+import com.gas.forecast.business.dto.request.BaseIndustryUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseIndustryResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 public interface BaseIndustryService {
 
-    PageInfoDTO<BaseIndustryRespDTO> listPage(BaseIndustryPageReqDTO reqDTO);
+    PageInfoDTO<BaseIndustryResponse> listPage(BaseIndustryPageRequest reqDTO);
 
-    BaseIndustryRespDTO createIndustry(BaseIndustryCreateReqDTO reqDTO);
+    BaseIndustryResponse createIndustry(BaseIndustryCreateRequest reqDTO);
 
-    BaseIndustryRespDTO update(BaseIndustryUpdateReqDTO reqDTO);
+    BaseIndustryResponse update(BaseIndustryUpdateRequest reqDTO);
 
-    void delete(BaseIndustryDeleteReqDTO reqDTO);
+    void delete(BaseIndustryDeleteRequest reqDTO);
 }

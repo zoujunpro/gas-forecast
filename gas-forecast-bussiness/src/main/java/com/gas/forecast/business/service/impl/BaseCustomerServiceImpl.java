@@ -3,11 +3,11 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.BaseCustomerCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseCustomerRespDTO;
+import com.gas.forecast.business.dto.request.BaseCustomerCreateRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerPageRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseCustomerResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.BaseCustomerService;
@@ -15,16 +15,15 @@ import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.BaseIndustryTb;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
+import com.gas.forecast.dao.domain.BaseIndustryTb;
 import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
+import java.util.Date;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 /**
  * 客户基础信息业务服务实现。
@@ -37,10 +36,11 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
     private final BaseIndustryTbMapper baseIndustryTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
-    public BaseCustomerServiceImpl(BaseCustomerTbMapper baseCustomerTbMapper,
-                                   BaseRegionTbMapper baseRegionTbMapper,
-                                   BaseIndustryTbMapper baseIndustryTbMapper,
-                                   BaseCodeGenerateService baseCodeGenerateService) {
+    public BaseCustomerServiceImpl(
+            BaseCustomerTbMapper baseCustomerTbMapper,
+            BaseRegionTbMapper baseRegionTbMapper,
+            BaseIndustryTbMapper baseIndustryTbMapper,
+            BaseCodeGenerateService baseCodeGenerateService) {
         this.baseCustomerTbMapper = baseCustomerTbMapper;
         this.baseRegionTbMapper = baseRegionTbMapper;
         this.baseIndustryTbMapper = baseIndustryTbMapper;
@@ -51,12 +51,11 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
      * 分页查询客户列表。
      */
     @Override
-    public PageInfoDTO<BaseCustomerRespDTO> listPage(BaseCustomerPageReqDTO reqDTO) {
+    public PageInfoDTO<BaseCustomerResponse> listPage(BaseCustomerPageRequest reqDTO) {
         LambdaQueryWrapper<BaseCustomerTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(BaseCustomerTb::getCustomerCode, keyword)
+            query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword)
                     .or()
                     .like(BaseCustomerTb::getCustomerName, keyword)
                     .or()
@@ -68,7 +67,8 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<BaseCustomerTb> result = baseCustomerTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     /**
@@ -76,7 +76,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
      */
     @Override
     @Transactional
-    public BaseCustomerRespDTO createCustomer(BaseCustomerCreateReqDTO reqDTO) {
+    public BaseCustomerResponse createCustomer(BaseCustomerCreateRequest reqDTO) {
         BaseCustomerTb customer = toEntity(reqDTO);
         Date now = new Date();
         customer.setId(null);
@@ -92,7 +92,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
      * 更新客户。
      */
     @Override
-    public BaseCustomerRespDTO update(BaseCustomerUpdateReqDTO reqDTO) {
+    public BaseCustomerResponse update(BaseCustomerUpdateRequest reqDTO) {
         BaseCustomerTb customer = toEntity(reqDTO);
         Long id = reqDTO.id();
         customer.setId(id);
@@ -106,15 +106,15 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
      * 删除客户。
      */
     @Override
-    public void delete(BaseCustomerDeleteReqDTO reqDTO) {
+    public void delete(BaseCustomerDeleteRequest reqDTO) {
         baseCustomerTbMapper.deleteById(reqDTO.id());
     }
 
-    private BaseCustomerRespDTO toResp(BaseCustomerTb customer) {
+    private BaseCustomerResponse toResp(BaseCustomerTb customer) {
         if (customer == null) {
             return null;
         }
-        return new BaseCustomerRespDTO(
+        return new BaseCustomerResponse(
                 customer.getId(),
                 customer.getCustomerCode(),
                 customer.getCustomerName(),
@@ -125,23 +125,22 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
                 customer.getRawRegionName(),
                 customer.getRawIndustryName(),
                 customer.getCreatedAt(),
-                customer.getUpdatedAt()
-        );
+                customer.getUpdatedAt());
     }
 
-    private BaseCustomerTb toEntity(BaseCustomerCreateReqDTO reqDTO) {
+    private BaseCustomerTb toEntity(BaseCustomerCreateRequest reqDTO) {
         BaseCustomerTb customer = new BaseCustomerTb();
-        customer.setCustomerName(reqDTO.customerName());
-        customer.setIndustryName(reqDTO.industryName());
-        customer.setRegionName(reqDTO.regionName());
-        customer.setIndustryCode(resolveIndustryCode(reqDTO.industryName()));
-        customer.setRegionCode(resolveRegionCode(reqDTO.regionName()));
-        customer.setRawRegionName(reqDTO.rawRegionName());
-        customer.setRawIndustryName(reqDTO.rawIndustryName());
+        customer.setCustomerName(reqDTO.getCustomerName());
+        customer.setIndustryName(reqDTO.getIndustryName());
+        customer.setRegionName(reqDTO.getRegionName());
+        customer.setIndustryCode(resolveIndustryCode(reqDTO.getIndustryName()));
+        customer.setRegionCode(resolveRegionCode(reqDTO.getRegionName()));
+        customer.setRawRegionName(reqDTO.getRawRegionName());
+        customer.setRawIndustryName(reqDTO.getRawIndustryName());
         return customer;
     }
 
-    private BaseCustomerTb toEntity(BaseCustomerUpdateReqDTO reqDTO) {
+    private BaseCustomerTb toEntity(BaseCustomerUpdateRequest reqDTO) {
         BaseCustomerTb customer = new BaseCustomerTb();
         customer.setCustomerName(reqDTO.customerName());
         customer.setIndustryName(reqDTO.industryName());

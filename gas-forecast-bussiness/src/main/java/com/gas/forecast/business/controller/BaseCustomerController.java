@@ -1,10 +1,10 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.BaseCustomerCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseCustomerRespDTO;
+import com.gas.forecast.business.dto.request.BaseCustomerCreateRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerPageRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseCustomerResponse;
 import com.gas.forecast.business.service.BaseCustomerService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -37,7 +37,8 @@ public class BaseCustomerController {
     @PostMapping("listPage")
     @WebLog("客户列表分页查询")
     @RequirePermission("base:customer:list")
-    public ResponseResult<PageInfoDTO<BaseCustomerRespDTO>> listPage(@Valid @RequestBody BaseCustomerPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<BaseCustomerResponse>> listPage(
+            @Valid @RequestBody BaseCustomerPageRequest reqDTO) {
         return ResponseResult.success(baseCustomerService.listPage(reqDTO));
     }
 
@@ -47,7 +48,7 @@ public class BaseCustomerController {
     @PostMapping("create")
     @WebLog("新增客户")
     @RequirePermission("base:customer:create")
-    public ResponseResult<BaseCustomerRespDTO> create(@Valid @RequestBody BaseCustomerCreateReqDTO reqDTO) {
+    public ResponseResult<BaseCustomerResponse> create(@Valid @RequestBody BaseCustomerCreateRequest reqDTO) {
         return ResponseResult.success(baseCustomerService.createCustomer(reqDTO));
     }
 
@@ -57,7 +58,7 @@ public class BaseCustomerController {
     @PostMapping("update")
     @WebLog("编辑客户")
     @RequirePermission("base:customer:update")
-    public ResponseResult<BaseCustomerRespDTO> update(@Valid @RequestBody BaseCustomerUpdateReqDTO reqDTO) {
+    public ResponseResult<BaseCustomerResponse> update(@Valid @RequestBody BaseCustomerUpdateRequest reqDTO) {
         return ResponseResult.success(baseCustomerService.update(reqDTO));
     }
 
@@ -68,7 +69,7 @@ public class BaseCustomerController {
     @WebLog("删除客户")
     @RequirePermission("base:customer:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        baseCustomerService.delete(new BaseCustomerDeleteReqDTO(id));
+        baseCustomerService.delete(new BaseCustomerDeleteRequest(id));
         return ResponseResult.success(null);
     }
 }

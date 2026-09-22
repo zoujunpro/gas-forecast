@@ -3,8 +3,8 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.DataSalesPageReqDTO;
-import com.gas.forecast.business.dto.resp.DataSalesRespDTO;
+import com.gas.forecast.business.dto.request.DataSalesPageRequest;
+import com.gas.forecast.business.dto.response.DataSalesResponse;
 import com.gas.forecast.business.service.DataMonthlySalesService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -23,12 +23,11 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
     }
 
     @Override
-    public PageInfoDTO<DataSalesRespDTO> listPage(DataSalesPageReqDTO reqDTO) {
+    public PageInfoDTO<DataSalesResponse> listPage(DataSalesPageRequest reqDTO) {
         LambdaQueryWrapper<DataMonthlySalesTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(DataMonthlySalesTb::getRegionCode, keyword)
+            query.and(wrapper -> wrapper.like(DataMonthlySalesTb::getRegionCode, keyword)
                     .or()
                     .like(DataMonthlySalesTb::getRegionName, keyword)
                     .or()
@@ -51,15 +50,17 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         query.orderByDesc(DataMonthlySalesTb::getStatDate).orderByDesc(DataMonthlySalesTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<DataMonthlySalesTb> result = dataMonthlySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<DataMonthlySalesTb> result =
+                dataMonthlySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
-    private DataSalesRespDTO toResp(DataMonthlySalesTb item) {
+    private DataSalesResponse toResp(DataMonthlySalesTb item) {
         if (item == null) {
             return null;
         }
-        return new DataSalesRespDTO(
+        return new DataSalesResponse(
                 item.getId(),
                 item.getStatDate(),
                 item.getRegionCode(),
@@ -70,7 +71,6 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
                 item.getCustomerName(),
                 item.getGasSales(),
                 item.getFileId(),
-                item.getCreatedAt()
-        );
+                item.getCreatedAt());
     }
 }

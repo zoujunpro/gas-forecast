@@ -1,22 +1,22 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.ModelConfigCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelConfigDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelConfigPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelConfigScopeUpdateReqDTO;
-import com.gas.forecast.business.dto.req.ModelConfigUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelConfigRespDTO;
+import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelConfigDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
+import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
+import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelConfigResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 public interface ModelConfigService {
 
-    PageInfoDTO<ModelConfigRespDTO> listPage(ModelConfigPageReqDTO reqDTO);
+    PageInfoDTO<ModelConfigResponse> listPage(ModelConfigPageRequest reqDTO);
 
-    ModelConfigRespDTO create(ModelConfigCreateReqDTO reqDTO);
+    ModelConfigResponse create(ModelConfigCreateRequest reqDTO);
 
-    ModelConfigRespDTO update(ModelConfigUpdateReqDTO reqDTO);
+    ModelConfigResponse update(ModelConfigUpdateRequest reqDTO);
 
-    ModelConfigRespDTO updateScope(ModelConfigScopeUpdateReqDTO reqDTO);
+    ModelConfigResponse updateScope(ModelConfigScopeUpdateRequest reqDTO);
 
-    void delete(ModelConfigDeleteReqDTO reqDTO);
+    void delete(ModelConfigDeleteRequest reqDTO);
 }

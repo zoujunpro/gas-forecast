@@ -1,19 +1,19 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelFeatureDefinitionRespDTO;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 public interface ModelFeatureDefinitionService {
 
-    PageInfoDTO<ModelFeatureDefinitionRespDTO> listPage(ModelFeatureDefinitionPageReqDTO reqDTO);
+    PageInfoDTO<ModelFeatureDefinitionResponse> listPage(ModelFeatureDefinitionPageRequest reqDTO);
 
-    ModelFeatureDefinitionRespDTO create(ModelFeatureDefinitionCreateReqDTO reqDTO);
+    ModelFeatureDefinitionResponse create(ModelFeatureDefinitionCreateRequest reqDTO);
 
-    ModelFeatureDefinitionRespDTO update(ModelFeatureDefinitionUpdateReqDTO reqDTO);
+    ModelFeatureDefinitionResponse update(ModelFeatureDefinitionUpdateRequest reqDTO);
 
-    void delete(ModelFeatureDefinitionDeleteReqDTO reqDTO);
+    void delete(ModelFeatureDefinitionDeleteRequest reqDTO);
 }

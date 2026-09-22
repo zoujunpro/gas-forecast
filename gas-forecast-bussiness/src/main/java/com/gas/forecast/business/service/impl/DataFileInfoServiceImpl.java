@@ -3,11 +3,11 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.DataFileInfoCreateReqDTO;
-import com.gas.forecast.business.dto.req.DataFileInfoDeleteReqDTO;
-import com.gas.forecast.business.dto.req.DataFileInfoPageReqDTO;
-import com.gas.forecast.business.dto.req.DataFileInfoUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.DataFileInfoRespDTO;
+import com.gas.forecast.business.dto.request.DataFileInfoCreateRequest;
+import com.gas.forecast.business.dto.request.DataFileInfoDeleteRequest;
+import com.gas.forecast.business.dto.request.DataFileInfoPageRequest;
+import com.gas.forecast.business.dto.request.DataFileInfoUpdateRequest;
+import com.gas.forecast.business.dto.response.DataFileInfoResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.DataFileInfoService;
@@ -16,10 +16,9 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.DataFileInfoTb;
 import com.gas.forecast.dao.mapper.DataFileInfoTbMapper;
+import java.util.Date;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 /**
  * 原始数据文件信息业务服务实现。
@@ -30,8 +29,8 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
     private final DataFileInfoTbMapper dataFileInfoTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
-    public DataFileInfoServiceImpl(DataFileInfoTbMapper dataFileInfoTbMapper,
-                                   BaseCodeGenerateService baseCodeGenerateService) {
+    public DataFileInfoServiceImpl(
+            DataFileInfoTbMapper dataFileInfoTbMapper, BaseCodeGenerateService baseCodeGenerateService) {
         this.dataFileInfoTbMapper = dataFileInfoTbMapper;
         this.baseCodeGenerateService = baseCodeGenerateService;
     }
@@ -40,12 +39,11 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
      * 分页查询原始数据文件列表。
      */
     @Override
-    public PageInfoDTO<DataFileInfoRespDTO> listPage(DataFileInfoPageReqDTO reqDTO) {
+    public PageInfoDTO<DataFileInfoResponse> listPage(DataFileInfoPageRequest reqDTO) {
         LambdaQueryWrapper<DataFileInfoTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(DataFileInfoTb::getFileCode, keyword)
+            query.and(wrapper -> wrapper.like(DataFileInfoTb::getFileCode, keyword)
                     .or()
                     .like(DataFileInfoTb::getFileName, keyword)
                     .or()
@@ -61,7 +59,8 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<DataFileInfoTb> result = dataFileInfoTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     /**
@@ -69,7 +68,7 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
      */
     @Override
     @Transactional
-    public DataFileInfoRespDTO create(DataFileInfoCreateReqDTO reqDTO) {
+    public DataFileInfoResponse create(DataFileInfoCreateRequest reqDTO) {
         DataFileInfoTb fileInfo = toEntity(reqDTO);
         Date now = new Date();
         fileInfo.setId(null);
@@ -84,7 +83,7 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
      * 更新原始数据文件信息。
      */
     @Override
-    public DataFileInfoRespDTO update(DataFileInfoUpdateReqDTO reqDTO) {
+    public DataFileInfoResponse update(DataFileInfoUpdateRequest reqDTO) {
         DataFileInfoTb fileInfo = toEntity(reqDTO);
         Long id = reqDTO.id();
         fileInfo.setId(id);
@@ -97,15 +96,15 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
      * 删除原始数据文件信息。
      */
     @Override
-    public void delete(DataFileInfoDeleteReqDTO reqDTO) {
+    public void delete(DataFileInfoDeleteRequest reqDTO) {
         dataFileInfoTbMapper.deleteById(reqDTO.id());
     }
 
-    private DataFileInfoRespDTO toResp(DataFileInfoTb fileInfo) {
+    private DataFileInfoResponse toResp(DataFileInfoTb fileInfo) {
         if (fileInfo == null) {
             return null;
         }
-        return new DataFileInfoRespDTO(
+        return new DataFileInfoResponse(
                 fileInfo.getId(),
                 fileInfo.getFileCode(),
                 fileInfo.getFileName(),
@@ -117,11 +116,10 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
                 fileInfo.getCreatedAt(),
                 fileInfo.getUpdatedAt(),
                 fileInfo.getCreatedBy(),
-                fileInfo.getCreatedByName()
-        );
+                fileInfo.getCreatedByName());
     }
 
-    private DataFileInfoTb toEntity(DataFileInfoCreateReqDTO reqDTO) {
+    private DataFileInfoTb toEntity(DataFileInfoCreateRequest reqDTO) {
         DataFileInfoTb fileInfo = new DataFileInfoTb();
         fileInfo.setFileName(reqDTO.fileName());
         fileInfo.setObjectKey(reqDTO.objectKey());
@@ -134,7 +132,7 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         return fileInfo;
     }
 
-    private DataFileInfoTb toEntity(DataFileInfoUpdateReqDTO reqDTO) {
+    private DataFileInfoTb toEntity(DataFileInfoUpdateRequest reqDTO) {
         DataFileInfoTb fileInfo = new DataFileInfoTb();
         fileInfo.setFileName(reqDTO.fileName());
         fileInfo.setObjectKey(reqDTO.objectKey());

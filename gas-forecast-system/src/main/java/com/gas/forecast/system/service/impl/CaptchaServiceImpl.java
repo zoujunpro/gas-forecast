@@ -1,11 +1,8 @@
 package com.gas.forecast.system.service.impl;
 
 import com.gas.forecast.common.core.BusinessException;
-import com.gas.forecast.system.dto.resp.AuthCaptchaRespDTO;
+import com.gas.forecast.system.dto.resp.AuthCaptchaResponse;
 import com.gas.forecast.system.service.CaptchaService;
-import org.springframework.stereotype.Service;
-
-import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -18,6 +15,11 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.imageio.ImageIO;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 public class CaptchaServiceImpl implements CaptchaService {
@@ -30,12 +32,12 @@ public class CaptchaServiceImpl implements CaptchaService {
     private final Map<String, CaptchaItem> captchas = new ConcurrentHashMap<>();
 
     @Override
-    public AuthCaptchaRespDTO createCaptcha() {
+    public AuthCaptchaResponse createCaptcha() {
         cleanupExpired();
         String code = randomCode();
         String captchaId = UUID.randomUUID().toString().replace("-", "");
         captchas.put(captchaId, new CaptchaItem(code, Instant.now().getEpochSecond() + EXPIRE_SECONDS));
-        return new AuthCaptchaRespDTO(captchaId, renderImage(code));
+        return new AuthCaptchaResponse(captchaId, renderImage(code));
     }
 
     @Override
@@ -87,7 +89,8 @@ public class CaptchaServiceImpl implements CaptchaService {
         for (int index = 0; index < 8; index++) {
             graphics.setColor(new Color(180 + random.nextInt(50), 190 + random.nextInt(45), 205 + random.nextInt(40)));
             int y = random.nextInt(HEIGHT);
-            graphics.drawLine(random.nextInt(WIDTH / 2), y, WIDTH / 2 + random.nextInt(WIDTH / 2), random.nextInt(HEIGHT));
+            graphics.drawLine(
+                    random.nextInt(WIDTH / 2), y, WIDTH / 2 + random.nextInt(WIDTH / 2), random.nextInt(HEIGHT));
         }
         for (int index = 0; index < 32; index++) {
             graphics.setColor(new Color(180 + random.nextInt(60), 190 + random.nextInt(55), 205 + random.nextInt(45)));
@@ -100,6 +103,20 @@ public class CaptchaServiceImpl implements CaptchaService {
         captchas.entrySet().removeIf(entry -> entry.getValue().expiresAt() < now);
     }
 
-    private record CaptchaItem(String code, long expiresAt) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class CaptchaItem {
+        private String code;
+
+        private long expiresAt;
+
+        public String code() {
+            return code;
+        }
+
+        public long expiresAt() {
+            return expiresAt;
+        }
     }
 }

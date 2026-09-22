@@ -1,10 +1,10 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelFeatureDefinitionRespDTO;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
 import com.gas.forecast.business.service.ModelFeatureDefinitionService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -34,21 +34,24 @@ public class ModelFeatureDefinitionController {
     @PostMapping("listPage")
     @WebLog("特征定义列表查询")
     @RequirePermission("model:feature-definition:list")
-    public ResponseResult<PageInfoDTO<ModelFeatureDefinitionRespDTO>> listPage(@Valid @RequestBody ModelFeatureDefinitionPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<ModelFeatureDefinitionResponse>> listPage(
+            @Valid @RequestBody ModelFeatureDefinitionPageRequest reqDTO) {
         return ResponseResult.success(modelFeatureDefinitionService.listPage(reqDTO));
     }
 
     @PostMapping("create")
     @WebLog("新增特征定义")
     @RequirePermission("model:feature-definition:create")
-    public ResponseResult<ModelFeatureDefinitionRespDTO> create(@Valid @RequestBody ModelFeatureDefinitionCreateReqDTO reqDTO) {
+    public ResponseResult<ModelFeatureDefinitionResponse> create(
+            @Valid @RequestBody ModelFeatureDefinitionCreateRequest reqDTO) {
         return ResponseResult.success(modelFeatureDefinitionService.create(reqDTO));
     }
 
     @PostMapping("update")
     @WebLog("编辑特征定义")
     @RequirePermission("model:feature-definition:update")
-    public ResponseResult<ModelFeatureDefinitionRespDTO> update(@Valid @RequestBody ModelFeatureDefinitionUpdateReqDTO reqDTO) {
+    public ResponseResult<ModelFeatureDefinitionResponse> update(
+            @Valid @RequestBody ModelFeatureDefinitionUpdateRequest reqDTO) {
         return ResponseResult.success(modelFeatureDefinitionService.update(reqDTO));
     }
 
@@ -56,7 +59,7 @@ public class ModelFeatureDefinitionController {
     @WebLog("删除特征定义")
     @RequirePermission("model:feature-definition:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        modelFeatureDefinitionService.delete(new ModelFeatureDefinitionDeleteReqDTO(id));
+        modelFeatureDefinitionService.delete(new ModelFeatureDefinitionDeleteRequest(id));
         return ResponseResult.success(null);
     }
 }

@@ -3,11 +3,11 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelFeatureDefinitionUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelFeatureDefinitionRespDTO;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
+import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
 import com.gas.forecast.business.service.ModelFeatureDefinitionService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
@@ -15,10 +15,9 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
+import java.util.Date;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 @Service
 public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinitionService {
@@ -30,12 +29,11 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
     }
 
     @Override
-    public PageInfoDTO<ModelFeatureDefinitionRespDTO> listPage(ModelFeatureDefinitionPageReqDTO reqDTO) {
+    public PageInfoDTO<ModelFeatureDefinitionResponse> listPage(ModelFeatureDefinitionPageRequest reqDTO) {
         LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(ModelFeatureDefinitionTb::getFeatureCode, keyword)
+            query.and(wrapper -> wrapper.like(ModelFeatureDefinitionTb::getFeatureCode, keyword)
                     .or()
                     .like(ModelFeatureDefinitionTb::getFeatureName, keyword)
                     .or()
@@ -46,18 +44,22 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
                     .like(ModelFeatureDefinitionTb::getDescription, keyword));
         }
         if (TextUtils.hasText(reqDTO.timeGranularity())) {
-            query.eq(ModelFeatureDefinitionTb::getTimeGranularity, reqDTO.timeGranularity().trim());
+            query.eq(
+                    ModelFeatureDefinitionTb::getTimeGranularity,
+                    reqDTO.timeGranularity().trim());
         }
         query.orderByDesc(ModelFeatureDefinitionTb::getCreatedAt).orderByDesc(ModelFeatureDefinitionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<ModelFeatureDefinitionTb> result = modelFeatureDefinitionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<ModelFeatureDefinitionTb> result =
+                modelFeatureDefinitionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
     @Transactional
-    public ModelFeatureDefinitionRespDTO create(ModelFeatureDefinitionCreateReqDTO reqDTO) {
+    public ModelFeatureDefinitionResponse create(ModelFeatureDefinitionCreateRequest reqDTO) {
         ensureFeatureCodeUnique(reqDTO.featureCode(), reqDTO.timeGranularity(), null);
         ModelFeatureDefinitionTb entity = toEntity(reqDTO);
         entity.setId(null);
@@ -71,7 +73,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
 
     @Override
     @Transactional
-    public ModelFeatureDefinitionRespDTO update(ModelFeatureDefinitionUpdateReqDTO reqDTO) {
+    public ModelFeatureDefinitionResponse update(ModelFeatureDefinitionUpdateRequest reqDTO) {
         ModelFeatureDefinitionTb exists = modelFeatureDefinitionTbMapper.selectById(reqDTO.id());
         if (exists == null) {
             throw new BusinessException("特征定义不存在");
@@ -79,9 +81,10 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         ensureFeatureCodeUnique(reqDTO.featureCode(), reqDTO.timeGranularity(), reqDTO.id());
         ModelFeatureDefinitionTb entity = toEntity(reqDTO);
         entity.setId(reqDTO.id());
-        entity.setFeatureColumn(TextUtils.hasText(reqDTO.featureColumn())
-                ? resolveFeatureColumn(reqDTO.featureColumn(), reqDTO.id())
-                : exists.getFeatureColumn());
+        entity.setFeatureColumn(
+                TextUtils.hasText(reqDTO.featureColumn())
+                        ? resolveFeatureColumn(reqDTO.featureColumn(), reqDTO.id())
+                        : exists.getFeatureColumn());
         entity.setCreatedAt(exists.getCreatedAt());
         entity.setCreatedBy(exists.getCreatedBy());
         entity.setUpdatedByName("系统");
@@ -91,7 +94,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
 
     @Override
     @Transactional
-    public void delete(ModelFeatureDefinitionDeleteReqDTO reqDTO) {
+    public void delete(ModelFeatureDefinitionDeleteRequest reqDTO) {
         modelFeatureDefinitionTbMapper.deleteById(reqDTO.id());
     }
 
@@ -124,7 +127,8 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         for (int slot = 1; slot <= 200; slot++) {
             String candidate = String.format("feature_%03d", slot);
             if (modelFeatureDefinitionTbMapper.selectCount(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery()
-                    .eq(ModelFeatureDefinitionTb::getFeatureColumn, candidate)) == 0) {
+                            .eq(ModelFeatureDefinitionTb::getFeatureColumn, candidate))
+                    == 0) {
                 return candidate;
             }
         }
@@ -142,11 +146,11 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         }
     }
 
-    private ModelFeatureDefinitionRespDTO toResp(ModelFeatureDefinitionTb entity) {
+    private ModelFeatureDefinitionResponse toResp(ModelFeatureDefinitionTb entity) {
         if (entity == null) {
             return null;
         }
-        return new ModelFeatureDefinitionRespDTO(
+        return new ModelFeatureDefinitionResponse(
                 entity.getId(),
                 entity.getFeatureCode(),
                 entity.getFeatureName(),
@@ -156,11 +160,10 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
                 entity.getDescription(),
                 entity.getCreatedAt(),
                 entity.getCreatedBy(),
-                entity.getUpdatedByName()
-        );
+                entity.getUpdatedByName());
     }
 
-    private ModelFeatureDefinitionTb toEntity(ModelFeatureDefinitionCreateReqDTO reqDTO) {
+    private ModelFeatureDefinitionTb toEntity(ModelFeatureDefinitionCreateRequest reqDTO) {
         ModelFeatureDefinitionTb entity = new ModelFeatureDefinitionTb();
         entity.setFeatureCode(reqDTO.featureCode());
         entity.setFeatureName(reqDTO.featureName());
@@ -171,7 +174,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         return entity;
     }
 
-    private ModelFeatureDefinitionTb toEntity(ModelFeatureDefinitionUpdateReqDTO reqDTO) {
+    private ModelFeatureDefinitionTb toEntity(ModelFeatureDefinitionUpdateRequest reqDTO) {
         ModelFeatureDefinitionTb entity = new ModelFeatureDefinitionTb();
         entity.setFeatureCode(reqDTO.featureCode());
         entity.setFeatureName(reqDTO.featureName());

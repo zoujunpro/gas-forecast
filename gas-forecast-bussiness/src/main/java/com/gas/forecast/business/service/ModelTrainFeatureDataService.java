@@ -1,19 +1,19 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.ModelTrainFeatureDataCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainFeatureDataDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainFeatureDataPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainFeatureDataUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainFeatureDataRespDTO;
+import com.gas.forecast.business.dto.request.ModelTrainFeatureDataCreateRequest;
+import com.gas.forecast.business.dto.request.ModelTrainFeatureDataDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelTrainFeatureDataPageRequest;
+import com.gas.forecast.business.dto.request.ModelTrainFeatureDataUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelTrainFeatureDataResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 public interface ModelTrainFeatureDataService {
 
-    PageInfoDTO<ModelTrainFeatureDataRespDTO> listPage(ModelTrainFeatureDataPageReqDTO reqDTO);
+    PageInfoDTO<ModelTrainFeatureDataResponse> listPage(ModelTrainFeatureDataPageRequest reqDTO);
 
-    ModelTrainFeatureDataRespDTO create(ModelTrainFeatureDataCreateReqDTO reqDTO);
+    ModelTrainFeatureDataResponse create(ModelTrainFeatureDataCreateRequest reqDTO);
 
-    ModelTrainFeatureDataRespDTO update(ModelTrainFeatureDataUpdateReqDTO reqDTO);
+    ModelTrainFeatureDataResponse update(ModelTrainFeatureDataUpdateRequest reqDTO);
 
-    void delete(ModelTrainFeatureDataDeleteReqDTO reqDTO);
+    void delete(ModelTrainFeatureDataDeleteRequest reqDTO);
 }

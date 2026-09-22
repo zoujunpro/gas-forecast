@@ -3,8 +3,8 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.DataSalesPageReqDTO;
-import com.gas.forecast.business.dto.resp.DataSalesRespDTO;
+import com.gas.forecast.business.dto.request.DataSalesPageRequest;
+import com.gas.forecast.business.dto.response.DataSalesResponse;
 import com.gas.forecast.business.service.DataDailySalesService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -23,12 +23,11 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
     }
 
     @Override
-    public PageInfoDTO<DataSalesRespDTO> listPage(DataSalesPageReqDTO reqDTO) {
+    public PageInfoDTO<DataSalesResponse> listPage(DataSalesPageRequest reqDTO) {
         LambdaQueryWrapper<DataDailySalesTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(DataDailySalesTb::getRegionCode, keyword)
+            query.and(wrapper -> wrapper.like(DataDailySalesTb::getRegionCode, keyword)
                     .or()
                     .like(DataDailySalesTb::getRegionName, keyword)
                     .or()
@@ -52,14 +51,15 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<DataDailySalesTb> result = dataDailySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
-    private DataSalesRespDTO toResp(DataDailySalesTb item) {
+    private DataSalesResponse toResp(DataDailySalesTb item) {
         if (item == null) {
             return null;
         }
-        return new DataSalesRespDTO(
+        return new DataSalesResponse(
                 item.getId(),
                 item.getStatDate(),
                 item.getRegionCode(),
@@ -70,7 +70,6 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
                 item.getCustomerName(),
                 item.getGasSales(),
                 item.getFileId(),
-                item.getCreatedAt()
-        );
+                item.getCreatedAt());
     }
 }

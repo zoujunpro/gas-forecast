@@ -1,7 +1,7 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.ModelTrainFeatureDataPageReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainFeatureDataRespDTO;
+import com.gas.forecast.business.dto.request.ModelTrainFeatureDataPageRequest;
+import com.gas.forecast.business.dto.response.ModelTrainFeatureDataResponse;
 import com.gas.forecast.business.service.ModelTrainFeatureDataService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -29,7 +29,8 @@ public class ModelTrainFeatureDataController {
     @PostMapping("listPage")
     @WebLog("训练特征数据列表查询")
     @RequirePermission("model:train-feature-data:list")
-    public ResponseResult<PageInfoDTO<ModelTrainFeatureDataRespDTO>> listPage(@Valid @RequestBody ModelTrainFeatureDataPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<ModelTrainFeatureDataResponse>> listPage(
+            @Valid @RequestBody ModelTrainFeatureDataPageRequest reqDTO) {
         return ResponseResult.success(modelTrainFeatureDataService.listPage(reqDTO));
     }
 }

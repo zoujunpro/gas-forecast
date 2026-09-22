@@ -1,10 +1,10 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.ModelTrainConfigCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainConfigRespDTO;
+import com.gas.forecast.business.dto.request.ModelTrainConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigPageRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelTrainConfigResponse;
 import com.gas.forecast.business.service.ModelTrainConfigService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -34,21 +34,22 @@ public class ModelTrainConfigController {
     @PostMapping("listPage")
     @WebLog("模型训练配置列表查询")
     @RequirePermission("model:train-config:list")
-    public ResponseResult<PageInfoDTO<ModelTrainConfigRespDTO>> listPage(@Valid @RequestBody ModelTrainConfigPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<ModelTrainConfigResponse>> listPage(
+            @Valid @RequestBody ModelTrainConfigPageRequest reqDTO) {
         return ResponseResult.success(modelTrainConfigService.listPage(reqDTO));
     }
 
     @PostMapping("create")
     @WebLog("新增模型训练配置")
     @RequirePermission("model:train-config:create")
-    public ResponseResult<ModelTrainConfigRespDTO> create(@Valid @RequestBody ModelTrainConfigCreateReqDTO reqDTO) {
+    public ResponseResult<ModelTrainConfigResponse> create(@Valid @RequestBody ModelTrainConfigCreateRequest reqDTO) {
         return ResponseResult.success(modelTrainConfigService.create(reqDTO));
     }
 
     @PostMapping("update")
     @WebLog("编辑模型训练配置")
     @RequirePermission("model:train-config:update")
-    public ResponseResult<ModelTrainConfigRespDTO> update(@Valid @RequestBody ModelTrainConfigUpdateReqDTO reqDTO) {
+    public ResponseResult<ModelTrainConfigResponse> update(@Valid @RequestBody ModelTrainConfigUpdateRequest reqDTO) {
         return ResponseResult.success(modelTrainConfigService.update(reqDTO));
     }
 
@@ -56,7 +57,7 @@ public class ModelTrainConfigController {
     @WebLog("删除模型训练配置")
     @RequirePermission("model:train-config:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        modelTrainConfigService.delete(new ModelTrainConfigDeleteReqDTO(id));
+        modelTrainConfigService.delete(new ModelTrainConfigDeleteRequest(id));
         return ResponseResult.success(null);
     }
 }

@@ -1,19 +1,19 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.ModelTrainConfigCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainConfigRespDTO;
+import com.gas.forecast.business.dto.request.ModelTrainConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigPageRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelTrainConfigResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 public interface ModelTrainConfigService {
 
-    PageInfoDTO<ModelTrainConfigRespDTO> listPage(ModelTrainConfigPageReqDTO reqDTO);
+    PageInfoDTO<ModelTrainConfigResponse> listPage(ModelTrainConfigPageRequest reqDTO);
 
-    ModelTrainConfigRespDTO create(ModelTrainConfigCreateReqDTO reqDTO);
+    ModelTrainConfigResponse create(ModelTrainConfigCreateRequest reqDTO);
 
-    ModelTrainConfigRespDTO update(ModelTrainConfigUpdateReqDTO reqDTO);
+    ModelTrainConfigResponse update(ModelTrainConfigUpdateRequest reqDTO);
 
-    void delete(ModelTrainConfigDeleteReqDTO reqDTO);
+    void delete(ModelTrainConfigDeleteRequest reqDTO);
 }

@@ -1,3 +1,6 @@
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -32,10 +35,62 @@ public class ImportProcessedFeatureData {
     private static final Path DEFAULT_DIR = Path.of("/Users/zoujun/Documents/冬供_副本/江苏河北冬供旬预测智能体/data/processed_data1");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private record FeatureSpec(String sourceColumn, String featureCode, String featureName, String description) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class FeatureSpec {
+        private String sourceColumn;
+
+        private String featureCode;
+
+        private String featureName;
+
+        private String description;
+
+        public String sourceColumn() {
+            return sourceColumn;
+        }
+
+        public String featureCode() {
+            return featureCode;
+        }
+
+        public String featureName() {
+            return featureName;
+        }
+
+        public String description() {
+            return description;
+        }
     }
 
-    private record ImportRow(String province, String statDate, BigDecimal gasSales, Map<String, BigDecimal> features) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class ImportRow {
+        private String province;
+
+        private String statDate;
+
+        private BigDecimal gasSales;
+
+        private Map<String, BigDecimal> features;
+
+        public String province() {
+            return province;
+        }
+
+        public String statDate() {
+            return statDate;
+        }
+
+        public BigDecimal gasSales() {
+            return gasSales;
+        }
+
+        public Map<String, BigDecimal> features() {
+            return features;
+        }
     }
 
     private static final List<FeatureSpec> FEATURES = List.of(

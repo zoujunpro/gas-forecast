@@ -1,10 +1,10 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.BaseRegionCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseRegionDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseRegionPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseRegionUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseRegionRespDTO;
+import com.gas.forecast.business.dto.request.BaseRegionCreateRequest;
+import com.gas.forecast.business.dto.request.BaseRegionDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseRegionPageRequest;
+import com.gas.forecast.business.dto.request.BaseRegionUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseRegionResponse;
 import com.gas.forecast.business.service.BaseRegionService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -37,7 +37,7 @@ public class BaseRegionController {
     @PostMapping("listPage")
     @WebLog("区域列表查询")
     @RequirePermission("base:region:list")
-    public ResponseResult<PageInfoDTO<BaseRegionRespDTO>> listPage(@Valid @RequestBody BaseRegionPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<BaseRegionResponse>> listPage(@Valid @RequestBody BaseRegionPageRequest reqDTO) {
         return ResponseResult.success(baseRegionService.listPage(reqDTO));
     }
 
@@ -47,7 +47,7 @@ public class BaseRegionController {
     @PostMapping("create")
     @WebLog("新增区域")
     @RequirePermission("base:region:create")
-    public ResponseResult<BaseRegionRespDTO> create(@Valid @RequestBody BaseRegionCreateReqDTO reqDTO) {
+    public ResponseResult<BaseRegionResponse> create(@Valid @RequestBody BaseRegionCreateRequest reqDTO) {
         return ResponseResult.success(baseRegionService.createRegion(reqDTO));
     }
 
@@ -57,7 +57,7 @@ public class BaseRegionController {
     @PostMapping("update")
     @WebLog("编辑区域")
     @RequirePermission("base:region:update")
-    public ResponseResult<BaseRegionRespDTO> update(@Valid @RequestBody BaseRegionUpdateReqDTO reqDTO) {
+    public ResponseResult<BaseRegionResponse> update(@Valid @RequestBody BaseRegionUpdateRequest reqDTO) {
         return ResponseResult.success(baseRegionService.update(reqDTO));
     }
 
@@ -68,7 +68,7 @@ public class BaseRegionController {
     @WebLog("删除区域")
     @RequirePermission("base:region:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        baseRegionService.delete(new BaseRegionDeleteReqDTO(id));
+        baseRegionService.delete(new BaseRegionDeleteRequest(id));
         return ResponseResult.success(null);
     }
 }

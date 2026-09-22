@@ -1,3 +1,6 @@
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -33,7 +36,27 @@ public class ImportDailyPowerFeatureData {
     private static final String TIME_GRANULARITY = "DAY";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private record ImportRow(String statDate, BigDecimal gasSales, Map<String, BigDecimal> features) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class ImportRow {
+        private String statDate;
+
+        private BigDecimal gasSales;
+
+        private Map<String, BigDecimal> features;
+
+        public String statDate() {
+            return statDate;
+        }
+
+        public BigDecimal gasSales() {
+            return gasSales;
+        }
+
+        public Map<String, BigDecimal> features() {
+            return features;
+        }
     }
 
     public static void main(String[] args) throws Exception {

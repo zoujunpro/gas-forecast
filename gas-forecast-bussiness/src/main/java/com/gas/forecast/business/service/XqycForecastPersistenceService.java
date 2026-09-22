@@ -5,11 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,6 +16,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class XqycForecastPersistenceService {
@@ -31,8 +33,8 @@ public class XqycForecastPersistenceService {
     private final ObjectMapper objectMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
-    public XqycForecastPersistenceService(ModelForecastResultTbMapper modelForecastResultTbMapper,
-                                          ObjectMapper objectMapper) {
+    public XqycForecastPersistenceService(
+            ModelForecastResultTbMapper modelForecastResultTbMapper, ObjectMapper objectMapper) {
         this.modelForecastResultTbMapper = modelForecastResultTbMapper;
         this.objectMapper = objectMapper;
     }
@@ -42,16 +44,20 @@ public class XqycForecastPersistenceService {
         return persist(agentId, request, BATCH_TIME_FORMAT.format(LocalDateTime.now()), false);
     }
 
-    private PersistSummary persist(String agentId, JsonNode request, String batchTime, boolean replaceBatch) throws Exception {
+    private PersistSummary persist(String agentId, JsonNode request, String batchTime, boolean replaceBatch)
+            throws Exception {
         AgentFiles agentFiles = AgentFiles.from(agentId);
         Resource[] resources = resolver.getResources("classpath*:" + agentFiles.pattern());
         Arrays.sort(resources, Comparator.comparing(resource -> {
             String filename = resource.getFilename();
             return filename == null ? "" : filename;
         }));
-        String requestedProvince = request.path("province").asText(request.path("region_name").asText(""));
-        String requestedIndustry = normalizeIndustry(request.path("industry").asText(request.path("industry_name").asText("")));
-        String requestedCustomer = request.path("customer").asText(request.path("customer_name").asText(""));
+        String requestedProvince =
+                request.path("province").asText(request.path("region_name").asText(""));
+        String requestedIndustry = normalizeIndustry(
+                request.path("industry").asText(request.path("industry_name").asText("")));
+        String requestedCustomer =
+                request.path("customer").asText(request.path("customer_name").asText(""));
         AtomicInteger sequence = new AtomicInteger(1);
         int batchCount = 0;
         int resultCount = 0;
@@ -64,13 +70,17 @@ public class XqycForecastPersistenceService {
             }
 
             FileParts fileParts = parseName(resource.getFilename());
-            String industry = result.path("industry").asText(fileParts.industry() == null ? "全部行业" : fileParts.industry());
-            String customer = result.path("customer").asText(fileParts.customer() == null ? "全部客户" : fileParts.customer());
-            if (!requestedIndustry.isBlank() && !"全部行业".equals(requestedIndustry)
+            String industry =
+                    result.path("industry").asText(fileParts.industry() == null ? "全部行业" : fileParts.industry());
+            String customer =
+                    result.path("customer").asText(fileParts.customer() == null ? "全部客户" : fileParts.customer());
+            if (!requestedIndustry.isBlank()
+                    && !"全部行业".equals(requestedIndustry)
                     && !requestedIndustry.equals(normalizeIndustry(industry))) {
                 continue;
             }
-            if (!requestedCustomer.isBlank() && !"全部客户".equals(requestedCustomer)
+            if (!requestedCustomer.isBlank()
+                    && !"全部客户".equals(requestedCustomer)
                     && !requestedCustomer.equals(customer)) {
                 continue;
             }
@@ -93,16 +103,15 @@ public class XqycForecastPersistenceService {
     }
 
     private void deleteForecastResults(String batchNo) {
-        modelForecastResultTbMapper.delete(Wrappers.<ModelForecastResultTb>lambdaQuery()
-                .eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
+        modelForecastResultTbMapper.delete(
+                Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
     }
 
-    private List<ModelForecastResultTb> buildResultRecords(String agentId,
-                                                           String batchTime,
-                                                           int sequence,
-                                                           JsonNode result) {
+    private List<ModelForecastResultTb> buildResultRecords(
+            String agentId, String batchTime, int sequence, JsonNode result) {
         JsonNode dates = result.hasNonNull("future_dates") ? result.get("future_dates") : result.get("dates");
-        JsonNode values = result.hasNonNull("future_predicted") ? result.get("future_predicted") : result.get("predicted");
+        JsonNode values =
+                result.hasNonNull("future_predicted") ? result.get("future_predicted") : result.get("predicted");
         List<ModelForecastResultTb> records = new ArrayList<>();
         if (dates == null || values == null || !dates.isArray() || !values.isArray()) {
             return records;
@@ -147,19 +156,43 @@ public class XqycForecastPersistenceService {
     }
 
     private String batchNo(String agentId, String batchTime, int sequence) {
-        String prefix = switch (agentId) {
-            case "winter-supply" -> "WSFC";
-            case "monthly-sales" -> "MSFC";
-            case "short-term" -> "STFC";
-            default -> "XQFC";
-        };
+        String prefix =
+                switch (agentId) {
+                    case "winter-supply" -> "WSFC";
+                    case "monthly-sales" -> "MSFC";
+                    case "short-term" -> "STFC";
+                    default -> "XQFC";
+                };
         return String.format(Locale.ROOT, "%s-%s-%03d", prefix, batchTime, sequence);
     }
 
-    private record FileParts(String industry, String customer) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class FileParts {
+        private String industry;
+
+        private String customer;
+
+        public String industry() {
+            return industry;
+        }
+
+        public String customer() {
+            return customer;
+        }
     }
 
-    private record AgentFiles(String pattern) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class AgentFiles {
+        private String pattern;
+
+        public String pattern() {
+            return pattern;
+        }
+
         private static AgentFiles from(String agentId) {
             return switch (agentId) {
                 case "monthly-sales" -> new AgentFiles("xqyc/result_data/*.json");
@@ -170,6 +203,20 @@ public class XqycForecastPersistenceService {
         }
     }
 
-    public record PersistSummary(int batchCount, int resultCount) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PersistSummary {
+        private int batchCount;
+
+        private int resultCount;
+
+        public int batchCount() {
+            return batchCount;
+        }
+
+        public int resultCount() {
+            return resultCount;
+        }
     }
 }

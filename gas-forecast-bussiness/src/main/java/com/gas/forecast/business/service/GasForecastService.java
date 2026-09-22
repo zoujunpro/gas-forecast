@@ -1,20 +1,19 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.resp.ForecastDashboardRespDTO;
-import com.gas.forecast.business.dto.resp.ForecastDimensionRespDTO;
-import com.gas.forecast.business.dto.resp.ForecastSummaryRespDTO;
-
+import com.gas.forecast.business.dto.response.ForecastDashboardResponse;
+import com.gas.forecast.business.dto.response.ForecastDimensionResponse;
+import com.gas.forecast.business.dto.response.ForecastSummaryResponse;
 import java.util.List;
 
 public interface GasForecastService {
 
     List<String> listProvinces();
 
-    List<ForecastSummaryRespDTO> listSummaries();
+    List<ForecastSummaryResponse> listSummaries();
 
-    ForecastDimensionRespDTO listDimensions(String areaCode, String provinceCode);
+    ForecastDimensionResponse listDimensions(String areaCode, String provinceCode);
 
-    ForecastDashboardRespDTO getDashboard(String province);
+    ForecastDashboardResponse getDashboard(String province);
 
-    ForecastDashboardRespDTO getDashboardByCode(String provinceCode, String customerCode);
+    ForecastDashboardResponse getDashboardByCode(String provinceCode, String customerCode);
 }

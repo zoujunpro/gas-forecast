@@ -1,9 +1,9 @@
 package com.gas.forecast.system.service;
 
-import com.gas.forecast.system.dto.resp.AuthCaptchaRespDTO;
+import com.gas.forecast.system.dto.resp.AuthCaptchaResponse;
 
 public interface CaptchaService {
-    AuthCaptchaRespDTO createCaptcha();
+    AuthCaptchaResponse createCaptcha();
 
     void validate(String captchaId, String captchaCode);
 }

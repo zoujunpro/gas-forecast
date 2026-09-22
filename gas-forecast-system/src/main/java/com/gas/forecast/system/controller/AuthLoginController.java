@@ -1,19 +1,19 @@
 package com.gas.forecast.system.controller;
 
-import com.gas.forecast.system.dto.req.AuthLoginReqDTO;
-import com.gas.forecast.system.dto.resp.AuthCaptchaRespDTO;
-import com.gas.forecast.system.dto.resp.AuthLoginRespDTO;
-import com.gas.forecast.system.dto.resp.AuthRsaPublicKeyRespDTO;
-import com.gas.forecast.system.dto.resp.AuthUserRespDTO;
-import com.gas.forecast.system.service.AuthService;
-import com.gas.forecast.system.service.CaptchaService;
-import com.gas.forecast.system.service.LoginEncryptionService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.context.AuthContext;
 import com.gas.forecast.common.security.token.AuthTokenPayload;
 import com.gas.forecast.common.security.token.AuthTokenService;
 import com.gas.forecast.common.web.WebLog;
+import com.gas.forecast.system.dto.req.AuthLoginRequest;
+import com.gas.forecast.system.dto.resp.AuthCaptchaResponse;
+import com.gas.forecast.system.dto.resp.AuthLoginResponse;
+import com.gas.forecast.system.dto.resp.AuthRsaPublicKeyResponse;
+import com.gas.forecast.system.dto.resp.AuthUserResponse;
+import com.gas.forecast.system.service.AuthService;
+import com.gas.forecast.system.service.CaptchaService;
+import com.gas.forecast.system.service.LoginEncryptionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,10 +30,11 @@ public class AuthLoginController {
     private final AuthTokenService authTokenService;
     private final LoginEncryptionService loginEncryptionService;
 
-    public AuthLoginController(AuthService authService,
-                               CaptchaService captchaService,
-                               AuthTokenService authTokenService,
-                               LoginEncryptionService loginEncryptionService) {
+    public AuthLoginController(
+            AuthService authService,
+            CaptchaService captchaService,
+            AuthTokenService authTokenService,
+            LoginEncryptionService loginEncryptionService) {
         this.authService = authService;
         this.captchaService = captchaService;
         this.authTokenService = authTokenService;
@@ -47,7 +48,7 @@ public class AuthLoginController {
      */
     @WebLog("获取登录验证码")
     @GetMapping("/captcha")
-    public ResponseResult<AuthCaptchaRespDTO> captcha() {
+    public ResponseResult<AuthCaptchaResponse> captcha() {
         return ResponseResult.success(captchaService.createCaptcha());
     }
 
@@ -60,8 +61,8 @@ public class AuthLoginController {
      */
     @WebLog("获取登录RSA公钥")
     @GetMapping("/rsa-public-key")
-    public ResponseResult<AuthRsaPublicKeyRespDTO> rsaPublicKey() {
-        return ResponseResult.success(new AuthRsaPublicKeyRespDTO(loginEncryptionService.createRsaPublicKey()));
+    public ResponseResult<AuthRsaPublicKeyResponse> rsaPublicKey() {
+        return ResponseResult.success(new AuthRsaPublicKeyResponse(loginEncryptionService.createRsaPublicKey()));
     }
 
     /**
@@ -72,7 +73,7 @@ public class AuthLoginController {
      */
     @WebLog("用户登录")
     @PostMapping("/login")
-    public ResponseResult<AuthLoginRespDTO> login(@Valid @RequestBody AuthLoginReqDTO reqDTO) {
+    public ResponseResult<AuthLoginResponse> login(@Valid @RequestBody AuthLoginRequest reqDTO) {
         return ResponseResult.success(authService.login(reqDTO));
     }
 
@@ -96,7 +97,7 @@ public class AuthLoginController {
      */
     @WebLog("获取当前登录用户信息")
     @GetMapping("/me")
-    public ResponseResult<AuthUserRespDTO> me() {
+    public ResponseResult<AuthUserResponse> me() {
         return ResponseResult.success(authService.currentUser(currentUsername()));
     }
 
@@ -107,7 +108,7 @@ public class AuthLoginController {
      */
     @WebLog("获取当前登录用户权限")
     @GetMapping("/permissions")
-    public ResponseResult<AuthLoginRespDTO> permissions() {
+    public ResponseResult<AuthLoginResponse> permissions() {
         return ResponseResult.success(authService.currentProfile(currentUsername()));
     }
 

@@ -3,11 +3,11 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.dto.req.ModelTrainConfigCreateReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigDeleteReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigPageReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainConfigUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainConfigRespDTO;
+import com.gas.forecast.business.dto.request.ModelTrainConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigDeleteRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigPageRequest;
+import com.gas.forecast.business.dto.request.ModelTrainConfigUpdateRequest;
+import com.gas.forecast.business.dto.response.ModelTrainConfigResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelTrainConfigService;
@@ -19,10 +19,9 @@ import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
+import java.util.Date;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 @Service
 public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
@@ -31,21 +30,21 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
     private final ModelConfigTbMapper modelConfigTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
-    public ModelTrainConfigServiceImpl(ModelTrainConfigTbMapper modelTrainConfigTbMapper,
-                                       ModelConfigTbMapper modelConfigTbMapper,
-                                       BaseCodeGenerateService baseCodeGenerateService) {
+    public ModelTrainConfigServiceImpl(
+            ModelTrainConfigTbMapper modelTrainConfigTbMapper,
+            ModelConfigTbMapper modelConfigTbMapper,
+            BaseCodeGenerateService baseCodeGenerateService) {
         this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
         this.modelConfigTbMapper = modelConfigTbMapper;
         this.baseCodeGenerateService = baseCodeGenerateService;
     }
 
     @Override
-    public PageInfoDTO<ModelTrainConfigRespDTO> listPage(ModelTrainConfigPageReqDTO reqDTO) {
+    public PageInfoDTO<ModelTrainConfigResponse> listPage(ModelTrainConfigPageRequest reqDTO) {
         LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper
-                    .like(ModelTrainConfigTb::getTrainCode, keyword)
+            query.and(wrapper -> wrapper.like(ModelTrainConfigTb::getTrainCode, keyword)
                     .or()
                     .like(ModelTrainConfigTb::getTrainName, keyword)
                     .or()
@@ -67,19 +66,24 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
             query.eq(ModelTrainConfigTb::getAgentCode, reqDTO.agentCode().trim());
         }
         if (TextUtils.hasText(reqDTO.timeGranularity())) {
-            query.eq(ModelTrainConfigTb::getTimeGranularity, reqDTO.timeGranularity().trim());
+            query.eq(
+                    ModelTrainConfigTb::getTimeGranularity,
+                    reqDTO.timeGranularity().trim());
         }
         query.orderByDesc(ModelTrainConfigTb::getUpdatedAt).orderByDesc(ModelTrainConfigTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<ModelTrainConfigTb> result = modelTrainConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<ModelTrainConfigTb> result =
+                modelTrainConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        return PageUtils.toPage(
+                result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
     @Transactional
-    public ModelTrainConfigRespDTO create(ModelTrainConfigCreateReqDTO reqDTO) {
-        String trainCode = TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode().trim() : generateTrainCode();
+    public ModelTrainConfigResponse create(ModelTrainConfigCreateRequest reqDTO) {
+        String trainCode =
+                TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode().trim() : generateTrainCode();
         ensureTrainCodeUnique(trainCode, null);
         ModelConfigTb modelConfig = requireModel(reqDTO.modelId());
         ModelTrainConfigTb entity = toEntity(reqDTO, trainCode, modelConfig);
@@ -95,7 +99,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
 
     @Override
     @Transactional
-    public ModelTrainConfigRespDTO update(ModelTrainConfigUpdateReqDTO reqDTO) {
+    public ModelTrainConfigResponse update(ModelTrainConfigUpdateRequest reqDTO) {
         ModelTrainConfigTb exists = modelTrainConfigTbMapper.selectById(reqDTO.id());
         if (exists == null) {
             throw new BusinessException("模型训练配置不存在");
@@ -114,13 +118,13 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
 
     @Override
     @Transactional
-    public void delete(ModelTrainConfigDeleteReqDTO reqDTO) {
+    public void delete(ModelTrainConfigDeleteRequest reqDTO) {
         modelTrainConfigTbMapper.deleteById(reqDTO.id());
     }
 
     private void ensureTrainCodeUnique(String trainCode, Long excludeId) {
-        LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.<ModelTrainConfigTb>lambdaQuery()
-                .eq(ModelTrainConfigTb::getTrainCode, trainCode);
+        LambdaQueryWrapper<ModelTrainConfigTb> query =
+                Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getTrainCode, trainCode);
         if (excludeId != null) {
             query.ne(ModelTrainConfigTb::getId, excludeId);
         }
@@ -133,44 +137,74 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         return baseCodeGenerateService.nextCode(BaseCodeType.MODEL_TRAIN_CONFIG);
     }
 
-    private ModelTrainConfigTb toEntity(ModelTrainConfigCreateReqDTO reqDTO, String trainCode, ModelConfigTb modelConfig) {
+    private ModelTrainConfigTb toEntity(
+            ModelTrainConfigCreateRequest reqDTO, String trainCode, ModelConfigTb modelConfig) {
         ModelTrainConfigTb entity = new ModelTrainConfigTb();
-        fillEntity(entity, trainCode, reqDTO.trainName(), reqDTO.agentCode(), modelConfig,
-                reqDTO.regionCode(), reqDTO.regionName(), reqDTO.industryCode(), reqDTO.industryName(),
-                reqDTO.customerCode(), reqDTO.customerName(), reqDTO.trainStartDate(), reqDTO.trainEndDate(),
-                reqDTO.trainMode(), reqDTO.timeGranularity(), reqDTO.recentPeriods(),
-                reqDTO.enabled(), reqDTO.remark());
+        fillEntity(
+                entity,
+                trainCode,
+                reqDTO.trainName(),
+                reqDTO.agentCode(),
+                modelConfig,
+                reqDTO.regionCode(),
+                reqDTO.regionName(),
+                reqDTO.industryCode(),
+                reqDTO.industryName(),
+                reqDTO.customerCode(),
+                reqDTO.customerName(),
+                reqDTO.trainStartDate(),
+                reqDTO.trainEndDate(),
+                reqDTO.trainMode(),
+                reqDTO.timeGranularity(),
+                reqDTO.recentPeriods(),
+                reqDTO.enabled(),
+                reqDTO.remark());
         return entity;
     }
 
-    private ModelTrainConfigTb toEntity(ModelTrainConfigUpdateReqDTO reqDTO, ModelConfigTb modelConfig) {
+    private ModelTrainConfigTb toEntity(ModelTrainConfigUpdateRequest reqDTO, ModelConfigTb modelConfig) {
         ModelTrainConfigTb entity = new ModelTrainConfigTb();
-        fillEntity(entity, reqDTO.trainCode(), reqDTO.trainName(), reqDTO.agentCode(), modelConfig,
-                reqDTO.regionCode(), reqDTO.regionName(), reqDTO.industryCode(), reqDTO.industryName(),
-                reqDTO.customerCode(), reqDTO.customerName(), reqDTO.trainStartDate(), reqDTO.trainEndDate(),
-                reqDTO.trainMode(), reqDTO.timeGranularity(), reqDTO.recentPeriods(),
-                reqDTO.enabled(), reqDTO.remark());
+        fillEntity(
+                entity,
+                reqDTO.trainCode(),
+                reqDTO.trainName(),
+                reqDTO.agentCode(),
+                modelConfig,
+                reqDTO.regionCode(),
+                reqDTO.regionName(),
+                reqDTO.industryCode(),
+                reqDTO.industryName(),
+                reqDTO.customerCode(),
+                reqDTO.customerName(),
+                reqDTO.trainStartDate(),
+                reqDTO.trainEndDate(),
+                reqDTO.trainMode(),
+                reqDTO.timeGranularity(),
+                reqDTO.recentPeriods(),
+                reqDTO.enabled(),
+                reqDTO.remark());
         return entity;
     }
 
-    private void fillEntity(ModelTrainConfigTb entity,
-                            String trainCode,
-                            String trainName,
-                            String agentCode,
-                            ModelConfigTb modelConfig,
-                            String regionCode,
-                            String regionName,
-                            String industryCode,
-                            String industryName,
-                            String customerCode,
-                            String customerName,
-                            String trainStartDate,
-                            String trainEndDate,
-                            String trainMode,
-                            String timeGranularity,
-                            Integer recentPeriods,
-                            Integer enabled,
-                            String remark) {
+    private void fillEntity(
+            ModelTrainConfigTb entity,
+            String trainCode,
+            String trainName,
+            String agentCode,
+            ModelConfigTb modelConfig,
+            String regionCode,
+            String regionName,
+            String industryCode,
+            String industryName,
+            String customerCode,
+            String customerName,
+            String trainStartDate,
+            String trainEndDate,
+            String trainMode,
+            String timeGranularity,
+            Integer recentPeriods,
+            Integer enabled,
+            String remark) {
         entity.setTrainCode(trainCode);
         entity.setTrainName(trainName);
         entity.setAgentCode(agentCode);
@@ -189,16 +223,17 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         entity.setTrainStartDate("RANGE".equals(normalizedTrainMode) ? trainStartDate : null);
         entity.setTrainEndDate("RANGE".equals(normalizedTrainMode) ? trainEndDate : null);
         entity.setTimeGranularity(TextUtils.hasText(timeGranularity) ? timeGranularity : "MONTH");
-        entity.setRecentPeriods("RECENT".equals(normalizedTrainMode) ? (recentPeriods == null ? 36 : recentPeriods) : null);
+        entity.setRecentPeriods(
+                "RECENT".equals(normalizedTrainMode) ? (recentPeriods == null ? 36 : recentPeriods) : null);
         entity.setEnabled(enabled);
         entity.setRemark(remark);
     }
 
-    private ModelTrainConfigRespDTO toResp(ModelTrainConfigTb entity) {
+    private ModelTrainConfigResponse toResp(ModelTrainConfigTb entity) {
         if (entity == null) {
             return null;
         }
-        return new ModelTrainConfigRespDTO(
+        return new ModelTrainConfigResponse(
                 entity.getId(),
                 entity.getTrainCode(),
                 entity.getTrainName(),
@@ -222,8 +257,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
                 entity.getCreatedBy(),
                 entity.getCreatedByName(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 
     private ModelConfigTb requireModel(Long modelId) {

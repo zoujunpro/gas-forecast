@@ -1,10 +1,10 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.DataSalesPageReqDTO;
-import com.gas.forecast.business.dto.resp.DataSalesRespDTO;
+import com.gas.forecast.business.dto.request.DataSalesPageRequest;
+import com.gas.forecast.business.dto.response.DataSalesResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 public interface DataMonthlySalesService {
 
-    PageInfoDTO<DataSalesRespDTO> listPage(DataSalesPageReqDTO reqDTO);
+    PageInfoDTO<DataSalesResponse> listPage(DataSalesPageRequest reqDTO);
 }

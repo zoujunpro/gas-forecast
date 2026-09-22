@@ -1,14 +1,6 @@
 package com.gas.forecast.system.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.system.dto.req.AuthLoginReqDTO;
-import com.gas.forecast.system.dto.resp.AuthLoginRespDTO;
-import com.gas.forecast.system.dto.resp.AuthMenuRespDTO;
-import com.gas.forecast.system.dto.resp.AuthUserRespDTO;
-import com.gas.forecast.system.service.AuthService;
-import com.gas.forecast.system.service.CaptchaService;
-import com.gas.forecast.system.service.LoginEncryptionService;
-import com.gas.forecast.system.service.PasswordHashService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.BusinessResponseCode;
 import com.gas.forecast.common.security.token.AuthTokenService;
@@ -18,13 +10,20 @@ import com.gas.forecast.dao.domain.SysUserTb;
 import com.gas.forecast.dao.mapper.SysPermissionTbMapper;
 import com.gas.forecast.dao.mapper.SysUserRoleRefMapper;
 import com.gas.forecast.dao.mapper.SysUserTbMapper;
-import org.springframework.stereotype.Service;
-
+import com.gas.forecast.system.dto.req.AuthLoginRequest;
+import com.gas.forecast.system.dto.resp.AuthLoginResponse;
+import com.gas.forecast.system.dto.resp.AuthMenuResponse;
+import com.gas.forecast.system.dto.resp.AuthUserResponse;
+import com.gas.forecast.system.service.AuthService;
+import com.gas.forecast.system.service.CaptchaService;
+import com.gas.forecast.system.service.LoginEncryptionService;
+import com.gas.forecast.system.service.PasswordHashService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -36,13 +35,14 @@ public class AuthServiceImpl implements AuthService {
     private final CaptchaService captchaService;
     private final LoginEncryptionService loginEncryptionService;
 
-    public AuthServiceImpl(SysUserTbMapper sysUserTbMapper,
-                           SysUserRoleRefMapper sysUserRoleRefMapper,
-                           SysPermissionTbMapper sysPermissionTbMapper,
-                           PasswordHashService passwordHashService,
-                           AuthTokenService authTokenService,
-                           CaptchaService captchaService,
-                           LoginEncryptionService loginEncryptionService) {
+    public AuthServiceImpl(
+            SysUserTbMapper sysUserTbMapper,
+            SysUserRoleRefMapper sysUserRoleRefMapper,
+            SysPermissionTbMapper sysPermissionTbMapper,
+            PasswordHashService passwordHashService,
+            AuthTokenService authTokenService,
+            CaptchaService captchaService,
+            LoginEncryptionService loginEncryptionService) {
         this.sysUserTbMapper = sysUserTbMapper;
         this.sysUserRoleRefMapper = sysUserRoleRefMapper;
         this.sysPermissionTbMapper = sysPermissionTbMapper;
@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthLoginRespDTO login(AuthLoginReqDTO reqDTO) {
+    public AuthLoginResponse login(AuthLoginRequest reqDTO) {
         captchaService.validate(reqDTO.captchaId(), reqDTO.captchaCode());
         String username = resolveLoginText(reqDTO.username(), reqDTO.rsaPublicKey());
         String password = resolveLoginText(reqDTO.password(), reqDTO.rsaPublicKey());
@@ -66,12 +66,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthUserRespDTO currentUser(String username) {
+    public AuthUserResponse currentUser(String username) {
         return toUser(loadEnabledUser(username));
     }
 
     @Override
-    public AuthLoginRespDTO currentProfile(String username) {
+    public AuthLoginResponse currentProfile(String username) {
         return profile(loadEnabledUser(username), null);
     }
 
@@ -95,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
         return loginEncryptionService.decrypt(value, rsaPublicKey);
     }
 
-    private AuthLoginRespDTO profile(SysUserTb user, String token) {
+    private AuthLoginResponse profile(SysUserTb user, String token) {
         List<String> roles = sysUserRoleRefMapper.selectRoleCodesByUsername(user.getUsername());
         List<SysPermissionTb> permissions = sysPermissionTbMapper.selectByUsername(user.getUsername());
         List<String> perms = permissions.stream()
@@ -104,34 +104,33 @@ public class AuthServiceImpl implements AuthService {
                 .distinct()
                 .sorted()
                 .toList();
-        List<AuthMenuRespDTO> menus = buildMenuTree(permissions.stream()
+        List<AuthMenuResponse> menus = buildMenuTree(permissions.stream()
                 .filter(item -> "DIRECTORY".equals(item.getPermissionType()) || "MENU".equals(item.getPermissionType()))
                 .toList());
-        return new AuthLoginRespDTO(token, toUser(user), roles, perms, menus);
+        return new AuthLoginResponse(token, toUser(user), roles, perms, menus);
     }
 
-    private AuthUserRespDTO toUser(SysUserTb user) {
-        return new AuthUserRespDTO(
+    private AuthUserResponse toUser(SysUserTb user) {
+        return new AuthUserResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getRealName(),
                 user.getAvatar(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getOrgCode()
-        );
+                user.getOrgCode());
     }
 
-    private List<AuthMenuRespDTO> buildMenuTree(List<SysPermissionTb> permissions) {
+    private List<AuthMenuResponse> buildMenuTree(List<SysPermissionTb> permissions) {
         Map<Long, List<SysPermissionTb>> byParent = permissions.stream()
                 .collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
         return buildChildren(0L, byParent);
     }
 
-    private List<AuthMenuRespDTO> buildChildren(Long parentId, Map<Long, List<SysPermissionTb>> byParent) {
+    private List<AuthMenuResponse> buildChildren(Long parentId, Map<Long, List<SysPermissionTb>> byParent) {
         return byParent.getOrDefault(parentId, List.of()).stream()
                 .sorted(Comparator.comparing(SysPermissionTb::getSortNo).thenComparing(SysPermissionTb::getId))
-                .map(item -> new AuthMenuRespDTO(
+                .map(item -> new AuthMenuResponse(
                         item.getId(),
                         item.getParentId(),
                         item.getPermissionName(),
@@ -140,8 +139,7 @@ public class AuthServiceImpl implements AuthService {
                         item.getIcon(),
                         item.getSortNo(),
                         item.getHidden(),
-                        new ArrayList<>(buildChildren(item.getId(), byParent))
-                ))
+                        new ArrayList<>(buildChildren(item.getId(), byParent))))
                 .toList();
     }
 }

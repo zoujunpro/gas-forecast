@@ -6,7 +6,9 @@
     "dev": "vite",
     "typecheck": "vue-tsc --noEmit",
     "build": "npm run typecheck && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@types/node": "^26.4.0",
     "@vitejs/plugin-vue": "^5.2.3",
+    "prettier": "3.9.8",
     "vite": "^6.3.0",
     "vue-tsc": "^3.0.1"
   }

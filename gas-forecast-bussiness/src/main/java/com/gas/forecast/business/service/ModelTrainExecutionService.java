@@ -1,16 +1,16 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.ModelTrainExecuteReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainExecuteRespDTO;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
+import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
 
 public interface ModelTrainExecutionService {
 
-    ModelTrainExecuteRespDTO execute(ModelTrainExecuteReqDTO reqDTO);
+    ModelTrainExecuteResponse execute(ModelTrainExecuteRequest reqDTO);
 
-    JsonNode validateTrainingData(ModelTrainExecuteReqDTO reqDTO);
+    JsonNode validateTrainingData(ModelTrainExecuteRequest reqDTO);
 
-    ModelTrainExecuteRespDTO updateTrainResult(JsonNode reqDTO);
+    ModelTrainExecuteResponse updateTrainResult(JsonNode reqDTO);
 
     JsonNode getTrainResult(JsonNode reqDTO);
 }

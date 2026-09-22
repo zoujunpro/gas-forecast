@@ -1,10 +1,10 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.DataFileInfoCreateReqDTO;
-import com.gas.forecast.business.dto.req.DataFileInfoDeleteReqDTO;
-import com.gas.forecast.business.dto.req.DataFileInfoPageReqDTO;
-import com.gas.forecast.business.dto.req.DataFileInfoUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.DataFileInfoRespDTO;
+import com.gas.forecast.business.dto.request.DataFileInfoCreateRequest;
+import com.gas.forecast.business.dto.request.DataFileInfoDeleteRequest;
+import com.gas.forecast.business.dto.request.DataFileInfoPageRequest;
+import com.gas.forecast.business.dto.request.DataFileInfoUpdateRequest;
+import com.gas.forecast.business.dto.response.DataFileInfoResponse;
 import com.gas.forecast.business.service.DataFileInfoService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -37,7 +37,8 @@ public class DataFileInfoController {
     @PostMapping("listPage")
     @WebLog("原始数据文件分页查询")
     @RequirePermission("data:file-info:list")
-    public ResponseResult<PageInfoDTO<DataFileInfoRespDTO>> listPage(@Valid @RequestBody DataFileInfoPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<DataFileInfoResponse>> listPage(
+            @Valid @RequestBody DataFileInfoPageRequest reqDTO) {
         return ResponseResult.success(dataFileInfoService.listPage(reqDTO));
     }
 
@@ -47,7 +48,7 @@ public class DataFileInfoController {
     @PostMapping("create")
     @WebLog("新增原始数据文件信息")
     @RequirePermission("data:file-info:create")
-    public ResponseResult<DataFileInfoRespDTO> create(@Valid @RequestBody DataFileInfoCreateReqDTO reqDTO) {
+    public ResponseResult<DataFileInfoResponse> create(@Valid @RequestBody DataFileInfoCreateRequest reqDTO) {
         return ResponseResult.success(dataFileInfoService.create(reqDTO));
     }
 
@@ -57,7 +58,7 @@ public class DataFileInfoController {
     @PostMapping("update")
     @WebLog("编辑原始数据文件信息")
     @RequirePermission("data:file-info:update")
-    public ResponseResult<DataFileInfoRespDTO> update(@Valid @RequestBody DataFileInfoUpdateReqDTO reqDTO) {
+    public ResponseResult<DataFileInfoResponse> update(@Valid @RequestBody DataFileInfoUpdateRequest reqDTO) {
         return ResponseResult.success(dataFileInfoService.update(reqDTO));
     }
 
@@ -68,7 +69,7 @@ public class DataFileInfoController {
     @WebLog("删除原始数据文件信息")
     @RequirePermission("data:file-info:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        dataFileInfoService.delete(new DataFileInfoDeleteReqDTO(id));
+        dataFileInfoService.delete(new DataFileInfoDeleteRequest(id));
         return ResponseResult.success(null);
     }
 }

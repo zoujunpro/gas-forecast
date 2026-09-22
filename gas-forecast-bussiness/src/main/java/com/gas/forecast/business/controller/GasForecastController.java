@@ -1,19 +1,18 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.resp.ForecastDashboardRespDTO;
-import com.gas.forecast.business.dto.resp.ForecastDimensionRespDTO;
-import com.gas.forecast.business.dto.resp.ForecastSummaryRespDTO;
+import com.gas.forecast.business.dto.response.ForecastDashboardResponse;
+import com.gas.forecast.business.dto.response.ForecastDimensionResponse;
+import com.gas.forecast.business.dto.response.ForecastSummaryResponse;
 import com.gas.forecast.business.service.GasForecastService;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 
 @CrossOrigin
 @RestController
@@ -32,20 +31,21 @@ public class GasForecastController {
     }
 
     @GetMapping("/summaries")
-    public List<ForecastSummaryRespDTO> listSummaries() {
+    public List<ForecastSummaryResponse> listSummaries() {
         return gasForecastService.listSummaries();
     }
 
     @GetMapping("/dimensions")
-    public ForecastDimensionRespDTO listDimensions(@RequestParam(required = false) String areaCode,
-                                               @RequestParam(required = false) String provinceCode) {
+    public ForecastDimensionResponse listDimensions(
+            @RequestParam(required = false) String areaCode, @RequestParam(required = false) String provinceCode) {
         return gasForecastService.listDimensions(areaCode, provinceCode);
     }
 
     @GetMapping("/dashboard")
-    public ForecastDashboardRespDTO getDashboard(@RequestParam(required = false) String province,
-                                             @RequestParam(required = false) String provinceCode,
-                                             @RequestParam(required = false) String customerCode) {
+    public ForecastDashboardResponse getDashboard(
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) String provinceCode,
+            @RequestParam(required = false) String customerCode) {
         if (provinceCode != null && !provinceCode.isBlank()) {
             return gasForecastService.getDashboardByCode(provinceCode, customerCode);
         }

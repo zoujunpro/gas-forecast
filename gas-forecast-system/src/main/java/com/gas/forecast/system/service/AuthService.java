@@ -1,14 +1,13 @@
 package com.gas.forecast.system.service;
 
-import com.gas.forecast.system.dto.req.AuthLoginReqDTO;
-import com.gas.forecast.system.dto.resp.AuthLoginRespDTO;
-import com.gas.forecast.system.dto.resp.AuthMenuRespDTO;
-import com.gas.forecast.system.dto.resp.AuthUserRespDTO;
+import com.gas.forecast.system.dto.req.AuthLoginRequest;
+import com.gas.forecast.system.dto.resp.AuthLoginResponse;
+import com.gas.forecast.system.dto.resp.AuthUserResponse;
 
 public interface AuthService {
-    AuthLoginRespDTO login(AuthLoginReqDTO reqDTO);
+    AuthLoginResponse login(AuthLoginRequest reqDTO);
 
-    AuthUserRespDTO currentUser(String username);
+    AuthUserResponse currentUser(String username);
 
-    AuthLoginRespDTO currentProfile(String username);
+    AuthLoginResponse currentProfile(String username);
 }

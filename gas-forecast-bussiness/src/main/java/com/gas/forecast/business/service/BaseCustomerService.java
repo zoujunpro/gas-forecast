@@ -1,10 +1,10 @@
 package com.gas.forecast.business.service;
 
-import com.gas.forecast.business.dto.req.BaseCustomerCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseCustomerUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseCustomerRespDTO;
+import com.gas.forecast.business.dto.request.BaseCustomerCreateRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerPageRequest;
+import com.gas.forecast.business.dto.request.BaseCustomerUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseCustomerResponse;
 import com.gas.forecast.common.core.PageInfoDTO;
 
 /**
@@ -15,20 +15,20 @@ public interface BaseCustomerService {
     /**
      * 分页查询客户列表。
      */
-    PageInfoDTO<BaseCustomerRespDTO> listPage(BaseCustomerPageReqDTO reqDTO);
+    PageInfoDTO<BaseCustomerResponse> listPage(BaseCustomerPageRequest reqDTO);
 
     /**
      * 新增客户。
      */
-    BaseCustomerRespDTO createCustomer(BaseCustomerCreateReqDTO reqDTO);
+    BaseCustomerResponse createCustomer(BaseCustomerCreateRequest reqDTO);
 
     /**
      * 更新客户。
      */
-    BaseCustomerRespDTO update(BaseCustomerUpdateReqDTO reqDTO);
+    BaseCustomerResponse update(BaseCustomerUpdateRequest reqDTO);
 
     /**
      * 删除客户。
      */
-    void delete(BaseCustomerDeleteReqDTO reqDTO);
+    void delete(BaseCustomerDeleteRequest reqDTO);
 }

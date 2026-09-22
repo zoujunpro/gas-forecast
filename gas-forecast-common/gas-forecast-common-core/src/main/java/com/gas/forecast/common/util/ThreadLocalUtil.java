@@ -1,10 +1,13 @@
 package com.gas.forecast.common.util;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 public final class ThreadLocalUtil {
     private static final ThreadLocal<LoginUser> LOGIN_USER = new ThreadLocal<>();
 
-    private ThreadLocalUtil() {
-    }
+    private ThreadLocalUtil() {}
 
     public static void setLoginUser(Long userId, String username, String token) {
         LOGIN_USER.set(new LoginUser(userId, username, token));
@@ -33,6 +36,26 @@ public final class ThreadLocalUtil {
         LOGIN_USER.remove();
     }
 
-    public record LoginUser(Long userId, String username, String token) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LoginUser {
+        private Long userId;
+
+        private String username;
+
+        private String token;
+
+        public Long userId() {
+            return userId;
+        }
+
+        public String username() {
+            return username;
+        }
+
+        public String token() {
+            return token;
+        }
     }
 }

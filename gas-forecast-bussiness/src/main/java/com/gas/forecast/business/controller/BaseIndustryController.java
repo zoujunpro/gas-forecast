@@ -1,10 +1,10 @@
 package com.gas.forecast.business.controller;
 
-import com.gas.forecast.business.dto.req.BaseIndustryCreateReqDTO;
-import com.gas.forecast.business.dto.req.BaseIndustryDeleteReqDTO;
-import com.gas.forecast.business.dto.req.BaseIndustryPageReqDTO;
-import com.gas.forecast.business.dto.req.BaseIndustryUpdateReqDTO;
-import com.gas.forecast.business.dto.resp.BaseIndustryRespDTO;
+import com.gas.forecast.business.dto.request.BaseIndustryCreateRequest;
+import com.gas.forecast.business.dto.request.BaseIndustryDeleteRequest;
+import com.gas.forecast.business.dto.request.BaseIndustryPageRequest;
+import com.gas.forecast.business.dto.request.BaseIndustryUpdateRequest;
+import com.gas.forecast.business.dto.response.BaseIndustryResponse;
 import com.gas.forecast.business.service.BaseIndustryService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
@@ -37,7 +37,8 @@ public class BaseIndustryController {
     @PostMapping("listPage")
     @WebLog("行业列表查询")
     @RequirePermission("base:industry:list")
-    public ResponseResult<PageInfoDTO<BaseIndustryRespDTO>> listPage(@Valid @RequestBody BaseIndustryPageReqDTO reqDTO) {
+    public ResponseResult<PageInfoDTO<BaseIndustryResponse>> listPage(
+            @Valid @RequestBody BaseIndustryPageRequest reqDTO) {
         return ResponseResult.success(baseIndustryService.listPage(reqDTO));
     }
 
@@ -47,7 +48,7 @@ public class BaseIndustryController {
     @PostMapping("create")
     @WebLog("新增行业")
     @RequirePermission("base:industry:create")
-    public ResponseResult<BaseIndustryRespDTO> create(@Valid @RequestBody BaseIndustryCreateReqDTO reqDTO) {
+    public ResponseResult<BaseIndustryResponse> create(@Valid @RequestBody BaseIndustryCreateRequest reqDTO) {
         return ResponseResult.success(baseIndustryService.createIndustry(reqDTO));
     }
 
@@ -57,7 +58,7 @@ public class BaseIndustryController {
     @PostMapping("update")
     @WebLog("编辑行业")
     @RequirePermission("base:industry:update")
-    public ResponseResult<BaseIndustryRespDTO> update(@Valid @RequestBody BaseIndustryUpdateReqDTO reqDTO) {
+    public ResponseResult<BaseIndustryResponse> update(@Valid @RequestBody BaseIndustryUpdateRequest reqDTO) {
         return ResponseResult.success(baseIndustryService.update(reqDTO));
     }
 
@@ -68,7 +69,7 @@ public class BaseIndustryController {
     @WebLog("删除行业")
     @RequirePermission("base:industry:delete")
     public ResponseResult<Void> delete(@RequestParam Long id) {
-        baseIndustryService.delete(new BaseIndustryDeleteReqDTO(id));
+        baseIndustryService.delete(new BaseIndustryDeleteRequest(id));
         return ResponseResult.success(null);
     }
 }

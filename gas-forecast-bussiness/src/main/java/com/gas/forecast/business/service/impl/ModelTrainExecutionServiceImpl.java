@@ -6,14 +6,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.gas.forecast.business.dto.req.ModelTrainAgentTrainReqDTO;
-import com.gas.forecast.business.dto.req.ModelTrainExecuteReqDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainAgentRespDTO;
-import com.gas.forecast.business.dto.resp.ModelTrainExecuteRespDTO;
+import com.gas.forecast.business.dto.request.ModelTrainAgentTrainRequest;
+import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
+import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
+import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
-import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.business.service.ModelPlatformService;
+import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.HttpUtil;
 import com.gas.forecast.common.util.TextUtils;
@@ -23,31 +23,20 @@ import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.domain.ModelFeatureRef;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
-import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
+import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.mapper.ModelConfigScopeTbMapper;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.client.RestClientResponseException;
-
+import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -58,6 +47,19 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.client.RestClientResponseException;
 
 @Service
 public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionService {
@@ -83,19 +85,20 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     @Value("${gas.agent.train-url:http://127.0.0.1:8090/api/v1/train}")
     private String trainUrl;
 
-    public ModelTrainExecutionServiceImpl(ModelTrainConfigTbMapper modelTrainConfigTbMapper,
-                                          ModelConfigTbMapper modelConfigTbMapper,
-                                          ModelConfigScopeTbMapper modelConfigScopeTbMapper,
-                                          ModelFeatureRefMapper modelFeatureRefMapper,
-                                          ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper,
-                                          ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper,
-                                          ModelTrainBacktestTbMapper modelTrainBacktestTbMapper,
-                                          ModelTrainRecordTbMapper modelTrainDetailTbMapper,
-                                          BaseCodeGenerateService baseCodeGenerateService,
-                                          ObjectMapper objectMapper,
-                                          @Qualifier("modelTrainTaskExecutor") Executor modelTrainTaskExecutor,
-                                          TransactionTemplate transactionTemplate,
-                                          ModelPlatformService modelPlatformService) {
+    public ModelTrainExecutionServiceImpl(
+            ModelTrainConfigTbMapper modelTrainConfigTbMapper,
+            ModelConfigTbMapper modelConfigTbMapper,
+            ModelConfigScopeTbMapper modelConfigScopeTbMapper,
+            ModelFeatureRefMapper modelFeatureRefMapper,
+            ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper,
+            ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper,
+            ModelTrainBacktestTbMapper modelTrainBacktestTbMapper,
+            ModelTrainRecordTbMapper modelTrainDetailTbMapper,
+            BaseCodeGenerateService baseCodeGenerateService,
+            ObjectMapper objectMapper,
+            @Qualifier("modelTrainTaskExecutor") Executor modelTrainTaskExecutor,
+            TransactionTemplate transactionTemplate,
+            ModelPlatformService modelPlatformService) {
         this.modelTrainConfigTbMapper = modelTrainConfigTbMapper;
         this.modelConfigTbMapper = modelConfigTbMapper;
         this.modelConfigScopeTbMapper = modelConfigScopeTbMapper;
@@ -113,13 +116,13 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     @Override
     @Transactional
-    public ModelTrainExecuteRespDTO execute(ModelTrainExecuteReqDTO reqDTO) {
+    public ModelTrainExecuteResponse execute(ModelTrainExecuteRequest reqDTO) {
         String trainCode = TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode() : reqDTO.configCode();
         if (!TextUtils.hasText(trainCode)) {
             throw new BusinessException("训练配置编码不能为空");
         }
-        ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery()
-                .eq(ModelTrainConfigTb::getTrainCode, trainCode));
+        ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectOne(
+                Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getTrainCode, trainCode));
         if (trainConfig == null) {
             throw new BusinessException("训练配置不存在");
         }
@@ -138,12 +141,14 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
         }
 
-        ModelTrainAgentTrainReqDTO validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
+        ModelTrainAgentTrainRequest validationRequest =
+                buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
         modelPlatformService.validateTrainingData(objectMapper.valueToTree(validationRequest));
 
         String retryBatchNo = reqDTO.retryBatchNo();
         String batchNo = TextUtils.hasText(retryBatchNo) ? validateRetryBatch(retryBatchNo) : generateTrainBatchNo();
-        ModelTrainAgentTrainReqDTO trainRequest = buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features);
+        ModelTrainAgentTrainRequest trainRequest =
+                buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features);
         JsonNode requestPayload = objectMapper.valueToTree(trainRequest);
         if (TextUtils.hasText(retryBatchNo)) {
             resetFailedTrainDetail(trainConfig, batchNo, "PENDING", requestPayload);
@@ -151,32 +156,34 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             saveTrainDetail(trainConfig, batchNo, "PENDING", requestPayload, null);
         }
         String status = TextUtils.hasText(trainUrl) ? "RUNNING" : "PENDING";
-        ObjectNode submitResponse = objectMapper.createObjectNode()
-                .put("message", TextUtils.hasText(trainUrl) ? "训练任务已提交，后台等待模型系统返回结果。" : "未配置 gas.agent.train-url，已生成训练请求入参。")
+        ObjectNode submitResponse = objectMapper
+                .createObjectNode()
+                .put(
+                        "message",
+                        TextUtils.hasText(trainUrl) ? "训练任务已提交，后台等待模型系统返回结果。" : "未配置 gas.agent.train-url，已生成训练请求入参。")
                 .put("model_code", trainRequest.modelCode())
                 .put("train_batch_no", batchNo);
         updateTrainDetailAfterSubmit(batchNo, status, submitResponse, null);
         submitTrainAfterCommit(batchNo, trainRequest);
-        return new ModelTrainExecuteRespDTO(
+        return new ModelTrainExecuteResponse(
                 trainConfig.getTrainCode(),
                 batchNo,
                 trainRequest.modelCode(),
                 trainData.size(),
                 status,
                 requestPayload,
-                submitResponse
-        );
+                submitResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public JsonNode validateTrainingData(ModelTrainExecuteReqDTO reqDTO) {
+    public JsonNode validateTrainingData(ModelTrainExecuteRequest reqDTO) {
         String trainCode = TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode() : reqDTO.configCode();
         if (!TextUtils.hasText(trainCode)) {
             throw new BusinessException("训练配置编码不能为空");
         }
-        ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery()
-                .eq(ModelTrainConfigTb::getTrainCode, trainCode));
+        ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectOne(
+                Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getTrainCode, trainCode));
         if (trainConfig == null) {
             throw new BusinessException("训练配置不存在");
         }
@@ -192,13 +199,14 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         if (trainData.isEmpty()) {
             throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
         }
-        ModelTrainAgentTrainReqDTO validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
+        ModelTrainAgentTrainRequest validationRequest =
+                buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
         return modelPlatformService.validateTrainingData(objectMapper.valueToTree(validationRequest));
     }
 
     private String validateRetryBatch(String retryBatchNo) {
-        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .eq(ModelTrainRecordTb::getBatchNo, retryBatchNo));
+        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
+                Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, retryBatchNo));
         if (detail == null) {
             throw new BusinessException("重试训练批次不存在：" + retryBatchNo);
         }
@@ -216,14 +224,14 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     @Override
     @Transactional
-    public ModelTrainExecuteRespDTO updateTrainResult(JsonNode reqDTO) {
+    public ModelTrainExecuteResponse updateTrainResult(JsonNode reqDTO) {
         JsonNode trainResult = unwrapTrainResult(reqDTO);
         String batchNo = firstText(trainResult, "batchNo", "trainBatchNo", "train_batch_no", "batch_no");
         if (!TextUtils.hasText(batchNo)) {
             throw new BusinessException("训练批次号不能为空");
         }
-        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .eq(ModelTrainRecordTb::getBatchNo, batchNo));
+        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
+                Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
         if (detail == null) {
             throw new BusinessException("训练批次不存在：" + batchNo);
         }
@@ -237,15 +245,14 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         replaceBacktestDetails(batchNo, trainResult);
 
         JsonNode requestPayload = parseRequestPayload(detail.getRequestParam());
-        return new ModelTrainExecuteRespDTO(
+        return new ModelTrainExecuteResponse(
                 null,
                 batchNo,
                 firstText(requestPayload, "modelCode", "model_code"),
                 datasetSize(requestPayload),
                 status,
                 requestPayload,
-                trainResult
-        );
+                trainResult);
     }
 
     @Override
@@ -290,7 +297,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         eqIfText(query, ModelTrainRecordTb::getCustomerCode, firstText(reqDTO, "customerCode", "customer_code"));
         eqIfText(query, ModelTrainRecordTb::getTrainStartDate, firstText(reqDTO, "trainStartDate", "train_start_date"));
         eqIfText(query, ModelTrainRecordTb::getTrainEndDate, firstText(reqDTO, "trainEndDate", "train_end_date"));
-        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId)
+        query.orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId)
                 .last(loadDetail ? "limit 1" : "limit 20");
         List<ModelTrainRecordTb> details = modelTrainDetailTbMapper.selectList(query);
 
@@ -376,15 +384,24 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         if (refs.isEmpty()) {
             throw new BusinessException("所属模型未配置训练特征");
         }
-        List<Long> featureIds = refs.stream().map(ModelFeatureRef::getFeatureId).filter(id -> id != null).distinct().toList();
-        Map<Long, ModelFeatureDefinitionTb> definitions = modelFeatureDefinitionTbMapper.selectBatchIds(featureIds).stream()
-                .filter(item -> item.getEnabled() == null || item.getEnabled() == 1)
-                .collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity(), (left, right) -> left));
+        List<Long> featureIds = refs.stream()
+                .map(ModelFeatureRef::getFeatureId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        Map<Long, ModelFeatureDefinitionTb> definitions =
+                modelFeatureDefinitionTbMapper.selectBatchIds(featureIds).stream()
+                        .filter(item -> item.getEnabled() == null || item.getEnabled() == 1)
+                        .collect(Collectors.toMap(
+                                ModelFeatureDefinitionTb::getId, Function.identity(), (left, right) -> left));
         List<FeatureMapping> mappings = refs.stream()
                 .map(ref -> definitions.get(ref.getFeatureId()))
-                .filter(definition -> definition != null && TextUtils.hasText(definition.getFeatureCode())
+                .filter(definition -> definition != null
+                        && TextUtils.hasText(definition.getFeatureCode())
                         && TextUtils.hasText(definition.getFeatureColumn()))
-                .map(definition -> new FeatureMapping(normalizeFeatureKey(definition.getFeatureCode()), definition.getFeatureColumn(),
+                .map(definition -> new FeatureMapping(
+                        normalizeFeatureKey(definition.getFeatureCode()),
+                        definition.getFeatureColumn(),
                         definition.getTimeGranularity()))
                 .toList();
         if (mappings.isEmpty()) {
@@ -393,9 +410,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return mappings;
     }
 
-    private List<ModelTrainFeatureDataTb> loadTrainData(ModelTrainConfigTb trainConfig,
-                                                        ModelConfigTb modelConfig,
-                                                        List<FeatureMapping> features) {
+    private List<ModelTrainFeatureDataTb> loadTrainData(
+            ModelTrainConfigTb trainConfig, ModelConfigTb modelConfig, List<FeatureMapping> features) {
         var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery();
         String timeGranularity = TextUtils.hasText(trainConfig.getTimeGranularity())
                 ? trainConfig.getTimeGranularity()
@@ -413,19 +429,22 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         applyTrainScope(query, trainConfig, modelConfig.getId());
         if (recentMode) {
             int recentPeriods = trainConfig.getRecentPeriods() == null ? 36 : trainConfig.getRecentPeriods();
-            query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId)
+            query.orderByDesc(ModelTrainFeatureDataTb::getStatDate)
+                    .orderByDesc(ModelTrainFeatureDataTb::getId)
                     .last("limit " + Math.max(recentPeriods, 1));
             return modelTrainFeatureDataTbMapper.selectList(query).stream()
-                    .sorted(Comparator.comparing(ModelTrainFeatureDataTb::getStatDate).thenComparing(ModelTrainFeatureDataTb::getId))
+                    .sorted(Comparator.comparing(ModelTrainFeatureDataTb::getStatDate)
+                            .thenComparing(ModelTrainFeatureDataTb::getId))
                     .toList();
         }
         query.orderByAsc(ModelTrainFeatureDataTb::getStatDate).orderByAsc(ModelTrainFeatureDataTb::getId);
         return modelTrainFeatureDataTbMapper.selectList(query);
     }
 
-    private void applyTrainScope(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelTrainFeatureDataTb> query,
-                                 ModelTrainConfigTb trainConfig,
-                                 Long modelId) {
+    private void applyTrainScope(
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelTrainFeatureDataTb> query,
+            ModelTrainConfigTb trainConfig,
+            Long modelId) {
         if (TextUtils.hasText(trainConfig.getRegionCode())) {
             query.eq(ModelTrainFeatureDataTb::getRegionCode, trainConfig.getRegionCode());
         }
@@ -441,11 +460,23 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             return;
         }
 
-        List<ModelConfigScopeTb> scopes = modelConfigScopeTbMapper.selectList(Wrappers.<ModelConfigScopeTb>lambdaQuery()
-                .eq(ModelConfigScopeTb::getModelId, modelId));
-        List<String> regionCodes = scopes.stream().map(ModelConfigScopeTb::getRegionCode).filter(TextUtils::hasText).distinct().toList();
-        List<String> industryCodes = scopes.stream().map(ModelConfigScopeTb::getIndustryCode).filter(TextUtils::hasText).distinct().toList();
-        List<String> customerCodes = scopes.stream().map(ModelConfigScopeTb::getCustomerCode).filter(TextUtils::hasText).distinct().toList();
+        List<ModelConfigScopeTb> scopes = modelConfigScopeTbMapper.selectList(
+                Wrappers.<ModelConfigScopeTb>lambdaQuery().eq(ModelConfigScopeTb::getModelId, modelId));
+        List<String> regionCodes = scopes.stream()
+                .map(ModelConfigScopeTb::getRegionCode)
+                .filter(TextUtils::hasText)
+                .distinct()
+                .toList();
+        List<String> industryCodes = scopes.stream()
+                .map(ModelConfigScopeTb::getIndustryCode)
+                .filter(TextUtils::hasText)
+                .distinct()
+                .toList();
+        List<String> customerCodes = scopes.stream()
+                .map(ModelConfigScopeTb::getCustomerCode)
+                .filter(TextUtils::hasText)
+                .distinct()
+                .toList();
         if (!regionCodes.isEmpty()) {
             query.in(ModelTrainFeatureDataTb::getRegionCode, regionCodes);
         }
@@ -457,11 +488,12 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         }
     }
 
-    private ModelTrainAgentTrainReqDTO buildTrainRequest(ModelTrainConfigTb trainConfig,
-                                                         ModelConfigTb modelConfig,
-                                                         String batchNo,
-                                                         List<ModelTrainFeatureDataTb> trainData,
-                                                         List<FeatureMapping> features) {
+    private ModelTrainAgentTrainRequest buildTrainRequest(
+            ModelTrainConfigTb trainConfig,
+            ModelConfigTb modelConfig,
+            String batchNo,
+            List<ModelTrainFeatureDataTb> trainData,
+            List<FeatureMapping> features) {
         List<JsonNode> dataset = new ArrayList<>();
         for (ModelTrainFeatureDataTb row : trainData) {
             ObjectNode item = objectMapper.createObjectNode();
@@ -475,7 +507,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             }
             dataset.add(item);
         }
-        return new ModelTrainAgentTrainReqDTO(
+        return new ModelTrainAgentTrainRequest(
                 trainConfig.getAgentCode(),
                 modelConfig.getModelCode(),
                 batchNo,
@@ -486,22 +518,22 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 trainConfig.getCustomerCode(),
                 trainConfig.getCustomerName(),
                 objectMapper.createObjectNode(),
-                dataset
-        );
+                dataset);
     }
 
-    private JsonNode callTrainAgent(ModelTrainAgentTrainReqDTO trainRequest) {
+    private JsonNode callTrainAgent(ModelTrainAgentTrainRequest trainRequest) {
         if (!TextUtils.hasText(trainUrl)) {
             return null;
         }
         return HttpUtil.postJson(trainUrl, objectMapper.valueToTree(trainRequest));
     }
 
-    private void submitTrainAfterCommit(String batchNo, ModelTrainAgentTrainReqDTO trainRequest) {
+    private void submitTrainAfterCommit(String batchNo, ModelTrainAgentTrainRequest trainRequest) {
         if (!TextUtils.hasText(trainUrl)) {
             return;
         }
-        Runnable submitTask = () -> modelTrainTaskExecutor.execute(() -> waitTrainResultAndPersist(batchNo, trainRequest));
+        Runnable submitTask =
+                () -> modelTrainTaskExecutor.execute(() -> waitTrainResultAndPersist(batchNo, trainRequest));
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -514,7 +546,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         submitTask.run();
     }
 
-    private void waitTrainResultAndPersist(String batchNo, ModelTrainAgentTrainReqDTO trainRequest) {
+    private void waitTrainResultAndPersist(String batchNo, ModelTrainAgentTrainRequest trainRequest) {
         try {
             JsonNode agentResponse = callTrainAgent(trainRequest);
             JsonNode trainResult = normalizeTrainResult(batchNo, agentResponse);
@@ -522,12 +554,13 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         } catch (RuntimeException e) {
             LOGGER.error("model train failed batchNo={}", batchNo, e);
             String message = extractTrainErrorMessage(e);
-            ObjectNode failedResult = objectMapper.createObjectNode()
+            ObjectNode failedResult = objectMapper
+                    .createObjectNode()
                     .put("train_batch_no", batchNo)
                     .put("status", "FAILED")
                     .put("message", message);
-            transactionTemplate.executeWithoutResult(status ->
-                    updateTrainDetailAfterSubmit(batchNo, "FAILED", failedResult, message));
+            transactionTemplate.executeWithoutResult(
+                    status -> updateTrainDetailAfterSubmit(batchNo, "FAILED", failedResult, message));
         }
     }
 
@@ -554,7 +587,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     }
 
     private JsonNode normalizeTrainResult(String batchNo, JsonNode agentResponse) {
-        ModelTrainAgentRespDTO response = parseAgentResponse(agentResponse);
+        ModelTrainAgentResponse response = parseAgentResponse(agentResponse);
         ObjectNode result;
         if (response != null && response.data() != null) {
             result = objectMapper.valueToTree(response.data());
@@ -568,7 +601,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 result = objectMapper.createObjectNode();
             }
         }
-        if (response != null && response.code() != null && response.code() != 0
+        if (response != null
+                && response.code() != null
+                && response.code() != 0
                 && !TextUtils.hasText(firstText(result, "status", "trainStatus", "train_status"))) {
             result.put("status", "FAILED");
         }
@@ -581,12 +616,12 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return result;
     }
 
-    private ModelTrainAgentRespDTO parseAgentResponse(JsonNode agentResponse) {
+    private ModelTrainAgentResponse parseAgentResponse(JsonNode agentResponse) {
         if (agentResponse == null || !agentResponse.isObject() || !agentResponse.has("code")) {
             return null;
         }
         try {
-            return objectMapper.treeToValue(agentResponse, ModelTrainAgentRespDTO.class);
+            return objectMapper.treeToValue(agentResponse, ModelTrainAgentResponse.class);
         } catch (Exception e) {
             LOGGER.warn("model train response cannot convert to standard envelope response={}", agentResponse, e);
             return null;
@@ -602,15 +637,13 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return normalizeTrainResult(batchNo, node);
     }
 
-    private void updateTrainDetailAfterSubmit(String batchNo, String status, JsonNode agentResponse, String errorMessage) {
+    private void updateTrainDetailAfterSubmit(
+            String batchNo, String status, JsonNode agentResponse, String errorMessage) {
         updateTrainDetail(agentResponse, batchNo, status, errorMessage);
     }
 
-    private void saveTrainDetail(ModelTrainConfigTb trainConfig,
-                                 String batchNo,
-                                 String status,
-                                 JsonNode payload,
-                                 JsonNode result) {
+    private void saveTrainDetail(
+            ModelTrainConfigTb trainConfig, String batchNo, String status, JsonNode payload, JsonNode result) {
         java.util.Date now = new java.util.Date();
         ModelTrainRecordTb detail = new ModelTrainRecordTb();
         detail.setBatchNo(batchNo);
@@ -624,8 +657,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         detail.setTrainStartDate(defaultText(trainConfig.getTrainStartDate(), ""));
         detail.setTrainEndDate(defaultText(trainConfig.getTrainEndDate(), ""));
         detail.setStatus(status);
-        JsonNode resultJson = result == null ? objectMapper.createObjectNode()
-                .put("message", "训练任务已创建，等待模型系统回写结果。") : result;
+        JsonNode resultJson =
+                result == null ? objectMapper.createObjectNode().put("message", "训练任务已创建，等待模型系统回写结果。") : result;
         detail.setResultJson(jsonText(resultJson));
         detail.setRequestParam(payload == null ? null : payload.toString().getBytes(StandardCharsets.UTF_8));
         detail.setCreatedBy("system");
@@ -635,15 +668,13 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         modelTrainDetailTbMapper.insert(detail);
     }
 
-    private void resetFailedTrainDetail(ModelTrainConfigTb trainConfig,
-                                        String batchNo,
-                                        String status,
-                                        JsonNode payload) {
+    private void resetFailedTrainDetail(
+            ModelTrainConfigTb trainConfig, String batchNo, String status, JsonNode payload) {
         java.util.Date now = new java.util.Date();
-        modelTrainBacktestTbMapper.delete(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
-                .eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo));
-        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .eq(ModelTrainRecordTb::getBatchNo, batchNo));
+        modelTrainBacktestTbMapper.delete(
+                Wrappers.<ModelTrainBacktestTb>lambdaQuery().eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo));
+        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
+                Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
         if (detail == null) {
             throw new BusinessException("重试训练批次不存在：" + batchNo);
         }
@@ -667,16 +698,15 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         detail.setTrainDurationSeconds(null);
         detail.setModelVersion(null);
         detail.setErrorMessage(null);
-        detail.setResultJson(jsonText(objectMapper.createObjectNode()
-                .put("message", "失败批次已重新提交训练，等待模型系统回写结果。")));
+        detail.setResultJson(jsonText(objectMapper.createObjectNode().put("message", "失败批次已重新提交训练，等待模型系统回写结果。")));
         detail.setRequestParam(payload == null ? null : payload.toString().getBytes(StandardCharsets.UTF_8));
         detail.setUpdatedAt(now);
         modelTrainDetailTbMapper.updateById(detail);
     }
 
     private void updateTrainDetail(JsonNode result, String batchNo, String status, String errorMessage) {
-        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .eq(ModelTrainRecordTb::getBatchNo, batchNo));
+        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
+                Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
         if (detail == null) {
             return;
         }
@@ -684,23 +714,35 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         detail.setStatus(status);
         if (result != null) {
             detail.setResultJson(jsonText(result));
-            detail.setBestModel(firstText(result, "selected_model_name", "bestModel", "best_model", "modelName", "model_name"));
+            detail.setBestModel(
+                    firstText(result, "selected_model_name", "bestModel", "best_model", "modelName", "model_name"));
             detail.setMape(firstMetric(result, "mape", "MAPE", "backtest_MAPE", "backtestMape"));
             detail.setWmape(firstMetric(result, "wmape", "WMAPE", "backtest_WMAPE", "backtestWmape"));
             detail.setSmape(firstMetric(result, "smape", "SMAPE", "backtest_SMAPE", "backtestSmape"));
             detail.setRmse(firstMetric(result, "rmse", "RMSE", "backtest_RMSE", "backtestRmse"));
             detail.setMae(firstMetric(result, "mae", "MAE"));
             detail.setR2(firstMetric(result, "r2", "R2"));
-            BigDecimal trainDurationSeconds = firstMetric(result, "elapsed_seconds", "elapsedSeconds", "train_duration_seconds", "trainDurationSeconds", "duration_seconds", "durationSeconds");
+            BigDecimal trainDurationSeconds = firstMetric(
+                    result,
+                    "elapsed_seconds",
+                    "elapsedSeconds",
+                    "train_duration_seconds",
+                    "trainDurationSeconds",
+                    "duration_seconds",
+                    "durationSeconds");
             if (trainDurationSeconds == null && isTerminalStatus(status) && detail.getCreatedAt() != null) {
-                long durationMillis = Math.abs(now.getTime() - detail.getCreatedAt().getTime());
-                trainDurationSeconds = BigDecimal.valueOf(durationMillis).divide(BigDecimal.valueOf(1000), 3, java.math.RoundingMode.HALF_UP);
+                long durationMillis =
+                        Math.abs(now.getTime() - detail.getCreatedAt().getTime());
+                trainDurationSeconds = BigDecimal.valueOf(durationMillis)
+                        .divide(BigDecimal.valueOf(1000), 3, java.math.RoundingMode.HALF_UP);
             }
             detail.setTrainDurationSeconds(trainDurationSeconds);
-            detail.setModelVersion(firstText(result, "model_version", "modelVersion", "artifact_version", "artifactVersion"));
+            detail.setModelVersion(
+                    firstText(result, "model_version", "modelVersion", "artifact_version", "artifactVersion"));
             JsonNode metadata = firstNode(result, "metadata");
             if (metadata != null && !TextUtils.hasText(detail.getModelVersion())) {
-                detail.setModelVersion(firstText(metadata, "model_version", "modelVersion", "artifact_version", "artifactVersion"));
+                detail.setModelVersion(
+                        firstText(metadata, "model_version", "modelVersion", "artifact_version", "artifactVersion"));
             }
             String resultError = firstText(result, "errorMessage", "error_message", "error");
             if (!TextUtils.hasText(resultError) && "FAILED".equals(status)) {
@@ -716,17 +758,19 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     }
 
     private void replaceBacktestDetails(String batchNo, JsonNode reqDTO) {
-        JsonNode details = firstNode(reqDTO, "rolling_backtest_results", "backtests", "backtestDetails", "backtest_details", "details");
+        JsonNode details = firstNode(
+                reqDTO, "rolling_backtest_results", "backtests", "backtestDetails", "backtest_details", "details");
         if (details == null || !details.isArray()) {
             return;
         }
-        modelTrainBacktestTbMapper.delete(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
-                .eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo));
+        modelTrainBacktestTbMapper.delete(
+                Wrappers.<ModelTrainBacktestTb>lambdaQuery().eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo));
         java.util.Date now = new java.util.Date();
         for (JsonNode item : details) {
             java.util.Date trainDate = parseDate(firstText(item, "stat_date", "trainDate", "train_date", "date"));
             BigDecimal actualValue = firstDecimal(item, "actualValue", "actual_value", "actual");
-            BigDecimal predictedValue = firstDecimal(item, "predictedValue", "predicted_value", "prediction", "predicted");
+            BigDecimal predictedValue =
+                    firstDecimal(item, "predictedValue", "predicted_value", "prediction", "predicted");
             if (trainDate == null || actualValue == null || predictedValue == null) {
                 continue;
             }
@@ -909,9 +953,10 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         }
     }
 
-    private <T> void eqIfText(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<T> query,
-                              SFunction<T, ?> column,
-                              String value) {
+    private <T> void eqIfText(
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<T> query,
+            SFunction<T, ?> column,
+            String value) {
         if (TextUtils.hasText(value)) {
             query.eq(column, value);
         }
@@ -936,6 +981,26 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return "Feature" + column.substring("feature_".length());
     }
 
-    private record FeatureMapping(String payloadKey, String featureColumn, String timeGranularity) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class FeatureMapping {
+        private String payloadKey;
+
+        private String featureColumn;
+
+        private String timeGranularity;
+
+        public String payloadKey() {
+            return payloadKey;
+        }
+
+        public String featureColumn() {
+            return featureColumn;
+        }
+
+        public String timeGranularity() {
+            return timeGranularity;
+        }
     }
 }

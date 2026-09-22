@@ -3,18 +3,20 @@ package com.gas.forecast.common.cache;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.common.cache.properties.CacheProperties;
+import java.time.Duration;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.Assert;
-
-import java.time.Duration;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RedisLocalFallbackCacheClient implements CacheClient {
     private static final Logger log = LoggerFactory.getLogger(RedisLocalFallbackCacheClient.class);
@@ -25,9 +27,8 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
     private final Map<String, LocalCacheValue> localCache = new ConcurrentHashMap<>();
     private final AtomicLong redisUnavailableUntil = new AtomicLong(0);
 
-    public RedisLocalFallbackCacheClient(RedisTemplate<String, Object> redisTemplate,
-                                         ObjectMapper objectMapper,
-                                         CacheProperties properties) {
+    public RedisLocalFallbackCacheClient(
+            RedisTemplate<String, Object> redisTemplate, ObjectMapper objectMapper, CacheProperties properties) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.properties = properties;
@@ -120,7 +121,8 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
             return;
         }
         long now = System.currentTimeMillis();
-        Iterator<Map.Entry<String, LocalCacheValue>> iterator = localCache.entrySet().iterator();
+        Iterator<Map.Entry<String, LocalCacheValue>> iterator =
+                localCache.entrySet().iterator();
         while (iterator.hasNext() && localCache.size() >= localMaxSize) {
             Map.Entry<String, LocalCacheValue> entry = iterator.next();
             if (entry.getValue().expiresAt() <= now) {
@@ -140,10 +142,13 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
 
     private void markRedisUnavailable(RuntimeException exception) {
         if (isRedisConnectionException(exception)) {
-            long unavailableUntil = System.currentTimeMillis() + properties.redisRetryInterval().toMillis();
+            long unavailableUntil =
+                    System.currentTimeMillis() + properties.redisRetryInterval().toMillis();
             redisUnavailableUntil.set(unavailableUntil);
-            log.warn("Redis is unavailable, use local cache fallback for {} ms",
-                    properties.redisRetryInterval().toMillis(), exception);
+            log.warn(
+                    "Redis is unavailable, use local cache fallback for {} ms",
+                    properties.redisRetryInterval().toMillis(),
+                    exception);
             return;
         }
         throw exception;
@@ -184,6 +189,20 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
         return objectMapper.convertValue(value, typeReference);
     }
 
-    private record LocalCacheValue(Object value, long expiresAt) {
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    private static class LocalCacheValue {
+        private Object value;
+
+        private long expiresAt;
+
+        public Object value() {
+            return value;
+        }
+
+        public long expiresAt() {
+            return expiresAt;
+        }
     }
 }
