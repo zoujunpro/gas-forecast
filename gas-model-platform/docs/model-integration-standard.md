@@ -44,12 +44,40 @@ ModelJiangshuDianliV1Handler
 class ExampleHandler:
     info: ModelInfo
 
+    def validate_training_data(self, context: ModelContext) -> TrainingDataValidationResult: ...
     def train(self, context: ModelContext) -> TrainResult: ...
     def backtest(self, context: ModelContext) -> BacktestResult: ...
     def predict(self, context: ModelContext) -> PredictResult: ...
 ```
 
-`info.capabilities` 必须包含 `train`、`backtest`、`predict`。注册中心会在启动时自动校验编号、版本和方法完整性。
+`info.capabilities` 必须包含 `train`、`backtest`、`predict`。具备 `train`
+能力的模型还必须在 `info.training_data_range` 中声明训练所需的数据范围，并
+实现 `validate_training_data`。注册中心会在启动时自动校验编号、版本、方法
+完整性和数据范围声明。正式训练前，平台会强制执行同一校验。
+
+`agent_code` 必须与 Java 智能体枚举的第一个参数完全一致：
+
+- `winter-supply`
+- `monthly-sales`
+- `short-term`
+
+训练数据范围只描述时间跨度，不描述字段要求。支持两种类型：
+
+- `history_length`：按日、旬或月声明最少和建议历史长度。
+- `complete_period`：声明至少需要几个完整业务周期，以及首个周期前的历史条数。
+
+示例：
+
+```python
+training_data_range=TrainingDataRange(
+    type="history_length",
+    frequency="day",
+    minimum=880,
+    recommended=1060,
+    continuous=True,
+    description="至少需要880天连续日数据，建议提供1060天以上。",
+)
+```
 
 ## 4. 请求字段
 

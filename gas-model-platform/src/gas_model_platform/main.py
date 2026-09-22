@@ -6,7 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from gas_model_platform.api.v1.routes import router as v1_router
+from gas_model_platform.api.routes import router as api_router
 from gas_model_platform.core.config import settings
 from gas_model_platform.core.logging import configure_logging
 from gas_model_platform.core.request_logging import RequestResponseLoggingMiddleware
@@ -111,7 +111,7 @@ def health() -> ApiResponse[dict[str, str]]:
     return ApiResponse.success({"status": "ok", "service": settings.app_name})
 
 
-app.include_router(v1_router, prefix="/api/v1")
+app.include_router(api_router, prefix="/api/v1")
 
 logger.info(
     "application initialized name=%s version=%s profile=%s config_file=%s profile_config_file=%s log_file=%s",

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from fastapi import HTTPException
 
-from gas_model_platform.api.v1.routes import predict
+from gas_model_platform.api.routes import predict
 from gas_model_platform.core.config import settings
 from gas_model_platform.models.registry import ModelRegistry
 from gas_model_platform.models.winter_agent.winter_agent_v1.engine import (
@@ -22,6 +22,7 @@ from gas_model_platform.models.winter_agent.winter_agent_v1.handler import (
 )
 from gas_model_platform.schemas.modeling import (
     ForecastPoint,
+    ModelContext,
     ModelIssue,
     PredictRequest,
     PredictResult,
@@ -58,6 +59,21 @@ def test_model_code_is_used_as_direct_registry_key() -> None:
     assert request.model_code == "WINTER_MODEL_V1.0"
     assert WinterAgentV1Handler()._safe_batch_no(request.train_batch_no) == "T00001"
     assert WinterAgentV1Handler()._province(request) is None
+
+
+def test_winter_training_data_validation_reports_complete_seasons() -> None:
+    handler = WinterAgentV1Handler()
+    result = handler.validate_training_data(
+        ModelContext(
+            agent_code="winter-supply",
+            model_code=handler.info.model_code,
+            dataset=[{"date": "2025-11-01", "gas_sales": 100.0}],
+        )
+    )
+
+    assert result.valid is False
+    assert result.summary["complete_winter_seasons"] == 0
+    assert result.errors[0].code == "INSUFFICIENT_COMPLETE_PERIODS"
 
 
 def test_train_dataset_row_has_fixed_fields_and_keeps_model_features() -> None:

@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 AgentCode = Literal["winter-supply", "monthly-sales", "short-term"]
 ForecastUnit = Literal["day", "tenday", "month"]
+TrainingDataRangeType = Literal["history_length", "complete_period"]
 
 
 class TrainDatasetRow(BaseModel):
@@ -24,6 +25,19 @@ class PredictDatasetRow(BaseModel):
     date: date
 
 
+class TrainingDataRange(BaseModel):
+    """模型训练所需的历史数据范围说明。"""
+
+    type: TrainingDataRangeType
+    frequency: ForecastUnit
+    minimum: int = Field(ge=1)
+    recommended: int | None = Field(default=None, ge=1)
+    continuous: bool | None = None
+    period: str | None = None
+    minimum_history_before_period: int | None = Field(default=None, ge=1)
+    description: str = Field(min_length=1)
+
+
 class ModelInfo(BaseModel):
     agent_code: AgentCode
     model_code: str
@@ -31,6 +45,7 @@ class ModelInfo(BaseModel):
     model_name: str
     description: str
     capabilities: list[Literal["train", "backtest", "predict"]]
+    training_data_range: TrainingDataRange | None = None
 
 
 class ModelContext(BaseModel):
@@ -52,6 +67,26 @@ class ModelContext(BaseModel):
 class TrainRequest(ModelContext):
     train_batch_no: str
     dataset: list[TrainDatasetRow] = Field(min_length=1)
+
+
+class TrainingDataValidationRequest(ModelContext):
+    dataset: list[TrainDatasetRow] = Field(min_length=1)
+
+
+class TrainingDataValidationIssue(BaseModel):
+    code: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    expected: Any | None = None
+    actual: Any | None = None
+
+
+class TrainingDataValidationResult(BaseModel):
+    agent_code: AgentCode
+    model_code: str
+    valid: bool
+    summary: dict[str, Any] = Field(default_factory=dict)
+    errors: list[TrainingDataValidationIssue] = Field(default_factory=list)
+    warnings: list[TrainingDataValidationIssue] = Field(default_factory=list)
 
 
 class BacktestRequest(ModelContext):

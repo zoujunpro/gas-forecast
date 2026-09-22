@@ -38,6 +38,9 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -352,6 +355,38 @@ public class ModelForecastManagementService {
         int page = positive(request, "page", 1), size = positive(request, "size", 20);
         IPage<ModelForecastResultTb> result = resultMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
+    }
+
+    public List<Map<String, Object>> resultHistory(JsonNode request) {
+        String batchNo = text(request, "forecastBatchNo");
+        if (!TextUtils.hasText(batchNo)) throw new BusinessException("预测批次号不能为空");
+        ModelForecastRecordTb record = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .eq(ModelForecastRecordTb::getForecastBatchNo, batchNo)
+                .last("limit 1"));
+        if (record == null) throw new BusinessException("预测批次不存在");
+
+        String granularity = switch (defaultText(record.getForecastFrequency(), "DAILY").toUpperCase()) {
+            case "TENDAY" -> "TENDAY";
+            case "MONTHLY", "MONTH" -> "MONTH";
+            default -> "DAY";
+        };
+        var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery()
+                .eq(ModelTrainFeatureDataTb::getTimeGranularity, granularity)
+                .lt(TextUtils.hasText(record.getForecastStartDate()), ModelTrainFeatureDataTb::getStatDate, record.getForecastStartDate())
+                .isNotNull(ModelTrainFeatureDataTb::getGasSales);
+        eqText(query, ModelTrainFeatureDataTb::getRegionCode, record.getRegionCode());
+        eqText(query, ModelTrainFeatureDataTb::getIndustryCode, record.getIndustryCode());
+        eqText(query, ModelTrainFeatureDataTb::getCustomerCode, record.getCustomerCode());
+        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId).last("limit 30");
+
+        List<ModelTrainFeatureDataTb> rows = new ArrayList<>(featureDataMapper.selectList(query));
+        Collections.reverse(rows);
+        return rows.stream().map(row -> {
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("date", row.getStatDate());
+            point.put("actualValue", row.getGasSales());
+            return point;
+        }).toList();
     }
 
     public PageInfoDTO<ModelForecastRecordTb> listRecords(JsonNode request) {

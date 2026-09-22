@@ -96,6 +96,27 @@ def test_jiangshu_dianli_v1_allows_training_without_external_features() -> None:
     assert list(clean.columns) == ["ds", "y"]
 
 
+def test_jiangshu_training_data_validation_reports_range_and_continuity() -> None:
+    handler = ModelJiangshuDianliV1Handler()
+    result = handler.validate_training_data(
+        ModelContext(
+            agent_code="short-term",
+            model_code=handler.info.model_code,
+            dataset=[
+                {"date": "2025-01-01", "gas_sales": 100.0},
+                {"date": "2025-01-03", "gas_sales": 101.0},
+            ],
+        )
+    )
+
+    assert result.valid is False
+    assert result.summary["missing_date_count"] == 1
+    assert {issue.code for issue in result.errors} == {
+        "INSUFFICIENT_HISTORY",
+        "NON_CONTINUOUS_DATES",
+    }
+
+
 def test_jiangshu_dianli_v1_future_date_alias_is_supported() -> None:
     future = prepare_future_data(pd.DataFrame({"statDate": ["2026-01-01"]}))
 

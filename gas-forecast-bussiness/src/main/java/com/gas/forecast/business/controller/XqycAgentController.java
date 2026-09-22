@@ -1,6 +1,7 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.service.XqycForecastPersistenceService;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -16,9 +17,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
+import com.gas.forecast.dao.domain.ModelTrainRecordTb;
+import com.gas.forecast.dao.domain.ModelForecastRecordTb;
+import com.gas.forecast.dao.domain.ModelForecastResultTb;
+import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
+import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
+import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -38,11 +50,24 @@ public class XqycAgentController {
 
     private final ObjectMapper objectMapper;
     private final XqycForecastPersistenceService persistenceService;
+    private final ModelTrainRecordTbMapper trainRecordMapper;
+    private final ModelTrainBacktestTbMapper trainBacktestMapper;
+    private final ModelForecastRecordTbMapper forecastRecordMapper;
+    private final ModelForecastResultTbMapper forecastResultMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
-    public XqycAgentController(ObjectMapper objectMapper, XqycForecastPersistenceService persistenceService) {
+    public XqycAgentController(ObjectMapper objectMapper,
+                               XqycForecastPersistenceService persistenceService,
+                               ModelTrainRecordTbMapper trainRecordMapper,
+                               ModelTrainBacktestTbMapper trainBacktestMapper,
+                               ModelForecastRecordTbMapper forecastRecordMapper,
+                               ModelForecastResultTbMapper forecastResultMapper) {
         this.objectMapper = objectMapper;
         this.persistenceService = persistenceService;
+        this.trainRecordMapper = trainRecordMapper;
+        this.trainBacktestMapper = trainBacktestMapper;
+        this.forecastRecordMapper = forecastRecordMapper;
+        this.forecastResultMapper = forecastResultMapper;
     }
 
     @GetMapping("/agents/config")
@@ -73,9 +98,19 @@ public class XqycAgentController {
     }
 
     @GetMapping("/short-term-results")
-    public JsonNode listShortTermResults() throws Exception {
-        ObjectNode root = (ObjectNode) listResultFiles("xqyc/short_term_data/*.json", false);
-        ArrayNode results = (ArrayNode) root.get("results");
+    public JsonNode listShortTermResults() {
+        ObjectNode root = objectMapper.createObjectNode();
+        ArrayNode results = objectMapper.createArrayNode();
+        List<ModelTrainRecordTb> records = trainRecordMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                .eq(ModelTrainRecordTb::getAgentCode, "short-term")
+                .eq(ModelTrainRecordTb::getStatus, "SUCCESS")
+                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
+                .orderByDesc(ModelTrainRecordTb::getId));
+        Set<String> seenScopes = new LinkedHashSet<>();
+        for (ModelTrainRecordTb record : records) {
+            String scopeKey = trainScopeKey(record);
+            if (seenScopes.add(scopeKey)) results.add(toShortTermResult(record, false));
+        }
         Map<String, Set<String>> customersByScope = new LinkedHashMap<>();
 
         for (JsonNode node : results) {
@@ -99,20 +134,140 @@ public class XqycAgentController {
                 item.set("customers", customerNodes);
             }
         }
+        root.set("results", results);
         return root;
     }
 
     @GetMapping("/short-term-results/detail")
     public ResponseEntity<JsonNode> getShortTermResult(@RequestParam String province,
-                                                       @RequestParam String industry) throws Exception {
-        return readResult("xqyc/short_term_data/" + province + "_" + industry + ".json", industry);
+                                                       @RequestParam String industry) {
+        ModelTrainRecordTb record = latestShortTermRecord(province, industry, null);
+        return record == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(toShortTermResult(record, true));
     }
 
     @GetMapping("/short-term-results/customer-detail")
     public ResponseEntity<JsonNode> getShortTermCustomerResult(@RequestParam String province,
                                                               @RequestParam String industry,
-                                                              @RequestParam String customer) throws Exception {
-        return readResult("xqyc/short_term_data/" + province + "_" + industry + "_" + customer + ".json", industry);
+                                                              @RequestParam String customer) {
+        ModelTrainRecordTb record = latestShortTermRecord(province, industry, customer);
+        return record == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(toShortTermResult(record, true));
+    }
+
+    private ModelTrainRecordTb latestShortTermRecord(String province, String industry, String customer) {
+        var query = Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                .eq(ModelTrainRecordTb::getAgentCode, "short-term")
+                .eq(ModelTrainRecordTb::getStatus, "SUCCESS")
+                .eq(ModelTrainRecordTb::getRegionName, province)
+                .eq(ModelTrainRecordTb::getIndustryName, industry);
+        if (customer == null || customer.isBlank()) query.and(q -> q.isNull(ModelTrainRecordTb::getCustomerName)
+                .or().eq(ModelTrainRecordTb::getCustomerName, "")
+                .or().eq(ModelTrainRecordTb::getCustomerName, "ALL")
+                .or().likeRight(ModelTrainRecordTb::getCustomerName, "全部"));
+        else query.eq(ModelTrainRecordTb::getCustomerName, customer);
+        return trainRecordMapper.selectOne(query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
+    }
+
+    private ObjectNode toShortTermResult(ModelTrainRecordTb record, boolean includeBacktest) {
+        ObjectNode item = objectMapper.createObjectNode();
+        item.put("province", displayScope(record.getRegionName(), "全部区域"));
+        item.put("industry", displayScope(record.getIndustryName(), "全部行业"));
+        if (!isAllScope(record.getCustomerName())) {
+            item.put("customer", record.getCustomerName());
+        }
+        item.put("batch_no", record.getBatchNo());
+        item.put("model_name", displayScope(record.getBestModel(), "暂无推荐模型"));
+        item.put("model_version", displayScope(record.getModelVersion(), "-"));
+        ObjectNode metrics = objectMapper.createObjectNode();
+        putDecimal(metrics, "mape", record.getMape());
+        putDecimal(metrics, "wmape", record.getWmape());
+        putDecimal(metrics, "smape", record.getSmape());
+        putDecimal(metrics, "rmse", record.getRmse());
+        putDecimal(metrics, "mae", record.getMae());
+        putDecimal(metrics, "r2", record.getR2());
+        item.set("metrics", metrics);
+        if (includeBacktest) {
+            ArrayNode dates = objectMapper.createArrayNode();
+            ArrayNode actual = objectMapper.createArrayNode();
+            ArrayNode predicted = objectMapper.createArrayNode();
+            List<ModelTrainBacktestTb> rows = trainBacktestMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
+                    .eq(ModelTrainBacktestTb::getTrainBatchNo, record.getBatchNo())
+                    .orderByAsc(ModelTrainBacktestTb::getTrainDate)
+                    .orderByAsc(ModelTrainBacktestTb::getId));
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+            for (ModelTrainBacktestTb row : rows) {
+                dates.add(row.getTrainDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(formatter));
+                actual.add(row.getActualValue());
+                predicted.add(row.getPredictedValue());
+            }
+            item.set("dates", dates);
+            item.set("actual", actual);
+            item.set("predicted", predicted);
+            item.set("history_dates", dates.deepCopy());
+            item.set("history_values", actual.deepCopy());
+            appendLatestForecast(item, record);
+        }
+        return item;
+    }
+
+    private void appendLatestForecast(ObjectNode item, ModelTrainRecordTb trainRecord) {
+        var query = Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .eq(ModelForecastRecordTb::getAgentCode, "short-term")
+                .eq(ModelForecastRecordTb::getStatus, 2);
+        if (!isAllScope(trainRecord.getRegionCode())) {
+            query.eq(ModelForecastRecordTb::getRegionCode, trainRecord.getRegionCode());
+        }
+        if (isAllScope(trainRecord.getIndustryCode())) {
+            query.and(q -> q.isNull(ModelForecastRecordTb::getIndustryCode)
+                    .or().eq(ModelForecastRecordTb::getIndustryCode, "")
+                    .or().eq(ModelForecastRecordTb::getIndustryCode, "ALL"));
+        } else {
+            query.eq(ModelForecastRecordTb::getIndustryCode, trainRecord.getIndustryCode());
+        }
+        if (isAllScope(trainRecord.getCustomerName())) {
+            query.and(q -> q.isNull(ModelForecastRecordTb::getCustomerCode)
+                    .or().eq(ModelForecastRecordTb::getCustomerCode, "")
+                    .or().eq(ModelForecastRecordTb::getCustomerCode, "ALL"));
+        } else {
+            query.eq(ModelForecastRecordTb::getCustomerCode, trainRecord.getCustomerCode());
+        }
+        ModelForecastRecordTb forecastRecord = forecastRecordMapper.selectOne(query
+                .orderByDesc(ModelForecastRecordTb::getForecastEndTime)
+                .orderByDesc(ModelForecastRecordTb::getId)
+                .last("limit 1"));
+        if (forecastRecord == null) return;
+
+        List<ModelForecastResultTb> points = forecastResultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
+                .eq(ModelForecastResultTb::getForecastBatchNo, forecastRecord.getForecastBatchNo())
+                .orderByAsc(ModelForecastResultTb::getForecastDate)
+                .orderByAsc(ModelForecastResultTb::getId));
+        if (points.isEmpty()) return;
+        ArrayNode futureDates = objectMapper.createArrayNode();
+        ArrayNode futurePredicted = objectMapper.createArrayNode();
+        for (ModelForecastResultTb point : points) {
+            futureDates.add(point.getForecastDate());
+            futurePredicted.add(point.getForecastValue());
+        }
+        item.put("forecast_batch_no", forecastRecord.getForecastBatchNo());
+        item.set("future_dates", futureDates);
+        item.set("future_predicted", futurePredicted);
+    }
+
+    private void putDecimal(ObjectNode target, String field, java.math.BigDecimal value) {
+        if (value == null) target.putNull(field); else target.put(field, value);
+    }
+
+    private String trainScopeKey(ModelTrainRecordTb record) {
+        return displayScope(record.getRegionName(), "全部区域") + "\t"
+                + displayScope(record.getIndustryName(), "全部行业") + "\t"
+                + displayScope(record.getCustomerName(), "");
+    }
+
+    private String displayScope(String value, String fallback) {
+        return isAllScope(value) ? fallback : value;
+    }
+
+    private boolean isAllScope(String value) {
+        return value == null || value.isBlank() || "ALL".equalsIgnoreCase(value) || value.startsWith("全部");
     }
 
     @GetMapping("/winter-supply-results")

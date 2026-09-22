@@ -30,6 +30,9 @@ from gas_model_platform.schemas.modeling import (
     PredictResult,
     RollingBacktestFoldMetric,
     RollingBacktestPoint,
+    TrainingDataRange,
+    TrainingDataValidationIssue,
+    TrainingDataValidationResult,
     TrainResult,
 )
 
@@ -795,7 +798,90 @@ class ModelJiangshuDianliV1Handler:
         model_name="江苏电力日级预测模型 V1",
         description="Prophet 与 LightGBM 残差融合，使用 Walk-Forward 回测选择参数。",
         capabilities=["train", "backtest", "predict"],
+        training_data_range=TrainingDataRange(
+            type="history_length",
+            frequency="day",
+            minimum=880,
+            recommended=1060,
+            continuous=True,
+            description="至少需要880天连续日数据，建议提供1060天以上。",
+        ),
     )
+
+    def validate_training_data(
+        self, context: ModelContext
+    ) -> TrainingDataValidationResult:
+        clean = prepare_training_data(pd.DataFrame(context.dataset))
+        clean = clean.sort_values("ds").reset_index(drop=True)
+        dates = clean["ds"]
+        duplicate_count = int(dates.duplicated().sum())
+        unique_dates = pd.DatetimeIndex(dates.drop_duplicates())
+        expected_dates = pd.date_range(unique_dates.min(), unique_dates.max(), freq="D")
+        missing_dates = expected_dates.difference(unique_dates)
+        requirement = self.info.training_data_range
+        if requirement is None:  # pragma: no cover - 注册契约会提前阻止
+            raise RuntimeError("江苏电力模型未声明训练数据范围")
+
+        errors: list[TrainingDataValidationIssue] = []
+        warnings: list[TrainingDataValidationIssue] = []
+        if len(clean) < requirement.minimum:
+            errors.append(
+                TrainingDataValidationIssue(
+                    code="INSUFFICIENT_HISTORY",
+                    message=(
+                        f"江苏电力模型至少需要{requirement.minimum}天数据，"
+                        f"当前只有{len(clean)}天"
+                    ),
+                    expected=requirement.minimum,
+                    actual=len(clean),
+                )
+            )
+        if duplicate_count:
+            errors.append(
+                TrainingDataValidationIssue(
+                    code="DUPLICATE_DATES",
+                    message=f"训练数据存在{duplicate_count}个重复日期",
+                    expected=0,
+                    actual=duplicate_count,
+                )
+            )
+        if len(missing_dates):
+            errors.append(
+                TrainingDataValidationIssue(
+                    code="NON_CONTINUOUS_DATES",
+                    message=f"训练数据缺少{len(missing_dates)}个日期，日级数据必须连续",
+                    expected=0,
+                    actual=len(missing_dates),
+                )
+            )
+        if requirement.recommended and len(clean) < requirement.recommended:
+            warnings.append(
+                TrainingDataValidationIssue(
+                    code="BELOW_RECOMMENDED_HISTORY",
+                    message=(
+                        f"建议提供至少{requirement.recommended}天数据，"
+                        f"当前为{len(clean)}天"
+                    ),
+                    expected=requirement.recommended,
+                    actual=len(clean),
+                )
+            )
+
+        return TrainingDataValidationResult(
+            agent_code=self.info.agent_code,
+            model_code=self.info.model_code,
+            valid=not errors,
+            summary={
+                "row_count": len(clean),
+                "unique_date_count": len(unique_dates),
+                "start_date": str(unique_dates.min().date()),
+                "end_date": str(unique_dates.max().date()),
+                "missing_date_count": len(missing_dates),
+                "duplicate_date_count": duplicate_count,
+            },
+            errors=errors,
+            warnings=warnings,
+        )
 
     def train(self, context: ModelContext) -> TrainResult:
         if not context.train_batch_no:

@@ -9,6 +9,8 @@ from gas_model_platform.schemas.modeling import (
     ModelContext,
     ModelInfo,
     PredictResult,
+    TrainingDataRange,
+    TrainingDataValidationResult,
     TrainResult,
 )
 
@@ -21,7 +23,21 @@ class ModelExampleV1Handler:
         model_name="示例模型 V1",
         description="请填写模型用途、数据频率和核心算法。",
         capabilities=["train", "backtest", "predict"],
+        training_data_range=TrainingDataRange(
+            type="history_length",
+            frequency="day",
+            minimum=365,
+            recommended=730,
+            continuous=True,
+            description="至少需要365天连续日数据，建议提供730天以上。",
+        ),
     )
+
+    def validate_training_data(
+        self, context: ModelContext
+    ) -> TrainingDataValidationResult:
+        """返回模型专属的数据范围校验结果。"""
+        raise NotImplementedError
 
     def train(self, context: ModelContext) -> TrainResult:
         """校验数据、执行原始训练逻辑、保存产物并返回回测明细。"""

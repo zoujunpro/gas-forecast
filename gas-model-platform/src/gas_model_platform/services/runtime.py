@@ -6,6 +6,8 @@ from gas_model_platform.schemas.modeling import (
     ModelContext,
     PredictRequest,
     PredictResult,
+    TrainingDataValidationRequest,
+    TrainingDataValidationResult,
     TrainRequest,
     TrainResult,
 )
@@ -18,9 +20,20 @@ class ModelRuntime:
     def train(self, request: TrainRequest) -> TrainResult:
         handler = self.registry.resolve(request.model_code)
         context = self._context_for_handler(request, handler)
+        validation = handler.validate_training_data(context)
+        if not validation.valid:
+            messages = "；".join(issue.message for issue in validation.errors)
+            raise ValueError(f"训练数据不满足模型要求：{messages}")
         result = handler.train(context)
         result.metadata.update(self._selection_metadata(request.model_code, handler.info.model_code))
         return result
+
+    def validate_training_data(
+        self, request: TrainingDataValidationRequest
+    ) -> TrainingDataValidationResult:
+        handler = self.registry.resolve(request.model_code)
+        context = self._context_for_handler(request, handler)
+        return handler.validate_training_data(context)
 
     def backtest(self, request: BacktestRequest) -> BacktestResult:
         handler = self.registry.resolve(request.model_code)
@@ -38,7 +51,12 @@ class ModelRuntime:
 
     def _context_for_handler(
         self,
-        request: TrainRequest | BacktestRequest | PredictRequest,
+        request: (
+            TrainRequest
+            | TrainingDataValidationRequest
+            | BacktestRequest
+            | PredictRequest
+        ),
         handler: ModelHandler,
     ) -> ModelContext:
         if request.agent_code and request.agent_code != handler.info.agent_code:

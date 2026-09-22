@@ -20,6 +20,8 @@ public class ModelForecastManagementController {
     public ResponseResult<?> execute(@RequestBody JsonNode request) throws Exception { return ResponseResult.success(service.execute(request)); }
     @PostMapping("/model-forecast-result/listPage")
     public ResponseResult<?> listResults(@RequestBody JsonNode request) { return ResponseResult.success(service.listResults(request)); }
+    @PostMapping("/model-forecast-result/history")
+    public ResponseResult<?> resultHistory(@RequestBody JsonNode request) { return ResponseResult.success(service.resultHistory(request)); }
     @PostMapping("/model-forecast-record/listPage")
     public ResponseResult<?> listRecords(@RequestBody JsonNode request) { return ResponseResult.success(service.listRecords(request)); }
 }

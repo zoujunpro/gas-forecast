@@ -19,6 +19,12 @@ from gas_model_platform.models.winter_agent.winter_agent_v1.engine.config import
     DEFAULT_CONFIG,
     load_config,
 )
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine.backtest import (
+    make_folds,
+)
+from gas_model_platform.models.winter_agent.winter_agent_v1.engine.data_agent import (
+    clean_data,
+)
 from gas_model_platform.models.winter_agent.winter_agent_v1.engine.version import (
     MODEL_VERSION,
 )
@@ -39,6 +45,9 @@ from gas_model_platform.schemas.modeling import (
     PredictResult,
     RollingBacktestFoldMetric,
     RollingBacktestPoint,
+    TrainingDataRange,
+    TrainingDataValidationIssue,
+    TrainingDataValidationResult,
     TrainResult,
 )
 
@@ -57,10 +66,95 @@ class WinterAgentV1Handler:
         model_name="冬季保供模型总入口",
         description="训练多类冬供旬预测候选模型，滚动回测后自动选择最佳模型。",
         capabilities=["train", "backtest", "predict"],
+        training_data_range=TrainingDataRange(
+            type="complete_period",
+            frequency="tenday",
+            minimum=3,
+            recommended=DEFAULT_CONFIG["backtest_seasons"],
+            period="winter_season",
+            minimum_history_before_period=DEFAULT_CONFIG["minimum_train_rows"],
+            description="至少3个完整冬供季，首个可回测季前至少108条历史数据。",
+        ),
     )
 
     def __init__(self, store: WinterSupplyResultStore | None = None) -> None:
         self.store = store or WinterSupplyResultStore()
+
+    def validate_training_data(
+        self, context: ModelContext
+    ) -> TrainingDataValidationResult:
+        config = self._training_config(context.params)
+        data, clean_log, summary = clean_data(
+            pd.DataFrame(context.dataset),
+            bool(config["drop_suspicious_tail"]),
+        )
+        folds = make_folds(
+            data,
+            int(config["backtest_seasons"]),
+            int(config["minimum_train_rows"]),
+        )
+        requirement = self.info.training_data_range
+        if requirement is None:  # pragma: no cover - 注册契约会提前阻止
+            raise RuntimeError("冬季保供模型未声明训练数据范围")
+
+        errors: list[TrainingDataValidationIssue] = []
+        warnings: list[TrainingDataValidationIssue] = []
+        if len(folds) < requirement.minimum:
+            errors.append(
+                TrainingDataValidationIssue(
+                    code="INSUFFICIENT_COMPLETE_PERIODS",
+                    message=(
+                        f"冬季保供模型至少需要{requirement.minimum}个完整冬供季，"
+                        f"当前只有{len(folds)}个"
+                    ),
+                    expected=requirement.minimum,
+                    actual=len(folds),
+                )
+            )
+        configured_seasons = int(config["backtest_seasons"])
+        if len(folds) >= requirement.minimum and len(folds) < configured_seasons:
+            warnings.append(
+                TrainingDataValidationIssue(
+                    code="BELOW_CONFIGURED_BACKTEST_PERIODS",
+                    message=(
+                        f"配置希望使用{configured_seasons}个冬供季，"
+                        f"当前可用{len(folds)}个"
+                    ),
+                    expected=configured_seasons,
+                    actual=len(folds),
+                )
+            )
+        missing_tendays = int(summary.get("missing_tendays", 0))
+        if missing_tendays:
+            warnings.append(
+                TrainingDataValidationIssue(
+                    code="MISSING_TENDAYS",
+                    message=f"历史数据缺少{missing_tendays}个旬点",
+                    expected=0,
+                    actual=missing_tendays,
+                )
+            )
+
+        return TrainingDataValidationResult(
+            agent_code=self.info.agent_code,
+            model_code=self.info.model_code,
+            valid=not errors,
+            summary={
+                "row_count": int(summary["rows"]),
+                "start_date": summary["start"],
+                "end_date": summary["end"],
+                "complete_winter_seasons": len(folds),
+                "winter_seasons": [fold["season"] for fold in folds],
+                "configured_backtest_seasons": configured_seasons,
+                "minimum_train_rows_before_period": int(
+                    config["minimum_train_rows"]
+                ),
+                "missing_tendays": missing_tendays,
+                "cleaning_events": len(clean_log),
+            },
+            errors=errors,
+            warnings=warnings,
+        )
 
     def train(self, context: ModelContext) -> TrainResult:
         if not context.dataset:

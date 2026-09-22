@@ -109,13 +109,61 @@ export GAS_MODEL_LOG_BODY_MAX_ITEMS=20
 
 ## 接口
 
+Java调用说明见 [docs/java-api-reference.md](docs/java-api-reference.md)。
+
 - `GET /health`
 - `GET /api/v1/models`
+- `POST /api/v1/models/validate-training-data`
 - `POST /api/v1/features/compute`
 - `POST /api/v1/features/batch-compute`
 - `POST /api/v1/train`
 - `POST /api/v1/backtest`
 - `POST /api/v1/predict`
+
+`GET /api/v1/models` 返回所有已注册模型的基本信息。具备训练能力的模型会在
+`training_data_range` 中声明最少和建议的数据范围；`agent_code` 与 Java
+智能体配置保持一致。例如：
+
+也可以通过可选查询参数只查询一个模型；无论是否过滤，`data` 始终为数组：
+
+```http
+GET /api/v1/models?model_code=MODEL_JIANGSHU_DIANLI_V1.0
+```
+
+```json
+{
+  "agent_code": "short-term",
+  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "model_version": "1.0.0",
+  "model_name": "江苏电力日级预测模型 V1",
+  "description": "Prophet 与 LightGBM 残差融合，使用 Walk-Forward 回测选择参数。",
+  "capabilities": ["train", "backtest", "predict"],
+  "training_data_range": {
+    "type": "history_length",
+    "frequency": "day",
+    "minimum": 880,
+    "recommended": 1060,
+    "continuous": true,
+    "period": null,
+    "minimum_history_before_period": null,
+    "description": "至少需要880天连续日数据，建议提供1060天以上。"
+  }
+}
+```
+
+用户选择训练数据后，可调用统一校验接口。平台会按 `model_code` 调用对应
+Handler 的 `validate_training_data`，返回统一的校验结果；正式训练前会再次
+执行同一校验：
+
+```json
+{
+  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "params": {},
+  "dataset": [
+    {"date": "2024-01-01", "gas_sales": 100.0}
+  ]
+}
+```
 
 ## 特征计算接口
 

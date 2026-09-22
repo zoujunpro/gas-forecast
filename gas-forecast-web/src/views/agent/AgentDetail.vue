@@ -133,8 +133,9 @@
             <div class="chart-box">
               <div class="chart-label">滚动回测结果（实际值 vs 预测值）</div>
               <div ref="chartRefTop" class="chart" style="height: 300px;"></div>
-              <div class="chart-label" v-if="currentResult.future_dates">历史与未来预测</div>
+              <div class="chart-label" v-if="currentResult.future_dates">历史与近期预测</div>
               <div ref="chartRefBottom" class="chart" style="height: 300px;" v-if="currentResult.future_dates"></div>
+              <el-empty v-else description="当前范围暂无成功的近期预测结果" :image-size="72" />
             </div>
             <div class="data-summary" v-if="currentResult.future_dates">
               <div class="summary-item">
@@ -297,10 +298,16 @@
               </div>
             </div>
             <div class="chart-box">
-              <div class="chart-label" v-if="currentResult.dates">滚动回测结果（实际值 vs 预测值）</div>
-              <div ref="chartRefTop" class="chart" style="height: 300px;" v-if="currentResult.dates"></div>
-              <div class="chart-label" v-if="currentResult.future_dates">历史与未来预测</div>
-              <div ref="chartRefBottom" class="chart" style="height: 300px;" v-if="currentResult.future_dates"></div>
+              <section class="result-chart-panel">
+                <div class="chart-label">滚动回测结果（实际值 vs 预测值）</div>
+                <div ref="chartRefTop" class="chart" style="height: 300px;" v-if="currentResult.dates?.length"></div>
+                <el-empty v-else description="当前训练批次暂无滚动回测数据" :image-size="72" />
+              </section>
+              <section class="result-chart-panel">
+                <div class="chart-label">历史与近期预测</div>
+                <div ref="chartRefBottom" class="chart" style="height: 300px;" v-if="currentResult.future_dates?.length"></div>
+                <el-empty v-else description="当前范围暂无成功的近期预测结果" :image-size="72" />
+              </section>
             </div>
             <div class="data-summary" v-if="currentResult.future_dates">
               <div class="summary-item" v-if="currentResult.dates">
@@ -863,7 +870,7 @@ const queryString = (params: Record<string, string>) => new URLSearchParams(para
 const syncShortTermOptions = () => {
   const scopedResults = stAllResults.value.filter(r => r.province === selectedStProvince.value)
   const industries = Array.from(new Set(scopedResults.map(r => r.industry).filter(Boolean)))
-  stIndustries.value = industries.length > 0 ? industries : ['城市燃气', 'CNG', '化工', '工业燃料']
+  stIndustries.value = industries
 
   if (!stIndustries.value.includes(selectedStIndustry.value)) {
     selectedStIndustry.value = stIndustries.value[0] || ''
@@ -911,6 +918,10 @@ const loadStMape = async () => {
 }
 
 const loadStResult = async () => {
+  if (!selectedStProvince.value || !selectedStIndustry.value) {
+    currentResult.value = null
+    return
+  }
   loadingResult.value = true
   currentResult.value = null
   try {
@@ -919,6 +930,7 @@ const loadStResult = async () => {
       url = `/short-term-results/customer-detail?${queryString({ province: selectedStProvince.value, industry: selectedStIndustry.value, customer: selectedStCustomer.value })}`
     }
     const resp = await fetch(url)
+    if (!resp.ok) return
     const data = await resp.json()
     if (!data.error) {
       currentResult.value = data
@@ -926,6 +938,11 @@ const loadStResult = async () => {
     }
   } catch (e) { console.error('加载短期预测结果失败:', e) }
   finally { loadingResult.value = false }
+}
+
+const loadShortTermDashboard = async () => {
+  await loadStMape()
+  await loadStResult()
 }
 
 const switchStProvince = (province: string) => {
@@ -1060,7 +1077,7 @@ const initMonthlyChart = (data: any) => {
     const markLine = {
       symbol: 'none',
       silent: true,
-      data: [{ xAxis: histDates.length, lineStyle: { color: '#f59e0b', type: 'dashed', width: 1.5 }, label: { show: true, formatter: '预测起点', color: '#f59e0b', fontSize: 10, position: 'start' } }]
+      data: [{ xAxis: data.future_dates?.[0], lineStyle: { color: '#f59e0b', type: 'dashed', width: 1.5 }, label: { show: true, formatter: '预测起点', color: '#f59e0b', fontSize: 10, position: 'start' } }]
     }
     seriesB[1].markLine = markLine
 
@@ -1358,8 +1375,7 @@ onMounted(() => {
     loadProvinceMape()
     loadMonthlyResult()
   } else if (isShortTerm.value) {
-    loadStMape()
-    loadStResult()
+    void loadShortTermDashboard()
   } else if (isWinterSupply.value) {
     loadWsMape()
     loadWsResult()
@@ -1386,10 +1402,9 @@ watch(agentId, (newId, oldId) => {
     loadMonthlyResult()
   } else if (isShortTerm.value) {
     selectedStProvince.value = '江苏'
-    selectedStIndustry.value = '城市燃气'
+    selectedStIndustry.value = ''
     selectedStCustomer.value = ''
-    loadStMape()
-    loadStResult()
+    void loadShortTermDashboard()
   } else if (isWinterSupply.value) {
     selectedWsProvince.value = '江苏'
     loadWsMape()
@@ -1827,7 +1842,8 @@ watch(chartType, () => {
 .chart-toggle { display: flex; gap: 2px; background: #F1F5F9; padding: 3px; border-radius: 8px; }
 .toggle-btn { padding: 6px 14px; border: none; background: transparent; border-radius: 6px; font-size: 12px; font-weight: 600; color: #64748B; cursor: pointer; transition: all 0.2s; }
 .toggle-btn.active { background: white; color: #0EA5E9; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.chart-box { background: #FAFBFC; border-radius: 12px; padding: 16px; }
+.chart-box { display: flex; flex-direction: column; gap: 16px; background: #FAFBFC; border-radius: 12px; padding: 16px; }
+.result-chart-panel { min-height: 330px; padding: 12px 14px 6px; border: 1px solid #edf1f7; border-radius: 10px; background: #fff; }
 .chart-label { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; margin-top: 12px; }
 .chart-label:first-child { margin-top: 0; }
 .chart { width: 100%; height: 100%; }
