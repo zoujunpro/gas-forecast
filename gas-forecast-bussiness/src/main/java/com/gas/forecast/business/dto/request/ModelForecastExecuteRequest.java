@@ -11,6 +11,7 @@ import lombok.Data;
 public class ModelForecastExecuteRequest {
     @NotNull(message = "预测配置ID不能为空")
     private Long forecastId;
+
     @NotEmpty(message = "请填写非空的特征数据数组")
     private List<Map<String, Object>> dataset;
 

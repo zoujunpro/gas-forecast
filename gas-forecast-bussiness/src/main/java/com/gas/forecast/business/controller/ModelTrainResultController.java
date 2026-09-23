@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 模型训练结果查询接口。
  */
 @RestController
-@RequestMapping("/model-train-result")
+@RequestMapping({"/model-train-result", "/model-train-execution"})
 @RequiredArgsConstructor
 public class ModelTrainResultController {
 
@@ -28,7 +28,7 @@ public class ModelTrainResultController {
      * @param reqDTO 模型训练结果查询条件
      * @return 模型训练结果
      */
-    @PostMapping("query")
+    @PostMapping({"query", "result"})
     @WebLog("查看模型训练结果")
     public ResponseResult<ModelTrainResultResponse> query(@Valid @RequestBody ModelTrainResultRequest reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.getTrainResult(reqDTO));

@@ -47,6 +47,18 @@ public class ModelTrainAgentTrainRequest {
 
     private List<JsonNode> dataset;
 
+    /** 训练数据总条数；详情预览被截断时用于展示真实数量。 */
+    @JsonProperty("dataset_total")
+    private Integer datasetTotal;
+
+    /** 训练数据是否仅返回部分预览。 */
+    @JsonProperty("dataset_truncated")
+    private Boolean datasetTruncated;
+
+    /** 训练数据预览最大条数。 */
+    @JsonProperty("dataset_preview_limit")
+    private Integer datasetPreviewLimit;
+
     public String agentCode() {
         return agentCode;
     }

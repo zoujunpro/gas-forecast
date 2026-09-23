@@ -60,8 +60,7 @@ public class ModelTrainExecutionController {
      */
     @PostMapping("callback")
     @WebLog("模型训练结果回调")
-    public ResponseResult<ModelTrainExecuteResponse> callback(
-            @Valid @RequestBody ModelTrainAgentResponse reqDTO) {
+    public ResponseResult<ModelTrainExecuteResponse> callback(@Valid @RequestBody ModelTrainAgentResponse reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.updateTrainResult(reqDTO));
     }
 }

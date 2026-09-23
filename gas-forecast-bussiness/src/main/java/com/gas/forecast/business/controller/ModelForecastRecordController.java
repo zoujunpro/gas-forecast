@@ -46,8 +46,7 @@ public class ModelForecastRecordController {
      */
     @PostMapping("features")
     @WebLog("模型预测特征快照查询")
-    public ResponseResult<List<Map<String, Object>>> features(
-            @Valid @RequestBody ModelForecastBatchRequest reqDTO) {
+    public ResponseResult<List<Map<String, Object>>> features(@Valid @RequestBody ModelForecastBatchRequest reqDTO) {
         return ResponseResult.success(modelForecastManagementService.recordFeatures(reqDTO));
     }
 }

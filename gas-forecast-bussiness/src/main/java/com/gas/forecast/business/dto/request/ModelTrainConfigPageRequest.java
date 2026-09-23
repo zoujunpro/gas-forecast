@@ -27,5 +27,4 @@ public class ModelTrainConfigPageRequest {
 
     @Size(max = 32, message = "时间格式长度不能超过32个字符")
     private String timeGranularity;
-
 }

@@ -3,16 +3,14 @@ package com.gas.forecast.business.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.gas.forecast.business.enums.ModelTrainStatus;
-import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.dto.request.ModelForecastBatchRequest;
-import com.gas.forecast.business.dto.request.ModelForecastConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelForecastConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelForecastConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelForecastConfigSaveRequest;
 import com.gas.forecast.business.dto.request.ModelForecastConfigUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelForecastExecuteRequest;
@@ -20,6 +18,8 @@ import com.gas.forecast.business.dto.request.ModelForecastRecordPageRequest;
 import com.gas.forecast.business.dto.request.ModelForecastResultPageRequest;
 import com.gas.forecast.business.dto.response.ModelForecastExecuteResponse;
 import com.gas.forecast.business.dto.response.ModelForecastHistoryPointResponse;
+import com.gas.forecast.business.enums.ModelForecastStatus;
+import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -222,7 +222,8 @@ public class ModelForecastManagementService {
                     java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
-            return new ModelForecastExecuteResponse(forecastId, forecastBatchNo, data.path("points").size());
+            return new ModelForecastExecuteResponse(
+                    forecastId, forecastBatchNo, data.path("points").size());
         } catch (RuntimeException exception) {
             record.setStatus(ModelForecastStatus.FAILED.getCode());
             record.setResponseParam(

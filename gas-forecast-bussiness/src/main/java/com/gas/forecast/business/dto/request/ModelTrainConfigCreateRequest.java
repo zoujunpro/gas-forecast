@@ -68,5 +68,4 @@ public class ModelTrainConfigCreateRequest {
 
     @Size(max = 512, message = "备注长度不能超过512个字符")
     private String remark;
-
 }

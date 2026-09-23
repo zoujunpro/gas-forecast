@@ -305,7 +305,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                             previewRequestPayload(requestJson), ModelTrainAgentTrainRequest.class));
                 }
                 JsonNode node = parseJsonValue(detail.getResultJson());
-                if (node != null && TextUtils.hasText(node.path("train_batch_no").asText(null))) {
+                if (node != null
+                        && TextUtils.hasText(node.path("train_batch_no").asText(null))) {
                     item.setResultJson(objectMapper.convertValue(node, ModelTrainAgentTrainResultDTO.class));
                 }
             }
@@ -471,18 +472,19 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             }
             dataset.add(item);
         }
-        return new ModelTrainAgentTrainRequest(
-                trainConfig.getAgentCode(),
-                modelConfig.getModelCode(),
-                batchNo,
-                trainConfig.getRegionCode(),
-                trainConfig.getRegionName(),
-                trainConfig.getIndustryCode(),
-                trainConfig.getIndustryName(),
-                trainConfig.getCustomerCode(),
-                trainConfig.getCustomerName(),
-                objectMapper.createObjectNode(),
-                dataset);
+        ModelTrainAgentTrainRequest request = new ModelTrainAgentTrainRequest();
+        request.setAgentCode(trainConfig.getAgentCode());
+        request.setModelCode(modelConfig.getModelCode());
+        request.setTrainBatchNo(batchNo);
+        request.setRegionCode(trainConfig.getRegionCode());
+        request.setRegionName(trainConfig.getRegionName());
+        request.setIndustryCode(trainConfig.getIndustryCode());
+        request.setIndustryName(trainConfig.getIndustryName());
+        request.setCustomerCode(trainConfig.getCustomerCode());
+        request.setCustomerName(trainConfig.getCustomerName());
+        request.setParams(objectMapper.createObjectNode());
+        request.setDataset(dataset);
+        return request;
     }
 
     private JsonNode callTrainAgent(ModelTrainAgentTrainRequest trainRequest) {
@@ -576,9 +578,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             throw new BusinessException("模型平台返回的训练结果格式不正确");
         }
         if (response.getCode() == null || response.getCode() != 0) {
-            throw new BusinessException(TextUtils.hasText(response.getMessage())
-                    ? response.getMessage()
-                    : "模型平台训练失败");
+            throw new BusinessException(TextUtils.hasText(response.getMessage()) ? response.getMessage() : "模型平台训练失败");
         }
         if (response.getData() == null || !TextUtils.hasText(response.getData().getTrainBatchNo())) {
             throw new BusinessException("模型平台返回的训练结果缺少 train_batch_no");
@@ -670,8 +670,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         modelTrainDetailTbMapper.updateById(detail);
     }
 
-    private void updateTrainDetail(
-            JsonNode result, String batchNo, ModelTrainStatus status, String errorMessage) {
+    private void updateTrainDetail(JsonNode result, String batchNo, ModelTrainStatus status, String errorMessage) {
         ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
                 Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
         if (detail == null) {

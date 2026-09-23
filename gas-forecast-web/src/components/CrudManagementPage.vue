@@ -114,7 +114,7 @@
           <template #default="{ row }">
             <el-button v-if="config.trainExecution" link type="success" @click="openExecute(row)">执行</el-button>
             <el-button v-if="config.trainExecution" link type="primary" :icon="View" @click="openTrainResult(row)"
-              >结果</el-button
+              >训练结果</el-button
             >
             <PermissionButton link type="primary" :permission="config.permissions?.update" @click="openEdit(row)"
               >编辑</PermissionButton
@@ -316,7 +316,7 @@
       </div>
     </el-drawer>
 
-    <el-drawer v-model="trainResultVisible" size="100%" class="train-result-drawer">
+    <el-dialog v-model="trainResultVisible" fullscreen class="train-result-dialog" destroy-on-close>
       <template #header>
         <div class="train-result-heading">
           <h2>训练结果</h2>
@@ -352,29 +352,45 @@
                 {{ tab.label }}
               </button>
             </div>
-            <button
-              v-for="batch in pagedTrainResultBatches"
-              :key="batch.batchNo"
-              class="result-batch-card"
-              :class="{ active: batch.batchNo === selectedTrainBatchNo }"
-              type="button"
-              @click="handleTrainResultSelect(batch)"
-            >
-              <span class="batch-card-top">
-                <strong>{{ batch.batchNo || '-' }}</strong>
-                <el-tag
-                  size="small"
-                  :type="statusTagType(batch.status)"
-                  :class="['train-status-tag', trainStatusClass(batch.status)]"
-                  effect="light"
-                >{{
-                  statusText(batch.status)
-                }}</el-tag>
-              </span>
-              <span>{{ batch.bestModel || '暂无最佳模型' }}</span>
-              <small>{{ batch.updatedAt || batch.createdAt || '-' }}</small>
-            </button>
-            <el-empty v-if="!pagedTrainResultBatches.length" class="result-sidebar-empty" description="暂无匹配批次" />
+            <div class="train-batch-list">
+              <div
+                v-for="batch in pagedTrainResultBatches"
+                :key="batch.batchNo"
+                class="result-batch-card"
+                :class="{ active: batch.batchNo === selectedTrainBatchNo }"
+                role="button"
+                tabindex="0"
+                @click="handleTrainResultSelect(batch)"
+                @keydown.enter="handleTrainResultSelect(batch)"
+              >
+                <span class="batch-card-top">
+                  <strong>{{ batch.batchNo || '-' }}</strong>
+                  <el-tag
+                    size="small"
+                    :type="statusTagType(batch.status)"
+                    :class="['train-status-tag', trainStatusClass(batch.status)]"
+                    effect="light"
+                    >{{ statusText(batch.status) }}</el-tag
+                  >
+                </span>
+                <span>{{ batch.bestModel || '暂无最佳模型' }}</span>
+                <small>{{ batch.updatedAt || batch.createdAt || '-' }}</small>
+                <el-button
+                  v-if="isBatchFailed(batch.status)"
+                  link
+                  type="warning"
+                  :loading="retrainingBatchNo === batch.batchNo"
+                  @click.stop="retrainBatch(batch)"
+                >
+                  重新训练
+                </el-button>
+              </div>
+              <el-empty
+                v-if="!pagedTrainResultBatches.length"
+                class="result-sidebar-empty"
+                description="暂无匹配批次"
+              />
+            </div>
             <AppPagination
               v-if="filteredTrainResultBatches.length"
               v-model:current-page="trainBatchPage"
@@ -388,73 +404,79 @@
 
           <main v-loading="trainResultDetailLoading" class="train-result-main">
             <section class="result-hero">
-              <div class="result-hero-icon">
-                <el-icon><Cpu /></el-icon>
-              </div>
               <div class="result-hero-content">
                 <div class="result-hero-title">
-                  <strong>{{ selectedTrainBatchNo || '-' }}</strong>
+                  <strong>{{ trainResultSource?.trainName || '训练详情' }}</strong>
                   <el-tag
                     size="small"
                     :type="statusTagType(selectedTrainResult?.status)"
                     :class="['train-status-tag', trainStatusClass(selectedTrainResult?.status)]"
                     effect="light"
-                  >{{
-                    statusText(selectedTrainResult?.status)
-                  }}</el-tag>
+                    >{{ statusText(selectedTrainResult?.status) }}</el-tag
+                  >
                 </div>
                 <div class="result-hero-subtitle">
-                  <span>{{ trainResultSource?.trainName || '-' }}</span>
-                  <span>{{ trainResultSource?.modelName || '-' }}</span>
-                  <span>{{ selectedTrainResult?.bestModel || '暂无最佳模型' }}</span>
+                  <span>{{ selectedTrainBatchNo || '-' }}</span>
+                  <span>创建时间：{{ selectedTrainResult?.createdAt || '-' }}</span>
+                  <span>完成时间：{{ selectedTrainResult?.updatedAt || '-' }}</span>
                 </div>
-              </div>
-              <div class="result-hero-actions">
-                <el-button
-                  type="primary"
-                  plain
-                  :icon="RefreshRight"
-                  :loading="retraining"
-                  :disabled="!canRetrainSelectedBatch"
-                  @click="retrainFromSelectedBatch"
-                >
-                  重新训练
-                </el-button>
               </div>
             </section>
 
-            <section class="result-info-panel">
-              <div class="result-info-title">
+            <section class="train-summary-grid">
+              <article v-for="group in trainSummaryGroups" :key="group.title" class="train-summary-card">
+                <h4>
+                  <span
+                    ><el-icon><component :is="group.icon" /></el-icon></span
+                  >{{ group.title }}
+                </h4>
+                <div class="train-summary-list">
+                  <div v-for="item in group.items" :key="item.label" class="train-summary-item">
+                    <span>{{ item.label }}</span>
+                    <strong :class="item.tone" :title="String(item.value)">{{ item.value }}</strong>
+                  </div>
+                </div>
+              </article>
+            </section>
+            <el-alert
+              v-if="trainResultErrorMessage"
+              title="训练失败信息"
+              :description="trainResultErrorMessage"
+              type="error"
+              :closable="false"
+              show-icon
+            />
+
+            <section class="result-metrics-panel">
+              <h4 class="train-section-title">
                 <span
-                  ><el-icon><Document /></el-icon>训练基本信息</span
+                  ><el-icon><TrendCharts /></el-icon></span
+                >模型评估指标
+              </h4>
+              <div class="result-metric-grid">
+                <div
+                  v-for="metric in resultMetricCards"
+                  :key="metric.label"
+                  class="result-metric-card"
+                  :class="metric.tone"
                 >
-              </div>
-              <div class="result-overview-grid">
-                <div v-for="item in resultOverviewRows" :key="item.label" class="result-overview-item">
-                  <span>{{ item.label }}</span>
-                  <strong :class="item.tone">{{ item.value }}</strong>
+                  <div class="metric-card-head">
+                    <el-icon><component :is="metric.icon" /></el-icon>
+                    <span>{{ metric.label }}</span>
+                  </div>
+                  <strong>{{ metric.value }}</strong>
+                  <small>{{ metric.hint }}</small>
                 </div>
-              </div>
-            </section>
-
-            <section class="result-metric-grid">
-              <div
-                v-for="metric in resultMetricCards"
-                :key="metric.label"
-                class="result-metric-card"
-                :class="metric.tone"
-              >
-                <div class="metric-card-head">
-                  <el-icon><component :is="metric.icon" /></el-icon>
-                  <span>{{ metric.label }}</span>
-                </div>
-                <strong>{{ metric.value }}</strong>
-                <small>{{ metric.hint }}</small>
               </div>
             </section>
 
             <el-tabs v-model="activeTrainResultTab" class="result-tabs">
-              <el-tab-pane label="训练数据" name="dataset" lazy>
+              <el-tab-pane name="dataset" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><DataLine /></el-icon>训练数据</span
+                  ></template
+                >
                 <template v-if="requestDatasetRows.length">
                   <el-table :data="pagedRequestDatasetRows" border stripe height="320px">
                     <el-table-column
@@ -476,14 +498,24 @@
                 </template>
                 <el-empty v-else description="暂无训练数据" />
               </el-tab-pane>
-              <el-tab-pane label="指标概览" name="metrics" lazy>
+              <el-tab-pane name="metrics" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><Histogram /></el-icon>指标概览</span
+                  ></template
+                >
                 <el-table v-if="resultMetricRows.length" :data="resultMetricRows" border stripe height="220px">
                   <el-table-column prop="label" label="指标" min-width="180" />
                   <el-table-column prop="value" label="值" min-width="240" />
                 </el-table>
                 <el-empty v-else description="暂无指标" />
               </el-tab-pane>
-              <el-tab-pane label="候选模型" name="candidates" lazy>
+              <el-tab-pane name="candidates" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><Cpu /></el-icon>候选模型</span
+                  ></template
+                >
                 <el-table v-if="candidateRows.length" :data="candidateRows" border stripe height="320px">
                   <el-table-column prop="rank" label="排名" width="80" />
                   <el-table-column prop="model_name" label="模型名称" min-width="180" show-overflow-tooltip />
@@ -498,7 +530,12 @@
                 </el-table>
                 <el-empty v-else description="暂无候选模型" />
               </el-tab-pane>
-              <el-tab-pane label="回测结果" name="backtests" lazy>
+              <el-tab-pane name="backtests" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><TrendCharts /></el-icon>回测结果</span
+                  ></template
+                >
                 <div v-if="backtestRows.length" class="result-view-toolbar">
                   <el-radio-group v-model="backtestResultView" size="small">
                     <el-radio-button value="table">数据</el-radio-button>
@@ -523,7 +560,12 @@
                 <div v-else-if="backtestRows.length" ref="backtestChartRef" class="result-chart" />
                 <el-empty v-else description="暂无回测结果" />
               </el-tab-pane>
-              <el-tab-pane label="问题列表" name="issues" lazy>
+              <el-tab-pane name="issues" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><Aim /></el-icon>问题列表</span
+                  ></template
+                >
                 <el-table v-if="issueRows.length" :data="issueRows" border stripe height="260px">
                   <el-table-column prop="severity" label="级别" min-width="90" />
                   <el-table-column prop="stage" label="阶段" min-width="120" />
@@ -532,7 +574,12 @@
                 </el-table>
                 <el-empty v-else description="暂无问题" />
               </el-tab-pane>
-              <el-tab-pane label="原始 JSON" name="json" lazy>
+              <el-tab-pane name="json" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><Document /></el-icon>原始 JSON</span
+                  ></template
+                >
                 <el-alert
                   v-if="rawJsonTruncated"
                   title="为避免页面卡顿，超大数组仅展示前 100 条；完整训练数据可在“训练数据”页签中分页查看。"
@@ -558,7 +605,7 @@
         </div>
         <el-empty v-else-if="!trainResultLoading" description="暂无训练结果" />
       </div>
-    </el-drawer>
+    </el-dialog>
   </section>
 </template>
 
@@ -577,7 +624,6 @@ import {
   Odometer,
   PieChart,
   Plus,
-  RefreshRight,
   Search,
   Tickets,
   TrendCharts,
@@ -601,7 +647,7 @@ const props = defineProps<{
 
 const saving = ref(false)
 const executing = ref(false)
-const retraining = ref(false)
+const retrainingBatchNo = ref('')
 const dialogVisible = ref(false)
 const previewVisible = ref(false)
 const previewLoading = ref(false)
@@ -799,6 +845,14 @@ const durationText = (value: unknown) => {
 const resultOverviewRows = computed(() => {
   const result = selectedTrainResult.value || {}
   const source = trainResultSource.value || {}
+  const request = asRecord(result.requestJson)
+  const dataset = asArray(request.dataset)
+  const datasetDates = dataset
+    .map((item) => textValue(item.date, item.stat_date, item.train_date))
+    .filter((value) => value !== '-')
+    .sort()
+  const datasetTotal = Number(request.dataset_total ?? request.datasetTotal ?? dataset.length)
+  const datasetTruncated = Boolean(request.dataset_truncated ?? request.datasetTruncated)
   const rows = [
     { label: '训练批次号', value: textValue(result.batchNo, result.batch_no) },
     {
@@ -818,9 +872,19 @@ const resultOverviewRows = computed(() => {
     { label: '所属行业名字', value: textValue(result.industryName, result.industry_name, source.industryName) },
     {
       label: '训练数据开始日期',
-      value: textValue(result.trainStartDate, result.train_start_date, source.trainStartDate)
+      value: textValue(datasetDates[0], result.trainStartDate, result.train_start_date, source.trainStartDate)
     },
-    { label: '训练数据截止日期', value: textValue(result.trainEndDate, result.train_end_date, source.trainEndDate) },
+    {
+      label: '训练数据截止日期',
+      value: textValue(
+        datasetTruncated ? undefined : datasetDates[datasetDates.length - 1],
+        result.trainEndDate,
+        result.train_end_date,
+        source.trainEndDate,
+        datasetDates[datasetDates.length - 1]
+      )
+    },
+    { label: '训练数据量', value: Number.isFinite(datasetTotal) && datasetTotal > 0 ? `${datasetTotal} 条` : '-' },
     { label: '训练耗时', value: durationText(result.trainDurationSeconds ?? result.train_duration_seconds) },
     { label: '训练状态', value: statusText(result.status), tone: statusTone(result.status) },
     { label: '最佳模型', value: textValue(result.bestModel, result.best_model) },
@@ -831,6 +895,37 @@ const resultOverviewRows = computed(() => {
     rows.push({ label: '错误信息', value: errorMessage })
   }
   return [...rows]
+})
+const trainSummaryGroups = computed(() => {
+  const rows = new Map(resultOverviewRows.value.map((item) => [item.label, item]))
+  const pick = (...labels: string[]) => labels.map((label) => rows.get(label)).filter(Boolean)
+  return [
+    {
+      title: '训练批次',
+      icon: Tickets,
+      items: pick('训练批次号', '训练数据开始日期', '训练数据截止日期', '训练状态')
+    },
+    {
+      title: '模型与配置',
+      icon: Cpu,
+      items: [
+        { label: '训练配置', value: textValue(trainResultSource.value?.trainName) },
+        { label: '所属模型', value: textValue(trainResultSource.value?.modelName) },
+        rows.get('智能体'),
+        rows.get('最佳模型')
+      ].filter(Boolean)
+    },
+    {
+      title: '数据范围',
+      icon: DataLine,
+      items: pick('区域名称', '客户名称', '所属行业名字', '训练数据量', '训练耗时')
+    }
+  ]
+})
+const trainResultErrorMessage = computed(() => {
+  const result = selectedTrainResult.value || {}
+  const message = textValue(result.errorMessage, result.error_message)
+  return message === '-' ? '' : message
 })
 const resultMetricCards = computed(() => {
   const result = selectedTrainResult.value || {}
@@ -898,25 +993,13 @@ const selectedResultJson = computed(() => asRecord(selectedTrainResult.value?.re
 const trainRequestJsonText = computed(() => stringifyJson(selectedTrainResult.value?.requestJson))
 const trainResultJsonText = computed(() => stringifyJson(selectedTrainResult.value?.resultJson))
 const isBatchFailed = (status: unknown) => String(status || '').toUpperCase() === 'FAILED'
-const canRetrainSelectedBatch = computed(() => {
-  return Boolean(
-    selectedTrainResult.value &&
-      trainResultSource.value?.trainCode &&
-      isBatchFailed(selectedTrainResult.value.status)
-  )
-})
-const retrainFromSelectedBatch = async () => {
-  if (!canRetrainSelectedBatch.value || retraining.value) {
+const retrainBatch = async (batch: Record<string, any>) => {
+  const retryBatchNo = String(batch.batchNo || batch.batch_no || '')
+  if (!retryBatchNo || !trainResultSource.value?.trainCode || retrainingBatchNo.value) {
     return
   }
-  await ElMessageBox.confirm(
-    '当前批次训练失败。本次重新训练将复用原训练批次号，并把该批次重新置为运行中。',
-    '重新训练确认',
-    { type: 'warning', confirmButtonText: '确认重新训练', cancelButtonText: '取消' }
-  )
-  retraining.value = true
+  retrainingBatchNo.value = retryBatchNo
   try {
-    const retryBatchNo = selectedTrainResult.value?.batchNo || selectedTrainResult.value?.batch_no
     const result = await postJson('/model-train-execution/execute', {
       trainCode: trainResultSource.value?.trainCode,
       retryBatchNo
@@ -928,11 +1011,9 @@ const retrainFromSelectedBatch = async () => {
       selectedTrainBatchNo.value = data.trainBatchNo || data.train_batch_no || selectedTrainBatchNo.value
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error instanceof Error ? error.message : '重新训练失败')
-    }
+    ElMessage.error(error instanceof Error ? error.message : '重新训练失败')
   } finally {
-    retraining.value = false
+    retrainingBatchNo.value = ''
   }
 }
 const requestDatasetRows = computed(() => asArray(selectedRequestJson.value.dataset))
@@ -1276,7 +1357,7 @@ const openTrainResult = async (row: Record<string, any>) => {
   trainResultVisible.value = true
   trainResultLoading.value = true
   try {
-    const result = await postJson('/model-train-result/query', row)
+    const result = await postJson('/model-train-execution/result', row)
     const data = (result as any).data || {}
     trainResultBatches.value = Array.isArray(data.batches) ? data.batches : []
     selectedTrainBatchNo.value = data.selectedBatchNo || trainResultBatches.value[0]?.batchNo || ''
@@ -1295,11 +1376,11 @@ let trainResultDetailRequestId = 0
 const loadTrainResultDetail = async (batchNo: string) => {
   if (!batchNo) return
   const current = trainResultBatches.value.find((item) => item.batchNo === batchNo)
-  if (current?.requestJson !== undefined || current?.resultJson !== undefined) return
+  if (current?.requestJson != null || current?.resultJson != null) return
   const requestId = ++trainResultDetailRequestId
   trainResultDetailLoading.value = true
   try {
-    const result = await postJson('/model-train-result/query', { batchNo })
+    const result = await postJson('/model-train-execution/result', { batchNo })
     if (requestId !== trainResultDetailRequestId) return
     const data = (result as any).data || {}
     const detail = data.batches?.[0]
@@ -1746,10 +1827,36 @@ defineExpose({ loadData })
   min-height: 260px;
 }
 
-.train-result-drawer :deep(.el-drawer__header) {
+:global(.train-result-dialog .el-dialog__header) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 64px;
   margin-bottom: 0;
-  padding: 16px 20px;
-  border-bottom: 1px solid #eaecf0;
+  padding: 12px 56px 12px 20px;
+  border-bottom: 1px solid #dce6f2;
+  background: linear-gradient(110deg, var(--app-primary-soft) 0%, #f3f7fc 68%, #edf3fa 100%);
+}
+
+:global(.train-result-dialog .el-dialog__headerbtn) {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border-radius: 6px;
+  color: #475467;
+  transform: translateY(-50%);
+}
+
+:global(.train-result-dialog .el-dialog__headerbtn:hover) {
+  background: rgba(22, 119, 255, 0.08);
+  color: var(--app-primary);
 }
 
 .train-result-heading h2,
@@ -1760,7 +1867,7 @@ defineExpose({ loadData })
 .train-result-heading h2 {
   color: #101828;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 28px;
 }
 
@@ -1772,16 +1879,18 @@ defineExpose({ loadData })
   line-height: 18px;
 }
 
-.train-result-drawer :deep(.el-drawer__body) {
+:global(.train-result-dialog .el-dialog__body) {
+  box-sizing: border-box;
+  height: calc(100vh - 64px);
   padding: 0;
-  overflow: auto;
+  overflow: hidden;
   background: #f6f8fb;
 }
 
 .train-result-layout {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  min-height: calc(100vh - 58px);
+  min-height: calc(100vh - 64px);
 }
 
 .train-result-sidebar {
@@ -1885,6 +1994,14 @@ defineExpose({ loadData })
     background 0.2s ease;
 }
 
+.train-batch-list {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
 .result-batch-card:hover,
 .result-batch-card.active {
   border-color: #409eff;
@@ -1921,6 +2038,13 @@ defineExpose({ loadData })
   font-weight: 500;
 }
 
+.result-batch-card > .el-button {
+  align-self: flex-end;
+  height: auto;
+  padding: 0;
+  font-size: 12px;
+}
+
 .train-status-tag {
   border: 0 !important;
   border-radius: 4px !important;
@@ -1952,7 +2076,8 @@ defineExpose({ loadData })
 }
 
 .result-sidebar-pagination {
-  margin-top: auto;
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 
 .result-sidebar-pagination :deep(.el-pagination) {
@@ -1980,11 +2105,12 @@ defineExpose({ loadData })
   gap: 14px;
   min-width: 0;
   padding: 16px;
+  background: #f4f7fb;
 }
 
 .result-hero,
 .result-info-panel,
-.result-metric-grid,
+.result-metrics-panel,
 .result-tabs {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -1997,7 +2123,11 @@ defineExpose({ loadData })
   align-items: center;
   justify-content: flex-start;
   gap: 16px;
-  padding: 18px 20px;
+  min-height: 58px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .result-hero-content {
@@ -2030,11 +2160,11 @@ defineExpose({ loadData })
   align-items: center;
   gap: 10px;
   color: #101828;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .result-hero-title strong {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .result-hero-subtitle {
@@ -2045,6 +2175,115 @@ defineExpose({ loadData })
   color: #475467;
   font-size: 13px;
   font-weight: 400;
+}
+
+.result-hero-subtitle span:first-child {
+  color: #344054;
+  font-weight: 600;
+}
+
+.train-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.train-summary-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(31, 64, 104, 0.05);
+}
+
+.train-summary-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 11px 14px;
+  border-bottom: 1px solid #e8eef6;
+  background: linear-gradient(90deg, #edf5ff 0%, #f8fbff 72%, #fff 100%);
+  color: #182230;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.train-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: #27364d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.train-summary-card h4 > span,
+.train-section-title > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #eaf3ff;
+  color: var(--app-primary);
+  font-size: 15px;
+}
+
+.train-summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+  padding: 14px;
+}
+
+.train-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.train-summary-item > span {
+  flex: 0 0 auto;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.train-summary-item > span::after {
+  color: #98a2b3;
+  content: '：';
+}
+
+.train-summary-item > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #101828;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.train-summary-item > strong.status-success {
+  color: #22b85b;
+}
+
+.train-summary-item > strong.status-failed {
+  color: #ef4444;
+}
+
+.train-summary-item > strong.status-running {
+  color: #3b82f6;
+}
+
+.train-summary-item > strong.status-pending {
+  color: #d97706;
 }
 
 .result-info-panel {
@@ -2128,6 +2367,9 @@ defineExpose({ loadData })
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
+}
+
+.result-metrics-panel {
   padding: 14px;
 }
 
@@ -2268,6 +2510,16 @@ defineExpose({ loadData })
   font-weight: 600;
 }
 
+.result-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.result-tab-label .el-icon {
+  font-size: 14px;
+}
+
 .result-tabs :deep(.el-table th.el-table__cell) {
   color: #344054;
   font-size: 13px;
@@ -2395,6 +2647,7 @@ defineExpose({ loadData })
     flex-direction: column;
   }
 
+  .train-summary-grid,
   .result-overview-grid,
   .result-metric-grid {
     grid-template-columns: 1fr;

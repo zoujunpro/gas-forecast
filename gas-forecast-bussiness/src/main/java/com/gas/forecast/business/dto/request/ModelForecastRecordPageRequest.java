@@ -8,8 +8,10 @@ import lombok.Data;
 public class ModelForecastRecordPageRequest {
     @Min(1)
     private Integer page;
+
     @Min(1)
     private Integer size;
+
     private Long forecastId;
     private String forecastBatchNo;
     private Integer status;

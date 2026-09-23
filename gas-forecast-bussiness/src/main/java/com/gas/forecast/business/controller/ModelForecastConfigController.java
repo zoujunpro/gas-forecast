@@ -50,8 +50,7 @@ public class ModelForecastConfigController {
      */
     @PostMapping("create")
     @WebLog("新增模型预测配置")
-    public ResponseResult<ModelForecastConfigTb> create(
-            @Valid @RequestBody ModelForecastConfigCreateRequest reqDTO) {
+    public ResponseResult<ModelForecastConfigTb> create(@Valid @RequestBody ModelForecastConfigCreateRequest reqDTO) {
         return ResponseResult.success(modelForecastManagementService.createConfig(reqDTO));
     }
 
@@ -63,8 +62,7 @@ public class ModelForecastConfigController {
      */
     @PostMapping("update")
     @WebLog("编辑模型预测配置")
-    public ResponseResult<ModelForecastConfigTb> update(
-            @Valid @RequestBody ModelForecastConfigUpdateRequest reqDTO) {
+    public ResponseResult<ModelForecastConfigTb> update(@Valid @RequestBody ModelForecastConfigUpdateRequest reqDTO) {
         return ResponseResult.success(modelForecastManagementService.updateConfig(reqDTO));
     }
 

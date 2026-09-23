@@ -227,7 +227,7 @@
               @click="selectRecord(row)"
             >
               <div>
-                <strong>{{ row.forecastBatchNo }}</strong
+                <strong>{{ row.forecastName || selectedConfig?.forecastName || '预测任务' }}</strong
                 ><el-tag
                   size="small"
                   :type="recordStatus(row.status).type"
@@ -236,12 +236,8 @@
                   >{{ recordStatus(row.status).label }}</el-tag
                 >
               </div>
-              <p>
-                {{
-                  row.modelName || selectedConfig?.modelName || agentLabel(row.agentCode || selectedConfig?.agentCode)
-                }}
-              </p>
-              <small>{{ formatDateTime(row.updatedAt || row.createdAt) }}</small>
+              <p>{{ row.forecastBatchNo }}</p>
+              <small>{{ formatDateTime(row.forecastEndTime || row.updatedAt || row.createdAt) }}</small>
               <el-button
                 v-if="Number(row.status) === 3"
                 link
@@ -276,27 +272,34 @@
                 >
               </div>
               <p>
-                {{ activeRecord.forecastBatchNo }} · 创建时间 {{ formatDateTime(activeRecord.createdAt) }} · 完成时间
-                {{ formatDateTime(activeRecord.forecastEndTime) }}
+                <span>{{ activeRecord.forecastBatchNo }}</span>
+                <span>创建时间：{{ formatDateTime(activeRecord.createdAt) }}</span>
+                <span>完成时间：{{ formatDateTime(activeRecord.forecastEndTime) }}</span>
               </p>
             </div>
           </section>
-          <section class="detail-card info-card">
-            <h4 class="section-title">预测基本信息</h4>
-            <div class="forecast-overview-grid">
-              <div v-for="item in forecastOverviewRows" :key="item.label" class="forecast-overview-item">
-                <span>{{ item.label }}</span>
-                <el-tag
-                  v-if="item.status"
-                  :type="recordStatus(activeRecord.status).type"
-                  :class="['forecast-status-tag', `status-${Number(activeRecord.status)}`]"
-                  size="small"
-                  effect="light"
-                  >{{ item.value }}</el-tag
-                >
-                <strong v-else :title="String(item.value)">{{ item.value }}</strong>
+          <section class="forecast-summary-grid">
+            <article v-for="group in forecastSummaryGroups" :key="group.title" class="forecast-summary-card">
+              <h4>
+                <span
+                  ><el-icon><component :is="group.icon" /></el-icon></span
+                >{{ group.title }}
+              </h4>
+              <div class="forecast-summary-list">
+                <div v-for="item in group.items" :key="item.label" class="forecast-summary-item">
+                  <span>{{ item.label }}</span>
+                  <el-tag
+                    v-if="item.status"
+                    :type="recordStatus(activeRecord.status).type"
+                    :class="['forecast-status-tag', `status-${Number(activeRecord.status)}`]"
+                    size="small"
+                    effect="light"
+                    >{{ item.value }}</el-tag
+                  >
+                  <strong v-else :title="String(item.value)">{{ item.value }}</strong>
+                </div>
               </div>
-            </div>
+            </article>
           </section>
           <section class="detail-card forecast-data-card">
             <el-tabs v-model="detailTab" class="forecast-data-tabs" @tab-change="handleDetailTabChange">
@@ -338,17 +341,13 @@
                 <el-empty
                   v-else
                   :image-size="72"
-                  :description="Number(activeRecord.status) === 3 ? '预测失败，暂无预测结果' : '预测任务执行中，暂无预测结果'"
+                  :description="
+                    Number(activeRecord.status) === 3 ? '预测失败，暂无预测结果' : '预测任务执行中，暂无预测结果'
+                  "
                 />
               </el-tab-pane>
               <el-tab-pane label="预测特征" name="features">
-                <AppTable
-                  v-if="featureSnapshotRows.length"
-                  :data="featureSnapshotRows"
-                  border
-                  stripe
-                  max-height="420"
-                >
+                <AppTable v-if="featureSnapshotRows.length" :data="featureSnapshotRows" border stripe max-height="420">
                   <el-table-column prop="date" label="预测日期" min-width="130" fixed />
                   <el-table-column
                     v-for="column in featureSnapshotColumns"
@@ -396,7 +395,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Connection, Filter, Plus, Search, Tickets, TrendCharts } from '@element-plus/icons-vue'
+import { Calendar, Connection, Filter, Plus, Search, Tickets, TrendCharts } from '@element-plus/icons-vue'
 import { deleteRow, listPage, postJson } from '@/api/management'
 import AppPagination from '@/components/AppPagination.vue'
 import AppTable from '@/components/AppTable.vue'
@@ -448,7 +447,7 @@ const resultView = ref<'chart' | 'table'>('chart'),
 const detailTab = ref<'result' | 'features'>('result')
 let resultChart: echarts.ECharts | null = null
 const recordPage = ref(1),
-  recordSize = ref(10),
+  recordSize = ref(5),
   currentForecastId = ref<number | null>(null)
 const predictionInfo = computed(() => {
   const frequencyCode = String(
@@ -524,6 +523,27 @@ const forecastOverviewRows = computed(() => {
     { label: '备注', value: record.remark || '-' }
   ]
 })
+const forecastSummaryGroups = computed(() => {
+  const rows = forecastOverviewRows.value
+  const pick = (...labels: string[]) => rows.filter((item) => labels.includes(item.label))
+  return [
+    {
+      title: '任务信息',
+      icon: Tickets,
+      items: pick('预测批次号', '预测名称', '训练配置', '预测模型', '智能体', '预测状态')
+    },
+    {
+      title: '预测范围',
+      icon: Calendar,
+      items: pick('未来预测开始', '未来预测结束', '预测步长', '时间颗粒度', '历史预测数量', '历史实际区间')
+    },
+    {
+      title: '业务范围',
+      icon: Connection,
+      items: pick('区域', '行业', '客户', '发起人', '备注')
+    }
+  ]
+})
 const featureSnapshotColumns = computed(() => {
   const columns = new Set<string>()
   featureSnapshotRows.value.forEach((row) => {
@@ -592,7 +612,7 @@ const formatDateTime = (value: unknown) => {
   const text = String(value).trim().replace('T', ' ')
   const matched = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}:\d{2}))?/)
   if (!matched) return text
-  return `${matched[1]} ${matched[2] || '00:00:00'}`
+  return matched[2] ? `${matched[1]} ${matched[2]}` : matched[1]
 }
 const loadData = async () => {
   loading.value = true
@@ -810,8 +830,8 @@ const renderResultChart = () => {
       color: ['#3b82f6', '#10b981'],
       animationDuration: 650,
       legend: {
-        top: 4,
-        right: 16,
+        bottom: 4,
+        left: 'center',
         itemWidth: 18,
         itemHeight: 3,
         textStyle: { color: '#64748b' },
@@ -825,7 +845,7 @@ const renderResultChart = () => {
         textStyle: { color: '#fff' },
         axisPointer: { type: 'line', lineStyle: { color: '#94a3b8', type: 'solid' } }
       },
-      grid: { left: 62, right: 30, top: 48, bottom: dates.length > 45 ? 72 : 42 },
+      grid: { left: 62, right: 30, top: 48, bottom: dates.length > 45 ? 88 : 58 },
       xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -858,7 +878,7 @@ const renderResultChart = () => {
               {
                 type: 'slider',
                 height: 16,
-                bottom: 8,
+                bottom: 28,
                 borderColor: 'transparent',
                 backgroundColor: '#f1f5f9',
                 fillerColor: 'rgba(59, 130, 246, .12)',
@@ -1259,17 +1279,33 @@ watch(recordKeyword, () => {
   margin-top: 20px;
 }
 :deep(.instances-dialog .el-dialog__header) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 64px;
   margin: 0;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e7eef8;
-  background: #f7faff;
+  padding: 12px 56px 12px 20px;
+  border-bottom: 1px solid #dce6f2;
+  background: linear-gradient(110deg, var(--app-primary-soft) 0%, #f3f7fc 68%, #edf3fa 100%);
+}
+:deep(.instances-dialog .el-dialog__headerbtn) {
+  top: 50%;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  transform: translateY(-50%);
+}
+:deep(.instances-dialog .el-dialog__headerbtn:hover) {
+  background: rgba(22, 119, 255, 0.08);
 }
 :deep(.instances-dialog .el-dialog__title) {
   color: #14233b;
   font-weight: 700;
 }
 :deep(.instances-dialog .el-dialog__body) {
-  height: calc(100vh - 58px);
+  height: calc(100vh - 64px);
   padding: 0;
   overflow: hidden;
 }
@@ -1277,7 +1313,7 @@ watch(recordKeyword, () => {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   height: 100%;
-  background: #f7faff;
+  background: var(--app-bg);
 }
 .forecast-result-heading h2,
 .forecast-result-heading p {
@@ -1286,7 +1322,7 @@ watch(recordKeyword, () => {
 .forecast-result-heading h2 {
   color: #101828;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 28px;
 }
 .forecast-result-heading p {
@@ -1303,8 +1339,8 @@ watch(recordKeyword, () => {
   min-height: 0;
   padding: 16px;
   overflow: auto;
-  background: #f7faff;
-  border-right: 1px solid #e7eef8;
+  background: #f8fafc;
+  border-right: 1px solid var(--app-border);
 }
 .result-sidebar-head {
   display: flex;
@@ -1317,6 +1353,8 @@ watch(recordKeyword, () => {
   display: flex;
   align-items: center;
   gap: 4px;
+  color: #344054;
+  font-weight: 700;
 }
 .result-sidebar-head span {
   color: #667085;
@@ -1360,7 +1398,7 @@ watch(recordKeyword, () => {
   cursor: pointer;
 }
 .result-sidebar-tabs button.active {
-  color: #2f80ed;
+  color: var(--app-primary);
 }
 .result-sidebar-tabs button.active::after {
   position: absolute;
@@ -1369,13 +1407,12 @@ watch(recordKeyword, () => {
   left: 0;
   height: 2px;
   border-radius: 999px;
-  background: #2f80ed;
+  background: var(--app-primary);
   content: '';
 }
 .instance-list {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1417,16 +1454,19 @@ watch(recordKeyword, () => {
   overflow: hidden;
   color: #182230;
   font-size: 13px;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .instance-card p {
   margin: 0;
-  color: #475467;
-  font-size: 13px;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 600;
 }
 .instance-card small {
   color: #667085;
+  font-weight: 400;
 }
 .forecast-status-tag {
   border: 0 !important;
@@ -1446,7 +1486,8 @@ watch(recordKeyword, () => {
   color: #ef4444 !important;
 }
 .result-sidebar-pagination {
-  margin-top: auto;
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 .result-sidebar-pagination :deep(.el-pagination) {
   justify-content: center;
@@ -1467,15 +1508,15 @@ watch(recordKeyword, () => {
 .instance-detail {
   min-width: 0;
   overflow-y: auto;
-  padding: 18px 22px 36px;
-  background: #f7faff;
+  padding: 16px 18px 28px;
+  background: var(--app-bg);
 }
 .panel-title {
-  min-height: 72px;
-  margin: -18px -22px 16px;
-  padding: 18px 22px;
-  border-bottom: 1px solid #e7eef8;
-  background: linear-gradient(90deg, #f4f8ff 0%, #f9fbff 100%);
+  min-height: 58px;
+  margin: 0 0 12px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
 }
 .detail-title-line {
   display: flex;
@@ -1483,20 +1524,89 @@ watch(recordKeyword, () => {
   gap: 10px;
 }
 .panel-title h3 {
-  color: #14233b;
-  font-size: 19px;
+  color: #101828;
+  font-size: 20px;
+  font-weight: 700;
 }
 .panel-title p {
-  color: #718096;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 5px;
+  color: #667085;
   font-size: 12px;
+  font-weight: 400;
+}
+.panel-title p span:first-child {
+  color: #475467;
+  font-weight: 600;
 }
 .detail-card {
   margin-bottom: 16px;
   padding: 18px 20px;
-  border: 1px solid #e8eef7;
+  border: 1px solid var(--app-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--app-surface);
   box-shadow: 0 2px 10px rgba(31, 64, 104, 0.035);
+}
+.forecast-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.forecast-summary-card {
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  box-shadow: 0 2px 8px rgba(31, 64, 104, 0.035);
+}
+.forecast-summary-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: #27364d;
+  font-size: 14px;
+  font-weight: 700;
+}
+.forecast-summary-card h4 > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #eaf3ff;
+  color: var(--app-primary);
+  font-size: 15px;
+}
+.forecast-summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+}
+.forecast-summary-item {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.forecast-summary-item > span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 500;
+}
+.forecast-summary-item > strong {
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .section-title {
   position: relative;
@@ -1504,6 +1614,7 @@ watch(recordKeyword, () => {
   padding-left: 11px;
   color: #20324d;
   font-size: 15px;
+  font-weight: 700;
 }
 .section-title::before {
   position: absolute;
@@ -1512,7 +1623,7 @@ watch(recordKeyword, () => {
   left: 0;
   width: 3px;
   border-radius: 4px;
-  background: linear-gradient(180deg, #2f80ed, #62a6ff);
+  background: linear-gradient(180deg, var(--app-primary), #62a6ff);
   content: '';
 }
 .forecast-overview-grid {
@@ -1546,10 +1657,13 @@ watch(recordKeyword, () => {
   justify-self: start;
 }
 .forecast-data-card {
-  padding-top: 4px;
+  padding: 0 12px 12px;
 }
 .forecast-data-tabs :deep(.el-tabs__header) {
   margin: 0 0 18px;
+}
+.forecast-data-tabs {
+  position: relative;
 }
 .forecast-data-tabs :deep(.el-tabs__nav-wrap::after) {
   height: 1px;
@@ -1563,12 +1677,13 @@ watch(recordKeyword, () => {
   font-weight: 600;
 }
 .forecast-data-tabs :deep(.el-tabs__item.is-active) {
-  color: #2f80ed;
+  color: var(--app-primary);
+  font-weight: 700;
 }
 .forecast-data-tabs :deep(.el-tabs__active-bar) {
   height: 3px;
   border-radius: 3px 3px 0 0;
-  background: #2f80ed;
+  background: var(--app-primary);
 }
 .forecast-data-tabs :deep(.el-table) {
   margin-top: 2px;
@@ -1586,15 +1701,21 @@ watch(recordKeyword, () => {
   border-color: #dce7f5;
   color: #607089;
 }
+.result-heading > .el-radio-group {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  z-index: 2;
+}
 .result-heading :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  border-color: #2f80ed;
-  background: #2f80ed;
-  box-shadow: -1px 0 0 0 #2f80ed;
+  border-color: var(--app-primary);
+  background: var(--app-primary);
+  box-shadow: -1px 0 0 0 var(--app-primary);
   color: #fff;
 }
 .result-chart {
   width: 100%;
-  height: 430px;
+  height: 410px;
   background: #fff;
   border: 1px solid #edf2f7;
   border-radius: 8px;
@@ -1616,6 +1737,9 @@ watch(recordKeyword, () => {
     overflow: visible;
   }
   .forecast-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .forecast-summary-grid {
     grid-template-columns: 1fr;
   }
   :deep(.forecast-config-dialog) {

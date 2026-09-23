@@ -8,7 +8,9 @@ import lombok.Data;
 public class ModelForecastResultPageRequest {
     @Min(1)
     private Integer page;
+
     @Min(1)
     private Integer size;
+
     private String forecastBatchNo;
 }

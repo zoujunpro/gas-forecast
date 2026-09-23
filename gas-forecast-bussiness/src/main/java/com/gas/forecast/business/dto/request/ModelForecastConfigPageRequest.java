@@ -9,11 +9,15 @@ import lombok.Data;
 public class ModelForecastConfigPageRequest {
     @Min(1)
     private Integer page;
+
     @Min(1)
     private Integer size;
+
     @Size(max = 128)
     private String keyword;
+
     @Size(max = 64)
     private String agentCode;
+
     private Integer enabled;
 }
