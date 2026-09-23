@@ -43,7 +43,7 @@ const title = computed(
 .page-breadcrumb {
   margin: 0 0 6px;
   color: var(--app-text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .separator {

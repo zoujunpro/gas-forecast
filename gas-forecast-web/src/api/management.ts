@@ -1,4 +1,4 @@
-import { readResponseResult } from '@/utils/http'
+import { apiFetch, readResponseResult } from '@/utils/http'
 
 export interface PageRequest {
   page: number
@@ -18,25 +18,27 @@ export interface ResponseData<T = any> {
   message?: string
 }
 
-export const postJson = async <T = any>(url: string, data: Record<string, any> = {}) => {
-  const response = await fetch(url, {
+export const postJson = async <T = any>(url: string, data: Record<string, any> = {}, signal?: AbortSignal) => {
+  const response = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
+    signal
   })
   return readResponseResult<T>(response)
 }
 
-export const getJson = async <T = any>(url: string): Promise<ResponseData<T>> => {
-  const response = await fetch(url)
+export const getJson = async <T = any>(url: string, signal?: AbortSignal): Promise<ResponseData<T>> => {
+  const response = await apiFetch(url, { signal })
   return readResponseResult<ResponseData<T>>(response)
 }
 
 export const listPage = async <T = Record<string, any>>(
   endpoint: string,
-  params: PageRequest
+  params: PageRequest,
+  signal?: AbortSignal
 ): Promise<PageData<T>> => {
-  const result = await postJson(`${endpoint}/listPage`, params)
+  const result = await postJson(`${endpoint}/listPage`, params, signal)
   const data = result.data || {}
   return {
     records: data.records || [],
@@ -47,7 +49,7 @@ export const listPage = async <T = Record<string, any>>(
 export const listAll = async <T = Record<string, any>>(endpoint: string, keyword?: string): Promise<T[]> => {
   const params = new URLSearchParams()
   if (keyword) params.set('keyword', keyword)
-  const response = await fetch(`${endpoint}/list?${params.toString()}`)
+  const response = await apiFetch(`${endpoint}/list?${params.toString()}`)
   const result = await readResponseResult(response)
   return result.data || []
 }
@@ -60,6 +62,6 @@ export const saveRow = (endpoint: string, data: Record<string, any>) => postJson
 
 export const deleteRow = async (endpoint: string, id: number | string) => {
   const params = new URLSearchParams({ id: String(id) })
-  const response = await fetch(`${endpoint}/delete?${params.toString()}`)
+  const response = await apiFetch(`${endpoint}/delete?${params.toString()}`)
   return readResponseResult(response)
 }

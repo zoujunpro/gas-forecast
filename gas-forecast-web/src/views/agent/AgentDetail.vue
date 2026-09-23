@@ -222,16 +222,25 @@
         <!-- 短期客户预测专用布局 -->
         <!-- ==================== -->
         <template v-else-if="isShortTerm">
-          <!-- 01. 区域选择 -->
-          <section class="section-block">
+          <header class="short-term-hero">
+            <div>
+              <h1>短期客户预测</h1>
+              <p>基于历史用气数据、运行特征与天气因素，预测客户短期用气趋势</p>
+            </div>
+            <div class="short-term-range" v-if="currentResult?.future_dates?.length">
+              <el-icon><DataAnalysis /></el-icon>
+              {{ currentResult.future_dates[0] }} 至
+              {{ currentResult.future_dates[currentResult.future_dates.length - 1] }}
+            </div>
+          </header>
+
+          <section class="section-block compact-section">
             <div class="section-head">
               <span class="section-badge">01</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">
-                    <el-icon><Location /></el-icon>区域选择
-                  </h2>
-                  <p class="section-hint">选择省份查看短期预测结果</p>
+                  <h2 class="section-title">选择分析范围</h2>
+                  <p class="section-hint">选择省份、行业及客户查看预测结果</p>
                 </div>
                 <button class="refresh-result-btn" :disabled="loadingResult" @click="refreshLatestResult">
                   <svg v-if="!loadingResult" viewBox="0 0 20 20" fill="none">
@@ -254,204 +263,158 @@
                 </button>
               </div>
             </div>
-            <div class="region-selector">
-              <button
-                v-for="p in stProvinces"
-                :key="p"
-                class="region-btn"
-                :class="{ active: selectedStProvince === p }"
-                @click="switchStProvince(p)"
-              >
-                {{ p }}
-              </button>
+            <div class="short-term-filter-grid">
+              <div class="form-field">
+                <label>地区</label>
+                <el-select v-model="selectedStProvince" @change="switchStProvince(selectedStProvince)">
+                  <el-option v-for="province in stProvinces" :key="province" :label="province" :value="province" />
+                </el-select>
+              </div>
+              <div class="form-field">
+                <label>行业</label>
+                <el-select v-model="selectedStIndustry" @change="switchStIndustry(selectedStIndustry)">
+                  <el-option v-for="industry in stIndustries" :key="industry" :label="industry" :value="industry" />
+                </el-select>
+              </div>
+              <div class="form-field">
+                <label>客户</label>
+                <el-select
+                  v-model="selectedStCustomer"
+                  clearable
+                  placeholder="全部客户（行业整体）"
+                  @change="switchStCustomer(selectedStCustomer)"
+                >
+                  <el-option v-for="customer in stCustomers" :key="customer" :label="customer" :value="customer" />
+                </el-select>
+              </div>
+              <div class="short-term-filter-actions">
+                <el-button @click="resetShortTermFilters">重置</el-button>
+                <el-button
+                  type="primary"
+                  :loading="loadingResult"
+                  :disabled="!selectedStProvince || !selectedStIndustry"
+                  @click="searchShortTermResult"
+                >
+                  查询
+                </el-button>
+              </div>
             </div>
           </section>
 
-          <!-- 02. 行业选择 -->
-          <section class="section-block">
+          <section v-if="!loadingResult && !currentResult" class="section-block compact-section">
+            <el-empty :description="shortTermEmptyDescription" :image-size="72" />
+          </section>
+
+          <section v-if="currentResult" class="section-block compact-section">
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">
-                  <el-icon><Grid /></el-icon>行业选择
-                </h2>
-                <p class="section-hint">选择行业查看短期预测结果</p>
+                <h2 class="section-title">预测摘要</h2>
+                <p class="section-hint">当前范围的核心预测信息</p>
               </div>
             </div>
-            <div class="industry-select-wrap">
-              <div class="industry-select-current" v-if="currentResult">
-                <div class="industry-icon" :style="{ background: stIndustryColors[selectedStIndustry] }">
-                  {{ selectedStIndustry.charAt(0) }}
+            <div class="short-term-summary-grid">
+              <article class="short-term-summary-card">
+                <el-icon><User /></el-icon>
+                <div>
+                  <span>客户</span><strong>{{ selectedStCustomer || '全部客户' }}</strong>
                 </div>
-                <div class="industry-select-info">
-                  <span class="industry-select-name">{{ selectedStIndustry }}</span>
-                  <span class="industry-select-mape">MAPE {{ currentResult.metrics.mape }}%</span>
+              </article>
+              <article class="short-term-summary-card">
+                <el-icon><DataLine /></el-icon>
+                <div>
+                  <span>未来预测总用气量</span><strong>{{ shortTermForecastTotal }}</strong>
                 </div>
-              </div>
-              <el-select
-                v-model="selectedStIndustry"
-                placeholder="选择行业"
-                class="industry-select"
-                @change="switchStIndustry(selectedStIndustry)"
-              >
-                <el-option v-for="ind in stIndustries" :key="ind" :value="ind" :label="ind">
-                  <div class="industry-option">
-                    <span class="industry-option-icon" :style="{ background: stIndustryColors[ind] }">{{
-                      ind.charAt(0)
-                    }}</span>
-                    <span class="industry-option-name">{{ ind }}</span>
-                    <span class="industry-option-mape" v-if="stProvinceMape[ind] !== undefined"
-                      >MAPE {{ stProvinceMape[ind] }}%</span
-                    >
-                  </div>
-                </el-option>
-              </el-select>
+              </article>
+              <article class="short-term-summary-card" :class="`trend-${shortTermTrendTone}`">
+                <el-icon><TrendCharts /></el-icon>
+                <div>
+                  <span>预测趋势</span><strong>{{ shortTermTrendText }}</strong>
+                </div>
+              </article>
+              <article class="short-term-summary-card">
+                <el-icon><Cpu /></el-icon>
+                <div>
+                  <span>推荐模型</span><strong>{{ currentResult.model_name || '-' }}</strong>
+                </div>
+              </article>
             </div>
           </section>
 
-          <!-- 03. 客户选择（仅城市燃气） -->
-          <section class="section-block" v-if="stCustomers.length > 0">
+          <section v-if="currentResult" class="section-block compact-section">
             <div class="section-head">
               <span class="section-badge">03</span>
-              <div>
-                <h2 class="section-title">
-                  <el-icon><User /></el-icon>客户选择
-                </h2>
-                <p class="section-hint">选择具体客户查看预测（可选）</p>
-              </div>
-            </div>
-            <div class="industry-select-wrap">
-              <div class="industry-select-current" v-if="selectedStCustomer">
-                <div class="industry-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706)">客</div>
-                <div class="industry-select-info">
-                  <span class="industry-select-name">{{ selectedStCustomer }}</span>
-                  <span class="industry-select-mape" v-if="currentResult">MAPE {{ currentResult.metrics.mape }}%</span>
-                </div>
-              </div>
-              <el-select
-                v-model="selectedStCustomer"
-                placeholder="全部客户（行业整体）"
-                class="industry-select"
-                clearable
-                @change="switchStCustomer(selectedStCustomer)"
-              >
-                <el-option v-for="c in stCustomers" :key="c" :value="c" :label="c" />
-              </el-select>
-            </div>
-          </section>
-
-          <!-- 04. 模型信息 -->
-          <section class="section-block" v-if="currentResult">
-            <div class="section-head">
-              <span class="section-badge">{{ stCustomers.length > 0 ? '04' : '03' }}</span>
-              <div>
-                <h2 class="section-title">
-                  <el-icon><Cpu /></el-icon>推荐模型
-                </h2>
-                <p class="section-hint">基于回测精度自动推荐最优模型</p>
-              </div>
-            </div>
-            <div class="model-info-card">
-              <div class="model-info-header">
-                <div class="model-info-name">
-                  <el-icon><MagicStick /></el-icon>{{ currentResult.model_name }}
-                </div>
-                <div class="model-info-tag">最佳模型</div>
-              </div>
-              <div class="metrics-grid">
-                <div class="metric-item">
-                  <el-icon class="metric-icon"><TrendCharts /></el-icon>
-                  <span class="metric-label">MAPE</span>
-                  <span class="metric-value" :class="mapeClass(currentResult.metrics.mape)"
-                    >{{ currentResult.metrics.mape }}%</span
-                  >
-                </div>
-                <div class="metric-item">
-                  <el-icon class="metric-icon"><DataLine /></el-icon>
-                  <span class="metric-label">MAE</span>
-                  <span class="metric-value">{{ currentResult.metrics.mae }}</span>
-                </div>
-                <div class="metric-item">
-                  <el-icon class="metric-icon"><Histogram /></el-icon>
-                  <span class="metric-label">RMSE</span>
-                  <span class="metric-value">{{ currentResult.metrics.rmse }}</span>
-                </div>
-                <div class="metric-item">
-                  <el-icon class="metric-icon"><Finished /></el-icon>
-                  <span class="metric-label">R²</span>
-                  <span class="metric-value">{{ currentResult.metrics.r2 ?? '-' }}</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 05. 可视化输出 -->
-          <section class="section-block" v-if="currentResult">
-            <div class="section-head">
-              <span class="section-badge">{{ stCustomers.length > 0 ? '05' : '04' }}</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">
-                    <el-icon><PieChart /></el-icon>可视化输出
-                  </h2>
-                  <p class="section-hint">实际值 vs 预测值对比</p>
+                  <h2 class="section-title">模型评估（滚动回测结果）</h2>
+                  <p class="section-hint">实际值与预测值对比及模型精度</p>
                 </div>
                 <div class="chart-toggle">
                   <button
-                    v-for="t in chartTypes"
-                    :key="t.key"
+                    v-for="type in chartTypes"
+                    :key="type.key"
                     class="toggle-btn"
-                    :class="{ active: chartType === t.key }"
-                    @click="chartType = t.key"
+                    :class="{ active: chartType === type.key }"
+                    @click="chartType = type.key"
                   >
-                    {{ t.label }}
+                    {{ type.label }}
                   </button>
                 </div>
               </div>
             </div>
-            <div class="chart-box">
-              <section class="result-chart-panel">
-                <div class="chart-label">滚动回测结果（实际值 vs 预测值）</div>
-                <div ref="chartRefTop" class="chart" style="height: 300px" v-if="currentResult.dates?.length"></div>
-                <el-empty v-else description="当前训练批次暂无滚动回测数据" :image-size="72" />
+            <div class="short-term-evaluation">
+              <section class="result-chart-panel compact-chart-panel">
+                <div ref="chartRefTop" class="chart" v-if="currentResult.dates?.length"></div>
+                <el-empty v-else description="暂无滚动回测数据" :image-size="64" />
               </section>
-              <section class="result-chart-panel">
-                <div class="chart-label">历史与近期预测</div>
-                <div
-                  ref="chartRefBottom"
-                  class="chart"
-                  style="height: 300px"
-                  v-if="currentResult.future_dates?.length"
-                ></div>
-                <el-empty v-else description="当前范围暂无成功的近期预测结果" :image-size="72" />
-              </section>
-            </div>
-            <div class="data-summary" v-if="currentResult.future_dates">
-              <div class="summary-item" v-if="currentResult.dates">
-                <span class="summary-label">历史预测区间</span>
-                <span class="summary-value"
-                  >{{ currentResult.dates[0] }} 至 {{ currentResult.dates[currentResult.dates.length - 1] }}</span
-                >
-              </div>
-              <div class="summary-item">
-                <span class="summary-label">历史预测数量</span>
-                <span class="summary-value">{{ currentResult.dates?.length || 0 }} 天</span>
-              </div>
-              <div class="summary-item">
-                <span class="summary-label">未来预测数量</span>
-                <span class="summary-value">{{ currentResult.future_dates.length }} 天</span>
-              </div>
-              <div class="summary-item">
-                <span class="summary-label">未来预测区间</span>
-                <span class="summary-value"
-                  >{{ currentResult.future_dates[0] }} 至
-                  {{ currentResult.future_dates[currentResult.future_dates.length - 1] }}</span
-                >
+              <div class="short-term-metrics">
+                <div v-for="metric in shortTermMetricItems" :key="metric.label">
+                  <span>{{ metric.label }}</span
+                  ><strong :class="metric.tone">{{ metric.value }}</strong
+                  ><small>{{ metric.hint }}</small>
+                </div>
               </div>
             </div>
           </section>
 
-          <!-- 加载中 -->
+          <section v-if="currentResult" class="section-block compact-section">
+            <div class="section-head">
+              <span class="section-badge">04</span>
+              <div>
+                <h2 class="section-title">未来预测结果</h2>
+                <p class="section-hint">历史趋势、未来预测及每日预测明细</p>
+              </div>
+            </div>
+            <div class="short-term-future-grid">
+              <section class="result-chart-panel compact-chart-panel">
+                <div ref="chartRefBottom" class="chart" v-if="currentResult.future_dates?.length"></div>
+                <el-empty v-else description="暂无未来预测数据" :image-size="64" />
+              </section>
+              <div class="future-table-wrap">
+                <el-table :data="shortTermFutureRows" size="small" height="280">
+                  <el-table-column prop="date" label="日期" min-width="110" />
+                  <el-table-column prop="value" label="预测值" min-width="100" align="right" />
+                </el-table>
+              </div>
+            </div>
+          </section>
+
+          <section v-if="currentResult" class="section-block compact-section related-section">
+            <div class="section-head">
+              <span class="section-badge">05</span>
+              <div>
+                <h2 class="section-title">相关信息</h2>
+                <p class="section-hint">本次训练与预测任务的追溯信息</p>
+              </div>
+            </div>
+            <div class="related-info-grid">
+              <div v-for="item in shortTermRelatedItems" :key="item.label">
+                <span>{{ item.label }}</span
+                ><strong :title="item.value">{{ item.value }}</strong>
+              </div>
+            </div>
+          </section>
+
           <section class="section-block" v-if="loadingResult">
             <div class="loading-area">
               <div class="loading-spinner"></div>
@@ -843,7 +806,8 @@
             </svg>
           </div>
           <div class="msg-body">
-            <div class="msg-bubble" v-html="msg.content"></div>
+            <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ msg.content }}</div>
+            <div v-else class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
           </div>
         </div>
         <div v-if="isStreaming" class="msg assistant">
@@ -885,8 +849,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import * as echarts from 'echarts'
-import { marked } from 'marked'
+import echarts from '@/utils/echarts'
+import { listPage } from '@/api/management'
+import { renderMarkdown, sanitizeHtml } from '@/utils/markdown'
 import {
   Cpu,
   DataAnalysis,
@@ -902,8 +867,6 @@ import {
   VideoPlay
 } from '@element-plus/icons-vue'
 import type { ChatMessage } from '@/types'
-
-const renderMarkdown = (source: string): string => marked(source, { async: false })
 
 const route = useRoute()
 const chartRef = ref<HTMLElement>()
@@ -997,6 +960,72 @@ const selectedIndustry = ref('城市燃气')
 const currentResult = ref<any>(null)
 const loadingResult = ref(false)
 const provinceMape = ref<Record<string, number>>({})
+
+const shortTermFutureValues = computed<number[]>(() => currentResult.value?.future_predicted || [])
+const shortTermForecastTotal = computed(() => {
+  const total = shortTermFutureValues.value.reduce((sum, value) => sum + Number(value || 0), 0)
+  return total ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
+})
+const shortTermTrendText = computed(() => {
+  const values = shortTermFutureValues.value
+  if (values.length < 2 || !Number(values[0])) return '平稳'
+  const rate = ((Number(values[values.length - 1]) - Number(values[0])) / Math.abs(Number(values[0]))) * 100
+  if (Math.abs(rate) < 1) return '基本平稳'
+  return `${rate > 0 ? '上升' : '下降'} ${Math.abs(rate).toFixed(1)}%`
+})
+const shortTermTrendTone = computed(() => {
+  const values = shortTermFutureValues.value
+  if (values.length < 2 || !Number(values[0])) return 'flat'
+  const rate = ((Number(values[values.length - 1]) - Number(values[0])) / Math.abs(Number(values[0]))) * 100
+  if (Math.abs(rate) < 1) return 'flat'
+  return rate > 0 ? 'up' : 'down'
+})
+const formatMetricValue = (value: unknown, digits = 2, suffix = '') => {
+  if (value === null || value === undefined || value === '') return '-'
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return '-'
+  return `${numericValue.toLocaleString('zh-CN', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  })}${suffix}`
+}
+const shortTermMetricItems = computed(() => {
+  const metrics = currentResult.value?.metrics || {}
+  return [
+    {
+      label: 'MAPE',
+      value: formatMetricValue(metrics.mape, 2, '%'),
+      hint: '目标 < 20%',
+      tone: mapeClass(Number(metrics.mape))
+    },
+    { label: 'MAE', value: formatMetricValue(metrics.mae), hint: '越小越好', tone: '' },
+    { label: 'RMSE', value: formatMetricValue(metrics.rmse), hint: '越小越好', tone: '' },
+    { label: 'R²', value: formatMetricValue(metrics.r2, 3), hint: '越接近 1 越好', tone: '' }
+  ]
+})
+const shortTermFutureRows = computed(() => {
+  const dates = currentResult.value?.future_dates || []
+  return dates.map((date: string, index: number) => ({
+    date,
+    value: shortTermFutureValues.value[index] ?? '-'
+  }))
+})
+const formatDateRange = (dates: string[] = []) => {
+  if (!dates.length) return '-'
+  return dates.length === 1 ? dates[0] : `${dates[0]} 至 ${dates[dates.length - 1]}`
+}
+const shortTermRelatedItems = computed(() => {
+  const dates = currentResult.value?.dates || []
+  const futureDates = currentResult.value?.future_dates || []
+  return [
+    { label: '训练批次', value: String(currentResult.value?.batch_no || '-').toUpperCase() },
+    { label: '预测批次', value: String(currentResult.value?.forecast_batch_no || '-').toUpperCase() },
+    { label: '模型版本', value: currentResult.value?.model_version || '-' },
+    { label: '回测区间', value: formatDateRange(dates) },
+    { label: '预测区间', value: formatDateRange(futureDates) },
+    { label: '预测点数', value: `${futureDates.length} 天` }
+  ]
+})
 
 const mapeClass = (mape: number) => {
   if (mape <= 10) return 'metric-good'
@@ -1114,46 +1143,39 @@ const switchIndustry = (industry: string) => {
 
 // === 短期客户预测专用状态 ===
 const stProvinces = ref<string[]>([])
-const selectedStProvince = ref('江苏')
+const selectedStProvince = ref('')
 const stIndustries = ref<string[]>([])
-const stIndustryColors: Record<string, string> = {
-  城市燃气: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-  CNG: 'linear-gradient(135deg, #EC4899, #DB2777)',
-  化工: 'linear-gradient(135deg, #F59E0B, #D97706)',
-  工业燃料: 'linear-gradient(135deg, #10B981, #059669)'
-}
-const selectedStIndustry = ref('城市燃气')
+const selectedStIndustry = ref('')
 const selectedStCustomer = ref('')
 const stCustomers = ref<string[]>([])
+const stCustomerRecords = ref<Record<string, any>[]>([])
 const stProvinceMape = ref<Record<string, number>>({})
 const stAllResults = ref<any[]>([])
+const stFilterDirty = ref(false)
+
+const shortTermEmptyDescription = computed(() =>
+  stFilterDirty.value
+    ? '筛选条件已变更，请点击查询'
+    : `${selectedStProvince.value || '当前地区'} / ${selectedStIndustry.value || '当前行业'} / ${selectedStCustomer.value || '全部客户'} 暂无预测结果`
+)
 
 const queryString = (params: Record<string, string>) => new URLSearchParams(params).toString()
 
-const syncShortTermOptions = () => {
-  const scopedResults = stAllResults.value.filter((r) => r.province === selectedStProvince.value)
-  const industries = Array.from(new Set(scopedResults.map((r) => r.industry).filter(Boolean)))
-  stIndustries.value = industries
-
-  if (!stIndustries.value.includes(selectedStIndustry.value)) {
-    selectedStIndustry.value = stIndustries.value[0] || ''
-  }
-
-  const selectedIndustryResults = scopedResults.filter((r) => r.industry === selectedStIndustry.value)
-  const customerSet = new Set<string>()
-  for (const result of selectedIndustryResults) {
-    if (result.customer) {
-      customerSet.add(result.customer)
-    }
-    if (Array.isArray(result.customers)) {
-      result.customers.forEach((customer: string) => customerSet.add(customer))
-    }
-  }
+const syncShortTermCustomers = () => {
+  const customerSet = new Set<string>(
+    stCustomerRecords.value
+      .filter((item) => item.regionName === selectedStProvince.value && item.industryName === selectedStIndustry.value)
+      .map((item) => item.customerName)
+      .filter(Boolean)
+  )
   stCustomers.value = Array.from(customerSet)
   if (selectedStCustomer.value && !stCustomers.value.includes(selectedStCustomer.value)) {
     selectedStCustomer.value = ''
   }
+}
 
+const syncShortTermMape = () => {
+  const scopedResults = stAllResults.value.filter((r) => r.province === selectedStProvince.value)
   const mapeMap: Record<string, number> = {}
   for (const result of scopedResults) {
     if (!result.customer && result.metrics?.mape !== undefined) {
@@ -1163,22 +1185,36 @@ const syncShortTermOptions = () => {
   stProvinceMape.value = mapeMap
 }
 
+const loadStDimensions = async () => {
+  try {
+    const [regions, industries, customers] = await Promise.all([
+      listPage('/base-region', { page: 1, size: 1000 }),
+      listPage('/base-industry', { page: 1, size: 1000 }),
+      listPage('/base-customer', { page: 1, size: 1000 })
+    ])
+    stProvinces.value = Array.from(
+      new Set(regions.records.map((item: Record<string, any>) => item.regionName).filter(Boolean))
+    )
+    stIndustries.value = Array.from(
+      new Set(industries.records.map((item: Record<string, any>) => item.industryName).filter(Boolean))
+    )
+    stCustomerRecords.value = customers.records
+  } catch (e) {
+    console.error('加载短期预测基础维度失败:', e)
+  }
+}
+
 const loadStMape = async () => {
   try {
     const resp = await fetch('/short-term-results')
-    const data = await resp.json()
-    stAllResults.value = data.results || []
-    const provSet = new Set<string>()
-    for (const r of stAllResults.value) {
-      provSet.add(r.province)
-    }
-    stProvinces.value = Array.from(provSet)
-    if (stProvinces.value.length > 0 && !stProvinces.value.includes(selectedStProvince.value)) {
-      selectedStProvince.value = stProvinces.value[0]
-    }
-    syncShortTermOptions()
+    if (!resp.ok) throw new Error(`短期预测列表加载失败：${resp.status}`)
+    const response = await resp.json()
+    const data = response?.data || response
+    stAllResults.value = Array.isArray(data?.results) ? data.results : []
   } catch (e) {
     console.error('加载短期MAPE失败:', e)
+    stAllResults.value = []
+    currentResult.value = null
   }
 }
 
@@ -1187,6 +1223,7 @@ const loadStResult = async () => {
     currentResult.value = null
     return
   }
+  stFilterDirty.value = false
   loadingResult.value = true
   currentResult.value = null
   try {
@@ -1209,26 +1246,55 @@ const loadStResult = async () => {
 }
 
 const loadShortTermDashboard = async () => {
-  await loadStMape()
+  await Promise.all([loadStDimensions(), loadStMape()])
+  const firstResult = stAllResults.value[0]
+  if (!selectedStProvince.value || !stProvinces.value.includes(selectedStProvince.value)) {
+    selectedStProvince.value = firstResult?.province || stProvinces.value[0] || ''
+  }
+  if (!selectedStIndustry.value || !stIndustries.value.includes(selectedStIndustry.value)) {
+    const firstMatchedResult = stAllResults.value.find((item) => item.province === selectedStProvince.value)
+    selectedStIndustry.value = firstMatchedResult?.industry || firstResult?.industry || stIndustries.value[0] || ''
+  }
+  syncShortTermCustomers()
+  syncShortTermMape()
   await loadStResult()
 }
 
 const switchStProvince = (province: string) => {
   selectedStProvince.value = province
   selectedStCustomer.value = ''
-  syncShortTermOptions()
-  loadStResult()
+  syncShortTermCustomers()
+  syncShortTermMape()
+  currentResult.value = null
+  stFilterDirty.value = true
 }
 
 const switchStIndustry = (industry: string) => {
   selectedStIndustry.value = industry
   selectedStCustomer.value = ''
-  syncShortTermOptions()
-  loadStResult()
+  syncShortTermCustomers()
+  currentResult.value = null
+  stFilterDirty.value = true
 }
 
 const switchStCustomer = (customer: string) => {
   selectedStCustomer.value = customer
+  currentResult.value = null
+  stFilterDirty.value = true
+}
+
+const searchShortTermResult = () => {
+  loadStResult()
+}
+
+const resetShortTermFilters = () => {
+  const firstResult = stAllResults.value[0]
+  selectedStProvince.value = firstResult?.province || stProvinces.value[0] || ''
+  const firstMatchedResult = stAllResults.value.find((item) => item.province === selectedStProvince.value)
+  selectedStIndustry.value = firstMatchedResult?.industry || stIndustries.value[0] || ''
+  selectedStCustomer.value = ''
+  syncShortTermCustomers()
+  syncShortTermMape()
   loadStResult()
 }
 
@@ -1393,7 +1459,7 @@ const initMonthlyChart = (data: any) => {
         smooth: 0.25,
         data: [...histPredicted, ...futureNulls],
         itemStyle: { color: '#f59e0b' },
-        lineStyle: { width: 2, color: '#f59e0b', type: 'dashed' },
+        lineStyle: { width: 2, color: '#f59e0b', type: 'solid' },
         symbol: 'circle',
         symbolSize: 4,
         connectNulls: false
@@ -1429,7 +1495,19 @@ const initMonthlyChart = (data: any) => {
         {
           xAxis: data.future_dates?.[0],
           lineStyle: { color: '#f59e0b', type: 'dashed', width: 1.5 },
-          label: { show: true, formatter: '预测起点', color: '#f59e0b', fontSize: 10, position: 'start' }
+          label: {
+            show: true,
+            formatter: '预测起点',
+            color: '#d97706',
+            fontSize: 12,
+            fontWeight: 500,
+            rotate: 0,
+            position: 'insideEndBottom',
+            distance: 8,
+            padding: [3, 6],
+            borderRadius: 4,
+            backgroundColor: 'rgba(255,255,255,0.92)'
+          }
         }
       ]
     }
@@ -1447,7 +1525,7 @@ const initMonthlyChart = (data: any) => {
         textStyle: { color: '#64748B', fontSize: 11 },
         data: ['历史实际值', '历史预测值', '未来预测值']
       },
-      grid: { left: '2%', right: '4%', top: '3%', bottom: 50, containLabel: true },
+      grid: { left: '2%', right: '4%', top: 34, bottom: 50, containLabel: true },
       xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -1542,7 +1620,7 @@ const runModel = async () => {
               nextTick(() => initChart(event.data))
               sendAnalysisMessage(event.content || '')
             }
-          } catch (e) {}
+          } catch {}
         }
       }
     }
@@ -1744,7 +1822,7 @@ const sendMessage = async () => {
                 if (msg) msg.content = renderMarkdown(fullResponse)
               }
             }
-          } catch (e) {}
+          } catch {}
         }
       }
     }
@@ -1898,7 +1976,7 @@ watch(agentId, (newId, oldId) => {
     loadProvinceMape()
     loadMonthlyResult()
   } else if (isShortTerm.value) {
-    selectedStProvince.value = '江苏'
+    selectedStProvince.value = ''
     selectedStIndustry.value = ''
     selectedStCustomer.value = ''
     void loadShortTermDashboard()
@@ -1979,7 +2057,7 @@ watch(chartType, () => {
   background: linear-gradient(135deg, #0ea5e9, #0284c7);
   color: white;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1990,7 +2068,7 @@ watch(chartType, () => {
   align-items: center;
   gap: 8px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 600;
   color: #0f172a;
   letter-spacing: 0;
   margin-bottom: 3px;
@@ -2021,7 +2099,7 @@ watch(chartType, () => {
   color: #7c3aed;
 }
 .section-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
 }
@@ -2037,8 +2115,8 @@ watch(chartType, () => {
   border-radius: 8px;
   background: #f0f9ff;
   color: #0284c7;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition: all 0.2s;
@@ -2081,7 +2159,7 @@ watch(chartType, () => {
   grid-column: 1 / -1;
 }
 .form-field label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #475569;
 }
@@ -2120,7 +2198,7 @@ watch(chartType, () => {
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.2);
 }
@@ -2150,7 +2228,7 @@ watch(chartType, () => {
   justify-content: center;
   color: white;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   flex-shrink: 0;
 }
 .industry-select-info {
@@ -2164,7 +2242,7 @@ watch(chartType, () => {
   color: #0f172a;
 }
 .industry-select-mape {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
 }
@@ -2200,8 +2278,8 @@ watch(chartType, () => {
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   flex-shrink: 0;
 }
 .industry-option-name {
@@ -2211,9 +2289,279 @@ watch(chartType, () => {
   flex: 1;
 }
 .industry-option-mape {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
   font-weight: 500;
+}
+
+/* 短期客户预测看板 */
+.short-term-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+.short-term-hero h1 {
+  margin: 0;
+  color: #101828;
+  font-size: 20px;
+  font-weight: 600;
+}
+.short-term-hero p {
+  margin: 5px 0 0;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 400;
+}
+.short-term-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #dbe7f5;
+  border-radius: 7px;
+  background: #f8fbff;
+  color: #475467;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.compact-section {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(31, 64, 104, 0.035);
+}
+.compact-section .section-head {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.compact-section .section-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #1677ff;
+  font-size: 13px;
+}
+.compact-section .section-title {
+  margin: 0 0 2px;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 600;
+}
+.compact-section .section-hint {
+  color: #98a2b3;
+  font-weight: 400;
+}
+.short-term-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+  padding-left: 38px;
+}
+.short-term-filter-grid :deep(.el-select__wrapper) {
+  min-height: 36px;
+  border-radius: 6px;
+}
+.short-term-filter-grid .form-field label {
+  color: #344054;
+  font-family: var(--app-font-family);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.short-term-filter-grid :deep(.el-select__selected-item),
+.short-term-filter-grid :deep(.el-select__placeholder) {
+  font-family: var(--app-font-family);
+  font-size: 14px;
+  font-weight: 500;
+}
+.short-term-filter-grid :deep(.el-select__selected-item) {
+  color: #101828;
+}
+.short-term-filter-grid :deep(.el-select__placeholder.is-transparent) {
+  color: #98a2b3;
+}
+.short-term-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 1px;
+}
+.short-term-filter-actions :deep(.el-button) {
+  min-width: 68px;
+  height: 36px;
+  margin-left: 0;
+  border-radius: 6px;
+}
+.short-term-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding-left: 38px;
+}
+.short-term-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #edf1f7;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.short-term-summary-card > .el-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: #eaf3ff;
+  color: #1677ff;
+  font-size: 17px;
+}
+.short-term-summary-card:nth-child(2) > .el-icon {
+  background: #ecfdf3;
+  color: #12b76a;
+}
+.short-term-summary-card:nth-child(3) > .el-icon {
+  background: #fff4e5;
+  color: #f79009;
+}
+.short-term-summary-card.trend-up > .el-icon {
+  background: #fff1f0;
+  color: #f04438;
+}
+.short-term-summary-card.trend-up strong {
+  color: #f04438;
+}
+.short-term-summary-card.trend-down > .el-icon {
+  background: #ecfdf3;
+  color: #12b76a;
+}
+.short-term-summary-card.trend-down strong {
+  color: #12b76a;
+}
+.short-term-summary-card:nth-child(4) > .el-icon {
+  background: #f4f3ff;
+  color: #7f56d9;
+}
+.short-term-summary-card div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.short-term-summary-card span {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 500;
+}
+.short-term-summary-card strong {
+  overflow: hidden;
+  color: #101828;
+  font-size: 16px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.short-term-evaluation,
+.short-term-future-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 0.8fr);
+  gap: 12px;
+  padding-left: 38px;
+}
+.compact-chart-panel {
+  min-height: 290px;
+  padding: 8px 10px 4px;
+  border-color: #edf1f7;
+  border-radius: 8px;
+}
+.compact-chart-panel .chart {
+  height: 276px;
+}
+.short-term-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: stretch;
+  gap: 8px;
+}
+.short-term-metrics > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border: 1px solid #edf1f7;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+}
+.short-term-metrics span {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 600;
+}
+.short-term-metrics small {
+  grid-column: 1 / -1;
+  color: #667085;
+  font-size: 13px;
+}
+.short-term-metrics strong {
+  grid-column: 2;
+  grid-row: 1;
+  color: #101828;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.short-term-metrics strong.metric-good {
+  color: #12b76a;
+}
+.short-term-metrics strong.metric-ok {
+  color: #f79009;
+}
+.short-term-metrics strong.metric-bad {
+  color: #f04438;
+}
+.future-table-wrap {
+  overflow: hidden;
+  border: 1px solid #edf1f7;
+  border-radius: 8px;
+}
+.future-table-wrap :deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475467;
+  font-weight: 600;
+}
+.related-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding-left: 38px;
+}
+.related-info-grid > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.related-info-grid span {
+  color: #667085;
+  font-size: 13px;
+}
+.related-info-grid strong {
+  overflow: hidden;
+  color: #101828;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 模型信息卡片 */
@@ -2234,7 +2582,7 @@ watch(chartType, () => {
   align-items: center;
   gap: 8px;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
   color: #0f172a;
   letter-spacing: 0;
 }
@@ -2258,7 +2606,7 @@ watch(chartType, () => {
   background: linear-gradient(135deg, #0ea5e9, #0284c7);
   color: white;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 .metrics-grid {
@@ -2301,15 +2649,15 @@ watch(chartType, () => {
   color: #7c3aed;
 }
 .metric-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0;
 }
 .metric-value {
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 600;
   color: #0f172a;
   line-height: 1.1;
 }
@@ -2338,7 +2686,7 @@ watch(chartType, () => {
   gap: 2px;
 }
 .summary-label {
-  font-size: 11px;
+  font-size: 13px;
   color: #94a3b8;
   font-weight: 600;
 }
@@ -2419,7 +2767,7 @@ watch(chartType, () => {
   margin-bottom: 2px;
 }
 .model-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: #94a3b8;
 }
 
@@ -2453,7 +2801,7 @@ watch(chartType, () => {
 }
 .param-val {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: #0ea5e9;
   min-width: 50px;
   text-align: right;
@@ -2619,21 +2967,21 @@ watch(chartType, () => {
   color: #7c3aed;
 }
 .result-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #0284c7;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0;
 }
 .result-value {
   font-size: 25px;
-  font-weight: 800;
+  font-weight: 600;
   color: #0f172a;
   letter-spacing: 0;
   line-height: 1.1;
 }
 .result-value small {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: #94a3b8;
 }
@@ -2651,7 +2999,7 @@ watch(chartType, () => {
   border: none;
   background: transparent;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #64748b;
   cursor: pointer;
@@ -2757,7 +3105,7 @@ watch(chartType, () => {
   color: #0f172a;
 }
 .ai-status {
-  font-size: 11px;
+  font-size: 13px;
   color: #10b981;
   display: flex;
   align-items: center;
@@ -2774,7 +3122,7 @@ watch(chartType, () => {
   border: 1px solid #e2e8f0;
   background: white;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s;
@@ -2807,8 +3155,8 @@ watch(chartType, () => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 .msg-avatar.assistant {
   background: linear-gradient(135deg, #0ea5e9, #06b6d4);
@@ -2831,6 +3179,10 @@ watch(chartType, () => {
   font-size: 13px;
   line-height: 1.6;
 }
+.msg-bubble-plain {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .msg.assistant .msg-bubble {
   background: #f8fafc;
   color: #1e293b;
@@ -2844,7 +3196,7 @@ watch(chartType, () => {
 .msg-bubble :deep(h2) {
   font-size: 15px;
   margin: 0 0 8px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .msg-bubble :deep(h3) {
   font-size: 13px;
@@ -2869,7 +3221,7 @@ watch(chartType, () => {
   background: rgba(0, 0, 0, 0.06);
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .msg.user .msg-bubble :deep(code) {
   background: rgba(255, 255, 255, 0.2);
@@ -2957,5 +3309,34 @@ watch(chartType, () => {
 .stop-btn svg {
   width: 14px;
   height: 14px;
+}
+
+@media (max-width: 1200px) {
+  .short-term-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .short-term-evaluation,
+  .short-term-future-grid {
+    grid-template-columns: 1fr;
+  }
+  .related-info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .short-term-hero {
+    flex-direction: column;
+  }
+  .short-term-filter-grid,
+  .short-term-summary-grid,
+  .related-info-grid {
+    grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+  .short-term-evaluation,
+  .short-term-future-grid {
+    padding-left: 0;
+  }
 }
 </style>

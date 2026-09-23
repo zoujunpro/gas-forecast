@@ -56,8 +56,8 @@ const visible = defineModel<boolean>({ default: false })
 .app-dialog-head p {
   margin: 0 0 6px;
   color: var(--app-primary);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .app-dialog-head h2 {

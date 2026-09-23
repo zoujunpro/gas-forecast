@@ -1,4 +1,4 @@
-export type SystemFieldType = 'text' | 'number' | 'select' | 'tree' | 'treeSelect' | 'radio' | 'switch'
+export type SystemFieldType = 'text' | 'number' | 'select' | 'iconSelect' | 'tree' | 'treeSelect' | 'radio' | 'switch'
 
 export interface Option {
   label: string
@@ -7,7 +7,7 @@ export interface Option {
 }
 
 export type FieldDisplayType =
-  'text' | 'array' | 'enabled' | 'status' | 'permissionType' | 'hash' | 'tag' | 'date' | 'datetime'
+  'text' | 'array' | 'enabled' | 'status' | 'permissionType' | 'menuIcon' | 'hash' | 'tag' | 'date' | 'datetime'
 
 export interface DisplayFieldConfig {
   displayType?: FieldDisplayType

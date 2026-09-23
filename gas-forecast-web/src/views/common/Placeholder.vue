@@ -162,8 +162,8 @@ const scopes = computed(() => page.value.scopes)
 
 .eyebrow {
   margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: #0284c7;
 }
 
@@ -204,8 +204,8 @@ p {
 
 .panel-head span {
   color: #98a2b3;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 ul {

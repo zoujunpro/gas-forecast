@@ -125,14 +125,18 @@ const {
   rowIndex
 } = usePageQuery<Record<string, any>>({
   errorMessage: '列表加载失败',
-  fetcher: async ({ page, size, keyword }) => {
-    return listPage(config.value.endpoint, {
-      page,
-      size,
-      keyword: keyword || undefined,
-      startDate: dateRange.value?.[0],
-      endDate: dateRange.value?.[1]
-    })
+  fetcher: async ({ page, size, keyword, signal }) => {
+    return listPage(
+      config.value.endpoint,
+      {
+        page,
+        size,
+        keyword: keyword || undefined,
+        startDate: dateRange.value?.[0],
+        endDate: dateRange.value?.[1]
+      },
+      signal
+    )
   }
 })
 

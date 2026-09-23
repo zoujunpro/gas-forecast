@@ -393,7 +393,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Calendar, Connection, Filter, Plus, Search, Tickets, TrendCharts } from '@element-plus/icons-vue'
 import { deleteRow, listPage, postJson } from '@/api/management'
@@ -1129,8 +1129,8 @@ watch(recordKeyword, () => {
   width: 30px;
   height: 30px;
   color: #2878e8;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   background: #eaf3ff;
   border-radius: 9px;
 }
@@ -1148,7 +1148,7 @@ watch(recordKeyword, () => {
 
 .forecast-section-head small {
   color: #8b96a9;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .train-config-card {
@@ -1189,7 +1189,7 @@ watch(recordKeyword, () => {
 .status-switch-row span,
 .field-help {
   color: #7b879d;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .train-scope-tags {
@@ -1302,7 +1302,7 @@ watch(recordKeyword, () => {
 }
 :deep(.instances-dialog .el-dialog__title) {
   color: #14233b;
-  font-weight: 700;
+  font-weight: 600;
 }
 :deep(.instances-dialog .el-dialog__body) {
   height: calc(100vh - 64px);
@@ -1322,13 +1322,13 @@ watch(recordKeyword, () => {
 .forecast-result-heading h2 {
   color: #101828;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 28px;
 }
 .forecast-result-heading p {
   margin-top: 3px;
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 18px;
 }
@@ -1354,11 +1354,11 @@ watch(recordKeyword, () => {
   align-items: center;
   gap: 4px;
   color: #344054;
-  font-weight: 700;
+  font-weight: 600;
 }
 .result-sidebar-head span {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
 }
 .result-sidebar-search {
   display: grid;
@@ -1371,7 +1371,7 @@ watch(recordKeyword, () => {
   box-shadow: 0 0 0 1px #d0d5dd inset;
 }
 .result-sidebar-search :deep(.el-input__inner) {
-  font-size: 12px;
+  font-size: 13px;
 }
 .result-sidebar-search .el-button {
   width: 34px;
@@ -1393,8 +1393,8 @@ watch(recordKeyword, () => {
   border: 0;
   background: transparent;
   color: #667085;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 }
 .result-sidebar-tabs button.active {
@@ -1454,14 +1454,14 @@ watch(recordKeyword, () => {
   overflow: hidden;
   color: #182230;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .instance-card p {
   margin: 0;
   color: #344054;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .instance-card small {
@@ -1503,7 +1503,7 @@ watch(recordKeyword, () => {
 .result-sidebar-pagination :deep(.btn-next) {
   min-width: 26px;
   height: 26px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .instance-detail {
   min-width: 0;
@@ -1526,7 +1526,7 @@ watch(recordKeyword, () => {
 .panel-title h3 {
   color: #101828;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .panel-title p {
   display: flex;
@@ -1534,7 +1534,7 @@ watch(recordKeyword, () => {
   gap: 18px;
   margin-top: 5px;
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 .panel-title p span:first-child {
@@ -1570,7 +1570,7 @@ watch(recordKeyword, () => {
   margin: 0 0 14px;
   color: #27364d;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .forecast-summary-card h4 > span {
   display: inline-flex;
@@ -1597,13 +1597,13 @@ watch(recordKeyword, () => {
 }
 .forecast-summary-item > span {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 .forecast-summary-item > strong {
   overflow: hidden;
   color: #1f2937;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1614,7 +1614,7 @@ watch(recordKeyword, () => {
   padding-left: 11px;
   color: #20324d;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 .section-title::before {
   position: absolute;
@@ -1641,7 +1641,7 @@ watch(recordKeyword, () => {
 }
 .forecast-overview-item > span {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 .forecast-overview-item > strong {
@@ -1678,7 +1678,7 @@ watch(recordKeyword, () => {
 }
 .forecast-data-tabs :deep(.el-tabs__item.is-active) {
   color: var(--app-primary);
-  font-weight: 700;
+  font-weight: 600;
 }
 .forecast-data-tabs :deep(.el-tabs__active-bar) {
   height: 3px;

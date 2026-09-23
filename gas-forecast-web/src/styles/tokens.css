@@ -1,8 +1,20 @@
 :root {
   --app-font-family:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial,
     sans-serif;
   --el-font-family: var(--app-font-family);
+  --el-font-size-base: 14px;
+  --el-font-size-small: 13px;
+  --el-font-size-large: 15px;
+  --app-font-size-title: 22px;
+  --app-font-size-section: 18px;
+  --app-font-size-card: 16px;
+  --app-font-size-body: 14px;
+  --app-font-size-secondary: 13px;
+  --app-line-height-body: 1.5715;
+  --app-font-weight-regular: 400;
+  --app-font-weight-medium: 500;
+  --app-font-weight-semibold: 600;
   --app-bg: #f4f7fb;
   --app-surface: #ffffff;
   --app-border: #e4e7ec;
@@ -10,9 +22,14 @@
   --app-primary: #1677ff;
   --app-primary-dark: #0f7fe5;
   --app-primary-soft: #eaf6fd;
-  --app-text: #101828;
-  --app-text-secondary: #344054;
-  --app-text-muted: #667085;
+  --app-text: #1d2129;
+  --app-text-secondary: #4e5969;
+  --app-text-muted: #86909c;
+  --app-text-disabled: #c9cdd4;
+  --el-text-color-primary: var(--app-text);
+  --el-text-color-regular: var(--app-text-secondary);
+  --el-text-color-secondary: var(--app-text-muted);
+  --el-text-color-placeholder: #a9aeb8;
   --app-radius: 8px;
   --app-gap: 14px;
   --app-control-height: 38px;

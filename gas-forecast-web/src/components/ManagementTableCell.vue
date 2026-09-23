@@ -6,6 +6,10 @@
   <el-tag v-else-if="displayType === 'permissionType'" :type="permissionTypeTagType" effect="plain">
     {{ permissionTypeText }}
   </el-tag>
+  <span v-else-if="displayType === 'menuIcon'" class="menu-icon-cell">
+    <el-icon v-if="value"><component :is="resolveMenuIcon(String(value))" /></el-icon>
+    <span>{{ value || '-' }}</span>
+  </span>
   <el-tag v-else-if="displayType === 'tag'" :type="tagType" effect="plain">
     {{ mappedValue }}
   </el-tag>
@@ -20,6 +24,7 @@
 import { computed } from 'vue'
 import ManagementStatusTag from '@/components/ManagementStatusTag.vue'
 import { displayValue } from '@/utils/http'
+import { resolveMenuIcon } from '@/utils/menuIcons'
 import type { BaseDataFieldConfig, SystemFieldConfig } from '@/views/shared/managementTypes'
 
 const props = defineProps<{
@@ -61,3 +66,16 @@ const compactHash = (rawValue: unknown) => {
   return `${text.slice(0, 10)}...${text.slice(-6)}`
 }
 </script>
+
+<style scoped>
+.menu-icon-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.menu-icon-cell .el-icon {
+  color: var(--el-color-primary);
+  font-size: 17px;
+}
+</style>

@@ -86,7 +86,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     @Override
     @Transactional
     public ModelConfigResponse create(ModelConfigCreateRequest reqDTO) {
-        ForecastAgentEnum agent = validateAgent(reqDTO.agentCode(), reqDTO.sceneCode());
+        ForecastAgentEnum agent = validateAgent(reqDTO.getAgentCode(), reqDTO.getSceneCode());
         ModelConfigTb modelConfig = toEntity(reqDTO);
         String modelCode = modelConfig.getModelCode().trim();
         ensureModelCodeUnique(modelCode, null);
@@ -100,12 +100,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                 modelConfig.getId(),
                 modelConfig.getModelCode(),
                 agent,
-                reqDTO.regionCode(),
-                reqDTO.industryCode(),
-                reqDTO.customerCode(),
-                reqDTO.regionCodes(),
-                reqDTO.industryCodes(),
-                reqDTO.customerCodes());
+                reqDTO.getRegionCode(),
+                reqDTO.getIndustryCode(),
+                reqDTO.getCustomerCode(),
+                reqDTO.getRegionCodes(),
+                reqDTO.getIndustryCodes(),
+                reqDTO.getCustomerCodes());
         return toResp(modelConfig, loadScopeContext(List.of(modelConfig)));
     }
 
@@ -569,11 +569,11 @@ public class ModelConfigServiceImpl implements ModelConfigService {
 
     private ModelConfigTb toEntity(ModelConfigCreateRequest reqDTO) {
         ModelConfigTb modelConfig = new ModelConfigTb();
-        modelConfig.setModelCode(reqDTO.configCode());
-        modelConfig.setModelName(reqDTO.configName());
-        modelConfig.setModelVersion(TextUtils.hasText(reqDTO.modelVersion()) ? reqDTO.modelVersion() : "V1.0");
-        modelConfig.setAgentCode(reqDTO.agentCode());
-        modelConfig.setDescription(reqDTO.description());
+        modelConfig.setModelCode(reqDTO.getConfigCode());
+        modelConfig.setModelName(reqDTO.getConfigName());
+        modelConfig.setModelVersion(TextUtils.hasText(reqDTO.getModelVersion()) ? reqDTO.getModelVersion() : "V1.0");
+        modelConfig.setAgentCode(reqDTO.getAgentCode());
+        modelConfig.setDescription(reqDTO.getDescription());
         return modelConfig;
     }
 

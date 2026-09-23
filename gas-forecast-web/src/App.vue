@@ -1,106 +1,108 @@
 <template>
-  <router-view v-if="isLoginPage" />
-  <div v-else class="app-shell">
-    <aside :class="['sidebar', { collapsed: isSidebarCollapsed }]">
-      <div class="brand" @click="goHome">
-        <el-tooltip content="天然气预测平台" placement="right" :disabled="!isSidebarCollapsed">
-          <div class="brand-mark">
-            <img :src="logoUrl" alt="" />
+  <el-config-provider :locale="zhCn">
+    <router-view v-if="isLoginPage" />
+    <div v-else class="app-shell">
+      <aside :class="['sidebar', { collapsed: isSidebarCollapsed }]">
+        <div class="brand" @click="goHome">
+          <el-tooltip content="天然气预测平台" placement="right" :disabled="!isSidebarCollapsed">
+            <div class="brand-mark">
+              <img :src="logoUrl" alt="" />
+            </div>
+          </el-tooltip>
+          <div v-if="!isSidebarCollapsed" class="brand-text">
+            <strong>天然气预测平台</strong>
           </div>
-        </el-tooltip>
-        <div v-if="!isSidebarCollapsed" class="brand-text">
-          <strong>天然气预测平台</strong>
         </div>
-      </div>
 
-      <el-menu
-        class="side-menu"
-        :default-active="activeMenu"
-        :collapse="isSidebarCollapsed"
-        :collapse-transition="false"
-        router
-      >
-        <SidebarMenu :menus="menus" :collapsed="isSidebarCollapsed" />
-      </el-menu>
-    </aside>
+        <el-menu
+          class="side-menu"
+          :default-active="activeMenu"
+          :collapse="isSidebarCollapsed"
+          :collapse-transition="false"
+          router
+        >
+          <SidebarMenu :menus="menus" :collapsed="isSidebarCollapsed" />
+        </el-menu>
+      </aside>
 
-    <section class="main-area">
-      <header class="topbar">
-        <div class="topbar-heading">
-          <el-tooltip :content="isSidebarCollapsed ? '展开菜单' : '折叠菜单'" placement="bottom">
-            <button class="collapse-button" type="button" @click="toggleSidebar">
-              <el-icon>
-                <Expand v-if="isSidebarCollapsed" />
-                <Fold v-else />
-              </el-icon>
+      <section class="main-area">
+        <header class="topbar">
+          <div class="topbar-heading">
+            <el-tooltip :content="isSidebarCollapsed ? '展开菜单' : '折叠菜单'" placement="bottom">
+              <button class="collapse-button" type="button" @click="toggleSidebar">
+                <el-icon>
+                  <Expand v-if="isSidebarCollapsed" />
+                  <Fold v-else />
+                </el-icon>
+              </button>
+            </el-tooltip>
+            <span class="header-slogan">问题导向，事前算赢</span>
+          </div>
+          <div class="user-actions">
+            <el-tooltip content="搜索菜单功能建设中" placement="bottom">
+              <button class="header-action" type="button" aria-label="搜索菜单功能建设中" disabled>
+                <el-icon><Search /></el-icon>
+              </button>
+            </el-tooltip>
+            <el-tooltip content="帮助功能建设中" placement="bottom">
+              <button class="header-action" type="button" aria-label="帮助功能建设中" disabled>
+                <el-icon><QuestionFilled /></el-icon>
+              </button>
+            </el-tooltip>
+            <el-tooltip content="通知功能建设中" placement="bottom">
+              <button class="header-action" type="button" aria-label="通知功能建设中" disabled>
+                <el-badge>
+                  <el-icon><Bell /></el-icon>
+                </el-badge>
+              </button>
+            </el-tooltip>
+
+            <el-dropdown trigger="click">
+              <button class="user-profile" type="button">
+                <el-avatar :size="26" class="user-avatar">
+                  <el-icon><UserFilled /></el-icon>
+                </el-avatar>
+                <span class="welcome-text">欢迎您，{{ welcomeName }}</span>
+              </button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item :icon="UserFilled" disabled>个人中心（建设中）</el-dropdown-item>
+                  <el-dropdown-item :icon="Setting" disabled>账户设置（建设中）</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+
+            <button class="logout-action" type="button" @click="logout">
+              <el-icon><SwitchButton /></el-icon>
+              <span>退出登录</span>
             </button>
-          </el-tooltip>
-          <span class="header-slogan">问题导向，事前算赢</span>
-        </div>
-        <div class="user-actions">
-          <el-tooltip content="搜索菜单" placement="bottom">
-            <button class="header-action" type="button" aria-label="搜索菜单">
-              <el-icon><Search /></el-icon>
-            </button>
-          </el-tooltip>
-          <el-tooltip content="帮助" placement="bottom">
-            <button class="header-action" type="button" aria-label="帮助">
-              <el-icon><QuestionFilled /></el-icon>
-            </button>
-          </el-tooltip>
-          <el-tooltip content="通知" placement="bottom">
-            <button class="header-action" type="button" aria-label="通知">
-              <el-badge is-dot>
-                <el-icon><Bell /></el-icon>
-              </el-badge>
-            </button>
-          </el-tooltip>
+          </div>
+        </header>
 
-          <el-dropdown trigger="click">
-            <button class="user-profile" type="button">
-              <el-avatar :size="26" class="user-avatar">
-                <el-icon><UserFilled /></el-icon>
-              </el-avatar>
-              <span class="welcome-text">欢迎您，{{ welcomeName }}</span>
-            </button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item :icon="UserFilled">个人中心</el-dropdown-item>
-                <el-dropdown-item :icon="Setting">账户设置</el-dropdown-item>
-                <el-dropdown-item :icon="SwitchButton" divided>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+        <PageTabs />
 
-          <button class="logout-action" type="button" @click="logout">
-            <el-icon><SwitchButton /></el-icon>
-            <span>退出登录</span>
-          </button>
-        </div>
-      </header>
+        <main class="content">
+          <router-view />
+        </main>
 
-      <PageTabs />
-
-      <main class="content">
-        <router-view />
-      </main>
-
-      <footer class="footerbar">
-        <span>天然气市场需求智能预测平台</span>
-        <span>本地开发环境</span>
-      </footer>
-    </section>
-  </div>
+        <footer class="footerbar">
+          <span>天然气市场需求智能预测平台</span>
+          <span>本地开发环境</span>
+        </footer>
+      </section>
+    </div>
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useRoute, useRouter } from 'vue-router'
 import { Expand, Fold, Bell, QuestionFilled, Search, Setting, SwitchButton, UserFilled } from '@element-plus/icons-vue'
 import PageTabs from '@/components/PageTabs.vue'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 import logoUrl from '@/assets/logo.png'
-import { clearToken, getProfile, getToken, refreshProfile } from '@/utils/auth'
+import { clearToken, getProfile, getToken, PROFILE_UPDATED_EVENT, refreshProfile } from '@/utils/auth'
 import type { AuthProfile } from '@/utils/auth'
 
 const route = useRoute()
@@ -127,12 +129,30 @@ const logout = () => {
   void router.replace('/login')
 }
 
+const handleAuthExpired = () => {
+  profile.value = {}
+  if (route.path !== '/login') {
+    void router.replace({ path: '/login', query: { redirect: route.fullPath } })
+  }
+}
+
+const handleProfileUpdated = () => {
+  profile.value = getProfile()
+}
+
 onMounted(() => {
+  window.addEventListener('auth:expired', handleAuthExpired)
+  window.addEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated)
   if (getToken()) {
     void refreshProfile().then((nextProfile) => {
       profile.value = nextProfile
     })
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('auth:expired', handleAuthExpired)
+  window.removeEventListener(PROFILE_UPDATED_EVENT, handleProfileUpdated)
 })
 
 watch(
@@ -154,12 +174,16 @@ html,
 body,
 #app {
   font-family: var(--app-font-family);
+  font-size: var(--app-font-size-body);
+  line-height: var(--app-line-height-body);
 }
 
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--app-bg);
+  color: var(--app-text);
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -167,6 +191,53 @@ input,
 textarea,
 select {
   font-family: inherit;
+}
+
+.el-button,
+.el-input,
+.el-select,
+.el-form,
+.el-table,
+.el-pagination,
+.el-dialog,
+.el-drawer,
+.el-message-box,
+.el-dropdown,
+.el-menu {
+  font-family: var(--app-font-family);
+}
+
+.el-button,
+.el-input__inner,
+.el-select__selected-item,
+.el-select__placeholder,
+.el-form-item__label,
+.el-table .cell,
+.el-pagination button,
+.el-pagination .number {
+  font-size: var(--app-font-size-body);
+}
+
+.el-button,
+.el-form-item__label,
+.el-table th.el-table__cell > .cell {
+  font-weight: var(--app-font-weight-medium);
+}
+
+.el-table td.el-table__cell {
+  color: var(--app-text-secondary);
+}
+
+.el-table th.el-table__cell {
+  color: var(--app-text);
+}
+
+.el-input__inner,
+.el-select__selected-item,
+.el-table .cell,
+.el-statistic__number,
+.metric-value {
+  font-variant-numeric: tabular-nums;
 }
 
 .el-table {
@@ -252,7 +323,7 @@ select {
   overflow: hidden;
   color: #ffffff;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -403,6 +474,15 @@ select {
   background: rgba(255, 255, 255, 0.24);
 }
 
+.header-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.header-action:disabled:hover {
+  background: transparent;
+}
+
 .header-action :deep(.el-badge__content.is-fixed.is-dot) {
   right: 3px;
   top: 12px;
@@ -437,7 +517,7 @@ select {
   background: #ffffff;
   border-top: 1px solid #e6eaf0;
   color: #8a95a6;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 @media (max-width: 980px) {

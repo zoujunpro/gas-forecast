@@ -403,7 +403,8 @@ const formRules: FormRules = {
 const { loading, keyword, page, size, total, records, loadData, searchData, resetSearch, handleSizeChange, rowIndex } =
   usePageQuery<Record<string, any>>({
     errorMessage: '模型列表加载失败',
-    fetcher: ({ page, size, keyword }) => listPage(endpoint, { page, size, keyword: keyword || undefined })
+    fetcher: ({ page, size, keyword, signal }) =>
+      listPage(endpoint, { page, size, keyword: keyword || undefined }, signal)
   })
 
 const dialogTitle = computed(() => (editingId.value ? '编辑模型' : '新增模型'))
@@ -758,7 +759,7 @@ onMounted(() => {
 }
 .platform-model-option small {
   color: #98a2b3;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .form-wide {
@@ -814,7 +815,7 @@ onMounted(() => {
 .model-title span {
   overflow: hidden;
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -828,7 +829,7 @@ onMounted(() => {
 
 .summary-label {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .summary-item strong {
@@ -880,12 +881,12 @@ onMounted(() => {
   margin: 0;
   color: #101828;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .section-title span {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -911,7 +912,7 @@ onMounted(() => {
   margin-bottom: 10px;
   color: #344054;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .feature-picker-head > div {
@@ -994,7 +995,7 @@ onMounted(() => {
   margin-bottom: 8px;
   color: #344054;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .selected-tags {
@@ -1037,7 +1038,7 @@ onMounted(() => {
   height: 24px;
   color: #344054;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .region-group :deep(.el-checkbox-group) {

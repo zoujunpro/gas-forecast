@@ -3,6 +3,32 @@ export const displayValue = (value: unknown) => {
   return value
 }
 
+const DEFAULT_TIMEOUT_MS = 20_000
+
+export interface RequestOptions extends RequestInit {
+  timeoutMs?: number
+}
+
+export const apiFetch = async (input: RequestInfo | URL, options: RequestOptions = {}) => {
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, signal, ...init } = options
+  const controller = new AbortController()
+  const abort = () => controller.abort(signal?.reason)
+  signal?.addEventListener('abort', abort, { once: true })
+  const timer = window.setTimeout(() => controller.abort(new DOMException('请求超时', 'TimeoutError')), timeoutMs)
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } catch (error) {
+    if (controller.signal.reason instanceof DOMException && controller.signal.reason.name === 'TimeoutError') {
+      throw new Error(`请求超时（${Math.round(timeoutMs / 1000)}秒）`)
+    }
+    throw error
+  } finally {
+    window.clearTimeout(timer)
+    signal?.removeEventListener('abort', abort)
+  }
+}
+
 export const readErrorMessage = async (response: Response, fallback: string) => {
   try {
     const data = await response.json()

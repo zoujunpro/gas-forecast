@@ -148,7 +148,7 @@
 
     <AppDialog v-model="dialogVisible" :eyebrow="config.title" :title="dialogTitle" width="720px" align-center>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
-        <el-form-item v-for="field in config.formFields" :key="field.prop" :label="field.label" :prop="field.prop">
+        <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.prop">
           <FormFieldRenderer
             :field="field"
             :model="form"
@@ -206,6 +206,7 @@ import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
 import PermissionButton from '@/components/PermissionButton.vue'
 import { usePageQuery } from '@/composables/usePageQuery'
 import { deleteRow, listAll, listPage, saveRow as saveRecord } from '@/api/management'
+import { refreshProfile } from '@/utils/auth'
 import type { Option, SystemPageConfig as PageConfig } from '../shared/managementTypes'
 
 const props = defineProps<{
@@ -230,6 +231,9 @@ const selectedPermissionCount = ref(0)
 
 const config = computed(() => props.pageConfig)
 const dialogTitle = computed(() => `${editingId.value ? '编辑' : '新增'}${config.value.title}`)
+const visibleFormFields = computed(() =>
+  config.value.formFields.filter((field) => !(field.prop === 'icon' && form.uiPermissionKind === 'BUTTON'))
+)
 const rowKey = (row: Record<string, any>) => row.id
 const formRules = computed<FormRules>(() => {
   const rules: FormRules = {}
@@ -261,9 +265,9 @@ const formRules = computed<FormRules>(() => {
 const { loading, keyword, page, size, total, records, loadData, searchData, resetSearch, handleSizeChange, rowIndex } =
   usePageQuery<Record<string, any>>({
     errorMessage: '加载失败',
-    fetcher: async ({ page, size, keyword }) => {
+    fetcher: async ({ page, size, keyword, signal }) => {
       if (config.value.paged) {
-        const result = await listPage(config.value.endpoint, { page, size, keyword: keyword || undefined })
+        const result = await listPage(config.value.endpoint, { page, size, keyword: keyword || undefined }, signal)
         return {
           records: result.records,
           total: result.total
@@ -354,6 +358,9 @@ const saveRow = async () => {
       delete payload.uiPermissionKind
     }
     await saveRecord(config.value.endpoint, payload)
+    if (config.value.mode === 'permissions') {
+      await refreshProfile()
+    }
     ElMessage.success('保存成功')
     dialogVisible.value = false
     await loadOptions()

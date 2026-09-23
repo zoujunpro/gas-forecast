@@ -611,7 +611,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
   Aim,
@@ -1230,15 +1230,19 @@ const {
   rowIndex
 } = usePageQuery<Record<string, any>>({
   errorMessage: '列表加载失败',
-  fetcher: ({ page, size, keyword }) =>
-    listPage(config.value.endpoint, {
-      page,
-      size,
-      keyword: keyword || undefined,
-      sortField: sortField.value || undefined,
-      sortOrder: sortOrder.value || undefined,
-      ...filterPayload.value
-    })
+  fetcher: ({ page, size, keyword, signal }) =>
+    listPage(
+      config.value.endpoint,
+      {
+        page,
+        size,
+        keyword: keyword || undefined,
+        sortField: sortField.value || undefined,
+        sortOrder: sortOrder.value || undefined,
+        ...filterPayload.value
+      },
+      signal
+    )
 })
 
 const filterPayload = computed(() => {
@@ -1301,7 +1305,7 @@ const loadFormOptions = async () => {
       try {
         const data = await listPage(source.endpoint, { page: 1, size: source.size || 1000 })
         formOptionMap[field.prop] = data.records.map((row) => formatSourceOption(row, field))
-      } catch (error) {
+      } catch {
         ElMessage.error(`${field.label}选项加载失败`)
         formOptionMap[field.prop] = []
       }
@@ -1357,7 +1361,12 @@ const openTrainResult = async (row: Record<string, any>) => {
   trainResultVisible.value = true
   trainResultLoading.value = true
   try {
-    const result = await postJson('/model-train-execution/result', row)
+    // 训练配置的作用范围可能后续被编辑，历史批次仍应按智能体和区域展示。
+    // 批次详情再通过 batchNo 精确加载，避免新行业/客户范围屏蔽旧结果。
+    const result = await postJson('/model-train-execution/result', {
+      agentCode: row.agentCode,
+      regionCode: row.regionCode
+    })
     const data = (result as any).data || {}
     trainResultBatches.value = Array.isArray(data.batches) ? data.batches : []
     selectedTrainBatchNo.value = data.selectedBatchNo || trainResultBatches.value[0]?.batchNo || ''
@@ -1681,7 +1690,7 @@ defineExpose({ loadData })
   width: 100%;
   margin: 6px 0 0;
   color: #8492a6;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 18px;
 }
 
@@ -1706,8 +1715,8 @@ defineExpose({ loadData })
 .feature-dialog-header p {
   margin: 0 0 3px;
   color: var(--app-primary);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .feature-dialog-header h2 {
@@ -1721,7 +1730,7 @@ defineExpose({ loadData })
   display: block;
   margin-top: 3px;
   color: #8492a6;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 :global(.feature-definition-dialog .el-dialog__body) {
@@ -1787,7 +1796,7 @@ defineExpose({ loadData })
 
 .feature-detail :deep(.el-table .cell) {
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .preview-summary,
@@ -1805,7 +1814,7 @@ defineExpose({ loadData })
   padding: 5px 9px;
   color: #344054;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .preview-scope span {
@@ -1867,14 +1876,14 @@ defineExpose({ loadData })
 .train-result-heading h2 {
   color: #101828;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 28px;
 }
 
 .train-result-heading p {
   margin-top: 3px;
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 18px;
 }
@@ -1914,7 +1923,7 @@ defineExpose({ loadData })
 
 .result-sidebar-head span {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .result-sidebar-search {
@@ -1930,7 +1939,7 @@ defineExpose({ loadData })
 }
 
 .result-sidebar-search :deep(.el-input__inner) {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .result-sidebar-search .el-button {
@@ -1955,7 +1964,7 @@ defineExpose({ loadData })
   border: 0;
   background: transparent;
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -2028,7 +2037,7 @@ defineExpose({ loadData })
 
 .result-batch-card small {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -2042,7 +2051,7 @@ defineExpose({ loadData })
   align-self: flex-end;
   height: auto;
   padding: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .train-status-tag {
@@ -2096,7 +2105,7 @@ defineExpose({ loadData })
 .result-sidebar-pagination :deep(.btn-next) {
   min-width: 26px;
   height: 26px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .train-result-main {
@@ -2164,7 +2173,7 @@ defineExpose({ loadData })
 }
 
 .result-hero-title strong {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .result-hero-subtitle {
@@ -2207,7 +2216,7 @@ defineExpose({ loadData })
   background: linear-gradient(90deg, #edf5ff 0%, #f8fbff 72%, #fff 100%);
   color: #182230;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .train-section-title {
@@ -2217,7 +2226,7 @@ defineExpose({ loadData })
   margin: 0 0 14px;
   color: #27364d;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .train-summary-card h4 > span,
@@ -2250,7 +2259,7 @@ defineExpose({ loadData })
 .train-summary-item > span {
   flex: 0 0 auto;
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -2265,7 +2274,7 @@ defineExpose({ loadData })
   overflow: hidden;
   color: #101828;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2334,7 +2343,7 @@ defineExpose({ loadData })
 .result-overview-item span,
 .result-metric-card span {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -2406,7 +2415,7 @@ defineExpose({ loadData })
 
 .result-metric-card small {
   color: #667085;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -2556,7 +2565,7 @@ defineExpose({ loadData })
   margin-bottom: 8px;
   color: #344054;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .result-json {
@@ -2569,7 +2578,7 @@ defineExpose({ loadData })
   background: #f8fafc;
   color: #344054;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -2589,7 +2598,7 @@ defineExpose({ loadData })
   justify-content: space-between;
   gap: 12px;
   color: #1e3a5f;
-  font-weight: 700;
+  font-weight: 600;
 }
 .training-requirement-card > p {
   margin: 10px 0 12px;

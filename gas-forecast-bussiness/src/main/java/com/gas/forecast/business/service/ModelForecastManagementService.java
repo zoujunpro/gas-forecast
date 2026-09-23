@@ -290,7 +290,7 @@ public class ModelForecastManagementService {
         record.setUpdatedAt(now);
         recordMapper.insert(record);
         record.setForecastBatchNo(
-                "forecast-" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
+                "FORECAST-" + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-"
                         + String.format("%06d", record.getId()));
         recordMapper.updateById(record);
         return record;

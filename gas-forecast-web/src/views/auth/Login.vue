@@ -72,9 +72,9 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { setProfile, setToken } from '@/utils/auth'
 import { encryptWithRsaPublicKey } from '@/utils/rsa'
 import logoUrl from '@/assets/logo.png'
-import loginHomeUrl from '@/assets/login-home.png'
+import loginHomeUrl from '@/assets/login-home.webp'
 import mobileBgUrl from '@/assets/login-mobile-bg.png'
-import mobileHomeUrl from '@/assets/login-mobile-home.png'
+import mobileHomeUrl from '@/assets/login-mobile-home.webp'
 
 const router = useRouter()
 const route = useRoute()
@@ -249,7 +249,7 @@ onMounted(() => {
   margin: 0;
   color: #111827;
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 3px;
 }
 
@@ -257,7 +257,7 @@ onMounted(() => {
   margin: 5px 0 0;
   color: #1f2937;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 1px;
 }
 
@@ -271,7 +271,7 @@ onMounted(() => {
 .panel-title span {
   color: #172033;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .panel-title small {
@@ -295,7 +295,7 @@ onMounted(() => {
   border: none;
   border-radius: 4px;
   background: #2196f3;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .login-button:hover,
@@ -387,7 +387,7 @@ onMounted(() => {
   }
 
   .brand-area p {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .illustration {

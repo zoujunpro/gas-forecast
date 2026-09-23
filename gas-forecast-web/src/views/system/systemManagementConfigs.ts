@@ -1,4 +1,5 @@
 import type { SystemPageConfig } from '../shared/managementTypes'
+import { menuIconOptions } from '@/utils/menuIcons'
 
 const statusOptions = [
   { label: '启用', value: 1 },
@@ -101,6 +102,7 @@ export const permissionsSystemConfig: SystemPageConfig = {
   paged: false,
   tableFields: [
     { prop: 'permissionName', label: '菜单名称', minWidth: 210 },
+    { prop: 'icon', label: '图标', minWidth: 150, displayType: 'menuIcon' },
     { prop: 'permissionType', label: '类型', minWidth: 90, displayType: 'permissionType' },
     { prop: 'path', label: '路由路径', minWidth: 170 },
     { prop: 'component', label: '组件', minWidth: 140 },
@@ -117,7 +119,13 @@ export const permissionsSystemConfig: SystemPageConfig = {
     { prop: 'component', label: '组件' },
     { prop: 'perms', label: '权限码' },
     { prop: 'buttonCode', label: '按钮标识' },
-    { prop: 'icon', label: '图标' },
+    {
+      prop: 'icon',
+      label: '图标',
+      type: 'iconSelect',
+      placeholder: '请选择菜单图标',
+      options: menuIconOptions.map(({ label, value }) => ({ label, value }))
+    },
     { prop: 'sortNo', label: '排序', type: 'number' },
     {
       prop: 'hidden',

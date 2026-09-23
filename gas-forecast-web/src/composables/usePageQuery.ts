@@ -5,6 +5,7 @@ export interface PageQueryContext {
   page: number
   size: number
   keyword: string
+  signal: AbortSignal
 }
 
 export interface PageQueryResult<T> {
@@ -25,21 +26,29 @@ export const usePageQuery = <T extends Record<string, any>>(options: UsePageQuer
   const size = ref(options.initialSize || 10)
   const total = ref(0)
   const records = ref<T[]>([])
+  let activeController: AbortController | undefined
 
   const loadData = async () => {
+    activeController?.abort()
+    const controller = new AbortController()
+    activeController = controller
     loading.value = true
     try {
       const result = await options.fetcher({
         page: page.value,
         size: size.value,
-        keyword: keyword.value.trim()
+        keyword: keyword.value.trim(),
+        signal: controller.signal
       })
       records.value = result.records
       total.value = result.total || 0
     } catch (error) {
+      if (controller.signal.aborted) return
       ElMessage.error(error instanceof Error ? error.message : options.errorMessage || '加载失败')
     } finally {
-      loading.value = false
+      if (activeController === controller) {
+        loading.value = false
+      }
     }
   }
 

@@ -3,7 +3,7 @@
     <el-sub-menu v-if="visibleChildren(item).length" :index="menuIndex(item)">
       <template #title>
         <el-icon v-if="item.icon">
-          <component :is="item.icon" />
+          <component :is="resolveMenuIcon(item.icon)" />
         </el-icon>
         <span>{{ item.name }}</span>
       </template>
@@ -11,7 +11,7 @@
     </el-sub-menu>
     <el-menu-item v-else-if="item.path" :index="item.path">
       <el-icon v-if="item.icon">
-        <component :is="item.icon" />
+        <component :is="resolveMenuIcon(item.icon)" />
       </el-icon>
       <template #title>
         <span>{{ item.name }}</span>
@@ -23,6 +23,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { AuthMenu } from '@/utils/auth'
+import { resolveMenuIcon } from '@/utils/menuIcons'
 
 defineOptions({ name: 'SidebarMenu' })
 

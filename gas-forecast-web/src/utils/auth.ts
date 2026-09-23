@@ -1,5 +1,6 @@
 const TOKEN_KEY = 'gas_forecast_token'
 const PROFILE_KEY = 'gas_forecast_profile'
+export const PROFILE_UPDATED_EVENT = 'auth:profile-updated'
 
 export interface AuthMenu {
   id: number
@@ -47,6 +48,7 @@ export const clearToken = () => {
 
 export const setProfile = (profile: AuthProfile) => {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+  window.dispatchEvent(new CustomEvent(PROFILE_UPDATED_EVENT))
 }
 
 export const getProfile = (): AuthProfile => {
@@ -64,20 +66,25 @@ export const getProfile = (): AuthProfile => {
 export const hasProfile = () => Boolean(localStorage.getItem(PROFILE_KEY))
 
 export const refreshProfile = async (): Promise<AuthProfile> => {
-  const response = await fetch('/auth/permissions')
-  const result = await response.json()
-  if (!response.ok || result.code !== '0000') {
+  try {
+    const response = await fetch('/auth/permissions')
+    const result = await response.json()
+    if (!response.ok || result.code !== '0000') {
+      clearToken()
+      return {}
+    }
+    const profile: AuthProfile = {
+      user: result.data.user,
+      roles: result.data.roles,
+      permissions: result.data.permissions,
+      menus: result.data.menus
+    }
+    setProfile(profile)
+    return profile
+  } catch {
     clearToken()
     return {}
   }
-  const profile: AuthProfile = {
-    user: result.data.user,
-    roles: result.data.roles,
-    permissions: result.data.permissions,
-    menus: result.data.menus
-  }
-  setProfile(profile)
-  return profile
 }
 
 export const collectMenuPaths = (menus: AuthMenu[] = []): string[] => {
@@ -126,9 +133,16 @@ export const installAuthFetch = () => {
   window.fetch = (input: RequestInfo | URL, init: RequestInit = {}) => {
     const token = getToken()
     const headers = new Headers(init.headers)
-    if (token && !headers.has('X-Access-Token')) {
+    const requestUrl = new URL(input instanceof Request ? input.url : input.toString(), window.location.href)
+    if (requestUrl.origin === window.location.origin && token && !headers.has('X-Access-Token')) {
       headers.set('X-Access-Token', token)
     }
-    return originalFetch(input, { ...init, headers })
+    return originalFetch(input, { ...init, headers }).then((response) => {
+      if (requestUrl.origin === window.location.origin && response.status === 401) {
+        clearToken()
+        window.dispatchEvent(new CustomEvent('auth:expired'))
+      }
+      return response
+    })
   }
 }

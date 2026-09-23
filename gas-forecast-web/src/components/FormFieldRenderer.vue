@@ -11,6 +11,33 @@
   >
     <el-option v-for="option in resolvedOptions" :key="option.value" :label="option.label" :value="option.value" />
   </el-select>
+  <el-select
+    v-else-if="field.type === 'iconSelect'"
+    v-model="model[field.prop]"
+    class="form-control icon-select"
+    clearable
+    filterable
+    :placeholder="field.placeholder || `请选择${field.label}`"
+  >
+    <template #label="{ label, value }">
+      <span class="icon-selected-value">
+        <el-icon><component :is="resolveMenuIcon(String(value))" /></el-icon>
+        <span>{{ iconDisplayLabel(String(value), String(label)) }}</span>
+      </span>
+    </template>
+    <el-option
+      v-for="option in resolvedOptions"
+      :key="option.value"
+      :label="iconSearchLabel(option)"
+      :value="option.value"
+    >
+      <span class="icon-option">
+        <el-icon><component :is="resolveMenuIcon(String(option.value))" /></el-icon>
+        <span>{{ option.label }}</span>
+        <code>{{ option.value }}</code>
+      </span>
+    </el-option>
+  </el-select>
   <el-tree-select
     v-else-if="field.type === 'treeSelect'"
     v-model="model[field.prop]"
@@ -93,6 +120,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { BaseDataFieldConfig, Option, SystemFieldConfig } from '@/views/shared/managementTypes'
+import { resolveMenuIcon } from '@/utils/menuIcons'
 
 const props = defineProps<{
   field: BaseDataFieldConfig | SystemFieldConfig
@@ -108,6 +136,9 @@ const emit = defineEmits<{
 const resolvedOptions = computed(
   () => props.field.options || props.optionMap?.[props.field.optionKey || props.field.prop] || []
 )
+const iconSearchLabel = (option: Option) => `${option.label} ${option.value}`
+const iconDisplayLabel = (value: string, fallback: string) =>
+  resolvedOptions.value.find((option) => String(option.value) === value)?.label || fallback
 const currentGranularity = computed(() => {
   if (props.field.type !== 'granularityDate') {
     return ''
@@ -191,6 +222,38 @@ const handleSelectChange = (value: string | number | Array<string | number>) => 
 <style scoped>
 .form-control {
   width: 100%;
+}
+
+.icon-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.icon-selected-value {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.icon-selected-value .el-icon {
+  flex: 0 0 auto;
+  color: var(--el-color-primary);
+  font-size: 16px;
+}
+
+.icon-option .el-icon {
+  flex: 0 0 auto;
+  color: var(--el-color-primary);
+  font-size: 17px;
+}
+
+.icon-option code {
+  margin-left: auto;
+  color: var(--el-text-color-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
 }
 
 .tenday-picker {
