@@ -30,6 +30,9 @@ public class BaseCustomerController {
 
     /**
      * 分页查询客户列表。
+     *
+     * @param reqDTO 客户分页查询条件
+     * @return 客户分页数据
      */
     @PostMapping("listPage")
     @WebLog("客户列表分页查询")
@@ -41,6 +44,9 @@ public class BaseCustomerController {
 
     /**
      * 新增客户。
+     *
+     * @param reqDTO 客户新增参数
+     * @return 新增后的客户信息
      */
     @PostMapping("create")
     @WebLog("新增客户")
@@ -51,6 +57,9 @@ public class BaseCustomerController {
 
     /**
      * 更新客户。
+     *
+     * @param reqDTO 客户更新参数
+     * @return 更新后的客户信息
      */
     @PostMapping("update")
     @WebLog("编辑客户")
@@ -61,6 +70,9 @@ public class BaseCustomerController {
 
     /**
      * 删除客户。
+     *
+     * @param id 客户主键
+     * @return 空响应
      */
     @GetMapping("delete")
     @WebLog("删除客户")

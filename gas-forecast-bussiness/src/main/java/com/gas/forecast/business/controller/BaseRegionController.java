@@ -30,6 +30,9 @@ public class BaseRegionController {
 
     /**
      * 分页查询区域列表。
+     *
+     * @param reqDTO 区域分页查询条件
+     * @return 区域分页数据
      */
     @PostMapping("listPage")
     @WebLog("区域列表查询")
@@ -40,6 +43,9 @@ public class BaseRegionController {
 
     /**
      * 新增区域。
+     *
+     * @param reqDTO 区域新增参数
+     * @return 新增后的区域信息
      */
     @PostMapping("create")
     @WebLog("新增区域")
@@ -50,6 +56,9 @@ public class BaseRegionController {
 
     /**
      * 更新区域。
+     *
+     * @param reqDTO 区域更新参数
+     * @return 更新后的区域信息
      */
     @PostMapping("update")
     @WebLog("编辑区域")
@@ -60,6 +69,9 @@ public class BaseRegionController {
 
     /**
      * 删除区域。
+     *
+     * @param id 区域主键
+     * @return 空响应
      */
     @GetMapping("delete")
     @WebLog("删除区域")

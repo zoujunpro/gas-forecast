@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.enums.ModelTrainStatus;
+import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.dto.request.ModelForecastBatchRequest;
 import com.gas.forecast.business.dto.request.ModelForecastConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelForecastConfigCreateRequest;
@@ -202,7 +203,7 @@ public class ModelForecastManagementService {
         ModelTrainConfigTb trainConfig = requireTrainConfig(config.getTrainConfigCode());
         String trainBatchNo = latestSuccessfulBatch(trainConfig);
         if (!TextUtils.hasText(trainBatchNo)) throw new BusinessException("当前训练配置没有成功的模型训练批次");
-        ModelForecastRecordTb record = createForecastRecord(config);
+        ModelForecastRecordTb record = prepareForecastRecord(config, request.getRetryBatchNo());
         String forecastBatchNo = record.getForecastBatchNo();
         try {
             ObjectNode payload = buildPredictPayload(config, trainConfig, trainBatchNo, forecastBatchNo, dataset);
@@ -216,14 +217,14 @@ public class ModelForecastManagementService {
             saveForecastResults(forecastBatchNo, data.path("points"));
             record.setResponseParam(
                     response == null ? null : response.toString().getBytes(StandardCharsets.UTF_8));
-            record.setStatus(2);
+            record.setStatus(ModelForecastStatus.SUCCESS.getCode());
             record.setForecastEndTime(
                     java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
             return new ModelForecastExecuteResponse(forecastId, forecastBatchNo, data.path("points").size());
         } catch (RuntimeException exception) {
-            record.setStatus(3);
+            record.setStatus(ModelForecastStatus.FAILED.getCode());
             record.setResponseParam(
                     exception.getMessage() == null
                             ? null
@@ -234,6 +235,30 @@ public class ModelForecastManagementService {
             recordMapper.updateById(record);
             throw exception;
         }
+    }
+
+    private ModelForecastRecordTb prepareForecastRecord(ModelForecastConfigTb config, String retryBatchNo) {
+        if (!TextUtils.hasText(retryBatchNo)) return createForecastRecord(config);
+        Date now = new Date();
+        int updated = recordMapper.update(
+                null,
+                Wrappers.<ModelForecastRecordTb>lambdaUpdate()
+                        .eq(ModelForecastRecordTb::getForecastBatchNo, retryBatchNo)
+                        .eq(ModelForecastRecordTb::getForecastId, config.getId())
+                        .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.FAILED.getCode())
+                        .set(ModelForecastRecordTb::getStatus, ModelForecastStatus.RUNNING.getCode())
+                        .set(ModelForecastRecordTb::getResponseParam, null)
+                        .set(ModelForecastRecordTb::getForecastEndTime, null)
+                        .set(ModelForecastRecordTb::getUpdatedAt, now));
+        if (updated != 1) {
+            throw new BusinessException("仅预测失败的批次可以重新预测，请刷新后重试");
+        }
+        ModelForecastRecordTb record = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .eq(ModelForecastRecordTb::getForecastBatchNo, retryBatchNo)
+                .eq(ModelForecastRecordTb::getForecastId, config.getId())
+                .last("limit 1"));
+        if (record == null) throw new BusinessException("原预测批次不存在：" + retryBatchNo);
+        return record;
     }
 
     private ModelForecastRecordTb createForecastRecord(ModelForecastConfigTb config) {
@@ -252,7 +277,7 @@ public class ModelForecastManagementService {
         record.setCustomerCode(config.getCustomerCode());
         record.setCustomerName(config.getCustomerName());
         record.setAutoForecast(config.getAutoForecast());
-        record.setStatus(1);
+        record.setStatus(ModelForecastStatus.RUNNING.getCode());
         record.setFeatureSnapshot(null);
         record.setRequestParam(null);
         record.setResponseParam(null);

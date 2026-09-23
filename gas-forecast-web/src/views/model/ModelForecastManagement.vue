@@ -241,9 +241,14 @@
                   row.modelName || selectedConfig?.modelName || agentLabel(row.agentCode || selectedConfig?.agentCode)
                 }}
               </p>
-              <small>{{ row.updatedAt || row.createdAt || '-' }}</small>
-              <el-button v-if="Number(row.status) === 3" link type="warning" @click.stop="retryRecord(row)"
-                >重试预测</el-button
+              <small>{{ formatDateTime(row.updatedAt || row.createdAt) }}</small>
+              <el-button
+                v-if="Number(row.status) === 3"
+                link
+                type="warning"
+                :loading="runningCode === Number(row.forecastId)"
+                @click.stop="retryRecord(row)"
+                >重新预测</el-button
               >
             </button>
             <el-empty v-if="!recordsLoading && !pagedRecordRows.length" description="暂无匹配批次" />
@@ -271,16 +276,10 @@
                 >
               </div>
               <p>
-                {{ activeRecord.forecastBatchNo }} · 创建时间 {{ activeRecord.createdAt || '-' }} · 完成时间
-                {{ activeRecord.forecastEndTime || '-' }}
+                {{ activeRecord.forecastBatchNo }} · 创建时间 {{ formatDateTime(activeRecord.createdAt) }} · 完成时间
+                {{ formatDateTime(activeRecord.forecastEndTime) }}
               </p>
             </div>
-            <el-button
-              type="primary"
-              :loading="runningCode === selectedConfig?.id"
-              @click="selectedConfig && openPredict(selectedConfig)"
-              >发起预测</el-button
-            >
           </section>
           <section class="detail-card info-card">
             <h4 class="section-title">预测基本信息</h4>
@@ -299,54 +298,70 @@
               </div>
             </div>
           </section>
-          <section class="detail-card feature-snapshot-card">
-            <h4 class="section-title">预测特征信息</h4>
-            <AppTable v-if="featureSnapshotRows.length" :data="featureSnapshotRows" border stripe max-height="280">
-              <el-table-column prop="date" label="预测日期" min-width="130" fixed />
-              <el-table-column
-                v-for="column in featureSnapshotColumns"
-                :key="column"
-                :prop="column"
-                :label="column"
-                min-width="150"
-                show-overflow-tooltip
-              />
-            </AppTable>
-            <el-empty v-else :image-size="54" description="暂无预测特征快照" />
-          </section>
-          <section class="detail-card result-panel">
-            <div class="result-heading">
-              <h4 class="section-title">预测结果趋势</h4>
-              <el-radio-group v-model="resultView" size="small" @change="handleResultViewChange"
-                ><el-radio-button value="chart">图表</el-radio-button
-                ><el-radio-button value="table">列表</el-radio-button></el-radio-group
-              >
-            </div>
-            <div
-              v-show="resultView === 'chart'"
-              v-loading="resultLoading"
-              ref="resultChartRef"
-              class="result-chart"
-            ></div>
-            <template v-if="resultView === 'table'">
-              <AppTable v-loading="resultLoading" :data="resultRows" border stripe
-                ><el-table-column prop="forecastDate" label="预测日期" min-width="160" /><el-table-column
-                  prop="forecastValue"
-                  label="预测值"
-                  min-width="180"
-                  align="right"
-                /><el-table-column label="创建日期" width="130"
-                  ><template #default="{ row }">{{ formatDate(row.createdAt) }}</template></el-table-column
-                ></AppTable
-              >
-              <AppPagination
-                v-model:current-page="resultPage"
-                v-model:page-size="resultSize"
-                :total="resultTotal"
-                @current-change="loadResultRows"
-                @size-change="loadResultRows"
-              />
-            </template>
+          <section class="detail-card forecast-data-card">
+            <el-tabs v-model="detailTab" class="forecast-data-tabs" @tab-change="handleDetailTabChange">
+              <el-tab-pane label="预测结果" name="result">
+                <template v-if="Number(activeRecord.status) === 2">
+                  <div class="result-heading">
+                    <h4 class="section-title">预测结果趋势</h4>
+                    <el-radio-group v-model="resultView" size="small" @change="handleResultViewChange"
+                      ><el-radio-button value="chart">图表</el-radio-button
+                      ><el-radio-button value="table">列表</el-radio-button></el-radio-group
+                    >
+                  </div>
+                  <div
+                    v-show="resultView === 'chart'"
+                    v-loading="resultLoading"
+                    ref="resultChartRef"
+                    class="result-chart"
+                  ></div>
+                  <template v-if="resultView === 'table'">
+                    <AppTable v-loading="resultLoading" :data="resultRows" border stripe
+                      ><el-table-column prop="forecastDate" label="预测日期" min-width="160" /><el-table-column
+                        prop="forecastValue"
+                        label="预测值"
+                        min-width="180"
+                        align="right"
+                      /><el-table-column label="创建日期" width="130"
+                        ><template #default="{ row }">{{ formatDate(row.createdAt) }}</template></el-table-column
+                      ></AppTable
+                    >
+                    <AppPagination
+                      v-model:current-page="resultPage"
+                      v-model:page-size="resultSize"
+                      :total="resultTotal"
+                      @current-change="loadResultRows"
+                      @size-change="loadResultRows"
+                    />
+                  </template>
+                </template>
+                <el-empty
+                  v-else
+                  :image-size="72"
+                  :description="Number(activeRecord.status) === 3 ? '预测失败，暂无预测结果' : '预测任务执行中，暂无预测结果'"
+                />
+              </el-tab-pane>
+              <el-tab-pane label="预测特征" name="features">
+                <AppTable
+                  v-if="featureSnapshotRows.length"
+                  :data="featureSnapshotRows"
+                  border
+                  stripe
+                  max-height="420"
+                >
+                  <el-table-column prop="date" label="预测日期" min-width="130" fixed />
+                  <el-table-column
+                    v-for="column in featureSnapshotColumns"
+                    :key="column"
+                    :prop="column"
+                    :label="column"
+                    min-width="150"
+                    show-overflow-tooltip
+                  />
+                </AppTable>
+                <el-empty v-else :image-size="54" description="暂无预测特征快照" />
+              </el-tab-pane>
+            </el-tabs>
           </section>
         </main>
         <el-empty v-else class="instance-detail" description="请选择左侧预测实例" />
@@ -430,6 +445,7 @@ const resultView = ref<'chart' | 'table'>('chart'),
   chartRows = ref<Record<string, any>[]>([]),
   historyRows = ref<Record<string, any>[]>([]),
   featureSnapshotRows = ref<Record<string, any>[]>([])
+const detailTab = ref<'result' | 'features'>('result')
 let resultChart: echarts.ECharts | null = null
 const recordPage = ref(1),
   recordSize = ref(10),
@@ -499,8 +515,8 @@ const forecastOverviewRows = computed(() => {
     { label: '历史实际区间', value: predictionInfo.value.historyActualRange },
     { label: '训练配置', value: record.trainConfigCode || config.trainConfigCode || '-' },
     { label: '智能体', value: agentLabel(record.agentCode || config.agentCode) },
-    { label: '预测创建时间', value: record.createdAt || '-' },
-    { label: '完成时间', value: record.forecastEndTime || '-' },
+    { label: '预测创建时间', value: formatDateTime(record.createdAt) },
+    { label: '完成时间', value: formatDateTime(record.forecastEndTime) },
     { label: '发起人', value: record.createdByName || '-' },
     { label: '区域', value: record.regionName || '全部' },
     { label: '行业', value: record.industryName || '全部' },
@@ -571,6 +587,13 @@ const forecastFrequencyUnit = computed(
 )
 const agentLabel = (code: string) => agents.find((item) => item.value === code)?.label || code
 const formatDate = (value: unknown) => (value ? String(value).slice(0, 10) : '-')
+const formatDateTime = (value: unknown) => {
+  if (!value) return '-'
+  const text = String(value).trim().replace('T', ' ')
+  const matched = text.match(/^(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}:\d{2}))?/)
+  if (!matched) return text
+  return `${matched[1]} ${matched[2] || '00:00:00'}`
+}
 const loadData = async () => {
   loading.value = true
   try {
@@ -691,6 +714,7 @@ const openInstances = (row: Record<string, any>) => {
   recordStatusFilter.value = 'all'
   recordPage.value = 1
   resultView.value = 'chart'
+  detailTab.value = 'result'
   instancesVisible.value = true
   selectConfig(row)
 }
@@ -706,9 +730,24 @@ const loadResultRows = async () => {
     featureSnapshotRows.value = []
     return
   }
+  const batchNo = String(activeRecord.value.forecastBatchNo)
+  const status = Number(activeRecord.value.status)
+  resultRows.value = []
+  historyRows.value = []
+  chartRows.value = []
+  resultTotal.value = 0
+  featureSnapshotRows.value = []
+  resultChart?.clear()
   resultLoading.value = true
   try {
-    const batchNo = activeRecord.value.forecastBatchNo
+    if (status !== 2) {
+      const featureResponse = await postJson('/model-forecast-record/features', { forecastBatchNo: batchNo }).catch(
+        () => ({ data: [] })
+      )
+      if (String(activeRecord.value?.forecastBatchNo || '') !== batchNo) return
+      featureSnapshotRows.value = Array.isArray(featureResponse.data) ? featureResponse.data : []
+      return
+    }
     const [data, historyResponse, featureResponse] = await Promise.all([
       listPage('/model-forecast-result', {
         page: resultPage.value,
@@ -718,6 +757,7 @@ const loadResultRows = async () => {
       postJson('/model-forecast-result/history', { forecastBatchNo: batchNo }),
       postJson('/model-forecast-record/features', { forecastBatchNo: batchNo }).catch(() => ({ data: [] }))
     ])
+    if (String(activeRecord.value?.forecastBatchNo || '') !== batchNo) return
     resultRows.value = data.records
     chartRows.value = data.records
     historyRows.value = Array.isArray(historyResponse.data) ? historyResponse.data : []
@@ -733,10 +773,16 @@ const selectRecord = (row?: Record<string, any>) => {
   if (!row) return
   activeRecord.value = row
   resultPage.value = 1
+  resultRows.value = []
+  historyRows.value = []
+  chartRows.value = []
+  resultTotal.value = 0
+  featureSnapshotRows.value = []
+  resultChart?.clear()
   void loadResultRows()
 }
 const renderResultChart = () => {
-  if (!resultChartRef.value || resultView.value !== 'chart') return
+  if (!resultChartRef.value || resultView.value !== 'chart' || detailTab.value !== 'result') return
   resultChart = echarts.getInstanceByDom(resultChartRef.value) || echarts.init(resultChartRef.value)
   const history = [...historyRows.value].sort((a, b) => String(a.date).localeCompare(String(b.date)))
   const forecast = [...chartRows.value].sort((a, b) => String(a.forecastDate).localeCompare(String(b.forecastDate)))
@@ -894,6 +940,13 @@ const handleResultViewChange = () => {
   resultPage.value = 1
   void loadResultRows()
 }
+const handleDetailTabChange = (name: string | number) => {
+  if (name !== 'result' || resultView.value !== 'chart') return
+  void nextTick(() => {
+    renderResultChart()
+    resultChart?.resize()
+  })
+}
 const openPredict = (row: Record<string, any>) => {
   pendingForecast.value = row
   featureDataJson.value = '[\n  {\n    "date": ""\n  }\n]'
@@ -940,7 +993,37 @@ const confirmPredict = async () => {
     runningCode.value = null
   }
 }
-const retryRecord = (row: Record<string, any>) => openPredict(row)
+const retryRecord = async (row: Record<string, any>) => {
+  if (runningCode.value !== null) return
+  const forecastId = Number(row.forecastId || selectedConfig.value?.id)
+  const forecastBatchNo = String(row.forecastBatchNo || '')
+  if (!forecastId || !forecastBatchNo) {
+    ElMessage.error('预测记录信息不完整，无法重新预测')
+    return
+  }
+  runningCode.value = forecastId
+  try {
+    const featureResponse = await postJson('/model-forecast-record/features', { forecastBatchNo })
+    const dataset = Array.isArray(featureResponse.data) ? featureResponse.data : []
+    if (!dataset.length) {
+      ElMessage.error('该预测批次没有可复用的特征数据')
+      return
+    }
+    const response = await postJson('/model-forecast-execution/execute', {
+      forecastId,
+      dataset,
+      retryBatchNo: forecastBatchNo
+    })
+    const data = response.data || {}
+    ElMessage.success(`重新预测成功：${data.resultCount || 0} 条结果`)
+    if (currentForecastId.value === forecastId) await loadRecords()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '重新预测失败')
+    if (currentForecastId.value === forecastId) await loadRecords()
+  } finally {
+    runningCode.value = null
+  }
+}
 onMounted(loadData)
 onBeforeUnmount(() => resultChart?.dispose())
 watch(recordKeyword, () => {
@@ -1462,7 +1545,32 @@ watch(recordKeyword, () => {
   width: fit-content;
   justify-self: start;
 }
-.feature-snapshot-card :deep(.el-table) {
+.forecast-data-card {
+  padding-top: 4px;
+}
+.forecast-data-tabs :deep(.el-tabs__header) {
+  margin: 0 0 18px;
+}
+.forecast-data-tabs :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background: #e8eef7;
+}
+.forecast-data-tabs :deep(.el-tabs__item) {
+  height: 48px;
+  padding: 0 24px;
+  color: #667085;
+  font-size: 14px;
+  font-weight: 600;
+}
+.forecast-data-tabs :deep(.el-tabs__item.is-active) {
+  color: #2f80ed;
+}
+.forecast-data-tabs :deep(.el-tabs__active-bar) {
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #2f80ed;
+}
+.forecast-data-tabs :deep(.el-table) {
   margin-top: 2px;
 }
 .result-heading {

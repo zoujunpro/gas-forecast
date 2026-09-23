@@ -1,10 +1,8 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
-import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
-import com.gas.forecast.business.dto.response.ModelTrainResultResponse;
 import com.gas.forecast.business.dto.response.ModelTrainingValidationResponse;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.ResponseResult;
@@ -27,6 +25,12 @@ public class ModelTrainExecutionController {
 
     private final ModelTrainExecutionService modelTrainExecutionService;
 
+    /**
+     * 提交模型训练任务。
+     *
+     * @param reqDTO 模型训练执行参数
+     * @return 模型训练任务提交结果
+     */
     @PostMapping("execute")
     @WebLog("执行模型训练")
     @RequirePermission("config:train:execute")
@@ -34,6 +38,12 @@ public class ModelTrainExecutionController {
         return ResponseResult.success(modelTrainExecutionService.execute(reqDTO));
     }
 
+    /**
+     * 校验模型训练数据是否满足执行条件。
+     *
+     * @param reqDTO 模型训练执行参数
+     * @return 模型训练数据校验结果
+     */
     @PostMapping("validate")
     @WebLog("校验模型训练数据")
     @RequirePermission("config:train:execute")
@@ -42,16 +52,16 @@ public class ModelTrainExecutionController {
         return ResponseResult.success(modelTrainExecutionService.validateTrainingData(reqDTO));
     }
 
+    /**
+     * 接收模型平台返回的训练结果。
+     *
+     * @param reqDTO 模型平台训练结果
+     * @return 训练结果更新信息
+     */
     @PostMapping("callback")
     @WebLog("模型训练结果回调")
     public ResponseResult<ModelTrainExecuteResponse> callback(
             @Valid @RequestBody ModelTrainAgentResponse reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.updateTrainResult(reqDTO));
-    }
-
-    @PostMapping("result")
-    @WebLog("查看模型训练结果")
-    public ResponseResult<ModelTrainResultResponse> result(@Valid @RequestBody ModelTrainResultRequest reqDTO) {
-        return ResponseResult.success(modelTrainExecutionService.getTrainResult(reqDTO));
     }
 }

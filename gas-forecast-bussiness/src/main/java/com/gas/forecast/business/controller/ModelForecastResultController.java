@@ -16,14 +16,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 模型预测结果接口。 */
+/**
+ * 模型预测结果接口。
+ */
 @RestController
 @RequestMapping("/model-forecast-result")
 @RequiredArgsConstructor
 public class ModelForecastResultController {
     private final ModelForecastManagementService modelForecastManagementService;
 
-    /** 分页查询模型预测结果。 */
+    /**
+     * 分页查询模型预测结果。
+     *
+     * @param reqDTO 模型预测结果分页查询条件
+     * @return 模型预测结果分页数据
+     */
     @PostMapping("listPage")
     @WebLog("模型预测结果分页查询")
     public ResponseResult<PageInfoDTO<ModelForecastResultTb>> listPage(
@@ -31,7 +38,12 @@ public class ModelForecastResultController {
         return ResponseResult.success(modelForecastManagementService.listResults(reqDTO));
     }
 
-    /** 查询预测批次对应的历史对比数据。 */
+    /**
+     * 查询预测批次对应的历史对比数据。
+     *
+     * @param reqDTO 模型预测批次参数
+     * @return 历史实际值与预测值对比数据
+     */
     @PostMapping("history")
     @WebLog("模型预测历史数据查询")
     public ResponseResult<List<ModelForecastHistoryPointResponse>> history(

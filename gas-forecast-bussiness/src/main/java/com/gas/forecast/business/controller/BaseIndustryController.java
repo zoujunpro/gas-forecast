@@ -30,6 +30,9 @@ public class BaseIndustryController {
 
     /**
      * 分页查询行业列表。
+     *
+     * @param reqDTO 行业分页查询条件
+     * @return 行业分页数据
      */
     @PostMapping("listPage")
     @WebLog("行业列表查询")
@@ -41,6 +44,9 @@ public class BaseIndustryController {
 
     /**
      * 新增行业。
+     *
+     * @param reqDTO 行业新增参数
+     * @return 新增后的行业信息
      */
     @PostMapping("create")
     @WebLog("新增行业")
@@ -51,6 +57,9 @@ public class BaseIndustryController {
 
     /**
      * 更新行业。
+     *
+     * @param reqDTO 行业更新参数
+     * @return 更新后的行业信息
      */
     @PostMapping("update")
     @WebLog("编辑行业")
@@ -61,6 +70,9 @@ public class BaseIndustryController {
 
     /**
      * 删除行业。
+     *
+     * @param id 行业主键
+     * @return 空响应
      */
     @GetMapping("delete")
     @WebLog("删除行业")

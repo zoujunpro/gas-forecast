@@ -17,6 +17,11 @@ public class ModelPlatformController {
 
     private final ModelPlatformService modelPlatformService;
 
+    /**
+     * 查询模型平台提供的模型列表。
+     *
+     * @return 模型平台模型列表
+     */
     @GetMapping("/models")
     @WebLog("查询模型平台模型列表")
     public ResponseResult<JsonNode> models() {

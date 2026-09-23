@@ -10,6 +10,7 @@ import com.gas.forecast.business.dto.response.ForecastDashboardResponse;
 import com.gas.forecast.business.dto.response.ForecastDimensionResponse;
 import com.gas.forecast.business.dto.response.ForecastPointResponse;
 import com.gas.forecast.business.dto.response.ForecastSummaryResponse;
+import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.dto.response.ModelRankResponse;
 import com.gas.forecast.business.service.GasForecastService;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
@@ -185,7 +186,7 @@ public class GasForecastServiceImpl implements GasForecastService {
     private List<ModelForecastResultTb> selectForecastResults(BaseRegionTb province) {
         ModelForecastRecordTb latest = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
                 .eq(ModelForecastRecordTb::getRegionCode, province.getRegionCode())
-                .eq(ModelForecastRecordTb::getStatus, 2)
+                .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode())
                 .orderByDesc(ModelForecastRecordTb::getCreatedAt)
                 .orderByDesc(ModelForecastRecordTb::getId)
                 .last("limit 1"));

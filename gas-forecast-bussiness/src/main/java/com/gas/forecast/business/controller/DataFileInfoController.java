@@ -30,6 +30,9 @@ public class DataFileInfoController {
 
     /**
      * 分页查询原始数据文件列表。
+     *
+     * @param reqDTO 原始数据文件分页查询条件
+     * @return 原始数据文件分页数据
      */
     @PostMapping("listPage")
     @WebLog("原始数据文件分页查询")
@@ -41,6 +44,9 @@ public class DataFileInfoController {
 
     /**
      * 新增原始数据文件信息。
+     *
+     * @param reqDTO 原始数据文件新增参数
+     * @return 新增后的原始数据文件信息
      */
     @PostMapping("create")
     @WebLog("新增原始数据文件信息")
@@ -51,6 +57,9 @@ public class DataFileInfoController {
 
     /**
      * 更新原始数据文件信息。
+     *
+     * @param reqDTO 原始数据文件更新参数
+     * @return 更新后的原始数据文件信息
      */
     @PostMapping("update")
     @WebLog("编辑原始数据文件信息")
@@ -61,6 +70,9 @@ public class DataFileInfoController {
 
     /**
      * 删除原始数据文件信息。
+     *
+     * @param id 原始数据文件主键
+     * @return 空响应
      */
     @GetMapping("delete")
     @WebLog("删除原始数据文件信息")

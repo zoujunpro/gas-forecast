@@ -26,6 +26,9 @@ public class DataMonthlySalesController {
 
     /**
      * 分页查询月销量标准数据。
+     *
+     * @param reqDTO 月销量分页查询条件
+     * @return 月销量分页数据
      */
     @PostMapping("listPage")
     @WebLog("月销量标准数据分页查询")

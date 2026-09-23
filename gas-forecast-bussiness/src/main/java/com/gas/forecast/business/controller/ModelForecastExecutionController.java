@@ -12,14 +12,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 模型预测执行接口。 */
+/**
+ * 模型预测执行接口。
+ */
 @RestController
 @RequestMapping("/model-forecast-execution")
 @RequiredArgsConstructor
 public class ModelForecastExecutionController {
     private final ModelForecastManagementService modelForecastManagementService;
 
-    /** 执行模型预测。 */
+    /**
+     * 执行模型预测。
+     *
+     * @param reqDTO 模型预测执行参数
+     * @return 模型预测执行结果
+     */
     @PostMapping("execute")
     @WebLog("执行模型预测")
     public ResponseResult<ModelForecastExecuteResponse> execute(

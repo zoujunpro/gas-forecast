@@ -16,14 +16,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 模型预测执行记录接口。 */
+/**
+ * 模型预测执行记录接口。
+ */
 @RestController
 @RequestMapping("/model-forecast-record")
 @RequiredArgsConstructor
 public class ModelForecastRecordController {
     private final ModelForecastManagementService modelForecastManagementService;
 
-    /** 分页查询模型预测执行记录。 */
+    /**
+     * 分页查询模型预测执行记录。
+     *
+     * @param reqDTO 模型预测记录分页查询条件
+     * @return 模型预测执行记录分页数据
+     */
     @PostMapping("listPage")
     @WebLog("模型预测执行记录查询")
     public ResponseResult<PageInfoDTO<ModelForecastRecordTb>> listPage(
@@ -31,7 +38,12 @@ public class ModelForecastRecordController {
         return ResponseResult.success(modelForecastManagementService.listRecords(reqDTO));
     }
 
-    /** 查询预测批次使用的特征快照。 */
+    /**
+     * 查询预测批次使用的特征快照。
+     *
+     * @param reqDTO 模型预测批次参数
+     * @return 预测批次特征快照
+     */
     @PostMapping("features")
     @WebLog("模型预测特征快照查询")
     public ResponseResult<List<Map<String, Object>>> features(

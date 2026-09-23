@@ -1276,7 +1276,7 @@ const openTrainResult = async (row: Record<string, any>) => {
   trainResultVisible.value = true
   trainResultLoading.value = true
   try {
-    const result = await postJson('/model-train-execution/result', row)
+    const result = await postJson('/model-train-result/query', row)
     const data = (result as any).data || {}
     trainResultBatches.value = Array.isArray(data.batches) ? data.batches : []
     selectedTrainBatchNo.value = data.selectedBatchNo || trainResultBatches.value[0]?.batchNo || ''
@@ -1299,7 +1299,7 @@ const loadTrainResultDetail = async (batchNo: string) => {
   const requestId = ++trainResultDetailRequestId
   trainResultDetailLoading.value = true
   try {
-    const result = await postJson('/model-train-execution/result', { batchNo })
+    const result = await postJson('/model-train-result/query', { batchNo })
     if (requestId !== trainResultDetailRequestId) return
     const data = (result as any).data || {}
     const detail = data.batches?.[0]

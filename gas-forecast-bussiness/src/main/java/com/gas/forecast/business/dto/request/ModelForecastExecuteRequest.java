@@ -13,4 +13,7 @@ public class ModelForecastExecuteRequest {
     private Long forecastId;
     @NotEmpty(message = "请填写非空的特征数据数组")
     private List<Map<String, Object>> dataset;
+
+    /** 重新预测时传入的原预测批次号；首次预测不传。 */
+    private String retryBatchNo;
 }

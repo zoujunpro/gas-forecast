@@ -29,6 +29,12 @@ public class ModelConfigController {
 
     private final ModelConfigService modelConfigService;
 
+    /**
+     * 分页查询模型配置。
+     *
+     * @param reqDTO 模型配置分页查询条件
+     * @return 模型配置分页数据
+     */
     @PostMapping("listPage")
     @WebLog("模型列表查询")
     @RequirePermission("model:config:list")
@@ -37,6 +43,12 @@ public class ModelConfigController {
         return ResponseResult.success(modelConfigService.listPage(reqDTO));
     }
 
+    /**
+     * 新增模型配置。
+     *
+     * @param reqDTO 模型配置新增参数
+     * @return 新增后的模型配置
+     */
     @PostMapping("create")
     @WebLog("新增模型")
     @RequirePermission("model:config:create")
@@ -44,6 +56,12 @@ public class ModelConfigController {
         return ResponseResult.success(modelConfigService.create(reqDTO));
     }
 
+    /**
+     * 更新模型配置。
+     *
+     * @param reqDTO 模型配置更新参数
+     * @return 更新后的模型配置
+     */
     @PostMapping("update")
     @WebLog("编辑模型")
     @RequirePermission("model:config:update")
@@ -51,6 +69,12 @@ public class ModelConfigController {
         return ResponseResult.success(modelConfigService.update(reqDTO));
     }
 
+    /**
+     * 更新模型适用范围及关联特征。
+     *
+     * @param reqDTO 模型适用范围更新参数
+     * @return 更新后的模型配置
+     */
     @PostMapping("updateScope")
     @WebLog("配置模型适用范围")
     @RequirePermission("model:config:update")
@@ -58,6 +82,12 @@ public class ModelConfigController {
         return ResponseResult.success(modelConfigService.updateScope(reqDTO));
     }
 
+    /**
+     * 删除模型配置。
+     *
+     * @param id 模型配置主键
+     * @return 空响应
+     */
     @GetMapping("delete")
     @WebLog("删除模型")
     @RequirePermission("model:config:delete")

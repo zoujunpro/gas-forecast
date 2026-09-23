@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.enums.ModelTrainStatus;
+import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.service.XqycForecastPersistenceService;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
@@ -40,6 +41,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+/**
+ * 预测智能体兼容接口。
+ *
+ * <p>为预测智能体前端及流式调用提供配置、训练结果、预测和对话能力。</p>
+ */
 @CrossOrigin
 @RestController
 @RequiredArgsConstructor
@@ -62,6 +68,12 @@ public class XqycAgentController {
     private final ModelForecastResultTbMapper forecastResultMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
+    /**
+     * 查询指定智能体配置。
+     *
+     * @param agentId 智能体编码
+     * @return 智能体配置信息，不存在时返回 404
+     */
     @GetMapping("/agents/config")
     public ResponseEntity<JsonNode> getAgentConfig(@RequestParam String agentId) {
         AgentMeta meta = AGENTS.get(agentId);
@@ -78,17 +90,36 @@ public class XqycAgentController {
         return ResponseEntity.ok(config);
     }
 
+    /**
+     * 查询月度销量训练结果列表。
+     *
+     * @return 月度销量训练结果
+     * @throws Exception 结果文件读取失败时抛出
+     */
     @GetMapping("/monthly-results")
     public JsonNode listMonthlyResults() throws Exception {
         return listResultFiles("xqyc/result_data/*.json", true);
     }
 
+    /**
+     * 查询月度销量训练结果详情。
+     *
+     * @param province 省份名称
+     * @param industry 行业名称
+     * @return 月度销量训练结果详情，不存在时返回 404
+     * @throws Exception 结果文件读取失败时抛出
+     */
     @GetMapping("/monthly-results/detail")
     public ResponseEntity<JsonNode> getMonthlyResult(@RequestParam String province, @RequestParam String industry)
             throws Exception {
         return readResult("xqyc/result_data/" + province + "_" + industry + ".json", industry);
     }
 
+    /**
+     * 查询短期客户训练结果列表。
+     *
+     * @return 短期客户训练结果
+     */
     @GetMapping("/short-term-results")
     public JsonNode listShortTermResults() {
         ObjectNode root = objectMapper.createObjectNode();
@@ -130,12 +161,27 @@ public class XqycAgentController {
         return root;
     }
 
+    /**
+     * 查询短期客户训练结果详情。
+     *
+     * @param province 省份名称
+     * @param industry 行业名称
+     * @return 短期客户训练结果详情，不存在时返回 404
+     */
     @GetMapping("/short-term-results/detail")
     public ResponseEntity<JsonNode> getShortTermResult(@RequestParam String province, @RequestParam String industry) {
         ModelTrainRecordTb record = latestShortTermRecord(province, industry, null);
         return record == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(toShortTermResult(record, true));
     }
 
+    /**
+     * 查询指定客户的短期训练结果详情。
+     *
+     * @param province 省份名称
+     * @param industry 行业名称
+     * @param customer 客户名称
+     * @return 客户短期训练结果详情，不存在时返回 404
+     */
     @GetMapping("/short-term-results/customer-detail")
     public ResponseEntity<JsonNode> getShortTermCustomerResult(
             @RequestParam String province, @RequestParam String industry, @RequestParam String customer) {
@@ -213,7 +259,7 @@ public class XqycAgentController {
     private void appendLatestForecast(ObjectNode item, ModelTrainRecordTb trainRecord) {
         var query = Wrappers.<ModelForecastRecordTb>lambdaQuery()
                 .eq(ModelForecastRecordTb::getAgentCode, "short-term")
-                .eq(ModelForecastRecordTb::getStatus, 2);
+                .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode());
         if (!isAllScope(trainRecord.getRegionCode())) {
             query.eq(ModelForecastRecordTb::getRegionCode, trainRecord.getRegionCode());
         }
@@ -277,16 +323,35 @@ public class XqycAgentController {
         return value == null || value.isBlank() || "ALL".equalsIgnoreCase(value) || value.startsWith("全部");
     }
 
+    /**
+     * 查询冬季保供训练结果列表。
+     *
+     * @return 冬季保供训练结果
+     * @throws Exception 结果文件读取失败时抛出
+     */
     @GetMapping("/winter-supply-results")
     public JsonNode listWinterSupplyResults() throws Exception {
         return listResultFiles("xqyc/winter_supply_data/*.json", false);
     }
 
+    /**
+     * 查询指定省份的冬季保供训练结果详情。
+     *
+     * @param province 省份名称
+     * @return 冬季保供训练结果详情，不存在时返回 404
+     * @throws Exception 结果文件读取失败时抛出
+     */
     @GetMapping("/winter-supply-results/detail")
     public ResponseEntity<JsonNode> getWinterSupplyResult(@RequestParam String province) throws Exception {
         return readResult("xqyc/winter_supply_data/" + province + ".json", null);
     }
 
+    /**
+     * 执行流式预测。
+     *
+     * @param request 预测请求参数
+     * @return 流式预测响应
+     */
     @PostMapping(value = "/predict", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public StreamingResponseBody predict(@RequestBody JsonNode request) {
         String agentId = request.path("agent_id").asText("winter-supply");
@@ -316,6 +381,12 @@ public class XqycAgentController {
         };
     }
 
+    /**
+     * 执行智能体流式对话。
+     *
+     * @param request 对话请求参数
+     * @return 流式对话响应
+     */
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public StreamingResponseBody chat(@RequestBody JsonNode request) {
         String agentId = request.path("agent_id").asText("winter-supply");
