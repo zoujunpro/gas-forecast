@@ -8,9 +8,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.dto.request.ModelTrainAgentTrainRequest;
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
+import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
+import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelPlatformService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
@@ -119,16 +121,16 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         modelPlatformService.validateTrainingData(objectMapper.valueToTree(validationRequest));
 
         String retryBatchNo = reqDTO.retryBatchNo();
-        String batchNo = TextUtils.hasText(retryBatchNo) ? validateRetryBatch(retryBatchNo) : generateTrainBatchNo();
+        String batchNo = TextUtils.hasText(retryBatchNo) ? retryBatchNo : generateTrainBatchNo();
         ModelTrainAgentTrainRequest trainRequest =
                 buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features);
         JsonNode requestPayload = objectMapper.valueToTree(trainRequest);
         if (TextUtils.hasText(retryBatchNo)) {
-            resetFailedTrainDetail(trainConfig, batchNo, "PENDING", requestPayload);
+            resetFailedTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, requestPayload);
         } else {
-            saveTrainDetail(trainConfig, batchNo, "PENDING", requestPayload, null);
+            saveTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, requestPayload, null);
         }
-        String status = TextUtils.hasText(trainUrl) ? "RUNNING" : "PENDING";
+        ModelTrainStatus status = TextUtils.hasText(trainUrl) ? ModelTrainStatus.RUNNING : ModelTrainStatus.PENDING;
         ObjectNode submitResponse = objectMapper
                 .createObjectNode()
                 .put(
@@ -143,7 +145,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 batchNo,
                 trainRequest.modelCode(),
                 trainData.size(),
-                status,
+                status.getCode(),
                 requestPayload,
                 submitResponse);
     }
@@ -177,18 +179,6 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return modelPlatformService.validateTrainingData(objectMapper.valueToTree(validationRequest));
     }
 
-    private String validateRetryBatch(String retryBatchNo) {
-        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
-                Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, retryBatchNo));
-        if (detail == null) {
-            throw new BusinessException("重试训练批次不存在：" + retryBatchNo);
-        }
-        if (!"FAILED".equalsIgnoreCase(detail.getStatus())) {
-            throw new BusinessException("只有失败的训练批次可以复用原批次号重试");
-        }
-        return retryBatchNo;
-    }
-
     private String generateTrainBatchNo() {
         String sequence = baseCodeGenerateService.nextCode(BaseCodeType.TRAIN_BATCH);
         String sequenceNo = sequence.substring(BaseCodeType.TRAIN_BATCH.prefix().length());
@@ -197,9 +187,14 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     @Override
     @Transactional
-    public ModelTrainExecuteResponse updateTrainResult(JsonNode reqDTO) {
-        JsonNode trainResult = unwrapTrainResult(reqDTO);
-        String batchNo = firstText(trainResult, "batchNo", "trainBatchNo", "train_batch_no", "batch_no");
+    public ModelTrainExecuteResponse updateTrainResult(ModelTrainAgentResponse reqDTO) {
+        validateTrainAgentResponse(reqDTO);
+        return updateTrainResult(objectMapper.valueToTree(reqDTO.getData()));
+    }
+
+    private ModelTrainExecuteResponse updateTrainResult(JsonNode reqDTO) {
+        JsonNode trainResult = reqDTO;
+        String batchNo = trainResult.path("train_batch_no").asText(null);
         if (!TextUtils.hasText(batchNo)) {
             throw new BusinessException("训练批次号不能为空");
         }
@@ -209,11 +204,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             throw new BusinessException("训练批次不存在：" + batchNo);
         }
 
-        String status = firstText(trainResult, "status", "trainStatus", "train_status");
-        if (!TextUtils.hasText(status)) {
-            status = hasFailure(trainResult) ? "FAILED" : "SUCCESS";
-        }
-        status = normalizeStatus(status);
+        ModelTrainStatus status = ModelTrainStatus.SUCCESS;
         updateTrainDetail(trainResult, batchNo, status, null);
         replaceBacktestDetails(batchNo, trainResult);
 
@@ -223,15 +214,15 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 batchNo,
                 firstText(requestPayload, "modelCode", "model_code"),
                 datasetSize(requestPayload),
-                status,
+                status.getCode(),
                 requestPayload,
                 trainResult);
     }
 
     @Override
-    public JsonNode getTrainResult(JsonNode reqDTO) {
+    public JsonNode getTrainResult(ModelTrainResultRequest reqDTO) {
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery();
-        String batchNo = firstText(reqDTO, "batchNo", "batch_no", "trainBatchNo", "train_batch_no");
+        String batchNo = reqDTO.getBatchNo();
         boolean loadDetail = TextUtils.hasText(batchNo);
         if (loadDetail) {
             query.eq(ModelTrainRecordTb::getBatchNo, batchNo);
@@ -264,12 +255,12 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                     ModelTrainRecordTb::getCreatedAt,
                     ModelTrainRecordTb::getUpdatedAt);
         }
-        eqIfText(query, ModelTrainRecordTb::getAgentCode, firstText(reqDTO, "agentCode", "agent_code"));
-        eqIfText(query, ModelTrainRecordTb::getRegionCode, firstText(reqDTO, "regionCode", "region_code"));
-        eqIfText(query, ModelTrainRecordTb::getIndustryCode, firstText(reqDTO, "industryCode", "industry_code"));
-        eqIfText(query, ModelTrainRecordTb::getCustomerCode, firstText(reqDTO, "customerCode", "customer_code"));
-        eqIfText(query, ModelTrainRecordTb::getTrainStartDate, firstText(reqDTO, "trainStartDate", "train_start_date"));
-        eqIfText(query, ModelTrainRecordTb::getTrainEndDate, firstText(reqDTO, "trainEndDate", "train_end_date"));
+        eqIfText(query, ModelTrainRecordTb::getAgentCode, reqDTO.getAgentCode());
+        eqIfText(query, ModelTrainRecordTb::getRegionCode, reqDTO.getRegionCode());
+        eqIfText(query, ModelTrainRecordTb::getIndustryCode, reqDTO.getIndustryCode());
+        eqIfText(query, ModelTrainRecordTb::getCustomerCode, reqDTO.getCustomerCode());
+        eqIfText(query, ModelTrainRecordTb::getTrainStartDate, reqDTO.getTrainStartDate());
+        eqIfText(query, ModelTrainRecordTb::getTrainEndDate, reqDTO.getTrainEndDate());
         query.orderByDesc(ModelTrainRecordTb::getUpdatedAt)
                 .orderByDesc(ModelTrainRecordTb::getId)
                 .last(loadDetail ? "limit 1" : "limit 20");
@@ -530,10 +521,10 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             ObjectNode failedResult = objectMapper
                     .createObjectNode()
                     .put("train_batch_no", batchNo)
-                    .put("status", "FAILED")
+                    .put("status", ModelTrainStatus.FAILED.getCode())
                     .put("message", message);
             transactionTemplate.executeWithoutResult(
-                    status -> updateTrainDetailAfterSubmit(batchNo, "FAILED", failedResult, message));
+                    status -> updateTrainDetailAfterSubmit(batchNo, ModelTrainStatus.FAILED, failedResult, message));
         }
     }
 
@@ -561,32 +552,11 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     private JsonNode normalizeTrainResult(String batchNo, JsonNode agentResponse) {
         ModelTrainAgentResponse response = parseAgentResponse(agentResponse);
-        ObjectNode result;
-        if (response != null && response.data() != null) {
-            result = objectMapper.valueToTree(response.data());
-        } else {
-            JsonNode data = agentResponse == null ? null : firstNode(agentResponse, "data", "result");
-            if (data != null && data.isObject()) {
-                result = data.deepCopy();
-            } else if (agentResponse != null && agentResponse.isObject()) {
-                result = agentResponse.deepCopy();
-            } else {
-                result = objectMapper.createObjectNode();
-            }
+        validateTrainAgentResponse(response);
+        if (!batchNo.equals(response.getData().getTrainBatchNo())) {
+            throw new BusinessException("模型平台返回的训练批次号与请求不一致");
         }
-        if (response != null
-                && response.code() != null
-                && response.code() != 0
-                && !TextUtils.hasText(firstText(result, "status", "trainStatus", "train_status"))) {
-            result.put("status", "FAILED");
-        }
-        if (response != null && TextUtils.hasText(response.message()) && !result.has("message")) {
-            result.put("message", response.message());
-        }
-        if (!TextUtils.hasText(firstText(result, "batchNo", "trainBatchNo", "train_batch_no", "batch_no"))) {
-            result.put("train_batch_no", batchNo);
-        }
-        return result;
+        return objectMapper.valueToTree(response.getData());
     }
 
     private ModelTrainAgentResponse parseAgentResponse(JsonNode agentResponse) {
@@ -601,22 +571,31 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         }
     }
 
-    private JsonNode unwrapTrainResult(JsonNode node) {
-        if (node == null || !node.isObject() || !node.has("code")) {
-            return node;
+    private void validateTrainAgentResponse(ModelTrainAgentResponse response) {
+        if (response == null) {
+            throw new BusinessException("模型平台返回的训练结果格式不正确");
         }
-        JsonNode data = firstNode(node, "data", "result");
-        String batchNo = firstText(data, "batchNo", "trainBatchNo", "train_batch_no", "batch_no");
-        return normalizeTrainResult(batchNo, node);
+        if (response.getCode() == null || response.getCode() != 0) {
+            throw new BusinessException(TextUtils.hasText(response.getMessage())
+                    ? response.getMessage()
+                    : "模型平台训练失败");
+        }
+        if (response.getData() == null || !TextUtils.hasText(response.getData().getTrainBatchNo())) {
+            throw new BusinessException("模型平台返回的训练结果缺少 train_batch_no");
+        }
     }
 
     private void updateTrainDetailAfterSubmit(
-            String batchNo, String status, JsonNode agentResponse, String errorMessage) {
+            String batchNo, ModelTrainStatus status, JsonNode agentResponse, String errorMessage) {
         updateTrainDetail(agentResponse, batchNo, status, errorMessage);
     }
 
     private void saveTrainDetail(
-            ModelTrainConfigTb trainConfig, String batchNo, String status, JsonNode payload, JsonNode result) {
+            ModelTrainConfigTb trainConfig,
+            String batchNo,
+            ModelTrainStatus status,
+            JsonNode payload,
+            JsonNode result) {
         java.util.Date now = new java.util.Date();
         ModelTrainRecordTb detail = new ModelTrainRecordTb();
         detail.setBatchNo(batchNo);
@@ -629,7 +608,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         detail.setIndustryName(defaultText(trainConfig.getIndustryName(), "全部行业"));
         detail.setTrainStartDate(defaultText(trainConfig.getTrainStartDate(), ""));
         detail.setTrainEndDate(defaultText(trainConfig.getTrainEndDate(), ""));
-        detail.setStatus(status);
+        detail.setStatus(status.getCode());
         JsonNode resultJson =
                 result == null ? objectMapper.createObjectNode().put("message", "训练任务已创建，等待模型系统回写结果。") : result;
         detail.setResultJson(jsonText(resultJson));
@@ -642,15 +621,29 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     }
 
     private void resetFailedTrainDetail(
-            ModelTrainConfigTb trainConfig, String batchNo, String status, JsonNode payload) {
+            ModelTrainConfigTb trainConfig, String batchNo, ModelTrainStatus status, JsonNode payload) {
         java.util.Date now = new java.util.Date();
+        int claimed = modelTrainDetailTbMapper.update(
+                null,
+                Wrappers.<ModelTrainRecordTb>lambdaUpdate()
+                        .eq(ModelTrainRecordTb::getBatchNo, batchNo)
+                        .eq(ModelTrainRecordTb::getStatus, ModelTrainStatus.FAILED.getCode())
+                        .set(ModelTrainRecordTb::getStatus, status.getCode())
+                        .set(ModelTrainRecordTb::getErrorMessage, null)
+                        .set(ModelTrainRecordTb::getUpdatedAt, now));
+        if (claimed == 0) {
+            ModelTrainRecordTb current = modelTrainDetailTbMapper.selectOne(
+                    Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
+            if (current == null) {
+                throw new BusinessException("重试训练批次不存在：" + batchNo);
+            }
+            throw new BusinessException("该训练批次已提交或正在运行，请勿重复提交");
+        }
+
         modelTrainBacktestTbMapper.delete(
                 Wrappers.<ModelTrainBacktestTb>lambdaQuery().eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo));
         ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
                 Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
-        if (detail == null) {
-            throw new BusinessException("重试训练批次不存在：" + batchNo);
-        }
         detail.setAgentCode(defaultText(trainConfig.getAgentCode(), "unknown"));
         detail.setRegionCode(defaultText(trainConfig.getRegionCode(), "ALL"));
         detail.setRegionName(defaultText(trainConfig.getRegionName(), "全部区域"));
@@ -660,7 +653,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         detail.setIndustryName(defaultText(trainConfig.getIndustryName(), "全部行业"));
         detail.setTrainStartDate(defaultText(trainConfig.getTrainStartDate(), ""));
         detail.setTrainEndDate(defaultText(trainConfig.getTrainEndDate(), ""));
-        detail.setStatus(status);
+        detail.setStatus(status.getCode());
         detail.setBestModel(null);
         detail.setMape(null);
         detail.setWmape(null);
@@ -677,14 +670,15 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         modelTrainDetailTbMapper.updateById(detail);
     }
 
-    private void updateTrainDetail(JsonNode result, String batchNo, String status, String errorMessage) {
+    private void updateTrainDetail(
+            JsonNode result, String batchNo, ModelTrainStatus status, String errorMessage) {
         ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(
                 Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
         if (detail == null) {
             return;
         }
         java.util.Date now = new java.util.Date();
-        detail.setStatus(status);
+        detail.setStatus(status.getCode());
         if (result != null) {
             detail.setResultJson(jsonText(result));
             detail.setBestModel(
@@ -703,7 +697,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                     "trainDurationSeconds",
                     "duration_seconds",
                     "durationSeconds");
-            if (trainDurationSeconds == null && isTerminalStatus(status) && detail.getCreatedAt() != null) {
+            if (trainDurationSeconds == null && status.isTerminal() && detail.getCreatedAt() != null) {
                 long durationMillis =
                         Math.abs(now.getTime() - detail.getCreatedAt().getTime());
                 trainDurationSeconds = BigDecimal.valueOf(durationMillis)
@@ -718,7 +712,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                         firstText(metadata, "model_version", "modelVersion", "artifact_version", "artifactVersion"));
             }
             String resultError = firstText(result, "errorMessage", "error_message", "error");
-            if (!TextUtils.hasText(resultError) && "FAILED".equals(status)) {
+            if (!TextUtils.hasText(resultError) && status == ModelTrainStatus.FAILED) {
                 resultError = firstText(result, "message");
             }
             detail.setErrorMessage(resultError);
@@ -728,6 +722,13 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         }
         detail.setUpdatedAt(now);
         modelTrainDetailTbMapper.updateById(detail);
+        if (status != ModelTrainStatus.FAILED && !TextUtils.hasText(errorMessage)) {
+            modelTrainDetailTbMapper.update(
+                    null,
+                    Wrappers.<ModelTrainRecordTb>lambdaUpdate()
+                            .eq(ModelTrainRecordTb::getBatchNo, batchNo)
+                            .set(ModelTrainRecordTb::getErrorMessage, null));
+        }
     }
 
     private void replaceBacktestDetails(String batchNo, JsonNode reqDTO) {
@@ -755,36 +756,6 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             backtest.setCreatedAt(now);
             modelTrainBacktestTbMapper.insert(backtest);
         }
-    }
-
-    private String normalizeStatus(String status) {
-        String value = status == null ? "" : status.trim().toUpperCase();
-        return switch (value) {
-            case "SUCCESS", "SUCCEEDED", "DONE", "COMPLETED", "COMPLETE" -> "SUCCESS";
-            case "FAILED", "FAIL", "ERROR" -> "FAILED";
-            case "RUNNING", "PROCESSING" -> "RUNNING";
-            default -> TextUtils.hasText(value) ? value : "SUCCESS";
-        };
-    }
-
-    private boolean isTerminalStatus(String status) {
-        return "SUCCESS".equals(status) || "FAILED".equals(status);
-    }
-
-    private boolean hasFailure(JsonNode node) {
-        if (TextUtils.hasText(firstText(node, "errorMessage", "error_message", "error"))) {
-            return true;
-        }
-        JsonNode issues = firstNode(node, "issues");
-        if (issues == null || !issues.isArray()) {
-            return false;
-        }
-        for (JsonNode issue : issues) {
-            if ("error".equalsIgnoreCase(firstText(issue, "severity"))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private Integer datasetSize(Object configJson) {
@@ -922,7 +893,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     private void putDate(ObjectNode node, String key, java.util.Date value) {
         if (value != null) {
-            node.put(key, value.toString());
+            java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyy-MM-dd");
+            formatter.setTimeZone(java.util.TimeZone.getTimeZone("GMT+8"));
+            node.put(key, formatter.format(value));
         }
     }
 

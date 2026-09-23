@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.service.XqycForecastPersistenceService;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
@@ -94,7 +95,7 @@ public class XqycAgentController {
         ArrayNode results = objectMapper.createArrayNode();
         List<ModelTrainRecordTb> records = trainRecordMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery()
                 .eq(ModelTrainRecordTb::getAgentCode, "short-term")
-                .eq(ModelTrainRecordTb::getStatus, "SUCCESS")
+                .eq(ModelTrainRecordTb::getStatus, ModelTrainStatus.SUCCESS.getCode())
                 .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
                 .orderByDesc(ModelTrainRecordTb::getId));
         Set<String> seenScopes = new LinkedHashSet<>();
@@ -145,7 +146,7 @@ public class XqycAgentController {
     private ModelTrainRecordTb latestShortTermRecord(String province, String industry, String customer) {
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery()
                 .eq(ModelTrainRecordTb::getAgentCode, "short-term")
-                .eq(ModelTrainRecordTb::getStatus, "SUCCESS")
+                .eq(ModelTrainRecordTb::getStatus, ModelTrainStatus.SUCCESS.getCode())
                 .eq(ModelTrainRecordTb::getRegionName, province)
                 .eq(ModelTrainRecordTb::getIndustryName, industry);
         if (customer == null || customer.isBlank())

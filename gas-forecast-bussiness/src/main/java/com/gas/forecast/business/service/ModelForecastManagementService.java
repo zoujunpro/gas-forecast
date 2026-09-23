@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -146,7 +147,7 @@ public class ModelForecastManagementService {
     private String latestSuccessfulBatch(ModelTrainConfigTb config) {
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery()
                 .eq(ModelTrainRecordTb::getAgentCode, config.getAgentCode())
-                .eq(ModelTrainRecordTb::getStatus, "SUCCESS");
+                .eq(ModelTrainRecordTb::getStatus, ModelTrainStatus.SUCCESS.getCode());
         eqText(query, ModelTrainRecordTb::getRegionCode, config.getRegionCode());
         eqText(query, ModelTrainRecordTb::getIndustryCode, config.getIndustryCode());
         eqText(query, ModelTrainRecordTb::getCustomerCode, config.getCustomerCode());
@@ -462,7 +463,7 @@ public class ModelForecastManagementService {
         }
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery()
                 .eq(ModelTrainRecordTb::getAgentCode, record.getAgentCode())
-                .eq(ModelTrainRecordTb::getStatus, "SUCCESS");
+                .eq(ModelTrainRecordTb::getStatus, ModelTrainStatus.SUCCESS.getCode());
         eqText(query, ModelTrainRecordTb::getRegionCode, record.getRegionCode());
         eqText(query, ModelTrainRecordTb::getIndustryCode, record.getIndustryCode());
         eqText(query, ModelTrainRecordTb::getCustomerCode, record.getCustomerCode());
@@ -509,6 +510,32 @@ public class ModelForecastManagementService {
         int page = positive(request, "page", 1), size = positive(request, "size", 10);
         IPage<ModelForecastRecordTb> result = recordMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
+    }
+
+    public JsonNode recordFeatures(JsonNode request) {
+        String forecastBatchNo = text(request, "forecastBatchNo");
+        if (!TextUtils.hasText(forecastBatchNo)) throw new BusinessException("预测批次号不能为空");
+        ModelForecastRecordTb record = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .select(ModelForecastRecordTb::getFeatureSnapshot, ModelForecastRecordTb::getRequestParam)
+                .eq(ModelForecastRecordTb::getForecastBatchNo, forecastBatchNo)
+                .last("limit 1"));
+        if (record == null) throw new BusinessException("预测批次不存在：" + forecastBatchNo);
+        byte[] snapshot = record.getFeatureSnapshot();
+        try {
+            JsonNode features = snapshot == null || snapshot.length == 0
+                    ? null
+                    : objectMapper.readTree(new String(snapshot, StandardCharsets.UTF_8));
+            if ((features == null || !features.isArray())
+                    && record.getRequestParam() != null
+                    && record.getRequestParam().length > 0) {
+                JsonNode requestPayload =
+                        objectMapper.readTree(new String(record.getRequestParam(), StandardCharsets.UTF_8));
+                features = requestPayload.path("dataset");
+            }
+            return features != null && features.isArray() ? features : objectMapper.createArrayNode();
+        } catch (Exception exception) {
+            throw new BusinessException("预测特征快照解析失败");
+        }
     }
 
     private String text(JsonNode node, String field) {

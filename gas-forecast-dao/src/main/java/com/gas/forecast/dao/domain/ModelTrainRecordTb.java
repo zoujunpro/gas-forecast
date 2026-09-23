@@ -3,6 +3,7 @@ package com.gas.forecast.dao.domain;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
@@ -64,8 +65,10 @@ public class ModelTrainRecordTb {
 
     private String createdByName;
 
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date createdAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date updatedAt;
 
     private String modelVersion;

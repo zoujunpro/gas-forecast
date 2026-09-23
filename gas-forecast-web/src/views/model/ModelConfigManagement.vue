@@ -93,48 +93,87 @@
 
     <AppDialog
       v-model="dialogVisible"
-      eyebrow="模型管理"
       :title="dialogTitle"
       width="min(960px, calc(100vw - 32px))"
       align-center
+      class="model-editor-dialog"
     >
-      <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
-        <el-form-item label="模型编码" prop="configCode">
-          <el-select
-            v-model="form.configCode"
-            class="form-control"
-            filterable
-            :loading="platformModelsLoading"
-            placeholder="请选择模型平台中的模型"
-            @change="handlePlatformModelChange"
-          >
-            <el-option
-              v-for="item in filteredPlatformModels"
-              :key="item.model_code"
-              :label="`${item.model_name}（${item.model_code}）`"
-              :value="item.model_code"
-            >
-              <div class="platform-model-option">
-                <span>{{ item.model_name }}</span>
-                <small>{{ item.model_code }} · {{ item.model_version }}</small>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="模型名称" prop="configName">
-          <el-input v-model="form.configName" clearable maxlength="128" />
-        </el-form-item>
-        <el-form-item label="模型版本" prop="modelVersion">
-          <el-input v-model="form.modelVersion" clearable maxlength="32" placeholder="例如 V1.0" />
-        </el-form-item>
-        <el-form-item label="所属智能体" prop="agentCode">
-          <el-select v-model="form.agentCode" class="form-control" @change="handleAgentChange">
-            <el-option v-for="item in modelAgentOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item class="form-wide" label="描述" prop="description">
-          <el-input v-model="form.description" type="textarea" :rows="3" maxlength="500" show-word-limit />
-        </el-form-item>
+      <template #header>
+        <div class="model-editor-head">
+          <div class="model-editor-icon">
+            <el-icon><Box /></el-icon>
+          </div>
+          <div>
+            <h2>{{ dialogTitle }}</h2>
+            <p>{{ editingId ? '调整模型的基本资料和平台来源' : '从模型平台选择模型，并完善业务展示信息' }}</p>
+          </div>
+        </div>
+      </template>
+
+      <el-form ref="formRef" class="model-editor-form" :model="form" :rules="formRules" label-position="top">
+        <section class="editor-section">
+          <div class="editor-grid">
+            <el-form-item label="所属智能体" prop="agentCode">
+              <el-select
+                v-model="form.agentCode"
+                class="form-control"
+                placeholder="请选择所属智能体"
+                @change="handleAgentChange"
+              >
+                <el-option
+                  v-for="item in modelAgentOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="模型编号" prop="configCode">
+              <el-select
+                v-model="form.configCode"
+                class="form-control"
+                filterable
+                :loading="platformModelsLoading"
+                :empty-values="[]"
+                placeholder="请选择模型平台中的模型"
+                @change="handlePlatformModelChange"
+              >
+                <el-option
+                  v-for="item in filteredPlatformModels"
+                  :key="item.model_code"
+                  :label="`${item.model_name}（${item.model_code}）`"
+                  :value="item.model_code"
+                >
+                  <div class="platform-model-option">
+                    <span>{{ item.model_name }}</span>
+                    <small>{{ item.model_code }} · {{ item.model_version }}</small>
+                  </div>
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="editor-grid">
+            <el-form-item label="模型名称" prop="configName">
+              <el-input v-model="form.configName" clearable maxlength="128" placeholder="请输入模型名称" />
+            </el-form-item>
+            <el-form-item label="模型版本" prop="modelVersion">
+              <el-input v-model="form.modelVersion" clearable maxlength="32" placeholder="例如 V1.0" />
+            </el-form-item>
+            <el-form-item class="form-wide" label="模型描述" prop="description">
+              <el-input
+                v-model="form.description"
+                type="textarea"
+                :rows="4"
+                maxlength="500"
+                show-word-limit
+                placeholder="简要说明模型的适用场景、预测目标或数据要求"
+              />
+            </el-form-item>
+          </div>
+        </section>
       </el-form>
       <template #footer>
         <el-button type="info" plain @click="dialogVisible = false">取消</el-button>
@@ -276,7 +315,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Delete, Edit, Histogram, Location, Plus, Search, Setting } from '@element-plus/icons-vue'
+import { Box, Delete, Edit, Histogram, Location, Plus, Search, Setting } from '@element-plus/icons-vue'
 import { createRow, deleteRow, getJson, listPage, postJson, updateRow } from '@/api/management'
 import { usePageQuery } from '@/composables/usePageQuery'
 import AppDialog from '@/components/AppDialog.vue'
@@ -651,11 +690,61 @@ onMounted(() => {
   width: 300px;
 }
 
-.dialog-form {
+.model-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.model-editor-head h2,
+.model-editor-head p {
+  margin: 0;
+}
+
+.model-editor-head h2 {
+  color: #172033;
+  font-size: 20px;
+}
+
+.model-editor-head p {
+  margin-top: 5px;
+  color: #8490a5;
+  font-size: 13px;
+}
+
+.model-editor-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-primary);
+  background: #edf5ff;
+  border: 1px solid #dcecff;
+  border-radius: 12px;
+}
+
+.model-editor-icon {
+  width: 46px;
+  height: 46px;
+  font-size: 23px;
+}
+
+.model-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editor-section {
+  padding: 18px 20px 4px;
+  background: #fbfcfe;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+}
+
+.editor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 18px;
-  row-gap: 2px;
+  column-gap: 20px;
 }
 
 .form-control {
@@ -963,14 +1052,24 @@ onMounted(() => {
   margin-right: 0;
 }
 
-.dialog-form :deep(.el-form-item) {
+.model-editor-form :deep(.el-form-item) {
   margin-bottom: 16px;
 }
 
-.dialog-form :deep(.el-form-item__label) {
+.model-editor-form :deep(.el-form-item__label) {
   margin-bottom: 6px;
   color: #344054;
   font-weight: 600;
+}
+
+:global(.model-editor-dialog .el-dialog__body) {
+  padding: 18px 22px 8px;
+  background: #f7f9fc;
+}
+
+:global(.model-editor-dialog .el-dialog__footer) {
+  padding-top: 16px;
+  background: #ffffff;
 }
 
 .column-header-with-tip {
@@ -984,7 +1083,7 @@ onMounted(() => {
     width: 100%;
   }
 
-  .dialog-form {
+  .editor-grid {
     grid-template-columns: 1fr;
   }
 

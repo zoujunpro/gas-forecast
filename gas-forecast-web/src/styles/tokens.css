@@ -3,15 +3,15 @@
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
     sans-serif;
   --el-font-family: var(--app-font-family);
-  --app-bg: #f6f8fb;
+  --app-bg: #f4f7fb;
   --app-surface: #ffffff;
-  --app-border: #e6eaf0;
+  --app-border: #e4e7ec;
   --app-border-soft: #f1f5f9;
-  --app-primary: #1890ff;
+  --app-primary: #1677ff;
   --app-primary-dark: #0f7fe5;
   --app-primary-soft: #eaf6fd;
   --app-text: #101828;
-  --app-text-secondary: #536071;
+  --app-text-secondary: #344054;
   --app-text-muted: #667085;
   --app-radius: 8px;
   --app-gap: 14px;

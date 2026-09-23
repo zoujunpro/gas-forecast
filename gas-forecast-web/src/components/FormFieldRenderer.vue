@@ -5,6 +5,7 @@
     class="form-control"
     clearable
     filterable
+    :placeholder="field.placeholder || `请选择${field.label}`"
     :multiple="field.multiple"
     @change="handleSelectChange"
   >
@@ -41,7 +42,6 @@
       type="month"
       value-format="YYYY-MM"
       placeholder="选择月份"
-      :shortcuts="monthShortcuts"
       @change="syncTendayValue"
     />
     <el-select v-model="tendayPart" class="tenday-part" placeholder="选择旬" @change="syncTendayValue">
@@ -57,7 +57,6 @@
     type="month"
     value-format="YYYY-MM"
     placeholder="选择月份"
-    :shortcuts="monthShortcuts"
     @change="syncMonthValue"
   />
   <el-date-picker
@@ -67,7 +66,6 @@
     type="date"
     value-format="YYYY-MM-DD"
     placeholder="选择日期"
-    :shortcuts="dateShortcuts"
   />
   <el-switch
     v-else-if="field.type === 'switch'"
@@ -79,7 +77,17 @@
     inline-prompt
   />
   <slot v-else-if="field.type === 'tree'" />
-  <el-input v-else v-model="model[field.prop]" clearable :readonly="field.readonly" :type="field.inputType || 'text'" />
+  <el-input
+    v-else
+    v-model="model[field.prop]"
+    clearable
+    :readonly="field.readonly"
+    :type="field.inputType || 'text'"
+    :placeholder="field.placeholder || `请输入${field.label}`"
+    :rows="field.rows"
+    :maxlength="field.maxLength"
+    :show-word-limit="field.showWordLimit"
+  />
 </template>
 
 <script setup lang="ts">
@@ -109,20 +117,6 @@ const currentGranularity = computed(() => {
 const tendayMonth = ref('')
 const tendayPart = ref('01')
 const monthValue = ref('')
-
-const dateShortcuts = [
-  { text: '今天', value: new Date() },
-  { text: '昨天', value: () => new Date(Date.now() - 24 * 60 * 60 * 1000) },
-  { text: '近7天', value: () => new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
-  { text: '近30天', value: () => new Date(Date.now() - 29 * 24 * 60 * 60 * 1000) }
-]
-
-const monthShortcuts = [
-  { text: '本月', value: new Date() },
-  { text: '上月', value: () => new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1) },
-  { text: '近6个月', value: () => new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1) },
-  { text: '近12个月', value: () => new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1) }
-]
 
 const syncTendayControls = (value: unknown) => {
   if (typeof value !== 'string') {

@@ -31,6 +31,9 @@ export interface SystemFieldConfig {
   labelKey?: string
   required?: boolean
   maxLength?: number
+  placeholder?: string
+  rows?: number
+  showWordLimit?: boolean
   pattern?: string
   activeValue?: number | string | boolean
   inactiveValue?: number | string | boolean
@@ -79,6 +82,11 @@ export interface BaseDataFieldConfig {
   labelKey?: string
   required?: boolean
   maxLength?: number
+  placeholder?: string
+  helperText?: string
+  fullWidth?: boolean
+  rows?: number
+  showWordLimit?: boolean
   pattern?: string
   activeValue?: number | string | boolean
   inactiveValue?: number | string | boolean
@@ -119,10 +127,14 @@ export interface BaseDataFilterConfig {
 
 export interface BaseDataPageConfig {
   title: string
+  pageDescription?: string
   endpoint: string
   searchPlaceholder: string
   readonly?: boolean
   trainExecution?: boolean
+  dialogWidth?: string
+  dialogDescription?: string
+  dialogVariant?: 'feature-definition' | 'model-training'
   filterFields?: BaseDataFilterConfig[]
   featureDetailProp?: string
   tableFields: BaseDataFieldConfig[]

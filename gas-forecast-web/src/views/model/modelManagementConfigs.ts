@@ -43,6 +43,9 @@ const trainTimeGranularityOptions = [
 export const modelFeatureDefinitionConfig: BaseDataPageConfig = {
   title: '特征定义管理',
   endpoint: '/model-feature-definition',
+  dialogWidth: '820px',
+  dialogDescription: '定义模型可用的特征信息，用于特征管理与训练配置',
+  dialogVariant: 'feature-definition',
   searchPlaceholder: '搜索特征编号、名称、宽表字段、时间跨度',
   filterFields: [
     {
@@ -72,9 +75,30 @@ export const modelFeatureDefinitionConfig: BaseDataPageConfig = {
     { prop: 'updatedByName', label: '更新人', minWidth: 120 }
   ],
   formFields: [
-    { prop: 'featureCode', label: '特征编号', required: true, maxLength: 64 },
-    { prop: 'featureName', label: '特征名称', required: true, maxLength: 128 },
-    { prop: 'timeGranularity', label: '时间跨度', type: 'select', options: timeGranularityOptions, required: true },
+    {
+      prop: 'featureCode',
+      label: '特征编号',
+      required: true,
+      maxLength: 64,
+      placeholder: '请输入特征编号',
+      helperText: '用于唯一标识该特征'
+    },
+    {
+      prop: 'featureName',
+      label: '特征名称',
+      required: true,
+      maxLength: 128,
+      placeholder: '请输入特征名称',
+      helperText: '用于在页面中展示的特征名称'
+    },
+    {
+      prop: 'timeGranularity',
+      label: '时间跨度',
+      type: 'select',
+      options: timeGranularityOptions,
+      required: true,
+      helperText: '特征数据的时间粒度'
+    },
     {
       prop: 'enabled',
       label: '启用状态',
@@ -83,9 +107,20 @@ export const modelFeatureDefinitionConfig: BaseDataPageConfig = {
         { label: '启用', value: 1 },
         { label: '停用', value: 0 }
       ],
-      required: true
+      required: true,
+      helperText: '控制该特征是否在模型中可用'
     },
-    { prop: 'description', label: '描述', inputType: 'textarea', maxLength: 500 }
+    {
+      prop: 'description',
+      label: '描述',
+      inputType: 'textarea',
+      maxLength: 500,
+      rows: 4,
+      showWordLimit: true,
+      fullWidth: true,
+      placeholder: '请输入特征的功能描述、计算方式或其他说明…',
+      helperText: '建议说明特征的业务含义、数据来源、使用场景等信息'
+    }
   ],
   emptyForm: { featureCode: '', featureName: '', timeGranularity: 'DAY', enabled: 1, description: '' },
   permissions: {
@@ -97,7 +132,11 @@ export const modelFeatureDefinitionConfig: BaseDataPageConfig = {
 
 export const modelTrainConfigConfig: BaseDataPageConfig = {
   title: '模型训练管理',
+  pageDescription: '管理模型训练任务、执行记录及训练结果',
   endpoint: '/model-train-config',
+  dialogWidth: 'min(920px, calc(100vw - 32px))',
+  dialogDescription: '维护模型训练的基本信息及执行时间配置',
+  dialogVariant: 'model-training',
   searchPlaceholder: '搜索配置编码、名称、智能体、模型、范围',
   filterFields: [
     {
@@ -252,7 +291,16 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
       ],
       required: true
     },
-    { prop: 'remark', label: '备注', inputType: 'textarea', maxLength: 512 }
+    {
+      prop: 'remark',
+      label: '备注',
+      inputType: 'textarea',
+      maxLength: 512,
+      rows: 3,
+      showWordLimit: true,
+      fullWidth: true,
+      placeholder: '请输入模型训练配置的补充说明'
+    }
   ],
   emptyForm: {
     trainCode: '',

@@ -60,62 +60,120 @@
 
     <el-dialog
       v-model="drawerVisible"
-      :title="form.id ? '编辑预测配置' : '新增预测配置'"
-      width="760px"
+      width="min(860px, calc(100vw - 32px))"
       class="forecast-config-dialog"
       destroy-on-close
       align-center
     >
-      <el-form ref="formRef" label-position="top" :model="form" :rules="rules">
-        <div class="form-grid">
-          <el-form-item label="预测名称" prop="forecastName"
-            ><el-input v-model="form.forecastName" maxlength="128" show-word-limit placeholder="请输入预测名称"
-          /></el-form-item>
-          <el-form-item label="模型训练配置" prop="trainConfigCode"
-            ><el-select
-              v-model="form.trainConfigCode"
-              filterable
-              placeholder="请选择模型训练配置"
-              @change="handleTrainConfigChange"
-              ><el-option
-                v-for="item in trainConfigOptions"
-                :key="item.trainCode"
-                :label="`${item.trainName}（${item.trainCode}）`"
-                :value="item.trainCode" /></el-select
-          ></el-form-item>
-          <el-form-item label="预测开始日期" prop="forecastStartDate"
-            ><el-date-picker
-              v-model="form.forecastStartDate"
-              type="date"
-              value-format="YYYY-MM-DD"
-              placeholder="请选择预测开始日期"
-          /></el-form-item>
-          <el-form-item label="预测步长" prop="forecastHorizon"
-            ><el-input-number v-model="form.forecastHorizon" :min="1" :max="366" controls-position="right"
-          /></el-form-item>
-          <el-form-item label="时间颗粒度" prop="forecastFrequency"
-            ><el-select v-model="form.forecastFrequency"
-              ><el-option label="日" value="DAILY" /><el-option label="旬" value="TENDAY" /><el-option
-                label="月"
-                value="MONTHLY" /></el-select
-          ></el-form-item>
-          <el-form-item label="启用状态"><el-switch v-model="form.enabled" /></el-form-item>
+      <template #header>
+        <div class="forecast-editor-head">
+          <span class="forecast-editor-icon"
+            ><el-icon><TrendCharts /></el-icon
+          ></span>
+          <div>
+            <h2>{{ form.id ? '编辑预测配置' : '新增预测配置' }}</h2>
+            <p>绑定已完成训练的模型，并设置未来预测的起点和周期</p>
+          </div>
         </div>
-        <el-descriptions
-          v-if="selectedTrainConfig"
-          class="train-config-summary"
-          title="自动获取的训练配置"
-          :column="2"
-          border
-        >
-          <el-descriptions-item label="智能体">{{ agentLabel(selectedTrainConfig.agentCode) }}</el-descriptions-item>
-          <el-descriptions-item label="模型">{{ selectedTrainConfig.modelName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="区域">{{ selectedTrainConfig.regionName || '全部' }}</el-descriptions-item>
-          <el-descriptions-item label="行业">{{ selectedTrainConfig.industryName || '全部' }}</el-descriptions-item>
-          <el-descriptions-item label="客户">{{ selectedTrainConfig.customerName || '全部' }}</el-descriptions-item>
-          <el-descriptions-item label="最新成功批次">自动选择</el-descriptions-item>
-        </el-descriptions>
-        <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item>
+      </template>
+
+      <el-form ref="formRef" class="forecast-editor-form" label-position="top" :model="form" :rules="rules">
+        <section class="forecast-editor-section">
+          <header class="forecast-section-head">
+            <span>01</span>
+            <div><strong>基础信息</strong><small>设置配置名称并选择预测使用的训练模型</small></div>
+          </header>
+          <div class="form-grid">
+            <el-form-item label="预测名称" prop="forecastName">
+              <el-input v-model="form.forecastName" maxlength="128" show-word-limit placeholder="请输入预测名称" />
+            </el-form-item>
+            <el-form-item label="模型训练配置" prop="trainConfigCode">
+              <el-select
+                v-model="form.trainConfigCode"
+                filterable
+                placeholder="请选择已启用的训练配置"
+                @change="handleTrainConfigChange"
+              >
+                <el-option
+                  v-for="item in trainConfigOptions"
+                  :key="item.trainCode"
+                  :label="`${item.trainName}（${item.trainCode}）`"
+                  :value="item.trainCode"
+                />
+              </el-select>
+            </el-form-item>
+          </div>
+
+          <div v-if="selectedTrainConfig" class="train-config-card">
+            <span class="train-config-icon"
+              ><el-icon><Connection /></el-icon
+            ></span>
+            <div class="train-config-main">
+              <strong>{{ selectedTrainConfig.modelName || selectedTrainConfig.trainName }}</strong>
+              <span>{{ selectedTrainConfig.trainCode }} · {{ agentLabel(selectedTrainConfig.agentCode) }}</span>
+            </div>
+            <div class="train-scope-tags">
+              <el-tag effect="plain">{{ selectedTrainConfig.regionName || '全部区域' }}</el-tag>
+              <el-tag v-if="selectedTrainConfig.industryName" type="success" effect="plain">
+                {{ selectedTrainConfig.industryName }}
+              </el-tag>
+              <el-tag v-if="selectedTrainConfig.customerName" type="warning" effect="plain">
+                {{ selectedTrainConfig.customerName }}
+              </el-tag>
+            </div>
+          </div>
+        </section>
+
+        <section class="forecast-editor-section">
+          <header class="forecast-section-head">
+            <span>02</span>
+            <div><strong>预测策略</strong><small>定义未来预测从哪一天开始，以及需要预测多长时间</small></div>
+          </header>
+          <div class="form-grid strategy-grid">
+            <el-form-item label="预测开始日期" prop="forecastStartDate">
+              <el-date-picker
+                v-model="form.forecastStartDate"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="请选择预测开始日期"
+              />
+            </el-form-item>
+            <el-form-item label="时间颗粒度" prop="forecastFrequency">
+              <el-select v-model="form.forecastFrequency">
+                <el-option label="按日预测" value="DAILY" />
+                <el-option label="按旬预测" value="TENDAY" />
+                <el-option label="按月预测" value="MONTHLY" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="预测周期" prop="forecastHorizon">
+              <el-input-number v-model="form.forecastHorizon" :min="1" :max="366" controls-position="right" />
+              <span class="field-help">共预测 {{ form.forecastHorizon }} {{ forecastFrequencyUnit }}</span>
+            </el-form-item>
+            <el-form-item label="启用状态">
+              <div class="status-switch-row">
+                <el-switch v-model="form.enabled" />
+                <span>{{ form.enabled ? '启用后可直接发起预测' : '当前配置暂不启用' }}</span>
+              </div>
+            </el-form-item>
+          </div>
+        </section>
+
+        <section class="forecast-editor-section compact-section">
+          <header class="forecast-section-head">
+            <span>03</span>
+            <div><strong>补充说明</strong><small>记录预测用途、口径或其他注意事项</small></div>
+          </header>
+          <el-form-item class="remark-item" label="备注">
+            <el-input
+              v-model="form.remark"
+              type="textarea"
+              :rows="3"
+              maxlength="500"
+              show-word-limit
+              placeholder="请输入预测配置的补充说明（选填）"
+            />
+          </el-form-item>
+        </section>
       </el-form>
       <template #footer
         ><el-button @click="drawerVisible = false">取消</el-button
@@ -125,12 +183,17 @@
 
     <el-dialog
       v-model="instancesVisible"
-      :title="`${selectedConfig?.forecastName || ''} - 预测结果`"
       fullscreen
       class="instances-dialog"
       destroy-on-close
       @opened="renderResultChart"
     >
+      <template #header>
+        <div class="forecast-result-heading">
+          <h2>预测结果</h2>
+          <p>查看预测批次、特征数据及预测结果趋势</p>
+        </div>
+      </template>
       <div class="instances-workbench">
         <aside class="instances-sidebar">
           <div class="result-sidebar-head">
@@ -221,53 +284,35 @@
           </section>
           <section class="detail-card info-card">
             <h4 class="section-title">预测基本信息</h4>
-            <el-descriptions :column="4">
-              <el-descriptions-item label="预测批次号">{{ activeRecord.forecastBatchNo }}</el-descriptions-item>
-              <el-descriptions-item label="预测状态"
-                ><el-tag
+            <div class="forecast-overview-grid">
+              <div v-for="item in forecastOverviewRows" :key="item.label" class="forecast-overview-item">
+                <span>{{ item.label }}</span>
+                <el-tag
+                  v-if="item.status"
                   :type="recordStatus(activeRecord.status).type"
                   :class="['forecast-status-tag', `status-${Number(activeRecord.status)}`]"
                   size="small"
                   effect="light"
-                  >{{ recordStatus(activeRecord.status).label }}</el-tag
-                ></el-descriptions-item
-              >
-              <el-descriptions-item label="预测名称">{{ selectedConfig?.forecastName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="预测模型">{{
-                activeRecord.modelName ||
-                selectedConfig?.modelName ||
-                agentLabel(activeRecord.agentCode || selectedConfig?.agentCode)
-              }}</el-descriptions-item>
-              <el-descriptions-item label="未来预测开始">{{ predictionInfo.futureStart }}</el-descriptions-item>
-              <el-descriptions-item label="未来预测结束">{{ predictionInfo.futureEnd }}</el-descriptions-item>
-              <el-descriptions-item label="预测步长"
-                >{{ predictionInfo.futureCount }} {{ predictionInfo.unit }}</el-descriptions-item
-              >
-              <el-descriptions-item label="时间颗粒度">{{ predictionInfo.frequency }}</el-descriptions-item>
-              <el-descriptions-item label="历史预测开始">{{
-                predictionInfo.historyPredictionStart
-              }}</el-descriptions-item>
-              <el-descriptions-item label="历史预测结束">{{
-                predictionInfo.historyPredictionEnd
-              }}</el-descriptions-item>
-              <el-descriptions-item label="历史预测数量"
-                >{{ predictionInfo.historyPredictionCount }} {{ predictionInfo.unit }}</el-descriptions-item
-              >
-              <el-descriptions-item label="历史实际区间">{{ predictionInfo.historyActualRange }}</el-descriptions-item>
-              <el-descriptions-item label="训练配置">{{
-                activeRecord.trainConfigCode || selectedConfig?.trainConfigCode || '-'
-              }}</el-descriptions-item>
-              <el-descriptions-item label="智能体">{{
-                agentLabel(activeRecord.agentCode || selectedConfig?.agentCode)
-              }}</el-descriptions-item>
-              <el-descriptions-item label="预测创建时间">{{ activeRecord.createdAt || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="完成时间">{{ activeRecord.forecastEndTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="发起人">{{ activeRecord.createdByName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="区域">{{ activeRecord.regionName || '全部' }}</el-descriptions-item>
-              <el-descriptions-item label="行业">{{ activeRecord.industryName || '全部' }}</el-descriptions-item>
-              <el-descriptions-item label="客户">{{ activeRecord.customerName || '全部' }}</el-descriptions-item>
-              <el-descriptions-item label="备注">{{ activeRecord.remark || '-' }}</el-descriptions-item>
-            </el-descriptions>
+                  >{{ item.value }}</el-tag
+                >
+                <strong v-else :title="String(item.value)">{{ item.value }}</strong>
+              </div>
+            </div>
+          </section>
+          <section class="detail-card feature-snapshot-card">
+            <h4 class="section-title">预测特征信息</h4>
+            <AppTable v-if="featureSnapshotRows.length" :data="featureSnapshotRows" border stripe max-height="280">
+              <el-table-column prop="date" label="预测日期" min-width="130" fixed />
+              <el-table-column
+                v-for="column in featureSnapshotColumns"
+                :key="column"
+                :prop="column"
+                :label="column"
+                min-width="150"
+                show-overflow-tooltip
+              />
+            </AppTable>
+            <el-empty v-else :image-size="54" description="暂无预测特征快照" />
           </section>
           <section class="detail-card result-panel">
             <div class="result-heading">
@@ -336,7 +381,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Filter, Plus, Search, Tickets } from '@element-plus/icons-vue'
+import { Connection, Filter, Plus, Search, Tickets, TrendCharts } from '@element-plus/icons-vue'
 import { deleteRow, listPage, postJson } from '@/api/management'
 import AppPagination from '@/components/AppPagination.vue'
 import AppTable from '@/components/AppTable.vue'
@@ -383,7 +428,8 @@ const resultLoading = ref(false),
 const resultView = ref<'chart' | 'table'>('chart'),
   resultChartRef = ref<HTMLElement>(),
   chartRows = ref<Record<string, any>[]>([]),
-  historyRows = ref<Record<string, any>[]>([])
+  historyRows = ref<Record<string, any>[]>([]),
+  featureSnapshotRows = ref<Record<string, any>[]>([])
 let resultChart: echarts.ECharts | null = null
 const recordPage = ref(1),
   recordSize = ref(10),
@@ -428,6 +474,48 @@ const predictionInfo = computed(() => {
       ? `${historicalActualDates[0]} 至 ${historicalActualDates[historicalActualDates.length - 1]}`
       : '-'
   }
+})
+const forecastOverviewRows = computed(() => {
+  const record = activeRecord.value || {}
+  const config = selectedConfig.value || {}
+  return [
+    { label: '预测批次号', value: record.forecastBatchNo || '-' },
+    { label: '预测状态', value: recordStatus(record.status).label, status: true },
+    { label: '预测名称', value: config.forecastName || '-' },
+    {
+      label: '预测模型',
+      value: record.modelName || config.modelName || agentLabel(record.agentCode || config.agentCode)
+    },
+    { label: '未来预测开始', value: predictionInfo.value.futureStart },
+    { label: '未来预测结束', value: predictionInfo.value.futureEnd },
+    { label: '预测步长', value: `${predictionInfo.value.futureCount} ${predictionInfo.value.unit}` },
+    { label: '时间颗粒度', value: predictionInfo.value.frequency },
+    { label: '历史预测开始', value: predictionInfo.value.historyPredictionStart },
+    { label: '历史预测结束', value: predictionInfo.value.historyPredictionEnd },
+    {
+      label: '历史预测数量',
+      value: `${predictionInfo.value.historyPredictionCount} ${predictionInfo.value.unit}`
+    },
+    { label: '历史实际区间', value: predictionInfo.value.historyActualRange },
+    { label: '训练配置', value: record.trainConfigCode || config.trainConfigCode || '-' },
+    { label: '智能体', value: agentLabel(record.agentCode || config.agentCode) },
+    { label: '预测创建时间', value: record.createdAt || '-' },
+    { label: '完成时间', value: record.forecastEndTime || '-' },
+    { label: '发起人', value: record.createdByName || '-' },
+    { label: '区域', value: record.regionName || '全部' },
+    { label: '行业', value: record.industryName || '全部' },
+    { label: '客户', value: record.customerName || '全部' },
+    { label: '备注', value: record.remark || '-' }
+  ]
+})
+const featureSnapshotColumns = computed(() => {
+  const columns = new Set<string>()
+  featureSnapshotRows.value.forEach((row) => {
+    Object.keys(row).forEach((key) => {
+      if (key !== 'date') columns.add(key)
+    })
+  })
+  return [...columns]
 })
 const filteredRecordRows = computed(() => {
   const keywordValue = recordKeyword.value.trim().toLowerCase()
@@ -476,6 +564,10 @@ const rules: FormRules = {
 }
 const selectedTrainConfig = computed(() =>
   trainConfigOptions.value.find((item) => item.trainCode === form.trainConfigCode)
+)
+const forecastFrequencyUnit = computed(
+  () =>
+    ({ DAILY: '天', TENDAY: '旬', MONTHLY: '个月' })[form.forecastFrequency as 'DAILY' | 'TENDAY' | 'MONTHLY'] || '期'
 )
 const agentLabel = (code: string) => agents.find((item) => item.value === code)?.label || code
 const formatDate = (value: unknown) => (value ? String(value).slice(0, 10) : '-')
@@ -581,6 +673,7 @@ const loadRecords = async () => {
       resultRows.value = []
       resultTotal.value = 0
       chartRows.value = []
+      featureSnapshotRows.value = []
       renderResultChart()
     }
   } finally {
@@ -610,22 +703,25 @@ const loadResultRows = async () => {
     resultRows.value = []
     historyRows.value = []
     resultTotal.value = 0
+    featureSnapshotRows.value = []
     return
   }
   resultLoading.value = true
   try {
     const batchNo = activeRecord.value.forecastBatchNo
-    const [data, historyResponse] = await Promise.all([
+    const [data, historyResponse, featureResponse] = await Promise.all([
       listPage('/model-forecast-result', {
         page: resultPage.value,
         size: resultView.value === 'chart' ? 1000 : resultSize.value,
         forecastBatchNo: batchNo
       }),
-      postJson('/model-forecast-result/history', { forecastBatchNo: batchNo })
+      postJson('/model-forecast-result/history', { forecastBatchNo: batchNo }),
+      postJson('/model-forecast-record/features', { forecastBatchNo: batchNo }).catch(() => ({ data: [] }))
     ])
     resultRows.value = data.records
     chartRows.value = data.records
     historyRows.value = Array.isArray(historyResponse.data) ? historyResponse.data : []
+    featureSnapshotRows.value = Array.isArray(featureResponse.data) ? featureResponse.data : []
     resultTotal.value = data.total
     await nextTick()
     renderResultChart()
@@ -650,7 +746,6 @@ const renderResultChart = () => {
     ...history.map((item) => (item.predictedValue == null ? null : Number(item.predictedValue))),
     ...forecast.map(() => null)
   ]
-  const firstHistoricalForecastIndex = historicalForecastValues.findIndex((value) => value != null)
   const futureForecastValues = [
     ...history.map(() => null as number | null),
     ...forecast.map((item) => Number(item.forecastValue))
@@ -682,7 +777,7 @@ const renderResultChart = () => {
         borderWidth: 0,
         padding: [10, 12],
         textStyle: { color: '#fff' },
-        axisPointer: { type: 'line', lineStyle: { color: '#94a3b8', type: 'dashed' } }
+        axisPointer: { type: 'line', lineStyle: { color: '#94a3b8', type: 'solid' } }
       },
       grid: { left: 62, right: 30, top: 48, bottom: dates.length > 45 ? 72 : 42 },
       xAxis: {
@@ -741,10 +836,10 @@ const renderResultChart = () => {
           type: 'line',
           smooth: 0.25,
           connectNulls: false,
-          showSymbol: firstHistoricalForecastIndex >= 0,
+          showSymbol: false,
           symbolSize: 5,
           data: historicalForecastValues,
-          lineStyle: { width: 2, color: '#f59e0b', type: 'dashed' },
+          lineStyle: { width: 2.25, color: '#f59e0b', type: 'solid' },
           itemStyle: { color: '#f59e0b' }
         },
         {
@@ -756,7 +851,7 @@ const renderResultChart = () => {
           silent: true,
           tooltip: { show: false },
           data: forecastBridgeValues,
-          lineStyle: { width: 2, color: '#94a3b8', type: 'dashed' },
+          lineStyle: { width: 2, color: '#64748b', type: 'solid' },
           emphasis: { disabled: true }
         },
         {
@@ -785,7 +880,7 @@ const renderResultChart = () => {
                   borderRadius: 4,
                   padding: [4, 7]
                 },
-                lineStyle: { color: '#60a5fa', type: 'dashed', width: 1.5 },
+                lineStyle: { color: '#60a5fa', type: 'solid', width: 1.5 },
                 data: [{ xAxis: forecastStart }]
               }
             : undefined
@@ -862,15 +957,188 @@ watch(recordKeyword, () => {
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 16px;
+  gap: 0 18px;
 }
-.train-config-summary {
-  margin: 4px 0 18px;
+
+.forecast-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
+
+.forecast-editor-head h2,
+.forecast-editor-head p {
+  margin: 0;
+}
+
+.forecast-editor-head h2 {
+  color: #172033;
+  font-size: 20px;
+}
+
+.forecast-editor-head p {
+  margin-top: 5px;
+  color: #8490a5;
+  font-size: 13px;
+}
+
+.forecast-editor-icon,
+.train-config-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2878e8;
+  background: #edf5ff;
+  border: 1px solid #d9eaff;
+  border-radius: 12px;
+}
+
+.forecast-editor-icon {
+  width: 46px;
+  height: 46px;
+  font-size: 23px;
+}
+
+.forecast-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.forecast-editor-section {
+  padding: 18px 20px 4px;
+  background: #fbfcfe;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+}
+
+.forecast-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+
+.forecast-section-head > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #2878e8;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eaf3ff;
+  border-radius: 9px;
+}
+
+.forecast-section-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.forecast-section-head strong {
+  color: #273247;
+  font-size: 15px;
+}
+
+.forecast-section-head small {
+  color: #8b96a9;
+  font-size: 12px;
+}
+
+.train-config-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: linear-gradient(90deg, #f0f7ff, #f9fbff);
+  border: 1px solid #d7e8ff;
+  border-radius: 10px;
+}
+
+.train-config-icon {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  font-size: 19px;
+}
+
+.train-config-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.train-config-main strong {
+  overflow: hidden;
+  color: #26324a;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.train-config-main span,
+.status-switch-row span,
+.field-help {
+  color: #7b879d;
+  font-size: 12px;
+}
+
+.train-scope-tags {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.strategy-grid :deep(.el-form-item) {
+  position: relative;
+}
+
+.field-help {
+  position: absolute;
+  right: 46px;
+  bottom: 9px;
+  pointer-events: none;
+}
+
+.status-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.compact-section {
+  padding-bottom: 2px;
+}
+
+.remark-item {
+  margin-bottom: 16px;
+}
+
+:deep(.forecast-config-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 20px 22px 17px;
+  border-bottom: 1px solid #e7ebf1;
+}
+
 :deep(.forecast-config-dialog .el-dialog__body) {
   max-height: 68vh;
   overflow-y: auto;
-  padding-top: 12px;
+  padding: 18px 22px 8px;
+  background: #f7f9fc;
+}
+
+:deep(.forecast-config-dialog .el-dialog__footer) {
+  padding: 16px 22px 18px;
+  border-top: 1px solid #e7ebf1;
+  background: #fff;
 }
 :deep(.forecast-config-dialog .el-select),
 :deep(.forecast-config-dialog .el-date-editor),
@@ -927,6 +1195,23 @@ watch(recordKeyword, () => {
   grid-template-columns: 280px minmax(0, 1fr);
   height: 100%;
   background: #f7faff;
+}
+.forecast-result-heading h2,
+.forecast-result-heading p {
+  margin: 0;
+}
+.forecast-result-heading h2 {
+  color: #101828;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+.forecast-result-heading p {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
 }
 .instances-sidebar {
   display: flex;
@@ -1147,21 +1432,38 @@ watch(recordKeyword, () => {
   background: linear-gradient(180deg, #2f80ed, #62a6ff);
   content: '';
 }
-.info-card :deep(.el-descriptions__body) {
-  background: transparent;
+.forecast-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 12px;
 }
-.info-card :deep(.el-descriptions__cell) {
-  padding: 9px 14px 13px 0;
+.forecast-overview-item {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 12px;
+  min-width: 0;
 }
-.info-card :deep(.el-descriptions__label) {
-  display: block;
-  margin-bottom: 5px;
-  color: #8a98ab;
+.forecast-overview-item > span {
+  color: #667085;
   font-size: 12px;
+  font-weight: 400;
 }
-.info-card :deep(.el-descriptions__content) {
-  color: #26364d;
+.forecast-overview-item > strong {
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 13px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.forecast-overview-item > .forecast-status-tag {
+  width: fit-content;
+  justify-self: start;
+}
+.feature-snapshot-card :deep(.el-table) {
+  margin-top: 2px;
 }
 .result-heading {
   display: flex;
@@ -1204,6 +1506,9 @@ watch(recordKeyword, () => {
   }
   .instance-detail {
     overflow: visible;
+  }
+  .forecast-overview-grid {
+    grid-template-columns: 1fr;
   }
   :deep(.forecast-config-dialog) {
     width: calc(100vw - 24px) !important;

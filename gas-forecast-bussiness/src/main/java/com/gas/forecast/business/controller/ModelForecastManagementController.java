@@ -46,4 +46,9 @@ public class ModelForecastManagementController {
     public ResponseResult<?> listRecords(@RequestBody JsonNode request) {
         return ResponseResult.success(service.listRecords(request));
     }
+
+    @PostMapping("/model-forecast-record/features")
+    public ResponseResult<?> recordFeatures(@RequestBody JsonNode request) {
+        return ResponseResult.success(service.recordFeatures(request));
+    }
 }

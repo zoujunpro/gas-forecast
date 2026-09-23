@@ -2,6 +2,8 @@ package com.gas.forecast.business.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
+import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
+import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.ResponseResult;
@@ -40,13 +42,14 @@ public class ModelTrainExecutionController {
 
     @PostMapping("callback")
     @WebLog("模型训练结果回调")
-    public ResponseResult<ModelTrainExecuteResponse> callback(@RequestBody JsonNode reqDTO) {
+    public ResponseResult<ModelTrainExecuteResponse> callback(
+            @Valid @RequestBody ModelTrainAgentResponse reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.updateTrainResult(reqDTO));
     }
 
     @PostMapping("result")
     @WebLog("查看模型训练结果")
-    public ResponseResult<JsonNode> result(@RequestBody JsonNode reqDTO) {
+    public ResponseResult<JsonNode> result(@Valid @RequestBody ModelTrainResultRequest reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.getTrainResult(reqDTO));
     }
 }

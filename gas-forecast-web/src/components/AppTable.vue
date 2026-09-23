@@ -18,6 +18,23 @@ defineOptions({
 </script>
 
 <style scoped>
+.app-table {
+  font-size: 14px;
+}
+
+.app-table :deep(th.el-table__cell) {
+  background: #f8fafc;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-table :deep(td.el-table__cell) {
+  color: #344054;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .app-table :deep(.cell) {
   line-height: 22px;
 }
@@ -88,5 +105,10 @@ defineOptions({
   color: #475467;
   font-family: inherit;
   font-size: 12px;
+}
+
+.app-table :deep(.action-column .el-button) {
+  font-size: 13px;
+  font-weight: 500;
 }
 </style>

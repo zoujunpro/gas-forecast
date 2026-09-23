@@ -1,6 +1,6 @@
 <template>
   <section class="crud-page">
-    <PageBreadcrumb />
+    <PageBreadcrumb :description="config.pageDescription" />
 
     <AppTablePanel>
       <template #filters>
@@ -150,15 +150,56 @@
       </template>
     </AppTablePanel>
 
-    <AppDialog v-model="dialogVisible" eyebrow="后台数据管理" :title="dialogTitle" width="680px" align-center>
+    <AppDialog
+      v-model="dialogVisible"
+      eyebrow="后台数据管理"
+      :title="dialogTitle"
+      :width="config.dialogWidth || '680px'"
+      :class="{
+        'feature-definition-dialog': config.dialogVariant === 'feature-definition',
+        'model-training-dialog': config.dialogVariant === 'model-training'
+      }"
+      align-center
+    >
+      <template v-if="config.dialogVariant === 'feature-definition'" #header>
+        <div class="feature-dialog-header">
+          <div class="feature-dialog-icon">
+            <el-icon><DocumentAdd /></el-icon>
+          </div>
+          <div>
+            <p>后台数据管理</p>
+            <h2>{{ dialogTitle }}</h2>
+            <span>{{ config.dialogDescription }}</span>
+          </div>
+        </div>
+      </template>
+      <template v-else-if="config.dialogVariant === 'model-training'" #header>
+        <div class="feature-dialog-header">
+          <div class="feature-dialog-icon">
+            <el-icon><DataLine /></el-icon>
+          </div>
+          <div>
+            <p>后台数据管理</p>
+            <h2>{{ dialogTitle }}</h2>
+            <span>{{ config.dialogDescription }}</span>
+          </div>
+        </div>
+      </template>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
-        <el-form-item v-for="field in visibleFormFields" :key="field.prop" :label="field.label" :prop="field.prop">
+        <el-form-item
+          v-for="field in visibleFormFields"
+          :key="field.prop"
+          :label="field.label"
+          :prop="field.prop"
+          :class="{ 'form-item-full': field.fullWidth }"
+        >
           <FormFieldRenderer
             :field="field"
             :model="form"
-            :option-map="formOptionMap"
+            :option-map="resolvedFormOptionMap"
             @option-select="handleFormOptionSelect"
           />
+          <p v-if="field.helperText" class="field-helper">{{ field.helperText }}</p>
         </el-form-item>
       </el-form>
       <section v-if="config.trainExecution" class="training-requirement-card" v-loading="platformModelsLoading">
@@ -275,7 +316,13 @@
       </div>
     </el-drawer>
 
-    <el-drawer v-model="trainResultVisible" title="训练结果" size="100%" class="train-result-drawer">
+    <el-drawer v-model="trainResultVisible" size="100%" class="train-result-drawer">
+      <template #header>
+        <div class="train-result-heading">
+          <h2>训练结果</h2>
+          <p>查看训练批次、指标表现及结果明细</p>
+        </div>
+      </template>
       <div v-loading="trainResultLoading" class="train-result">
         <div v-if="trainResultBatches.length" class="train-result-layout">
           <aside class="train-result-sidebar">
@@ -315,7 +362,12 @@
             >
               <span class="batch-card-top">
                 <strong>{{ batch.batchNo || '-' }}</strong>
-                <el-tag size="small" :type="statusTagType(batch.status)" effect="light">{{
+                <el-tag
+                  size="small"
+                  :type="statusTagType(batch.status)"
+                  :class="['train-status-tag', trainStatusClass(batch.status)]"
+                  effect="light"
+                >{{
                   statusText(batch.status)
                 }}</el-tag>
               </span>
@@ -342,7 +394,12 @@
               <div class="result-hero-content">
                 <div class="result-hero-title">
                   <strong>{{ selectedTrainBatchNo || '-' }}</strong>
-                  <el-tag size="small" :type="statusTagType(selectedTrainResult?.status)" effect="light">{{
+                  <el-tag
+                    size="small"
+                    :type="statusTagType(selectedTrainResult?.status)"
+                    :class="['train-status-tag', trainStatusClass(selectedTrainResult?.status)]"
+                    effect="light"
+                  >{{
                     statusText(selectedTrainResult?.status)
                   }}</el-tag>
                 </div>
@@ -353,20 +410,16 @@
                 </div>
               </div>
               <div class="result-hero-actions">
-                <el-tooltip :content="retrainTip" placement="top">
-                  <span>
-                    <el-button
-                      type="primary"
-                      plain
-                      :icon="RefreshRight"
-                      :loading="retraining"
-                      :disabled="!canRetrainSelectedBatch"
-                      @click="retrainFromSelectedBatch"
-                    >
-                      重新训练
-                    </el-button>
-                  </span>
-                </el-tooltip>
+                <el-button
+                  type="primary"
+                  plain
+                  :icon="RefreshRight"
+                  :loading="retraining"
+                  :disabled="!canRetrainSelectedBatch"
+                  @click="retrainFromSelectedBatch"
+                >
+                  重新训练
+                </el-button>
               </div>
             </section>
 
@@ -518,6 +571,7 @@ import {
   Cpu,
   DataLine,
   Document,
+  DocumentAdd,
   Filter,
   Histogram,
   Odometer,
@@ -608,6 +662,15 @@ const visibleFormFields = computed(() =>
     return form[field.visibleWhen.prop] === field.visibleWhen.value
   })
 )
+const resolvedFormOptionMap = computed<Record<string, Option[]>>(() => {
+  if (!config.value.trainExecution) {
+    return formOptionMap
+  }
+  return {
+    ...formOptionMap,
+    modelId: (formOptionMap.modelId || []).filter((option) => option.raw?.agentCode === form.agentCode)
+  }
+})
 const dialogTitle = computed(
   () => `${executionMode.value ? '执行' : editingId.value ? '编辑' : '新增'}${config.value.title.replace('管理', '')}`
 )
@@ -632,9 +695,9 @@ const selectedTrainResult = computed(() => {
 })
 const trainBatchStatusTabs: Array<{ label: string; value: 'all' | 'running' | 'success' | 'failed' }> = [
   { label: '全部', value: 'all' },
-  { label: '运行中', value: 'running' },
-  { label: '成功', value: 'success' },
-  { label: '失败', value: 'failed' }
+  { label: '训练中', value: 'running' },
+  { label: '训练成功', value: 'success' },
+  { label: '训练失败', value: 'failed' }
 ]
 const filteredTrainResultBatches = computed(() => {
   const keyword = trainBatchKeyword.value.trim().toLowerCase()
@@ -688,17 +751,19 @@ const statusTagType = (status: unknown) => {
 }
 const statusText = (status: unknown) => {
   const value = String(status || '').toUpperCase()
-  if (value === 'SUCCESS') return '成功'
-  if (value === 'FAILED') return '失败'
-  if (value === 'RUNNING') return '运行中'
-  if (value === 'PENDING') return '等待中'
+  if (value === 'SUCCESS') return '训练成功'
+  if (value === 'FAILED') return '训练失败'
+  if (value === 'RUNNING') return '训练中'
+  if (value === 'PENDING') return '训练等待中'
   return status ? String(status) : '-'
 }
+const trainStatusClass = (status: unknown) => `status-${String(status || 'unknown').toLowerCase()}`
 const statusTone = (status: unknown) => {
   const value = String(status || '').toUpperCase()
   if (value === 'SUCCESS') return 'status-success'
   if (value === 'FAILED') return 'status-failed'
-  if (value === 'RUNNING' || value === 'PENDING') return 'status-running'
+  if (value === 'RUNNING') return 'status-running'
+  if (value === 'PENDING') return 'status-pending'
   return ''
 }
 const metricValue = (value: unknown, suffix = '') => {
@@ -832,58 +897,32 @@ const selectedRequestJson = computed(() => asRecord(selectedTrainResult.value?.r
 const selectedResultJson = computed(() => asRecord(selectedTrainResult.value?.resultJson))
 const trainRequestJsonText = computed(() => stringifyJson(selectedTrainResult.value?.requestJson))
 const trainResultJsonText = computed(() => stringifyJson(selectedTrainResult.value?.resultJson))
-const isBatchRunning = (status: unknown) => {
-  const value = String(status || '').toUpperCase()
-  return value === 'PENDING' || value === 'RUNNING'
-}
 const isBatchFailed = (status: unknown) => String(status || '').toUpperCase() === 'FAILED'
 const canRetrainSelectedBatch = computed(() => {
   return Boolean(
-    selectedTrainResult.value && trainResultSource.value?.trainCode && !isBatchRunning(selectedTrainResult.value.status)
+    selectedTrainResult.value &&
+      trainResultSource.value?.trainCode &&
+      isBatchFailed(selectedTrainResult.value.status)
   )
-})
-const retrainTip = computed(() => {
-  if (!selectedTrainResult.value) {
-    return '请选择训练批次'
-  }
-  if (isBatchRunning(selectedTrainResult.value.status)) {
-    return '当前批次正在训练中，不能重复提交重新训练'
-  }
-  if (!trainResultSource.value?.trainCode) {
-    return '缺少训练配置编码，无法重新训练'
-  }
-  if (isBatchFailed(selectedTrainResult.value.status)) {
-    return '失败批次重新训练会复用当前批次号，重新提交后该批次会进入运行中'
-  }
-  return '成功批次重新训练会创建一个新的训练批次号，当前成功批次会保留用于追溯'
 })
 const retrainFromSelectedBatch = async () => {
   if (!canRetrainSelectedBatch.value || retraining.value) {
     return
   }
-  const failedRetry = isBatchFailed(selectedTrainResult.value?.status)
   await ElMessageBox.confirm(
-    failedRetry
-      ? '当前批次训练失败。本次重新训练将复用原训练批次号，并把该批次重新置为运行中。'
-      : '当前批次已训练成功。本次重新训练将创建一个新的训练批次号，当前成功批次及结果会保留不变。',
+    '当前批次训练失败。本次重新训练将复用原训练批次号，并把该批次重新置为运行中。',
     '重新训练确认',
     { type: 'warning', confirmButtonText: '确认重新训练', cancelButtonText: '取消' }
   )
   retraining.value = true
   try {
-    const retryBatchNo = failedRetry
-      ? selectedTrainResult.value?.batchNo || selectedTrainResult.value?.batch_no
-      : undefined
+    const retryBatchNo = selectedTrainResult.value?.batchNo || selectedTrainResult.value?.batch_no
     const result = await postJson('/model-train-execution/execute', {
       trainCode: trainResultSource.value?.trainCode,
       retryBatchNo
     })
     const data = (result as any).data || {}
-    ElMessage.success(
-      failedRetry
-        ? `已重新提交训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`
-        : `已创建新的训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`
-    )
+    ElMessage.success(`已重新提交训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`)
     if (trainResultSource.value) {
       await openTrainResult(trainResultSource.value)
       selectedTrainBatchNo.value = data.trainBatchNo || data.train_batch_no || selectedTrainBatchNo.value
@@ -1190,6 +1229,14 @@ const loadFormOptions = async () => {
 }
 
 const handleFormOptionSelect = (field: BaseDataFieldConfig, option?: Option) => {
+  if (config.value.trainExecution && field.prop === 'agentCode') {
+    const selectedModel = (formOptionMap.modelId || []).find((item) => item.value === form.modelId)
+    if (selectedModel && selectedModel.raw?.agentCode !== form.agentCode) {
+      form.modelId = undefined
+      form.modelCode = ''
+      form.modelName = ''
+    }
+  }
   if (!field.fillProps) {
     return
   }
@@ -1413,6 +1460,9 @@ const handlePreviewSizeChange = () => {
 }
 
 const executeTraining = async () => {
+  if (executing.value) {
+    return
+  }
   if (!executionConfig.value?.trainCode) {
     ElMessage.error('训练配置编码不存在')
     return
@@ -1546,10 +1596,90 @@ defineExpose({ loadData })
   font-weight: 600;
 }
 
+.form-item-full {
+  grid-column: 1 / -1;
+}
+
+.field-helper {
+  width: 100%;
+  margin: 6px 0 0;
+  color: #8492a6;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.feature-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.feature-dialog-icon {
+  display: grid;
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--app-primary);
+  background: #eef7ff;
+  font-size: 26px;
+}
+
+.feature-dialog-header p {
+  margin: 0 0 3px;
+  color: var(--app-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.feature-dialog-header h2 {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.feature-dialog-header span {
+  display: block;
+  margin-top: 3px;
+  color: #8492a6;
+  font-size: 12px;
+}
+
+:global(.feature-definition-dialog .el-dialog__body) {
+  padding-top: 22px;
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+}
+
+:global(.model-training-dialog .el-dialog__body) {
+  padding-top: 22px;
+  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
+}
+
+:global(.model-training-dialog .el-select__selected-item) {
+  max-width: 100%;
+}
+
+:global(.model-training-dialog .el-textarea__inner) {
+  min-height: 82px !important;
+  resize: vertical;
+}
+
+:global(.feature-definition-dialog .el-textarea__inner) {
+  min-height: 90px !important;
+  resize: vertical;
+}
+
 .dialog-form :deep(.el-input__wrapper),
 .dialog-form :deep(.el-select__wrapper),
 .dialog-form :deep(.el-input-number) {
   min-height: var(--app-control-height);
+}
+
+.dialog-form :deep(.el-date-editor.el-input),
+.dialog-form :deep(.el-date-editor.el-input__wrapper) {
+  width: 100%;
 }
 
 .column-header-with-tip {
@@ -1626,6 +1756,26 @@ defineExpose({ loadData })
   border-bottom: 1px solid #eaecf0;
 }
 
+.train-result-heading h2,
+.train-result-heading p {
+  margin: 0;
+}
+
+.train-result-heading h2 {
+  color: #101828;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.train-result-heading p {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
 .train-result-drawer :deep(.el-drawer__body) {
   padding: 0;
   overflow: auto;
@@ -1653,7 +1803,8 @@ defineExpose({ loadData })
   align-items: center;
   justify-content: space-between;
   color: #344054;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .result-sidebar-head span {
@@ -1700,12 +1851,13 @@ defineExpose({ loadData })
   background: transparent;
   color: #667085;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .result-sidebar-tabs button.active {
   color: #2563eb;
+  font-weight: 600;
 }
 
 .result-sidebar-tabs button.active::after {
@@ -1756,12 +1908,47 @@ defineExpose({ loadData })
   overflow: hidden;
   color: #182230;
   font-size: 13px;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .result-batch-card small {
   color: #667085;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.result-batch-card > span:not(.batch-card-top) {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.train-status-tag {
+  border: 0 !important;
+  border-radius: 4px !important;
+  font-weight: 600;
+}
+
+.train-status-tag.status-running {
+  background: #dbeafe !important;
+  color: #3b82f6 !important;
+}
+
+.train-status-tag.status-pending {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+}
+
+.train-status-tag.status-success {
+  background: #dcfce7 !important;
+  color: #22b85b !important;
+}
+
+.train-status-tag.status-failed {
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
 }
 
 .result-sidebar-empty {
@@ -1850,6 +2037,10 @@ defineExpose({ loadData })
   font-size: 18px;
 }
 
+.result-hero-title strong {
+  font-weight: 600;
+}
+
 .result-hero-subtitle {
   display: flex;
   flex-wrap: wrap;
@@ -1857,6 +2048,7 @@ defineExpose({ loadData })
   margin-top: 8px;
   color: #475467;
   font-size: 13px;
+  font-weight: 400;
 }
 
 .result-info-panel {
@@ -1870,7 +2062,7 @@ defineExpose({ loadData })
   padding: 14px 16px 0;
   color: #1f2937;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .result-info-title span {
@@ -1908,26 +2100,31 @@ defineExpose({ loadData })
 .result-metric-card span {
   color: #667085;
   font-size: 12px;
+  font-weight: 400;
 }
 
 .result-overview-item strong {
   overflow: hidden;
-  color: #344054;
+  color: #1f2937;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .result-overview-item strong.status-success {
-  color: #16a34a;
+  color: #22b85b;
 }
 
 .result-overview-item strong.status-failed {
-  color: #dc2626;
+  color: #ef4444;
 }
 
 .result-overview-item strong.status-running {
+  color: #3b82f6;
+}
+
+.result-overview-item strong.status-pending {
   color: #d97706;
 }
 
@@ -1964,14 +2161,15 @@ defineExpose({ loadData })
 
 .result-metric-card strong {
   color: #1d4ed8;
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .result-metric-card small {
   color: #667085;
   font-size: 12px;
+  font-weight: 400;
 }
 
 .result-metric-card.tone-blue {
@@ -2061,6 +2259,29 @@ defineExpose({ loadData })
 .result-tabs {
   padding: 0 14px 14px;
   min-height: 220px;
+}
+
+.result-tabs :deep(.el-tabs__item) {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.result-tabs :deep(.el-tabs__item.is-active) {
+  color: var(--app-primary);
+  font-weight: 600;
+}
+
+.result-tabs :deep(.el-table th.el-table__cell) {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-tabs :deep(.el-table td.el-table__cell) {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .result-view-toolbar {

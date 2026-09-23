@@ -7,6 +7,7 @@
       </template>
     </p>
     <h1>{{ title }}</h1>
+    <p v-if="description" class="page-description">{{ description }}</p>
   </div>
 </template>
 
@@ -16,6 +17,10 @@ import { useRoute } from 'vue-router'
 import { getCurrentMenuPath } from '@/utils/auth'
 
 const route = useRoute()
+
+defineProps<{
+  description?: string
+}>()
 
 const breadcrumbItems = computed(() => {
   const menuItems = getCurrentMenuPath(route.path).map((item) => item.name)
@@ -50,6 +55,13 @@ h1 {
   margin: 0;
   color: var(--app-text);
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
+}
+
+.page-description {
+  margin: 5px 0 0;
+  color: var(--app-text-muted);
+  font-size: 13px;
+  line-height: 20px;
 }
 </style>

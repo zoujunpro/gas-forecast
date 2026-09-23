@@ -35,7 +35,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
     @Override
     public PageInfoDTO<ModelTrainConfigResponse> listPage(ModelTrainConfigPageRequest reqDTO) {
         LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.lambdaQuery();
-        String keyword = reqDTO.keyword();
+        String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
             query.and(wrapper -> wrapper.like(ModelTrainConfigTb::getTrainCode, keyword)
                     .or()
@@ -55,17 +55,17 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
                     .or()
                     .like(ModelTrainConfigTb::getCustomerName, keyword));
         }
-        if (TextUtils.hasText(reqDTO.agentCode())) {
-            query.eq(ModelTrainConfigTb::getAgentCode, reqDTO.agentCode().trim());
+        if (TextUtils.hasText(reqDTO.getAgentCode())) {
+            query.eq(ModelTrainConfigTb::getAgentCode, reqDTO.getAgentCode().trim());
         }
-        if (TextUtils.hasText(reqDTO.timeGranularity())) {
+        if (TextUtils.hasText(reqDTO.getTimeGranularity())) {
             query.eq(
                     ModelTrainConfigTb::getTimeGranularity,
-                    reqDTO.timeGranularity().trim());
+                    reqDTO.getTimeGranularity().trim());
         }
         query.orderByDesc(ModelTrainConfigTb::getUpdatedAt).orderByDesc(ModelTrainConfigTb::getId);
-        int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
+        int page = reqDTO.getPage() == null ? 1 : reqDTO.getPage();
+        int size = reqDTO.getSize() == null ? 10 : reqDTO.getSize();
         IPage<ModelTrainConfigTb> result =
                 modelTrainConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(
@@ -76,9 +76,9 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
     @Transactional
     public ModelTrainConfigResponse create(ModelTrainConfigCreateRequest reqDTO) {
         String trainCode =
-                TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode().trim() : generateTrainCode();
+                TextUtils.hasText(reqDTO.getTrainCode()) ? reqDTO.getTrainCode().trim() : generateTrainCode();
         ensureTrainCodeUnique(trainCode, null);
-        ModelConfigTb modelConfig = requireModel(reqDTO.modelId());
+        ModelConfigTb modelConfig = requireModel(reqDTO.getModelId());
         ModelTrainConfigTb entity = toEntity(reqDTO, trainCode, modelConfig);
         Date now = new Date();
         entity.setId(null);
@@ -93,20 +93,20 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
     @Override
     @Transactional
     public ModelTrainConfigResponse update(ModelTrainConfigUpdateRequest reqDTO) {
-        ModelTrainConfigTb exists = modelTrainConfigTbMapper.selectById(reqDTO.id());
+        ModelTrainConfigTb exists = modelTrainConfigTbMapper.selectById(reqDTO.getId());
         if (exists == null) {
             throw new BusinessException("模型训练配置不存在");
         }
-        ensureTrainCodeUnique(reqDTO.trainCode(), reqDTO.id());
-        ModelConfigTb modelConfig = requireModel(reqDTO.modelId());
+        ensureTrainCodeUnique(reqDTO.getTrainCode(), reqDTO.getId());
+        ModelConfigTb modelConfig = requireModel(reqDTO.getModelId());
         ModelTrainConfigTb entity = toEntity(reqDTO, modelConfig);
-        entity.setId(reqDTO.id());
+        entity.setId(reqDTO.getId());
         entity.setCreatedAt(exists.getCreatedAt());
         entity.setCreatedBy(exists.getCreatedBy());
         entity.setCreatedByName(exists.getCreatedByName());
         entity.setUpdatedAt(new Date());
         modelTrainConfigTbMapper.updateById(entity);
-        return toResp(modelTrainConfigTbMapper.selectById(reqDTO.id()));
+        return toResp(modelTrainConfigTbMapper.selectById(reqDTO.getId()));
     }
 
     @Override
@@ -136,22 +136,22 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         fillEntity(
                 entity,
                 trainCode,
-                reqDTO.trainName(),
-                reqDTO.agentCode(),
+                reqDTO.getTrainName(),
+                reqDTO.getAgentCode(),
                 modelConfig,
-                reqDTO.regionCode(),
-                reqDTO.regionName(),
-                reqDTO.industryCode(),
-                reqDTO.industryName(),
-                reqDTO.customerCode(),
-                reqDTO.customerName(),
-                reqDTO.trainStartDate(),
-                reqDTO.trainEndDate(),
-                reqDTO.trainMode(),
-                reqDTO.timeGranularity(),
-                reqDTO.recentPeriods(),
-                reqDTO.enabled(),
-                reqDTO.remark());
+                reqDTO.getRegionCode(),
+                reqDTO.getRegionName(),
+                reqDTO.getIndustryCode(),
+                reqDTO.getIndustryName(),
+                reqDTO.getCustomerCode(),
+                reqDTO.getCustomerName(),
+                reqDTO.getTrainStartDate(),
+                reqDTO.getTrainEndDate(),
+                reqDTO.getTrainMode(),
+                reqDTO.getTimeGranularity(),
+                reqDTO.getRecentPeriods(),
+                reqDTO.getEnabled(),
+                reqDTO.getRemark());
         return entity;
     }
 
@@ -159,23 +159,23 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         ModelTrainConfigTb entity = new ModelTrainConfigTb();
         fillEntity(
                 entity,
-                reqDTO.trainCode(),
-                reqDTO.trainName(),
-                reqDTO.agentCode(),
+                reqDTO.getTrainCode(),
+                reqDTO.getTrainName(),
+                reqDTO.getAgentCode(),
                 modelConfig,
-                reqDTO.regionCode(),
-                reqDTO.regionName(),
-                reqDTO.industryCode(),
-                reqDTO.industryName(),
-                reqDTO.customerCode(),
-                reqDTO.customerName(),
-                reqDTO.trainStartDate(),
-                reqDTO.trainEndDate(),
-                reqDTO.trainMode(),
-                reqDTO.timeGranularity(),
-                reqDTO.recentPeriods(),
-                reqDTO.enabled(),
-                reqDTO.remark());
+                reqDTO.getRegionCode(),
+                reqDTO.getRegionName(),
+                reqDTO.getIndustryCode(),
+                reqDTO.getIndustryName(),
+                reqDTO.getCustomerCode(),
+                reqDTO.getCustomerName(),
+                reqDTO.getTrainStartDate(),
+                reqDTO.getTrainEndDate(),
+                reqDTO.getTrainMode(),
+                reqDTO.getTimeGranularity(),
+                reqDTO.getRecentPeriods(),
+                reqDTO.getEnabled(),
+                reqDTO.getRemark());
         return entity;
     }
 
