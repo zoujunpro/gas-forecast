@@ -5,9 +5,20 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.enums.ModelTrainStatus;
+import com.gas.forecast.business.dto.request.ModelForecastBatchRequest;
+import com.gas.forecast.business.dto.request.ModelForecastConfigPageRequest;
+import com.gas.forecast.business.dto.request.ModelForecastConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelForecastConfigSaveRequest;
+import com.gas.forecast.business.dto.request.ModelForecastConfigUpdateRequest;
+import com.gas.forecast.business.dto.request.ModelForecastExecuteRequest;
+import com.gas.forecast.business.dto.request.ModelForecastRecordPageRequest;
+import com.gas.forecast.business.dto.request.ModelForecastResultPageRequest;
+import com.gas.forecast.business.dto.response.ModelForecastExecuteResponse;
+import com.gas.forecast.business.dto.response.ModelForecastHistoryPointResponse;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -67,37 +78,36 @@ public class ModelForecastManagementService {
     @Value("${gas.agent.predict-url:http://127.0.0.1:8090/api/v1/predict}")
     private String predictUrl;
 
-    public PageInfoDTO<ModelForecastConfigTb> listConfigs(JsonNode request) {
+    public PageInfoDTO<ModelForecastConfigTb> listConfigs(ModelForecastConfigPageRequest request) {
         var query = Wrappers.<ModelForecastConfigTb>lambdaQuery();
-        String keyword = text(request, "keyword");
+        String keyword = request.getKeyword();
         if (TextUtils.hasText(keyword)) {
             query.like(ModelForecastConfigTb::getForecastName, keyword);
         }
-        eqText(query, ModelForecastConfigTb::getAgentCode, text(request, "agentCode"));
-        if (request.hasNonNull("enabled"))
-            query.eq(ModelForecastConfigTb::getEnabled, request.get("enabled").asInt());
+        eqText(query, ModelForecastConfigTb::getAgentCode, request.getAgentCode());
+        if (request.getEnabled() != null) query.eq(ModelForecastConfigTb::getEnabled, request.getEnabled());
         query.orderByDesc(ModelForecastConfigTb::getUpdatedAt).orderByDesc(ModelForecastConfigTb::getId);
-        int page = positive(request, "page", 1);
-        int size = positive(request, "size", 10);
+        int page = positive(request.getPage(), 1);
+        int size = positive(request.getSize(), 10);
         IPage<ModelForecastConfigTb> result = configMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
     }
 
     @Transactional
-    public ModelForecastConfigTb saveConfig(JsonNode request) {
-        Long id = request.hasNonNull("id") ? request.get("id").asLong() : null;
+    public ModelForecastConfigTb saveConfig(ModelForecastConfigSaveRequest request) {
+        Long id = request.getId();
         ModelForecastConfigTb entity = id == null ? new ModelForecastConfigTb() : configMapper.selectById(id);
         if (id != null && entity == null) throw new BusinessException("预测配置不存在");
-        String name = text(request, "forecastName");
+        String name = request.getForecastName();
         if (!TextUtils.hasText(name)) throw new BusinessException("预测名称不能为空");
-        String forecastStartDate = text(request, "forecastStartDate");
+        String forecastStartDate = request.getForecastStartDate();
         if (!TextUtils.hasText(forecastStartDate)) throw new BusinessException("预测开始日期不能为空");
         try {
             java.time.LocalDate.parse(forecastStartDate);
         } catch (java.time.format.DateTimeParseException exception) {
             throw new BusinessException("预测开始日期格式必须为 yyyy-MM-dd");
         }
-        ModelTrainConfigTb trainConfig = requireTrainConfig(text(request, "trainConfigCode"));
+        ModelTrainConfigTb trainConfig = requireTrainConfig(request.getTrainConfigCode());
         String agentCode = trainConfig.getAgentCode();
         Date now = new Date();
         if (id == null) {
@@ -115,16 +125,26 @@ public class ModelForecastManagementService {
         entity.setCustomerCode(trainConfig.getCustomerCode());
         entity.setCustomerName(trainConfig.getCustomerName());
         entity.setForecastStartDate(forecastStartDate);
-        entity.setForecastHorizon(positive(request, "forecastHorizon", 12));
-        entity.setForecastFrequency(defaultText(text(request, "forecastFrequency"), "MANUAL"));
+        entity.setForecastHorizon(positive(request.getForecastHorizon(), 12));
+        entity.setForecastFrequency(defaultText(request.getForecastFrequency(), "MANUAL"));
         entity.setAutoForecast(0);
         entity.setTrainConfigCode(trainConfig.getTrainCode());
-        entity.setEnabled(request.path("enabled").asInt(1));
-        entity.setRemark(text(request, "remark"));
+        entity.setEnabled(request.getEnabled() == null ? 1 : request.getEnabled());
+        entity.setRemark(request.getRemark());
         entity.setUpdatedAt(now);
         if (id == null) configMapper.insert(entity);
         else configMapper.updateById(entity);
         return configMapper.selectById(entity.getId());
+    }
+
+    @Transactional
+    public ModelForecastConfigTb createConfig(ModelForecastConfigCreateRequest request) {
+        return saveConfig(objectMapper.convertValue(request, ModelForecastConfigSaveRequest.class));
+    }
+
+    @Transactional
+    public ModelForecastConfigTb updateConfig(ModelForecastConfigUpdateRequest request) {
+        return saveConfig(objectMapper.convertValue(request, ModelForecastConfigSaveRequest.class));
     }
 
     private ModelTrainConfigTb requireTrainConfig(String trainConfigCode) {
@@ -163,17 +183,12 @@ public class ModelForecastManagementService {
         configMapper.deleteById(id);
     }
 
-    public JsonNode execute(JsonNode request) throws Exception {
-        Long forecastId =
-                request.hasNonNull("forecastId") ? request.get("forecastId").asLong() : null;
-        if (forecastId == null) throw new BusinessException("预测配置ID不能为空");
+    public ModelForecastExecuteResponse execute(ModelForecastExecuteRequest request) {
+        Long forecastId = request.getForecastId();
         ModelForecastConfigTb config = configMapper.selectById(forecastId);
         if (config == null) throw new BusinessException("预测配置不存在");
         if (config.getEnabled() != null && config.getEnabled() == 0) throw new BusinessException("预测配置已停用");
-        JsonNode dataset = request.get("dataset");
-        if (dataset == null || !dataset.isArray() || dataset.isEmpty()) {
-            throw new BusinessException("请填写非空的特征数据数组");
-        }
+        JsonNode dataset = objectMapper.valueToTree(request.getDataset());
         for (JsonNode item : dataset) {
             if (!item.isObject() || !TextUtils.hasText(item.path("date").asText())) {
                 throw new BusinessException("每条特征数据都必须是对象并包含 date 字段");
@@ -206,12 +221,8 @@ public class ModelForecastManagementService {
                     java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
-            return objectMapper
-                    .createObjectNode()
-                    .put("forecastId", forecastId)
-                    .put("forecastBatchNo", forecastBatchNo)
-                    .put("resultCount", data.path("points").size());
-        } catch (Exception exception) {
+            return new ModelForecastExecuteResponse(forecastId, forecastBatchNo, data.path("points").size());
+        } catch (RuntimeException exception) {
             record.setStatus(3);
             record.setResponseParam(
                     exception.getMessage() == null
@@ -374,17 +385,17 @@ public class ModelForecastManagementService {
         return value == null ? "" : value.trim().toLowerCase().replace('-', '_').replace(' ', '_');
     }
 
-    public PageInfoDTO<ModelForecastResultTb> listResults(JsonNode request) {
+    public PageInfoDTO<ModelForecastResultTb> listResults(ModelForecastResultPageRequest request) {
         var query = Wrappers.<ModelForecastResultTb>lambdaQuery();
-        eqText(query, ModelForecastResultTb::getForecastBatchNo, text(request, "forecastBatchNo"));
+        eqText(query, ModelForecastResultTb::getForecastBatchNo, request.getForecastBatchNo());
         query.orderByDesc(ModelForecastResultTb::getForecastDate).orderByDesc(ModelForecastResultTb::getId);
-        int page = positive(request, "page", 1), size = positive(request, "size", 20);
+        int page = positive(request.getPage(), 1), size = positive(request.getSize(), 20);
         IPage<ModelForecastResultTb> result = resultMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
     }
 
-    public List<Map<String, Object>> resultHistory(JsonNode request) {
-        String batchNo = text(request, "forecastBatchNo");
+    public List<ModelForecastHistoryPointResponse> resultHistory(ModelForecastBatchRequest request) {
+        String batchNo = request.getForecastBatchNo();
         if (!TextUtils.hasText(batchNo)) throw new BusinessException("预测批次号不能为空");
         ModelForecastRecordTb record = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
                 .eq(ModelForecastRecordTb::getForecastBatchNo, batchNo)
@@ -424,11 +435,8 @@ public class ModelForecastManagementService {
         return rows.stream()
                 .filter(row -> comparisonStartDate == null || row.getStatDate().compareTo(comparisonStartDate) >= 0)
                 .map(row -> {
-                    Map<String, Object> point = new LinkedHashMap<>();
-                    point.put("date", row.getStatDate());
-                    point.put("actualValue", row.getGasSales());
-                    point.put("predictedValue", rollingPredictions.get(row.getStatDate()));
-                    return point;
+                    return new ModelForecastHistoryPointResponse(
+                            row.getStatDate(), row.getGasSales(), rollingPredictions.get(row.getStatDate()));
                 })
                 .toList();
     }
@@ -496,24 +504,20 @@ public class ModelForecastManagementService {
         return result;
     }
 
-    public PageInfoDTO<ModelForecastRecordTb> listRecords(JsonNode request) {
+    public PageInfoDTO<ModelForecastRecordTb> listRecords(ModelForecastRecordPageRequest request) {
         var query = Wrappers.<ModelForecastRecordTb>lambdaQuery();
-        if (request.hasNonNull("forecastId"))
-            query.eq(
-                    ModelForecastRecordTb::getForecastId,
-                    request.get("forecastId").asLong());
-        String forecastBatchNo = text(request, "forecastBatchNo");
+        if (request.getForecastId() != null) query.eq(ModelForecastRecordTb::getForecastId, request.getForecastId());
+        String forecastBatchNo = request.getForecastBatchNo();
         if (TextUtils.hasText(forecastBatchNo)) query.eq(ModelForecastRecordTb::getForecastBatchNo, forecastBatchNo);
-        if (request.hasNonNull("status"))
-            query.eq(ModelForecastRecordTb::getStatus, request.get("status").asInt());
+        if (request.getStatus() != null) query.eq(ModelForecastRecordTb::getStatus, request.getStatus());
         query.orderByDesc(ModelForecastRecordTb::getCreatedAt).orderByDesc(ModelForecastRecordTb::getId);
-        int page = positive(request, "page", 1), size = positive(request, "size", 10);
+        int page = positive(request.getPage(), 1), size = positive(request.getSize(), 10);
         IPage<ModelForecastRecordTb> result = recordMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
     }
 
-    public JsonNode recordFeatures(JsonNode request) {
-        String forecastBatchNo = text(request, "forecastBatchNo");
+    public List<Map<String, Object>> recordFeatures(ModelForecastBatchRequest request) {
+        String forecastBatchNo = request.getForecastBatchNo();
         if (!TextUtils.hasText(forecastBatchNo)) throw new BusinessException("预测批次号不能为空");
         ModelForecastRecordTb record = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
                 .select(ModelForecastRecordTb::getFeatureSnapshot, ModelForecastRecordTb::getRequestParam)
@@ -532,7 +536,9 @@ public class ModelForecastManagementService {
                         objectMapper.readTree(new String(record.getRequestParam(), StandardCharsets.UTF_8));
                 features = requestPayload.path("dataset");
             }
-            return features != null && features.isArray() ? features : objectMapper.createArrayNode();
+            return features != null && features.isArray()
+                    ? objectMapper.convertValue(features, new TypeReference<List<Map<String, Object>>>() {})
+                    : Collections.emptyList();
         } catch (Exception exception) {
             throw new BusinessException("预测特征快照解析失败");
         }
@@ -542,8 +548,8 @@ public class ModelForecastManagementService {
         return node.hasNonNull(field) ? node.get(field).asText().trim() : null;
     }
 
-    private int positive(JsonNode node, String field, int fallback) {
-        return Math.max(node.path(field).asInt(fallback), 1);
+    private int positive(Integer value, int fallback) {
+        return value == null ? fallback : Math.max(value, 1);
     }
 
     private String defaultText(String value, String fallback) {

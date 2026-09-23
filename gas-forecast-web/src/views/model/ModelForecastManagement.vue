@@ -635,7 +635,7 @@ const save = async () => {
   if (!(await formRef.value?.validate().catch(() => false))) return
   saving.value = true
   try {
-    await postJson('/model-forecast-config/save', {
+    await postJson(form.id ? '/model-forecast-config/update' : '/model-forecast-config/create', {
       ...form,
       autoForecast: form.autoForecast ? 1 : 0,
       enabled: form.enabled ? 1 : 0
