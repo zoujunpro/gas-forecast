@@ -10,7 +10,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelForecastHistoryPointResponse {
+    /**
+     * 日期。
+     */
     private String date;
+    /**
+     * 实际值。
+     */
     private BigDecimal actualValue;
+    /**
+     * 预测值。
+     */
     private BigDecimal predictedValue;
 }

@@ -4,31 +4,30 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 预测维度选项应答参数。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DimensionItemResponse {
+    /**
+     * 编码。
+     */
     private String code;
 
+    /**
+     * 名称。
+     */
     private String name;
 
+    /**
+     * 上级编码。
+     */
     private String parentCode;
 
+    /**
+     * 类型。
+     */
     private String type;
-
-    public String code() {
-        return code;
-    }
-
-    public String name() {
-        return name;
-    }
-
-    public String parentCode() {
-        return parentCode;
-    }
-
-    public String type() {
-        return type;
-    }
 }

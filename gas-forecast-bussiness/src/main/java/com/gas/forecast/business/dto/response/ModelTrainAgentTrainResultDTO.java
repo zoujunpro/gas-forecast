@@ -16,119 +16,102 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelTrainAgentTrainResultDTO {
+    /**
+     * 智能体编码。
+     */
     @JsonProperty("agent_code")
     private String agentCode;
 
+    /**
+     * 模型编码。
+     */
     @JsonProperty("model_code")
     private String modelCode;
 
+    /**
+     * 训练批次号。
+     */
     @JsonProperty("train_batch_no")
     private String trainBatchNo;
 
+    /**
+     * 评估指标。
+     */
     private JsonNode metrics;
 
+    /**
+     * 特征名称列表。
+     */
     @JsonProperty("feature_names")
     private List<String> featureNames;
 
+    /**
+     * 选中模型名称。
+     */
     @JsonProperty("selected_model_name")
     private String selectedModelName;
 
+    /**
+     * 模型选择原因。
+     */
     @JsonProperty("selection_reason")
     private String selectionReason;
 
+    /**
+     * 请求候选模型数量。
+     */
     @JsonProperty("requested_candidate_count")
     private Integer requestedCandidateCount;
 
+    /**
+     * 成功候选模型数量。
+     */
     @JsonProperty("successful_candidate_count")
     private Integer successfulCandidateCount;
 
+    /**
+     * 参与排名的候选模型数量。
+     */
     @JsonProperty("ranked_candidate_count")
     private Integer rankedCandidateCount;
 
+    /**
+     * 选中模型参数。
+     */
     @JsonProperty("selected_model_params")
     private JsonNode selectedModelParams;
 
+    /**
+     * 候选模型评估结果。
+     */
     @JsonProperty("candidate_evaluations")
     private JsonNode candidateEvaluations;
 
+    /**
+     * 滚动回测结果。
+     */
     @JsonProperty("rolling_backtest_results")
     private JsonNode rollingBacktestResults;
 
+    /**
+     * 滚动回测分折指标。
+     */
     @JsonProperty("rolling_backtest_fold_metrics")
     private JsonNode rollingBacktestFoldMetrics;
 
+    /**
+     * 问题列表。
+     */
     private JsonNode issues;
 
+    /**
+     * 元数据。
+     */
     private JsonNode metadata;
 
+    /**
+     * 创建时间。
+     */
     @JsonProperty("created_at")
     private String createdAt;
-
-    public String agentCode() {
-        return agentCode;
-    }
-
-    public String modelCode() {
-        return modelCode;
-    }
-
-    public String trainBatchNo() {
-        return trainBatchNo;
-    }
-
-    public JsonNode metrics() {
-        return metrics;
-    }
-
-    public List<String> featureNames() {
-        return featureNames;
-    }
-
-    public String selectedModelName() {
-        return selectedModelName;
-    }
-
-    public String selectionReason() {
-        return selectionReason;
-    }
-
-    public Integer requestedCandidateCount() {
-        return requestedCandidateCount;
-    }
-
-    public Integer successfulCandidateCount() {
-        return successfulCandidateCount;
-    }
-
-    public Integer rankedCandidateCount() {
-        return rankedCandidateCount;
-    }
-
-    public JsonNode selectedModelParams() {
-        return selectedModelParams;
-    }
-
-    public JsonNode candidateEvaluations() {
-        return candidateEvaluations;
-    }
-
-    public JsonNode rollingBacktestResults() {
-        return rollingBacktestResults;
-    }
-
-    public JsonNode rollingBacktestFoldMetrics() {
-        return rollingBacktestFoldMetrics;
-    }
-
-    public JsonNode issues() {
-        return issues;
-    }
-
-    public JsonNode metadata() {
-        return metadata;
-    }
-
-    public String createdAt() {
-        return createdAt;
-    }
 }

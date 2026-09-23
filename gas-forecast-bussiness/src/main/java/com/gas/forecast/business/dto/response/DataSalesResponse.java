@@ -68,48 +68,4 @@ public class DataSalesResponse {
      */
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date createdAt;
-
-    public Long id() {
-        return id;
-    }
-
-    public String statDate() {
-        return statDate;
-    }
-
-    public String regionCode() {
-        return regionCode;
-    }
-
-    public String regionName() {
-        return regionName;
-    }
-
-    public String industryCode() {
-        return industryCode;
-    }
-
-    public String industryName() {
-        return industryName;
-    }
-
-    public String customerCode() {
-        return customerCode;
-    }
-
-    public String customerName() {
-        return customerName;
-    }
-
-    public String gasSales() {
-        return gasSales;
-    }
-
-    public String fileId() {
-        return fileId;
-    }
-
-    public Date createdAt() {
-        return createdAt;
-    }
 }

@@ -13,21 +13,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelTrainAgentResponse {
+    /**
+     * 编码。
+     */
     private Integer code;
 
+    /**
+     * 应答消息。
+     */
     private String message;
 
+    /**
+     * 应答数据。
+     */
     private ModelTrainAgentTrainResultDTO data;
-
-    public Integer code() {
-        return code;
-    }
-
-    public String message() {
-        return message;
-    }
-
-    public ModelTrainAgentTrainResultDTO data() {
-        return data;
-    }
 }

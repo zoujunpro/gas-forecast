@@ -16,149 +16,125 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelTrainFeatureDataResponse {
+    /**
+     * ID。
+     */
     private Long id;
 
+    /**
+     * 统计日期。
+     */
     private String statDate;
 
+    /**
+     * 时间粒度。
+     */
     private String timeGranularity;
 
+    /**
+     * 区域编码。
+     */
     private String regionCode;
 
+    /**
+     * 区域名称。
+     */
     private String regionName;
 
+    /**
+     * 客户编码。
+     */
     private String customerCode;
 
+    /**
+     * 客户名称。
+     */
     private String customerName;
 
+    /**
+     * 行业编码。
+     */
     private String industryCode;
 
+    /**
+     * 行业名称。
+     */
     private String industryName;
 
+    /**
+     * 天然气销量。
+     */
     private BigDecimal gasSales;
 
+    /**
+     * 第1个扩展特征值。
+     */
     private Double feature001;
 
+    /**
+     * 第2个扩展特征值。
+     */
     private Double feature002;
 
+    /**
+     * 第3个扩展特征值。
+     */
     private Double feature003;
 
+    /**
+     * 第4个扩展特征值。
+     */
     private Double feature004;
 
+    /**
+     * 第5个扩展特征值。
+     */
     private Double feature005;
 
+    /**
+     * 第6个扩展特征值。
+     */
     private Double feature006;
 
+    /**
+     * 第7个扩展特征值。
+     */
     private Double feature007;
 
+    /**
+     * 第8个扩展特征值。
+     */
     private Double feature008;
 
+    /**
+     * 第9个扩展特征值。
+     */
     private Double feature009;
 
+    /**
+     * 第10个扩展特征值。
+     */
     private Double feature010;
 
+    /**
+     * 特征值映射。
+     */
     private Map<String, Double> featureValues;
 
+    /**
+     * 特征明细列表。
+     */
     private List<ModelTrainFeatureValueResponse> featureDetails;
 
+    /**
+     * 创建时间。
+     */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
 
+    /**
+     * 更新时间。
+     */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
-
-    public Long id() {
-        return id;
-    }
-
-    public String statDate() {
-        return statDate;
-    }
-
-    public String timeGranularity() {
-        return timeGranularity;
-    }
-
-    public String regionCode() {
-        return regionCode;
-    }
-
-    public String regionName() {
-        return regionName;
-    }
-
-    public String customerCode() {
-        return customerCode;
-    }
-
-    public String customerName() {
-        return customerName;
-    }
-
-    public String industryCode() {
-        return industryCode;
-    }
-
-    public String industryName() {
-        return industryName;
-    }
-
-    public BigDecimal gasSales() {
-        return gasSales;
-    }
-
-    public Double feature001() {
-        return feature001;
-    }
-
-    public Double feature002() {
-        return feature002;
-    }
-
-    public Double feature003() {
-        return feature003;
-    }
-
-    public Double feature004() {
-        return feature004;
-    }
-
-    public Double feature005() {
-        return feature005;
-    }
-
-    public Double feature006() {
-        return feature006;
-    }
-
-    public Double feature007() {
-        return feature007;
-    }
-
-    public Double feature008() {
-        return feature008;
-    }
-
-    public Double feature009() {
-        return feature009;
-    }
-
-    public Double feature010() {
-        return feature010;
-    }
-
-    public Map<String, Double> featureValues() {
-        return featureValues;
-    }
-
-    public List<ModelTrainFeatureValueResponse> featureDetails() {
-        return featureDetails;
-    }
-
-    public Date createTime() {
-        return createTime;
-    }
-
-    public Date updateTime() {
-        return updateTime;
-    }
 }

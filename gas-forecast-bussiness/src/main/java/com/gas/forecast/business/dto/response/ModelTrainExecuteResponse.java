@@ -12,45 +12,38 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelTrainExecuteResponse {
+    /**
+     * 训练配置编码。
+     */
     private String trainCode;
 
+    /**
+     * 训练批次号。
+     */
     private String trainBatchNo;
 
+    /**
+     * 模型编码。
+     */
     private String modelCode;
 
+    /**
+     * 训练数据集大小。
+     */
     private Integer datasetSize;
 
+    /**
+     * 状态。
+     */
     private String status;
 
+    /**
+     * 请求报文。
+     */
     private JsonNode requestPayload;
 
+    /**
+     * 智能体原始应答。
+     */
     private JsonNode agentResponse;
-
-    public String trainCode() {
-        return trainCode;
-    }
-
-    public String trainBatchNo() {
-        return trainBatchNo;
-    }
-
-    public String modelCode() {
-        return modelCode;
-    }
-
-    public Integer datasetSize() {
-        return datasetSize;
-    }
-
-    public String status() {
-        return status;
-    }
-
-    public JsonNode requestPayload() {
-        return requestPayload;
-    }
-
-    public JsonNode agentResponse() {
-        return agentResponse;
-    }
 }

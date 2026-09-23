@@ -11,21 +11,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelTrainFeatureValueResponse {
+    /**
+     * 特征序号。
+     */
     private String featureNo;
 
+    /**
+     * 特征编码。
+     */
     private String featureCode;
 
+    /**
+     * 特征值。
+     */
     private Double featureValue;
-
-    public String featureNo() {
-        return featureNo;
-    }
-
-    public String featureCode() {
-        return featureCode;
-    }
-
-    public Double featureValue() {
-        return featureValue;
-    }
 }

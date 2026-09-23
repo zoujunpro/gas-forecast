@@ -9,7 +9,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelForecastExecuteResponse {
+    /**
+     * 预测任务ID。
+     */
     private Long forecastId;
+    /**
+     * 预测批次号。
+     */
     private String forecastBatchNo;
+    /**
+     * 预测结果数量。
+     */
     private Integer resultCount;
 }

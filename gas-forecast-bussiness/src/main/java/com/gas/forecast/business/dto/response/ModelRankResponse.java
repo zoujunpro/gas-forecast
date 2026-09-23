@@ -5,55 +5,50 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 候选模型排名应答参数。
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelRankResponse {
+    /**
+     * 模型名称。
+     */
     private String modelName;
 
+    /**
+     * 模型类型。
+     */
     private String modelType;
 
+    /**
+     * MAPE指标。
+     */
     private BigDecimal mape;
 
+    /**
+     * WMAPE指标。
+     */
     private BigDecimal wmape;
 
+    /**
+     * RMSE指标。
+     */
     private BigDecimal rmse;
 
+    /**
+     * MAE指标。
+     */
     private BigDecimal mae;
 
+    /**
+     * R方指标。
+     */
     private BigDecimal r2;
 
+    /**
+     * 组成模型。
+     */
     private String constituents;
-
-    public String modelName() {
-        return modelName;
-    }
-
-    public String modelType() {
-        return modelType;
-    }
-
-    public BigDecimal mape() {
-        return mape;
-    }
-
-    public BigDecimal wmape() {
-        return wmape;
-    }
-
-    public BigDecimal rmse() {
-        return rmse;
-    }
-
-    public BigDecimal mae() {
-        return mae;
-    }
-
-    public BigDecimal r2() {
-        return r2;
-    }
-
-    public String constituents() {
-        return constituents;
-    }
 }
