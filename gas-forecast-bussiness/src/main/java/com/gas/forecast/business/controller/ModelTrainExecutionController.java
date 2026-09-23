@@ -1,10 +1,11 @@
 package com.gas.forecast.business.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
+import com.gas.forecast.business.dto.response.ModelTrainResultResponse;
+import com.gas.forecast.business.dto.response.ModelTrainingValidationResponse;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
@@ -36,7 +37,8 @@ public class ModelTrainExecutionController {
     @PostMapping("validate")
     @WebLog("校验模型训练数据")
     @RequirePermission("config:train:execute")
-    public ResponseResult<JsonNode> validate(@Valid @RequestBody ModelTrainExecuteRequest reqDTO) {
+    public ResponseResult<ModelTrainingValidationResponse> validate(
+            @Valid @RequestBody ModelTrainExecuteRequest reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.validateTrainingData(reqDTO));
     }
 
@@ -49,7 +51,7 @@ public class ModelTrainExecutionController {
 
     @PostMapping("result")
     @WebLog("查看模型训练结果")
-    public ResponseResult<JsonNode> result(@Valid @RequestBody ModelTrainResultRequest reqDTO) {
+    public ResponseResult<ModelTrainResultResponse> result(@Valid @RequestBody ModelTrainResultRequest reqDTO) {
         return ResponseResult.success(modelTrainExecutionService.getTrainResult(reqDTO));
     }
 }

@@ -1,6 +1,8 @@
 package com.gas.forecast.business.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gas.forecast.business.dto.response.ModelTrainingValidationResponse;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.HttpUtil;
 import com.gas.forecast.common.util.TextUtils;
@@ -12,6 +14,12 @@ import org.springframework.stereotype.Service;
 /** 模型平台元数据查询与训练数据预校验。 */
 @Service
 public class ModelPlatformService {
+
+    private final ObjectMapper objectMapper;
+
+    public ModelPlatformService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Value("${gas.agent.models-url:http://127.0.0.1:8090/api/v1/models}")
     private String modelsUrl;
@@ -29,7 +37,7 @@ public class ModelPlatformService {
         return data;
     }
 
-    public JsonNode validateTrainingData(JsonNode request) {
+    public ModelTrainingValidationResponse validateTrainingData(JsonNode request) {
         JsonNode response = HttpUtil.postJson(validateTrainingUrl, request);
         ensureSuccess(response, "训练数据校验失败");
         JsonNode data = response.path("data");
@@ -48,7 +56,7 @@ public class ModelPlatformService {
             throw new BusinessException(
                     messages.isEmpty() ? "训练数据不满足当前模型要求" : "训练数据校验未通过：" + String.join("；", messages));
         }
-        return data;
+        return objectMapper.convertValue(data, ModelTrainingValidationResponse.class);
     }
 
     private void ensureSuccess(JsonNode response, String fallbackMessage) {

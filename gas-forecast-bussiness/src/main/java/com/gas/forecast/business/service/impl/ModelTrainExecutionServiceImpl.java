@@ -10,7 +10,11 @@ import com.gas.forecast.business.dto.request.ModelTrainAgentTrainRequest;
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
+import com.gas.forecast.business.dto.response.ModelTrainAgentTrainResultDTO;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
+import com.gas.forecast.business.dto.response.ModelTrainRecordResponse;
+import com.gas.forecast.business.dto.response.ModelTrainResultResponse;
+import com.gas.forecast.business.dto.response.ModelTrainingValidationResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
@@ -152,7 +156,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     @Override
     @Transactional(readOnly = true)
-    public JsonNode validateTrainingData(ModelTrainExecuteRequest reqDTO) {
+    public ModelTrainingValidationResponse validateTrainingData(ModelTrainExecuteRequest reqDTO) {
         String trainCode = TextUtils.hasText(reqDTO.trainCode()) ? reqDTO.trainCode() : reqDTO.configCode();
         if (!TextUtils.hasText(trainCode)) {
             throw new BusinessException("训练配置编码不能为空");
@@ -220,7 +224,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     }
 
     @Override
-    public JsonNode getTrainResult(ModelTrainResultRequest reqDTO) {
+    public ModelTrainResultResponse getTrainResult(ModelTrainResultRequest reqDTO) {
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery();
         String batchNo = reqDTO.getBatchNo();
         boolean loadDetail = TextUtils.hasText(batchNo);
@@ -266,53 +270,49 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 .last(loadDetail ? "limit 1" : "limit 20");
         List<ModelTrainRecordTb> details = modelTrainDetailTbMapper.selectList(query);
 
-        ObjectNode result = objectMapper.createObjectNode();
-        ArrayNode detailNodes = objectMapper.createArrayNode();
+        List<ModelTrainRecordResponse> resultDetails = new ArrayList<>();
         for (ModelTrainRecordTb detail : details) {
-            ObjectNode item = objectMapper.createObjectNode();
-            item.put("id", detail.getId());
-            item.put("batchNo", detail.getBatchNo());
-            item.put("agentCode", detail.getAgentCode());
-            item.put("agentName", agentName(detail.getAgentCode()));
-            item.put("regionName", detail.getRegionName());
-            item.put("industryName", detail.getIndustryName());
-            item.put("customerName", detail.getCustomerName());
-            item.put("trainStartDate", detail.getTrainStartDate());
-            item.put("trainEndDate", detail.getTrainEndDate());
-            item.put("status", detail.getStatus());
-            item.put("bestModel", detail.getBestModel());
-            putDecimal(item, "mape", detail.getMape());
-            putDecimal(item, "wmape", detail.getWmape());
-            putDecimal(item, "smape", detail.getSmape());
-            putDecimal(item, "rmse", detail.getRmse());
-            putDecimal(item, "mae", detail.getMae());
-            putDecimal(item, "r2", detail.getR2());
-            putDecimal(item, "trainDurationSeconds", detail.getTrainDurationSeconds());
-            item.put("modelVersion", detail.getModelVersion());
-            item.put("errorMessage", detail.getErrorMessage());
+            ModelTrainRecordResponse item = new ModelTrainRecordResponse();
+            item.setId(detail.getId());
+            item.setBatchNo(detail.getBatchNo());
+            item.setAgentCode(detail.getAgentCode());
+            item.setAgentName(agentName(detail.getAgentCode()));
+            item.setRegionName(detail.getRegionName());
+            item.setIndustryName(detail.getIndustryName());
+            item.setCustomerName(detail.getCustomerName());
+            item.setTrainStartDate(detail.getTrainStartDate());
+            item.setTrainEndDate(detail.getTrainEndDate());
+            item.setStatus(detail.getStatus());
+            item.setBestModel(detail.getBestModel());
+            item.setMape(detail.getMape());
+            item.setWmape(detail.getWmape());
+            item.setSmape(detail.getSmape());
+            item.setRmse(detail.getRmse());
+            item.setMae(detail.getMae());
+            item.setR2(detail.getR2());
+            item.setTrainDurationSeconds(detail.getTrainDurationSeconds());
+            item.setModelVersion(detail.getModelVersion());
+            item.setErrorMessage(detail.getErrorMessage());
             if (TextUtils.hasText(detail.getErrorMessage())) {
-                item.put("message", detail.getErrorMessage());
+                item.setMessage(detail.getErrorMessage());
             }
-            putDate(item, "createdAt", detail.getCreatedAt());
-            putDate(item, "updatedAt", detail.getUpdatedAt());
+            item.setCreatedAt(detail.getCreatedAt());
+            item.setUpdatedAt(detail.getUpdatedAt());
             if (loadDetail) {
                 JsonNode requestJson = parseRequestPayload(detail.getRequestParam());
                 if (requestJson != null) {
-                    item.set("requestJson", previewRequestPayload(requestJson));
+                    item.setRequestJson(objectMapper.convertValue(
+                            previewRequestPayload(requestJson), ModelTrainAgentTrainRequest.class));
                 }
                 JsonNode node = parseJsonValue(detail.getResultJson());
-                if (node != null) {
-                    item.set("resultJson", node);
+                if (node != null && TextUtils.hasText(node.path("train_batch_no").asText(null))) {
+                    item.setResultJson(objectMapper.convertValue(node, ModelTrainAgentTrainResultDTO.class));
                 }
             }
-            detailNodes.add(item);
+            resultDetails.add(item);
         }
-        result.set("details", detailNodes);
-        result.set("batches", detailNodes);
-        if (!details.isEmpty()) {
-            result.put("selectedBatchNo", details.get(0).getBatchNo());
-        }
-        return result;
+        String selectedBatchNo = details.isEmpty() ? null : details.get(0).getBatchNo();
+        return new ModelTrainResultResponse(resultDetails, selectedBatchNo);
     }
 
     private JsonNode previewRequestPayload(JsonNode requestJson) {
