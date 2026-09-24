@@ -35,9 +35,18 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         if (TextUtils.hasText(reqDTO.endDate())) {
             query.le(DataDailySalesTb::getStatDate, reqDTO.endDate());
         }
+        if (TextUtils.hasText(reqDTO.customerCode())) {
+            query.eq(DataDailySalesTb::getCustomerCode, reqDTO.customerCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.regionCode())) {
+            query.eq(DataDailySalesTb::getRegionCode, reqDTO.regionCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.industryCode())) {
+            query.eq(DataDailySalesTb::getIndustryCode, reqDTO.industryCode().trim());
+        }
         query.orderByDesc(DataDailySalesTb::getStatDate).orderByDesc(DataDailySalesTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
+        int size = reqDTO.size() == null ? 20 : reqDTO.size();
         IPage<DataDailySalesTb> result = dataDailySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }

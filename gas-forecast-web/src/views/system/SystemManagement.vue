@@ -137,6 +137,7 @@
                 link
                 type="primary"
                 :permission="config.permissions?.update"
+                :disabled="!canMovePermission(row, -1)"
                 @click="movePermission(row, -1)"
                 >上移</PermissionButton
               >
@@ -144,6 +145,7 @@
                 link
                 type="primary"
                 :permission="config.permissions?.update"
+                :disabled="!canMovePermission(row, 1)"
                 @click="movePermission(row, 1)"
                 >下移</PermissionButton
               >
@@ -582,14 +584,36 @@ const saveDepartmentSort = async (row: Record<string, any>) => {
   await saveRecord('/system/departments', row)
 }
 
+const permissionSiblings = (row: Record<string, any>) =>
+  allPermissionRecords.value
+    .filter(
+      (item) => item.permissionType !== 'BUTTON' && (item.parentId || 0) === (row.parentId || 0)
+    )
+    .sort((a, b) => (a.sortNo || 0) - (b.sortNo || 0) || a.id - b.id)
+
+const canMovePermission = (row: Record<string, any>, direction: -1 | 1) => {
+  const siblings = permissionSiblings(row)
+  const index = siblings.findIndex((item) => item.id === row.id)
+  return index >= 0 && index + direction >= 0 && index + direction < siblings.length
+}
+
 const movePermission = async (row: Record<string, any>, direction: -1 | 1) => {
-  const result = await postJson('/system/permissions/move', { id: row.id, direction })
-  if (result.data?.moved === false) {
+  if (!canMovePermission(row, direction)) {
     ElMessage.info(direction < 0 ? '已经是同级第一个' : '已经是同级最后一个')
     return
   }
-  await loadOptions()
-  await loadData()
+  try {
+    const result = await postJson('/system/permissions/move', { id: row.id, direction })
+    if (result.data?.moved !== true) {
+      ElMessage.info(direction < 0 ? '已经是同级第一个' : '已经是同级最后一个')
+      return
+    }
+    await loadOptions()
+    await loadData()
+    ElMessage.success(direction < 0 ? '已上移' : '已下移')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '菜单排序失败')
+  }
 }
 
 const getPermissionTree = () => {

@@ -41,7 +41,7 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         }
         query.orderByDesc(BaseRegionTb::getUpdatedAt).orderByDesc(BaseRegionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
+        int size = reqDTO.size() == null ? 20 : reqDTO.size();
         IPage<BaseRegionTb> result = baseRegionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }

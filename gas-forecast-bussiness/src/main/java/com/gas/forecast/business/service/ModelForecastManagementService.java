@@ -1,5 +1,6 @@
 package com.gas.forecast.business.service;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -90,7 +91,7 @@ public class ModelForecastManagementService {
             query.eq(ModelForecastConfigTb::getEnabled, request.getEnabled());
         query.orderByDesc(ModelForecastConfigTb::getUpdatedAt).orderByDesc(ModelForecastConfigTb::getId);
         int page = positive(request.getPage(), 1);
-        int size = positive(request.getSize(), 10);
+        int size = positive(request.getSize(), 20);
         IPage<ModelForecastConfigTb> result = configMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
     }
@@ -498,7 +499,7 @@ public class ModelForecastManagementService {
         if (request.getStatus() != null)
             query.eq(ModelForecastRecordTb::getStatus, request.getStatus());
         query.orderByDesc(ModelForecastRecordTb::getCreatedAt).orderByDesc(ModelForecastRecordTb::getId);
-        int page = positive(request.getPage(), 1), size = positive(request.getSize(), 10);
+        int page = positive(request.getPage(), 1), size = positive(request.getSize(), 20);
         IPage<ModelForecastRecordTb> result = recordMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords());
     }

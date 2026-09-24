@@ -429,7 +429,7 @@ const rows = ref<Record<string, any>[]>([]),
 const saving = ref(false),
   formRef = ref<FormInstance>()
 const page = ref(1),
-  size = ref(10),
+  size = ref(20),
   total = ref(0)
 const recordsLoading = ref(false),
   recordRows = ref<Record<string, any>[]>([]),
@@ -460,7 +460,7 @@ const resultView = ref<'chart' | 'table'>('chart'),
 const detailTab = ref<'result' | 'features'>('result')
 let resultChart: echarts.ECharts | null = null
 const recordPage = ref(1),
-  recordSize = ref(10),
+  recordSize = ref(20),
   currentForecastId = ref<number | null>(null)
 const predictionInfo = computed(() => {
   const frequencyCode = String(

@@ -354,6 +354,45 @@ export const modelTrainFeatureDataConfig: BaseDataPageConfig = {
       startProp: 'statDateStart',
       endProp: 'statDateEnd',
       width: 260
+    },
+    {
+      prop: 'customerCode',
+      label: '客户',
+      type: 'select',
+      placeholder: '客户',
+      width: 180,
+      optionSource: {
+        endpoint: '/base-customer',
+        valueProp: 'customerCode',
+        labelProp: 'customerName',
+        labelTemplate: 'nameWithCode'
+      }
+    },
+    {
+      prop: 'regionCode',
+      label: '地区',
+      type: 'select',
+      placeholder: '地区',
+      width: 160,
+      optionSource: {
+        endpoint: '/base-region',
+        valueProp: 'regionCode',
+        labelProp: 'regionName',
+        labelTemplate: 'nameWithCode'
+      }
+    },
+    {
+      prop: 'industryCode',
+      label: '行业',
+      type: 'select',
+      placeholder: '行业',
+      width: 160,
+      optionSource: {
+        endpoint: '/base-industry',
+        valueProp: 'industryCode',
+        labelProp: 'industryName',
+        labelTemplate: 'nameWithCode'
+      }
     }
   ],
   tableFields: [

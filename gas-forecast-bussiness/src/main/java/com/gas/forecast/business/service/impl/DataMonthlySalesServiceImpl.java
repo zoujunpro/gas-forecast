@@ -35,9 +35,18 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         if (TextUtils.hasText(reqDTO.endDate())) {
             query.le(DataMonthlySalesTb::getStatDate, reqDTO.endDate());
         }
+        if (TextUtils.hasText(reqDTO.customerCode())) {
+            query.eq(DataMonthlySalesTb::getCustomerCode, reqDTO.customerCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.regionCode())) {
+            query.eq(DataMonthlySalesTb::getRegionCode, reqDTO.regionCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.industryCode())) {
+            query.eq(DataMonthlySalesTb::getIndustryCode, reqDTO.industryCode().trim());
+        }
         query.orderByDesc(DataMonthlySalesTb::getStatDate).orderByDesc(DataMonthlySalesTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
+        int size = reqDTO.size() == null ? 20 : reqDTO.size();
         IPage<DataMonthlySalesTb> result = dataMonthlySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }

@@ -40,7 +40,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         }
         query.orderByDesc(ModelFeatureDefinitionTb::getCreatedAt).orderByDesc(ModelFeatureDefinitionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
+        int size = reqDTO.size() == null ? 20 : reqDTO.size();
         IPage<ModelFeatureDefinitionTb> result = modelFeatureDefinitionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }

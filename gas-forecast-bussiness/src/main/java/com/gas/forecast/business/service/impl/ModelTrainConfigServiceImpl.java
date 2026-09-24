@@ -49,7 +49,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         }
         query.orderByDesc(ModelTrainConfigTb::getUpdatedAt).orderByDesc(ModelTrainConfigTb::getId);
         int page = reqDTO.getPage() == null ? 1 : reqDTO.getPage();
-        int size = reqDTO.getSize() == null ? 10 : reqDTO.getSize();
+        int size = reqDTO.getSize() == null ? 20 : reqDTO.getSize();
         IPage<ModelTrainConfigTb> result = modelTrainConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }

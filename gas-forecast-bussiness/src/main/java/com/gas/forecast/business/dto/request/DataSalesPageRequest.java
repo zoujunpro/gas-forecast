@@ -43,6 +43,15 @@ public class DataSalesPageRequest {
     @Size(max = 32, message = "结束日期长度不能超过32个字符")
     private String endDate;
 
+    @Size(max = 64, message = "客户编码长度不能超过64个字符")
+    private String customerCode;
+
+    @Size(max = 64, message = "区域编码长度不能超过64个字符")
+    private String regionCode;
+
+    @Size(max = 64, message = "行业编码长度不能超过64个字符")
+    private String industryCode;
+
     public Integer page() {
         return page;
     }
@@ -61,5 +70,17 @@ public class DataSalesPageRequest {
 
     public String endDate() {
         return endDate;
+    }
+
+    public String customerCode() {
+        return customerCode;
+    }
+
+    public String regionCode() {
+        return regionCode;
+    }
+
+    public String industryCode() {
+        return industryCode;
     }
 }

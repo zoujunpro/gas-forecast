@@ -120,6 +120,13 @@ export interface BaseDataFilterConfig {
   type?: BaseDataFilterType
   placeholder?: string
   options?: Option[]
+  optionSource?: {
+    endpoint: string
+    valueProp: string
+    labelProp: string
+    labelTemplate?: 'nameWithCode'
+    size?: number
+  }
   width?: number
   startProp?: string
   endProp?: string

@@ -4,6 +4,15 @@
 
     <AppTablePanel>
       <template #filters>
+        <el-input
+          v-model="keyword"
+          class="search-input"
+          clearable
+          :prefix-icon="Search"
+          placeholder="搜索区域、行业、客户、来源文件"
+          @clear="searchData"
+          @keyup.enter="searchData"
+        />
         <el-date-picker
           v-model="dateRange"
           class="date-range"
@@ -15,15 +24,48 @@
           clearable
           @change="searchData"
         />
-        <el-input
-          v-model="keyword"
-          class="search-input"
+        <el-select
+          v-model="customerCode"
+          class="scope-select customer-select"
           clearable
-          :prefix-icon="Search"
-          placeholder="搜索区域、行业、客户、来源文件"
-          @clear="searchData"
-          @keyup.enter="searchData"
-        />
+          filterable
+          placeholder="客户"
+          @change="handleCustomerChange"
+        >
+          <el-option
+            v-for="option in availableCustomerOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+        <el-select
+          v-model="regionCode"
+          class="scope-select"
+          clearable
+          filterable
+          placeholder="地区"
+          :disabled="Boolean(customerCode)"
+          @change="searchData"
+        >
+          <el-option v-for="option in regionOptions" :key="option.value" :label="option.label" :value="option.value" />
+        </el-select>
+        <el-select
+          v-model="industryCode"
+          class="scope-select"
+          clearable
+          filterable
+          placeholder="行业"
+          :disabled="Boolean(customerCode)"
+          @change="searchData"
+        >
+          <el-option
+            v-for="option in industryOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
         <el-button type="primary" :icon="Search" @click="searchData">查询</el-button>
         <el-button type="info" plain @click="resetSearch">重置</el-button>
       </template>
@@ -65,6 +107,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -87,6 +130,19 @@ interface PageConfig {
 
 const route = useRoute()
 const dateRange = ref<[string, string] | null>(null)
+const customerCode = ref('')
+const regionCode = ref('')
+const industryCode = ref('')
+const customerOptions = ref<ScopeOption[]>([])
+const regionOptions = ref<ScopeOption[]>([])
+const industryOptions = ref<ScopeOption[]>([])
+
+interface ScopeOption {
+  label: string
+  value: string
+  regionCode?: string
+  industryCode?: string
+}
 
 const pageConfigs: Record<string, PageConfig> = {
   '/data/daily-sales': {
@@ -110,6 +166,13 @@ const pageConfigs: Record<string, PageConfig> = {
 }
 
 const config = computed(() => pageConfigs[route.path] || pageConfigs['/data/daily-sales'])
+const availableCustomerOptions = computed(() =>
+  customerOptions.value.filter(
+    (option) =>
+      (!regionCode.value || option.regionCode === regionCode.value) &&
+      (!industryCode.value || option.industryCode === industryCode.value)
+  )
+)
 
 const {
   loading,
@@ -133,7 +196,10 @@ const {
         size,
         keyword: keyword || undefined,
         startDate: dateRange.value?.[0],
-        endDate: dateRange.value?.[1]
+        endDate: dateRange.value?.[1],
+        customerCode: customerCode.value || undefined,
+        regionCode: regionCode.value || undefined,
+        industryCode: industryCode.value || undefined
       },
       signal
     )
@@ -142,7 +208,45 @@ const {
 
 const resetSearch = () => {
   dateRange.value = null
+  customerCode.value = ''
+  regionCode.value = ''
+  industryCode.value = ''
   resetKeywordSearch()
+}
+
+const handleCustomerChange = () => {
+  if (customerCode.value) {
+    const customer = customerOptions.value.find((option) => option.value === customerCode.value)
+    regionCode.value = customer?.regionCode || ''
+    industryCode.value = customer?.industryCode || ''
+  }
+  searchData()
+}
+
+const loadScopeOptions = async () => {
+  try {
+    const [customers, regions, industries] = await Promise.all([
+      listPage('/base-customer', { page: 1, size: 1000 }),
+      listPage('/base-region', { page: 1, size: 1000 }),
+      listPage('/base-industry', { page: 1, size: 1000 })
+    ])
+    customerOptions.value = customers.records.map((item) => ({
+      label: `${item.customerName || '-'} (${item.customerCode || '-'})`,
+      value: item.customerCode,
+      regionCode: item.regionCode,
+      industryCode: item.industryCode
+    }))
+    regionOptions.value = regions.records.map((item) => ({
+      label: `${item.regionName || '-'} (${item.regionCode || '-'})`,
+      value: item.regionCode
+    }))
+    industryOptions.value = industries.records.map((item) => ({
+      label: `${item.industryName || '-'} (${item.industryCode || '-'})`,
+      value: item.industryCode
+    }))
+  } catch {
+    ElMessage.error('客户、地区或行业选项加载失败')
+  }
 }
 
 const formatValue = displayValue
@@ -152,12 +256,18 @@ watch(
   () => {
     keyword.value = ''
     dateRange.value = null
+    customerCode.value = ''
+    regionCode.value = ''
+    industryCode.value = ''
     page.value = 1
     loadData()
   }
 )
 
-onMounted(loadData)
+onMounted(() => {
+  void loadScopeOptions()
+  void loadData()
+})
 </script>
 
 <style scoped>
@@ -175,9 +285,19 @@ onMounted(loadData)
   width: 280px;
 }
 
+.scope-select {
+  width: 160px;
+}
+
+.customer-select {
+  width: 180px;
+}
+
 @media (max-width: 900px) {
   .date-range,
-  .search-input {
+  .search-input,
+  .scope-select,
+  .customer-select {
     width: 100%;
   }
 }

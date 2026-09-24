@@ -23,7 +23,7 @@ export const usePageQuery = <T extends Record<string, any>>(options: UsePageQuer
   const loading = ref(false)
   const keyword = ref('')
   const page = ref(1)
-  const size = ref(options.initialSize || 10)
+  const size = ref(options.initialSize || 20)
   const total = ref(0)
   const records = ref<T[]>([])
   let activeController: AbortController | undefined

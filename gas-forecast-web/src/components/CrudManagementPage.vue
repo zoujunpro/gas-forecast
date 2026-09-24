@@ -33,13 +33,15 @@
             v-model="filters[field.prop]"
             class="filter-control"
             clearable
+            filterable
+            :disabled="isFilterLocked(field)"
             :placeholder="field.placeholder || field.label"
             :style="{ width: `${field.width || 160}px` }"
-            @change="searchData"
-            @clear="searchData"
+            @change="handleFilterChange(field)"
+            @clear="handleFilterChange(field)"
           >
             <el-option
-              v-for="option in field.options || []"
+              v-for="option in resolvedFilterOptions(field)"
               :key="option.value"
               :label="option.label"
               :value="option.value"
@@ -646,7 +648,12 @@ import FormFieldRenderer from '@/components/FormFieldRenderer.vue'
 import ManagementTableCell from '@/components/ManagementTableCell.vue'
 import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
 import PermissionButton from '@/components/PermissionButton.vue'
-import type { BaseDataFieldConfig, BaseDataPageConfig, Option } from '@/views/shared/managementTypes'
+import type {
+  BaseDataFieldConfig,
+  BaseDataFilterConfig,
+  BaseDataPageConfig,
+  Option
+} from '@/views/shared/managementTypes'
 
 const props = defineProps<{
   pageConfig: BaseDataPageConfig
@@ -677,17 +684,18 @@ const selectedTrainBatchNo = ref('')
 const trainBatchKeyword = ref('')
 const trainBatchStatus = ref<'all' | 'running' | 'success' | 'failed'>('all')
 const trainBatchPage = ref(1)
-const trainBatchSize = ref(10)
+const trainBatchSize = ref(20)
 const activeTrainResultTab = ref('dataset')
 const backtestResultView = ref<'table' | 'chart'>('chart')
 const requestDatasetPage = ref(1)
-const requestDatasetSize = ref(50)
+const requestDatasetSize = ref(20)
 const backtestChartRef = ref<HTMLDivElement>()
 const previewRows = ref<Record<string, any>[]>([])
 const previewTotal = ref(0)
 const previewPage = ref(1)
 const previewSize = ref(20)
 const formOptionMap = reactive<Record<string, Option[]>>({})
+const filterOptionMap = reactive<Record<string, Option[]>>({})
 const platformModelsLoading = ref(false)
 const platformModels = ref<PlatformModel[]>([])
 
@@ -1320,6 +1328,73 @@ const loadFormOptions = async () => {
   )
 }
 
+const loadFilterOptions = async () => {
+  const sourceFields = config.value.filterFields?.filter((field) => field.optionSource) || []
+  await Promise.all(
+    sourceFields.map(async (field) => {
+      const source = field.optionSource
+      if (!source) return
+      try {
+        const data = await listPage(source.endpoint, { page: 1, size: source.size || 1000 })
+        filterOptionMap[field.prop] = data.records.map((row) => {
+          const value = row[source.valueProp]
+          const label =
+            source.labelTemplate === 'nameWithCode'
+              ? `${row[source.labelProp] || '-'} (${value || '-'})`
+              : row[source.labelProp]
+          return { label, value, raw: row }
+        })
+      } catch {
+        ElMessage.error(`${field.label}选项加载失败`)
+        filterOptionMap[field.prop] = []
+      }
+    })
+  )
+}
+
+const isTrainingDataScopeFilter = (field: BaseDataFilterConfig) =>
+  config.value.endpoint === '/model-train-feature-data' &&
+  ['customerCode', 'regionCode', 'industryCode'].includes(field.prop)
+
+const resolvedFilterOptions = (field: BaseDataFilterConfig) => {
+  const options = filterOptionMap[field.prop] || field.options || []
+  if (!isTrainingDataScopeFilter(field) || field.prop !== 'customerCode') {
+    return options
+  }
+  const regionCode = filters.regionCode
+  const industryCode = filters.industryCode
+  return options.filter(
+    (option) =>
+      (!regionCode || option.raw?.regionCode === regionCode) &&
+      (!industryCode || option.raw?.industryCode === industryCode)
+  )
+}
+
+const isFilterLocked = (field: BaseDataFilterConfig) =>
+  isTrainingDataScopeFilter(field) &&
+  (field.prop === 'regionCode' || field.prop === 'industryCode') &&
+  Boolean(filters.customerCode)
+
+const handleFilterChange = (field: BaseDataFilterConfig) => {
+  if (isTrainingDataScopeFilter(field)) {
+    const customerOptions = filterOptionMap.customerCode || []
+    if (field.prop === 'customerCode' && filters.customerCode) {
+      const customer = customerOptions.find((option) => option.value === filters.customerCode)
+      filters.regionCode = customer?.raw?.regionCode || ''
+      filters.industryCode = customer?.raw?.industryCode || ''
+    } else if (field.prop !== 'customerCode' && filters.customerCode) {
+      const customer = customerOptions.find((option) => option.value === filters.customerCode)
+      if (
+        (filters.regionCode && customer?.raw?.regionCode !== filters.regionCode) ||
+        (filters.industryCode && customer?.raw?.industryCode !== filters.industryCode)
+      ) {
+        filters.customerCode = ''
+      }
+    }
+  }
+  searchData()
+}
+
 const handleFormOptionSelect = (field: BaseDataFieldConfig, option?: Option) => {
   if (config.value.trainExecution && field.prop === 'agentCode') {
     const selectedModel = (formOptionMap.modelId || []).find((item) => item.value === form.modelId)
@@ -1615,6 +1690,7 @@ watch(
     resetFilters()
     resetForm()
     void loadFormOptions()
+    void loadFilterOptions()
     void loadData()
   }
 )
@@ -1645,6 +1721,7 @@ onMounted(() => {
   resetFilters()
   resetForm()
   void loadFormOptions()
+  void loadFilterOptions()
   void loadData()
   window.addEventListener('resize', resizeResultCharts)
 })

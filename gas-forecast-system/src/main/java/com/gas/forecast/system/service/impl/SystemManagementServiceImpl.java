@@ -222,9 +222,11 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         if (current == null || "BUTTON".equals(current.getPermissionType())) {
             throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "目录或菜单不存在");
         }
-        List<SysPermissionTb> siblings = permissionMapper.selectList(Wrappers.<SysPermissionTb>lambdaQuery().eq(current.getParentId() != null, SysPermissionTb::getParentId, current.getParentId())
-                .isNull(current.getParentId() == null, SysPermissionTb::getParentId).ne(SysPermissionTb::getPermissionType, "BUTTON").orderByAsc(SysPermissionTb::getSortNo)
-                .orderByAsc(SysPermissionTb::getId));
+        Long parentId = current.getParentId();
+        List<SysPermissionTb> siblings = permissionMapper.selectList(
+                Wrappers.<SysPermissionTb>lambdaQuery().and(parentId == null || parentId == 0L, wrapper -> wrapper.isNull(SysPermissionTb::getParentId).or().eq(SysPermissionTb::getParentId, 0L))
+                        .eq(parentId != null && parentId != 0L, SysPermissionTb::getParentId, parentId).ne(SysPermissionTb::getPermissionType, "BUTTON").orderByAsc(SysPermissionTb::getSortNo)
+                        .orderByAsc(SysPermissionTb::getId));
         int index = java.util.stream.IntStream.range(0, siblings.size()).filter(i -> siblings.get(i).getId().equals(id)).findFirst().orElse(-1);
         int targetIndex = index + direction;
         if (index < 0 || targetIndex < 0 || targetIndex >= siblings.size()) {

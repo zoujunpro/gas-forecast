@@ -65,7 +65,7 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         }
         applySort(query, reqDTO);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
-        int size = reqDTO.size() == null ? 10 : reqDTO.size();
+        int size = reqDTO.size() == null ? 20 : reqDTO.size();
         IPage<ModelTrainFeatureDataTb> result = modelTrainFeatureDataTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         Map<String, String> featureCodeByColumn = featureCodeByColumn();
         return PageUtils.toPage(result, result.getRecords().stream().map(entity -> toResp(entity, featureCodeByColumn)).toList());
