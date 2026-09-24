@@ -42,67 +42,13 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const pageMap: Record<string, { module: string; title: string; description: string; scopes: string[] }> = {
-  winterSupplyConfig: {
-    module: '预测配置',
-    title: '冬季保供配置',
-    description: '用于维护冬季高峰保供预测的模型参数、区域范围、预测周期和预警口径。',
-    scopes: ['区域和冬供周期配置', '模型版本和特征参数配置', '保供缺口阈值和预警等级配置']
-  },
-  monthlySalesConfig: {
-    module: '预测配置',
-    title: '月度销量配置',
-    description: '用于维护月度销量预测的行业口径、回测窗口、预测月数和模型策略。',
-    scopes: ['区域与行业口径配置', '预测周期和回测窗口配置', '模型推荐规则配置']
-  },
-  shortTermConfig: {
-    module: '预测配置',
-    title: '短期客户配置',
-    description: '用于维护短期客户预测的客户范围、行业关系、预测天数和模型策略。',
-    scopes: ['区域、行业、客户联动关系', '客户预测粒度配置', '短期模型参数和输出范围配置']
-  },
-  regionsData: {
-    module: '后台数据管理',
-    title: '区域表管理',
-    description: '维护区域、省份、上级区域和排序状态，是预测筛选的基础维度。',
-    scopes: ['区域编码和区域名称', '区域类型和层级关系', '启用状态和排序']
-  },
-  customersData: {
-    module: '后台数据管理',
-    title: '客户表管理',
-    description: '维护客户档案、所属区域、行业归属和预测展示关系。',
-    scopes: ['客户编码和客户名称', '所属区域和行业', '客户启用状态和预测范围']
-  },
-  industriesData: {
-    module: '后台数据管理',
-    title: '行业表管理',
-    description: '维护行业分类、行业层级和预测口径，支撑行业维度筛选。',
-    scopes: ['行业编码和行业名称', '行业层级和排序', '预测展示名称映射']
-  },
-  forecastBatchesData: {
-    module: '后台数据管理',
-    title: '预测批次表',
-    description: '查看预测任务批次、智能体来源、执行状态和请求参数。',
-    scopes: ['批次号和智能体编码', '预测范围和执行状态', '请求参数和创建信息']
-  },
-  usersSystem: {
-    module: '系统管理',
-    title: '用户管理',
-    description: '维护平台用户、账号状态、部门归属和登录策略。',
-    scopes: ['用户账号和基础信息', '账号启停和密码策略', '用户角色关联']
-  },
-  rolesSystem: {
-    module: '系统管理',
-    title: '角色权限',
-    description: '维护角色、菜单权限、按钮权限和数据范围。',
-    scopes: ['角色列表和角色状态', '菜单和按钮权限', '数据权限范围']
-  },
-  logsSystem: {
+  '/system/logs': {
     module: '系统管理',
     title: '操作日志',
     description: '查看用户操作、接口调用、异常记录和审计轨迹。',
     scopes: ['操作人和操作时间', '操作模块和接口路径', '异常信息和审计导出']
   },
-  settingsSystem: {
+  '/system/settings': {
     module: '系统管理',
     title: '系统参数',
     description: '维护平台运行参数、默认模型参数和业务开关。',
@@ -112,7 +58,7 @@ const pageMap: Record<string, { module: string; title: string; description: stri
 
 const page = computed(
   () =>
-    pageMap[String(route.name)] || {
+    pageMap[route.path] || {
       module: '平台功能',
       title: '功能页面',
       description: '当前页面为静态菜单占位，后续接入具体数据和操作。',

@@ -85,8 +85,7 @@
               <span class="menu-name-cell">
                 <el-icon class="menu-kind-icon">
                   <Folder v-if="derivePermissionKind(row) === 'DIRECTORY'" />
-                  <Document v-else-if="derivePermissionKind(row) === 'MENU'" />
-                  <Pointer v-else />
+                  <Document v-else />
                 </el-icon>
                 <span>{{ row.permissionName || '-' }}</span>
               </span>
@@ -118,18 +117,34 @@
         >
           <template #default="{ row }">
             <template v-if="config.mode === 'departments'">
-              <PermissionButton link type="primary" :permission="config.permissions?.update" @click="moveDepartment(row, -1)"
+              <PermissionButton
+                link
+                type="primary"
+                :permission="config.permissions?.update"
+                @click="moveDepartment(row, -1)"
                 >上移</PermissionButton
               >
-              <PermissionButton link type="primary" :permission="config.permissions?.update" @click="moveDepartment(row, 1)"
+              <PermissionButton
+                link
+                type="primary"
+                :permission="config.permissions?.update"
+                @click="moveDepartment(row, 1)"
                 >下移</PermissionButton
               >
             </template>
             <template v-if="config.mode === 'permissions' && row.permissionType !== 'BUTTON'">
-              <PermissionButton link type="primary" :permission="config.permissions?.update" @click="movePermission(row, -1)"
+              <PermissionButton
+                link
+                type="primary"
+                :permission="config.permissions?.update"
+                @click="movePermission(row, -1)"
                 >上移</PermissionButton
               >
-              <PermissionButton link type="primary" :permission="config.permissions?.update" @click="movePermission(row, 1)"
+              <PermissionButton
+                link
+                type="primary"
+                :permission="config.permissions?.update"
+                @click="movePermission(row, 1)"
                 >下移</PermissionButton
               >
             </template>
@@ -225,7 +240,9 @@
 
     <AppDialog v-model="dialogVisible" :eyebrow="config.title" :title="dialogTitle" width="720px" align-center>
       <div v-if="isButtonPermissionForm" class="fixed-permission-context">
-        <div><span>所属菜单</span><strong>{{ selectedPermissionMenu?.permissionName }}</strong></div>
+        <div>
+          <span>所属菜单</span><strong>{{ selectedPermissionMenu?.permissionName }}</strong>
+        </div>
         <div><span>权限类型</span><el-tag type="primary" effect="light">按钮</el-tag></div>
       </div>
       <el-form ref="formRef" class="dialog-form" :model="form" :rules="formRules" label-position="top">
@@ -276,7 +293,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, ElTree, type FormInstance, type FormRules } from 'element-plus'
-import { Check, Document, Expand, Folder, Fold, Plus, Pointer, RefreshLeft, Search } from '@element-plus/icons-vue'
+import { Check, Document, Expand, Folder, Fold, Plus, RefreshLeft, Search } from '@element-plus/icons-vue'
 import AppDialog from '@/components/AppDialog.vue'
 import AppPagination from '@/components/AppPagination.vue'
 import AppTable from '@/components/AppTable.vue'
@@ -315,15 +332,14 @@ const selectedPermissionMenu = ref<Record<string, any> | null>(null)
 const buttonPermissions = computed(() => {
   if (!selectedPermissionMenu.value) return []
   return allPermissionRecords.value
-    .filter(
-      (item) => item.permissionType === 'BUTTON' && item.parentId === selectedPermissionMenu.value?.id
-    )
+    .filter((item) => item.permissionType === 'BUTTON' && item.parentId === selectedPermissionMenu.value?.id)
     .sort((a, b) => (a.sortNo || 0) - (b.sortNo || 0) || a.id - b.id)
 })
 
 const config = computed(() => props.pageConfig)
 const isButtonPermissionForm = computed(
-  () => config.value.mode === 'permissions' && form.uiPermissionKind === 'BUTTON' && Boolean(selectedPermissionMenu.value)
+  () =>
+    config.value.mode === 'permissions' && form.uiPermissionKind === 'BUTTON' && Boolean(selectedPermissionMenu.value)
 )
 const dialogTitle = computed(() => {
   if (isButtonPermissionForm.value) {

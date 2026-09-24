@@ -266,7 +266,7 @@
             v-model:current-page="recordPage"
             v-model:page-size="recordSize"
             class="result-sidebar-pagination"
-            :page-sizes="[5, 10, 20]"
+            :page-sizes="[10, 20, 50]"
             :total="filteredRecordRows.length"
             @size-change="recordPage = 1"
           />
@@ -460,7 +460,7 @@ const resultView = ref<'chart' | 'table'>('chart'),
 const detailTab = ref<'result' | 'features'>('result')
 let resultChart: echarts.ECharts | null = null
 const recordPage = ref(1),
-  recordSize = ref(5),
+  recordSize = ref(10),
   currentForecastId = ref<number | null>(null)
 const predictionInfo = computed(() => {
   const frequencyCode = String(
@@ -1620,6 +1620,10 @@ watch(recordKeyword, () => {
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.forecast-summary-item > .forecast-status-tag {
+  width: fit-content;
+  justify-self: start;
 }
 .section-title {
   position: relative;

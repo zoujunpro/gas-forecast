@@ -403,7 +403,7 @@
               v-model:current-page="trainBatchPage"
               v-model:page-size="trainBatchSize"
               class="result-sidebar-pagination"
-              :page-sizes="[5, 10, 20]"
+              :page-sizes="[10, 20, 50]"
               :total="filteredTrainResultBatches.length"
               @size-change="handleTrainBatchSizeChange"
             />
@@ -677,7 +677,7 @@ const selectedTrainBatchNo = ref('')
 const trainBatchKeyword = ref('')
 const trainBatchStatus = ref<'all' | 'running' | 'success' | 'failed'>('all')
 const trainBatchPage = ref(1)
-const trainBatchSize = ref(5)
+const trainBatchSize = ref(10)
 const activeTrainResultTab = ref('dataset')
 const backtestResultView = ref<'table' | 'chart'>('chart')
 const requestDatasetPage = ref(1)
