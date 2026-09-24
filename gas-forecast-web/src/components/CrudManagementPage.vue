@@ -743,7 +743,7 @@ const previewTimeRange = computed(() => {
     return '-'
   }
   if (executionConfig.value.trainMode === 'RECENT') {
-    return `最近 ${executionConfig.value.recentPeriods || 36} 个周期`
+    return `最近 ${executionConfig.value.recentPeriods} 个周期`
   }
   return `${executionConfig.value.trainStartDate || '-'} 至 ${executionConfig.value.trainEndDate || '-'}`
 })
@@ -1010,13 +1010,13 @@ const trainResultJsonText = computed(() => stringifyJson(selectedTrainResult.val
 const isBatchFailed = (status: unknown) => String(status || '').toUpperCase() === 'FAILED'
 const retrainBatch = async (batch: Record<string, any>) => {
   const retryBatchNo = String(batch.batchNo || batch.batch_no || '')
-  if (!retryBatchNo || !trainResultSource.value?.trainCode || retrainingBatchNo.value) {
+  if (!retryBatchNo || !trainResultSource.value?.id || retrainingBatchNo.value) {
     return
   }
   retrainingBatchNo.value = retryBatchNo
   try {
     const result = await postJson('/model-train-execution/execute', {
-      trainCode: trainResultSource.value?.trainCode,
+      trainConfigId: trainResultSource.value?.id,
       retryBatchNo
     })
     const data = (result as any).data || {}
@@ -1575,7 +1575,7 @@ const continueExecution = async () => {
   try {
     const saved = await persistCurrentForm()
     executionConfig.value = { ...form, ...saved }
-    await postJson('/model-train-execution/validate', { trainCode: executionConfig.value.trainCode })
+    await postJson('/model-train-execution/validate', { trainConfigId: executionConfig.value.id })
     ElMessage.success('训练数据校验通过')
     dialogVisible.value = false
     previewPage.value = 1
@@ -1593,7 +1593,7 @@ const previewPayload = computed<PageRequest>(() => {
   const item = executionConfig.value || {}
   const payload: PageRequest = {
     page: previewPage.value,
-    size: item.trainMode === 'RECENT' ? Math.max(Number(item.recentPeriods) || 36, 1) : previewSize.value,
+    size: item.trainMode === 'RECENT' ? Number(item.recentPeriods) : previewSize.value,
     timeGranularity: item.timeGranularity || undefined,
     regionCode: item.regionCode || undefined,
     industryCode: item.industryCode || undefined,
@@ -1631,13 +1631,13 @@ const executeTraining = async () => {
   if (executing.value) {
     return
   }
-  if (!executionConfig.value?.trainCode) {
-    ElMessage.error('训练配置编码不存在')
+  if (!executionConfig.value?.id) {
+    ElMessage.error('训练配置ID不存在')
     return
   }
   executing.value = true
   try {
-    await postJson('/model-train-execution/execute', { trainCode: executionConfig.value.trainCode })
+    await postJson('/model-train-execution/execute', { trainConfigId: executionConfig.value.id })
     ElMessage.success('训练任务已提交')
     previewVisible.value = false
   } catch (error) {

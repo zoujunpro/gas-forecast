@@ -5,26 +5,54 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change afterPath="$PROJECT_DIR$/config/eclipse-java-formatter.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ModelPlatformClient.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelInfoApiResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelPredictApiRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelPredictApiResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelTrainApiRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelTrainApiResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelTrainResultApiResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelTrainingValidationApiResponse.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/enums/ModelTrainMode.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/enums/ModelTrainTimeGranularity.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/41_remove_train_config_scope_type.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/42_link_train_config_by_id.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/43_backfill_train_config_id.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/44_remove_recent_periods_default.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/logs/gas-forecast/error/log-error-2026-09-21.0.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/easyapi-cache/.api.local.storage.v2.db" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/easyapi-cache/.api.local.storage.v2.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/DataSalesPageRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/DataSalesPageRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelPlatformController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelPlatformController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelTrainExecutionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelTrainExecutionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainAgentTrainRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainConfigCreateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainConfigCreateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainConfigUpdateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainConfigUpdateRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainExecuteRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainExecuteRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/response/ModelTrainAgentResponse.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/response/ModelTrainAgentTrainResultDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/response/ModelTrainRecordResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/response/ModelTrainRecordResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/response/ModelTrainingValidationResponse.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/BaseRegionServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/BaseRegionServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/DataDailySalesServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/DataDailySalesServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/DataFileInfoServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/DataFileInfoServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/DataMonthlySalesServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/DataMonthlySalesServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelFeatureDefinitionServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelFeatureDefinitionServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelPlatformService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelTrainExecutionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelTrainExecutionService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainConfigServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainConfigServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainFeatureDataServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainFeatureDataServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/service/impl/SystemManagementServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/service/impl/SystemManagementServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelForecastConfigTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelForecastConfigTb.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelTrainConfigTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelTrainConfigTb.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelTrainRecordTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelTrainRecordTb.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/mapper/ModelForecastConfigTbMapper.xml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/mapper/ModelForecastConfigTbMapper.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/mapper/ModelTrainConfigTbMapper.xml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/mapper/ModelTrainConfigTbMapper.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/mapper/ModelTrainRecordTbMapper.xml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/mapper/ModelTrainRecordTbMapper.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/04_create_config_tables.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/04_create_config_tables.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/composables/usePageQuery.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/composables/usePageQuery.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/business/sales/StandardSalesData.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/business/sales/StandardSalesData.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelForecastManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelForecastManagement.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/modelManagementConfigs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/modelManagementConfigs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/shared/managementTypes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/shared/managementTypes.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/system/SystemManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/system/SystemManagement.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_error.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_error.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/ApplyTrainConfigTimeWindowSql.java" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/ApplyTrainConfigTimeWindowSql.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,7 +60,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="15042" />
+    <option name="cachedIndexableFilesCount" value="15045" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -244,7 +272,8 @@
       <workItem from="1790155293705" duration="2906000" />
       <workItem from="1790164604077" duration="5469000" />
       <workItem from="1790171019900" duration="3780000" />
-      <workItem from="1790207612701" duration="11720000" />
+      <workItem from="1790207612701" duration="12834000" />
+      <workItem from="1790220529864" duration="6675000" />
     </task>
     <task id="LOCAL-00001" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -438,7 +467,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790214641434</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1790219643392</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1790219643392</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

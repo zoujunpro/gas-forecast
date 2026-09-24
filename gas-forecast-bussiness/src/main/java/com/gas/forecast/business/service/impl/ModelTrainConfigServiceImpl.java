@@ -7,6 +7,8 @@ import com.gas.forecast.business.dto.request.ModelTrainConfigCreateRequest;
 import com.gas.forecast.business.dto.request.ModelTrainConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelTrainConfigUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelTrainConfigResponse;
+import com.gas.forecast.business.enums.ModelTrainMode;
+import com.gas.forecast.business.enums.ModelTrainTimeGranularity;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelTrainConfigService;
@@ -16,9 +18,18 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelConfigTb;
+import com.gas.forecast.dao.domain.ModelForecastConfigTb;
+import com.gas.forecast.dao.domain.ModelForecastRecordTb;
+import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
+import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
+import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
+import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
+import java.util.List;
 import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +41,10 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
 
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelConfigTbMapper modelConfigTbMapper;
+    private final ModelTrainRecordTbMapper modelTrainRecordTbMapper;
+    private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
+    private final ModelForecastConfigTbMapper modelForecastConfigTbMapper;
+    private final ModelForecastRecordTbMapper modelForecastRecordTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
 
     @Override
@@ -93,6 +108,27 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
     @Override
     @Transactional
     public void delete(Long id) {
+        ModelTrainConfigTb config = modelTrainConfigTbMapper.selectById(id);
+        if (config == null) {
+            throw new BusinessException("模型训练配置不存在");
+        }
+
+        List<ModelForecastConfigTb> forecastConfigs = modelForecastConfigTbMapper.selectList(Wrappers.<ModelForecastConfigTb>lambdaQuery().eq(ModelForecastConfigTb::getTrainConfigId, id));
+        if (!forecastConfigs.isEmpty()) {
+            List<Long> forecastIds = forecastConfigs.stream().map(ModelForecastConfigTb::getId).toList();
+            long forecastRecordCount = modelForecastRecordTbMapper.selectCount(Wrappers.<ModelForecastRecordTb>lambdaQuery().in(ModelForecastRecordTb::getForecastId, forecastIds));
+            if (forecastRecordCount > 0) {
+                throw new BusinessException("该训练配置已经用于预测，不能删除");
+            }
+            throw new BusinessException("该训练配置已被预测配置引用，不能删除");
+        }
+
+        List<ModelTrainRecordTb> trainRecords = modelTrainRecordTbMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, id));
+        List<String> batchNos = trainRecords.stream().map(ModelTrainRecordTb::getBatchNo).filter(TextUtils::hasText).distinct().toList();
+        if (!batchNos.isEmpty()) {
+            modelTrainBacktestTbMapper.delete(Wrappers.<ModelTrainBacktestTb>lambdaQuery().in(ModelTrainBacktestTb::getTrainBatchNo, batchNos));
+        }
+        modelTrainRecordTbMapper.delete(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, id));
         modelTrainConfigTbMapper.deleteById(id);
     }
 
@@ -135,19 +171,32 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         entity.setModelId(modelConfig.getId());
         entity.setModelCode(modelConfig.getModelCode());
         entity.setModelName(modelConfig.getModelName());
-        entity.setScopeType("ALL");
         entity.setRegionCode(regionCode);
         entity.setRegionName(regionName);
         entity.setIndustryCode(industryCode);
         entity.setIndustryName(industryName);
         entity.setCustomerCode(customerCode);
         entity.setCustomerName(customerName);
-        String normalizedTrainMode = TextUtils.hasText(trainMode) ? trainMode : "RECENT";
-        entity.setTrainMode(normalizedTrainMode);
-        entity.setTrainStartDate("RANGE".equals(normalizedTrainMode) ? trainStartDate : null);
-        entity.setTrainEndDate("RANGE".equals(normalizedTrainMode) ? trainEndDate : null);
-        entity.setTimeGranularity(TextUtils.hasText(timeGranularity) ? timeGranularity : "MONTH");
-        entity.setRecentPeriods("RECENT".equals(normalizedTrainMode) ? (recentPeriods == null ? 36 : recentPeriods) : null);
+        ModelTrainMode normalizedTrainMode;
+        try {
+            normalizedTrainMode = TextUtils.hasText(trainMode) ? ModelTrainMode.fromCode(trainMode) : ModelTrainMode.RECENT;
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(exception.getMessage());
+        }
+        entity.setTrainMode(normalizedTrainMode.name());
+        entity.setTrainStartDate(normalizedTrainMode == ModelTrainMode.RANGE ? trainStartDate : null);
+        entity.setTrainEndDate(normalizedTrainMode == ModelTrainMode.RANGE ? trainEndDate : null);
+        ModelTrainTimeGranularity normalizedTimeGranularity;
+        try {
+            normalizedTimeGranularity = TextUtils.hasText(timeGranularity) ? ModelTrainTimeGranularity.fromCode(timeGranularity) : ModelTrainTimeGranularity.MONTH;
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(exception.getMessage());
+        }
+        entity.setTimeGranularity(normalizedTimeGranularity.name());
+        if (normalizedTrainMode == ModelTrainMode.RECENT && recentPeriods == null) {
+            throw new BusinessException("最近周期数不能为空");
+        }
+        entity.setRecentPeriods(normalizedTrainMode == ModelTrainMode.RECENT ? recentPeriods : null);
         entity.setEnabled(enabled);
         entity.setRemark(remark);
     }

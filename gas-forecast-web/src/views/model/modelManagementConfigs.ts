@@ -317,7 +317,7 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
     customerName: '',
     trainMode: 'RECENT',
     timeGranularity: 'MONTH',
-    recentPeriods: 36,
+    recentPeriods: null,
     trainStartDate: '',
     trainEndDate: '',
     enabled: 1,

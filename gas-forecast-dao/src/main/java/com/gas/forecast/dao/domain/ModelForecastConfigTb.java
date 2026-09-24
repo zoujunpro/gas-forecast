@@ -86,6 +86,9 @@ public class ModelForecastConfigTb {
     /**
      * 关联训练配置
      */
+    private Long trainConfigId;
+
+    /** 训练配置编码，仅用于展示和兼容旧接口。 */
     private String trainConfigCode;
 
     /**

@@ -20,6 +20,7 @@ spring:
 gas:
   agent:
     train-url: ${GAS_AGENT_TRAIN_URL:http://127.0.0.1:8090/api/v1/train}
+    predict-url: ${GAS_AGENT_PREDICT_URL:http://127.0.0.1:8090/api/v1/predict}
     models-url: ${GAS_AGENT_MODELS_URL:http://127.0.0.1:8090/api/v1/models}
     validate-training-url: ${GAS_AGENT_VALIDATE_TRAINING_URL:http://127.0.0.1:8090/api/v1/models/validate-training-data}
   cache:

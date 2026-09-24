@@ -22,7 +22,7 @@ public class ApplyTrainConfigTimeWindowSql {
             ensureIndex(statement, "uk_train_code", "alter table model_train_config_tb add unique key uk_train_code (train_code)");
             ensureIndex(statement, "idx_train_config_agent", "alter table model_train_config_tb add key idx_train_config_agent (agent_code, enabled)");
             ensureIndex(statement, "idx_train_config_model", "alter table model_train_config_tb add key idx_train_config_model (model_code)");
-            ensureIndex(statement, "idx_train_config_scope", "alter table model_train_config_tb add key idx_train_config_scope (agent_code, scope_type, region_code, customer_code, industry_code)");
+            ensureIndex(statement, "idx_train_config_scope", "alter table model_train_config_tb add key idx_train_config_scope (agent_code, region_code, customer_code, industry_code)");
             printColumns(statement);
         }
     }
@@ -33,9 +33,7 @@ public class ApplyTrainConfigTimeWindowSql {
         ensureColumn(statement, "agent_code", "alter table model_train_config_tb add column agent_code varchar(64) null comment '智能体编码' after train_name");
         ensureColumn(statement, "model_code", "alter table model_train_config_tb add column model_code varchar(64) null comment '所属模型编码' after agent_code");
         ensureColumn(statement, "model_name", "alter table model_train_config_tb add column model_name varchar(128) null comment '所属模型名称' after model_code");
-        ensureColumn(statement, "scope_type",
-                "alter table model_train_config_tb add column scope_type varchar(32) not null default 'ALL' comment '作用范围：REGION/CUSTOMER/INDUSTRY/ALL' after model_name");
-        ensureColumn(statement, "region_code", "alter table model_train_config_tb add column region_code varchar(64) null comment '区域编号' after scope_type");
+        ensureColumn(statement, "region_code", "alter table model_train_config_tb add column region_code varchar(64) null comment '区域编号' after model_name");
         ensureColumn(statement, "region_name", "alter table model_train_config_tb add column region_name varchar(64) null comment '区域名称' after region_code");
         ensureColumn(statement, "industry_code", "alter table model_train_config_tb add column industry_code varchar(64) null comment '行业编号' after region_name");
         ensureColumn(statement, "industry_name", "alter table model_train_config_tb add column industry_name varchar(64) null comment '行业名称' after industry_code");
@@ -61,7 +59,6 @@ public class ApplyTrainConfigTimeWindowSql {
         statement.execute("update model_train_config_tb set train_code = concat('TRAIN-', id) where train_code is null or train_code = ''");
         statement.execute("update model_train_config_tb set train_name = train_code where train_name is null or train_name = ''");
         statement.execute("update model_train_config_tb set agent_code = 'winter-supply' where agent_code is null or agent_code = ''");
-        statement.execute("update model_train_config_tb set scope_type = 'ALL' where scope_type is null or scope_type = ''");
         statement.execute("alter table model_train_config_tb modify column train_code varchar(64) not null comment '训练配置编码'");
         statement.execute("alter table model_train_config_tb modify column train_name varchar(128) not null comment '训练配置名称'");
         statement.execute("alter table model_train_config_tb modify column agent_code varchar(64) not null comment '智能体编码'");

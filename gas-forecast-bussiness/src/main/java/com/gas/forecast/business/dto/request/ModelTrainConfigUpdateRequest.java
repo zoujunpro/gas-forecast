@@ -2,6 +2,7 @@ package com.gas.forecast.business.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -64,6 +65,7 @@ public class ModelTrainConfigUpdateRequest {
     @Size(max = 32, message = "时间格式长度不能超过32个字符")
     private String timeGranularity;
 
+    @Positive(message = "最近周期数必须大于0")
     private Integer recentPeriods;
 
     @NotNull(message = "启用状态不能为空")

@@ -1,9 +1,9 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
-import com.gas.forecast.business.dto.response.ModelTrainAgentResponse;
+import com.gas.forecast.business.component.dto.ModelTrainApiResponse;
+import com.gas.forecast.business.component.dto.ModelTrainingValidationApiResponse;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
-import com.gas.forecast.business.dto.response.ModelTrainingValidationResponse;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
@@ -50,7 +50,7 @@ public class ModelTrainExecutionController {
     @PostMapping("validate")
     @WebLog("校验模型训练数据")
     @RequirePermission("config:train:execute")
-    public ResponseResult<ModelTrainingValidationResponse> validate(@Valid @RequestBody ModelTrainExecuteRequest reqDTO) {
+    public ResponseResult<ModelTrainingValidationApiResponse> validate(@Valid @RequestBody ModelTrainExecuteRequest reqDTO) {
         var result = modelTrainExecutionService.validateTrainingData(reqDTO);
         return ResponseResult.success(result);
     }
@@ -64,7 +64,7 @@ public class ModelTrainExecutionController {
      */
     @PostMapping("callback")
     @WebLog("模型训练结果回调")
-    public ResponseResult<ModelTrainExecuteResponse> callback(@Valid @RequestBody ModelTrainAgentResponse reqDTO) {
+    public ResponseResult<ModelTrainExecuteResponse> callback(@Valid @RequestBody ModelTrainApiResponse reqDTO) {
         var result = modelTrainExecutionService.updateTrainResult(reqDTO);
         return ResponseResult.success(result);
     }

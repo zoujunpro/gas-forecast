@@ -1,8 +1,9 @@
 package com.gas.forecast.business.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.gas.forecast.business.service.ModelPlatformService;
+import com.gas.forecast.business.component.ModelPlatformClient;
+import com.gas.forecast.business.component.dto.ModelInfoApiResponse;
 import com.gas.forecast.common.core.ResponseResult;
+import java.util.List;
 import com.gas.forecast.common.web.WebLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ModelPlatformController {
 
-    private final ModelPlatformService modelPlatformService;
+    private final ModelPlatformClient modelPlatformClient;
 
     /**
      * 查询模型平台提供的模型列表。
@@ -24,8 +25,8 @@ public class ModelPlatformController {
      */
     @GetMapping("/models")
     @WebLog("查询模型平台模型列表")
-    public ResponseResult<JsonNode> models() {
-        var result = modelPlatformService.listModels();
+    public ResponseResult<List<ModelInfoApiResponse>> models() {
+        var result = modelPlatformClient.listModels();
         return ResponseResult.success(result);
     }
 }

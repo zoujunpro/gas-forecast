@@ -20,6 +20,9 @@ public class ModelTrainRecordTb {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 关联训练配置ID。 */
+    private Long trainConfigId;
+
     private String batchNo;
 
     private String agentCode;

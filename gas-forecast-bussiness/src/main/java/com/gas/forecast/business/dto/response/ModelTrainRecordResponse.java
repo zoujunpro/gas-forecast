@@ -1,7 +1,8 @@
 package com.gas.forecast.business.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.gas.forecast.business.dto.request.ModelTrainAgentTrainRequest;
+import com.gas.forecast.business.component.dto.ModelTrainApiRequest;
+import com.gas.forecast.business.component.dto.ModelTrainResultApiResponse;
 import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
@@ -109,9 +110,9 @@ public class ModelTrainRecordResponse {
     /**
      * 训练请求报文。
      */
-    private ModelTrainAgentTrainRequest requestJson;
+    private ModelTrainApiRequest requestJson;
     /**
      * 训练结果报文。
      */
-    private ModelTrainAgentTrainResultDTO resultJson;
+    private ModelTrainResultApiResponse resultJson;
 }

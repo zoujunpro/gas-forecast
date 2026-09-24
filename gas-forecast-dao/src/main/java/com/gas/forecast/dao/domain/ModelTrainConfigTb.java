@@ -51,11 +51,6 @@ public class ModelTrainConfigTb {
     private String modelName;
 
     /**
-     * 作用范围：REGION/CUSTOMER/INDUSTRY/ALL
-     */
-    private String scopeType;
-
-    /**
      * 区域编号
      */
     private String regionCode;

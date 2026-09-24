@@ -39,7 +39,6 @@ create table if not exists model_train_config_tb (
     agent_code varchar(64) not null comment '智能体编码',
     model_code varchar(64) default null comment '所属模型编码',
     model_name varchar(128) default null comment '所属模型名称',
-    scope_type varchar(32) not null comment '作用范围：REGION/CUSTOMER/INDUSTRY/ALL',
     region_code varchar(64) default null comment '区域编号',
     region_name varchar(64) default null comment '区域名称',
     industry_code varchar(64) default null comment '行业编号',
@@ -50,7 +49,7 @@ create table if not exists model_train_config_tb (
     train_end_date varchar(32) default null comment '训练数据结束日期',
     train_mode varchar(32) not null default 'RECENT' comment '训练方式：RECENT最近时间/RANGE指定时间范围',
     time_granularity varchar(32) not null default 'MONTH' comment '时间格式：DAY日/TENDAY旬/MONTH月',
-    recent_periods int default 36 comment '最近周期数',
+    recent_periods int default null comment '最近周期数',
     enabled tinyint not null default 1 comment '是否启用',
     remark varchar(512) default null comment '备注',
     created_by varchar(64) default null comment '创建人',
@@ -61,7 +60,7 @@ create table if not exists model_train_config_tb (
     unique key uk_train_config_code (train_code),
     key idx_train_config_agent (agent_code, enabled),
     key idx_train_config_model (model_code),
-    key idx_train_config_scope (agent_code, scope_type, region_code, customer_code, industry_code)
+    key idx_train_config_scope (agent_code, region_code, customer_code, industry_code)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci comment='智能体训练配置表';
 
 create table if not exists model_forecast_record_tb (

@@ -12,7 +12,6 @@
             <result property="modelId" column="model_id" jdbcType="BIGINT"/>
             <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
             <result property="modelName" column="model_name" jdbcType="VARCHAR"/>
-            <result property="scopeType" column="scope_type" jdbcType="VARCHAR"/>
             <result property="regionCode" column="region_code" jdbcType="VARCHAR"/>
             <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
             <result property="industryCode" column="industry_code" jdbcType="VARCHAR"/>
@@ -33,7 +32,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,train_code,train_name,agent_code,model_id,model_code,model_name,scope_type,region_code,
+        id,train_code,train_name,agent_code,model_id,model_code,model_name,region_code,
         region_name,industry_code,industry_name,customer_code,customer_name,
         train_start_date,train_end_date,train_mode,time_granularity,recent_periods,
         enabled,remark,
