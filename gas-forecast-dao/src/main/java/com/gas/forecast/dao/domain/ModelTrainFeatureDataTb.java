@@ -10,6 +10,7 @@ import lombok.Data;
 
 /**
  * 天然气预测模型统一训练特征宽表
+ *
  * @TableName model_train_feature_data_tb
  */
 @TableName(value = "model_train_feature_data_tb")

@@ -31,47 +31,53 @@ public class BaseCustomerController {
     /**
      * 分页查询客户列表。
      *
-     * @param reqDTO 客户分页查询条件
+     * @param reqDTO
+     *            客户分页查询条件
      * @return 客户分页数据
      */
     @PostMapping("listPage")
     @WebLog("客户列表分页查询")
     @RequirePermission("base:customer:list")
-    public ResponseResult<PageInfoDTO<BaseCustomerResponse>> listPage(
-            @Valid @RequestBody BaseCustomerPageRequest reqDTO) {
-        return ResponseResult.success(baseCustomerService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<BaseCustomerResponse>> listPage(@Valid @RequestBody BaseCustomerPageRequest reqDTO) {
+        var result = baseCustomerService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增客户。
      *
-     * @param reqDTO 客户新增参数
+     * @param reqDTO
+     *            客户新增参数
      * @return 新增后的客户信息
      */
     @PostMapping("create")
     @WebLog("新增客户")
     @RequirePermission("base:customer:create")
     public ResponseResult<BaseCustomerResponse> create(@Valid @RequestBody BaseCustomerCreateRequest reqDTO) {
-        return ResponseResult.success(baseCustomerService.createCustomer(reqDTO));
+        var result = baseCustomerService.createCustomer(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新客户。
      *
-     * @param reqDTO 客户更新参数
+     * @param reqDTO
+     *            客户更新参数
      * @return 更新后的客户信息
      */
     @PostMapping("update")
     @WebLog("编辑客户")
     @RequirePermission("base:customer:update")
     public ResponseResult<BaseCustomerResponse> update(@Valid @RequestBody BaseCustomerUpdateRequest reqDTO) {
-        return ResponseResult.success(baseCustomerService.update(reqDTO));
+        var result = baseCustomerService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除客户。
      *
-     * @param id 客户主键
+     * @param id
+     *            客户主键
      * @return 空响应
      */
     @GetMapping("delete")

@@ -5,7 +5,8 @@ import java.util.Map;
 
 public final class TextUtils {
 
-    private TextUtils() {}
+    private TextUtils() {
+    }
 
     public static boolean hasText(String value) {
         return value != null && !value.isBlank();

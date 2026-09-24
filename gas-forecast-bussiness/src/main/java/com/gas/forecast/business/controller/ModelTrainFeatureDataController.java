@@ -27,14 +27,15 @@ public class ModelTrainFeatureDataController {
     /**
      * 分页查询模型训练特征数据。
      *
-     * @param reqDTO 训练特征数据分页查询条件
+     * @param reqDTO
+     *            训练特征数据分页查询条件
      * @return 训练特征数据分页结果
      */
     @PostMapping("listPage")
     @WebLog("训练特征数据列表查询")
     @RequirePermission("model:train-feature-data:list")
-    public ResponseResult<PageInfoDTO<ModelTrainFeatureDataResponse>> listPage(
-            @Valid @RequestBody ModelTrainFeatureDataPageRequest reqDTO) {
-        return ResponseResult.success(modelTrainFeatureDataService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<ModelTrainFeatureDataResponse>> listPage(@Valid @RequestBody ModelTrainFeatureDataPageRequest reqDTO) {
+        var result = modelTrainFeatureDataService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 }

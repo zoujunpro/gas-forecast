@@ -8,4 +8,5 @@ import com.gas.forecast.dao.domain.ModelForecastConfigTb;
  * @description 针对表【model_forecast_config_tb(模型预测配置表)】的数据库操作Mapper
  * @Entity com.gas.forecast.dao.domain.ModelForecastConfigTb
  */
-public interface ModelForecastConfigTbMapper extends BaseMapper<ModelForecastConfigTb> {}
+public interface ModelForecastConfigTbMapper extends BaseMapper<ModelForecastConfigTb> {
+}

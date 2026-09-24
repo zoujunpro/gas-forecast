@@ -37,15 +37,11 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
         LambdaQueryWrapper<BaseIndustryTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(BaseIndustryTb::getIndustryCode, keyword)
-                    .or()
-                    .like(BaseIndustryTb::getIndustryName, keyword));
+            query.and(wrapper -> wrapper.like(BaseIndustryTb::getIndustryCode, keyword).or().like(BaseIndustryTb::getIndustryName, keyword));
         }
         query.orderByDesc(BaseIndustryTb::getUpdatedAt).orderByDesc(BaseIndustryTb::getId);
-        IPage<BaseIndustryTb> result =
-                baseIndustryTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<BaseIndustryTb> result = baseIndustryTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
@@ -82,8 +78,7 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
         if (industry == null) {
             return;
         }
-        long customerCount = baseCustomerTbMapper.selectCount(
-                Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getIndustryCode, industry.getIndustryCode()));
+        long customerCount = baseCustomerTbMapper.selectCount(Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getIndustryCode, industry.getIndustryCode()));
         if (customerCount > 0) {
             throw new BusinessException("该行业已被客户引用，不能删除");
         }
@@ -94,12 +89,7 @@ public class BaseIndustryServiceImpl implements BaseIndustryService {
         if (industry == null) {
             return null;
         }
-        return new BaseIndustryResponse(
-                industry.getId(),
-                industry.getIndustryCode(),
-                industry.getIndustryName(),
-                industry.getCreatedAt(),
-                industry.getUpdatedAt());
+        return new BaseIndustryResponse(industry.getId(), industry.getIndustryCode(), industry.getIndustryName(), industry.getCreatedAt(), industry.getUpdatedAt());
     }
 
     private BaseIndustryTb toEntity(BaseIndustryCreateRequest reqDTO) {

@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.DataDailySalesTb;
  * @createDate 2026-09-10 08:27:48
  * @Entity com.gas.forecast.dao.domain.DataDailySalesTb
  */
-public interface DataDailySalesTbMapper extends BaseMapper<DataDailySalesTb> {}
+public interface DataDailySalesTbMapper extends BaseMapper<DataDailySalesTb> {
+}

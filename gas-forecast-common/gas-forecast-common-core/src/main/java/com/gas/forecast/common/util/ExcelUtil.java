@@ -76,39 +76,37 @@ public class ExcelUtil {
         List<List<Object>> resulList = new ArrayList<List<Object>>();
         Map<Integer, Object> head = new HashMap<>();
         EasyExcel.read(filePath, new AnalysisEventListener<Map<Integer, Object>>() {
-                    @Override
-                    public void invoke(Map<Integer, Object> excelMap, AnalysisContext analysisContext) {
-                        List<Object> dataList = new ArrayList<>();
-                        log.info("读取当前行数据为{}", JSONUtil.toJsonStr(excelMap));
-                        if (excelMap.size() > head.size()) {
-                            head.clear();
-                            head.putAll(excelMap);
-                        }
-                        head.forEach((index, value) -> {
-                            dataList.add(excelMap.get(index) == null ? "null" : excelMap.get(index));
-                        });
-                        resulList.add(dataList);
-                    }
+            @Override
+            public void invoke(Map<Integer, Object> excelMap, AnalysisContext analysisContext) {
+                List<Object> dataList = new ArrayList<>();
+                log.info("读取当前行数据为{}", JSONUtil.toJsonStr(excelMap));
+                if (excelMap.size() > head.size()) {
+                    head.clear();
+                    head.putAll(excelMap);
+                }
+                head.forEach((index, value) -> {
+                    dataList.add(excelMap.get(index) == null ? "null" : excelMap.get(index));
+                });
+                resulList.add(dataList);
+            }
 
-                    @Override
-                    public void doAfterAllAnalysed(AnalysisContext analysisContext) {
-                        log.info("读取完毕");
-                    }
+            @Override
+            public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+                log.info("读取完毕");
+            }
 
-                    @Override
-                    public void invokeHeadMap(Map headMap, AnalysisContext context) {
-                        log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
-                        List<Object> headList = new ArrayList<>();
-                        headMap.forEach((index, value) -> {
-                            headList.add(value);
-                            head.put(Integer.parseInt(index.toString()), value);
-                        });
+            @Override
+            public void invokeHeadMap(Map headMap, AnalysisContext context) {
+                log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
+                List<Object> headList = new ArrayList<>();
+                headMap.forEach((index, value) -> {
+                    headList.add(value);
+                    head.put(Integer.parseInt(index.toString()), value);
+                });
 
-                        resulList.add(headList);
-                    }
-                })
-                .sheet()
-                .doRead();
+                resulList.add(headList);
+            }
+        }).sheet().doRead();
         return resulList;
     }
 
@@ -116,33 +114,31 @@ public class ExcelUtil {
         ExcelData excelData = new ExcelData();
         Map<Integer, Object> head = new HashMap<>();
         EasyExcel.read(filePath, new AnalysisEventListener<Map<Integer, Object>>() {
-                    @Override
-                    public void invoke(Map<Integer, Object> excelMap, AnalysisContext analysisContext) {
-                        List<ExcelData.Cell> lineCell = new ArrayList<ExcelData.Cell>();
-                        log.info("读取当前行数据为{}", JSONUtil.toJsonStr(excelMap));
-                        head.forEach((index, value) -> {
-                            ExcelData.Cell cell = new ExcelData.Cell(null, value.toString(), excelMap.get(index));
-                            lineCell.add(cell);
-                        });
-                        excelData.getCellList().add(lineCell);
-                    }
+            @Override
+            public void invoke(Map<Integer, Object> excelMap, AnalysisContext analysisContext) {
+                List<ExcelData.Cell> lineCell = new ArrayList<ExcelData.Cell>();
+                log.info("读取当前行数据为{}", JSONUtil.toJsonStr(excelMap));
+                head.forEach((index, value) -> {
+                    ExcelData.Cell cell = new ExcelData.Cell(null, value.toString(), excelMap.get(index));
+                    lineCell.add(cell);
+                });
+                excelData.getCellList().add(lineCell);
+            }
 
-                    @Override
-                    public void doAfterAllAnalysed(AnalysisContext analysisContext) {
-                        log.info("读取完毕");
-                    }
+            @Override
+            public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+                log.info("读取完毕");
+            }
 
-                    @Override
-                    public void invokeHeadMap(Map headMap, AnalysisContext context) {
-                        log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
-                        List<Object> headList = new ArrayList<>();
-                        headMap.forEach((index, value) -> {
-                            head.put(Integer.parseInt(index.toString()), value);
-                        });
-                    }
-                })
-                .sheet()
-                .doRead();
+            @Override
+            public void invokeHeadMap(Map headMap, AnalysisContext context) {
+                log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
+                List<Object> headList = new ArrayList<>();
+                headMap.forEach((index, value) -> {
+                    head.put(Integer.parseInt(index.toString()), value);
+                });
+            }
+        }).sheet().doRead();
         return excelData;
     }
 
@@ -152,66 +148,61 @@ public class ExcelUtil {
         }
         List<Map<String, Object>> mapList = new ArrayList<>();
         EasyExcel.read(filePath, new AnalysisEventListener<Map<Integer, Object>>() {
-                    @Override
-                    public void invoke(Map<Integer, Object> excelMap, AnalysisContext analysisContext) {
-                        Map<String, Object> resultMap = new HashMap<>();
-                        Map<Integer, String> excelFieldMap = excelHeadList.stream()
-                                .collect(Collectors.toMap(ExcelHead::getPosition, ExcelHead::getFieldName));
-                        log.info("读取当前行数据为{}", JSONUtil.toJsonStr(excelMap));
-                        excelMap.forEach((key, value) -> {
-                            resultMap.put(excelFieldMap.get(key), value);
-                        });
-                        mapList.add(resultMap);
-                    }
+            @Override
+            public void invoke(Map<Integer, Object> excelMap, AnalysisContext analysisContext) {
+                Map<String, Object> resultMap = new HashMap<>();
+                Map<Integer, String> excelFieldMap = excelHeadList.stream().collect(Collectors.toMap(ExcelHead::getPosition, ExcelHead::getFieldName));
+                log.info("读取当前行数据为{}", JSONUtil.toJsonStr(excelMap));
+                excelMap.forEach((key, value) -> {
+                    resultMap.put(excelFieldMap.get(key), value);
+                });
+                mapList.add(resultMap);
+            }
 
-                    @Override
-                    public void doAfterAllAnalysed(AnalysisContext analysisContext) {
-                        log.info("读取完毕");
-                    }
+            @Override
+            public void doAfterAllAnalysed(AnalysisContext analysisContext) {
+                log.info("读取完毕");
+            }
 
-                    @Override
-                    public void invokeHeadMap(Map headMap, AnalysisContext context) {
-                        log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
-                        Map<String, Integer> headerMap = reversalHead(headMap);
+            @Override
+            public void invokeHeadMap(Map headMap, AnalysisContext context) {
+                log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
+                Map<String, Integer> headerMap = reversalHead(headMap);
 
-                        for (ExcelHead excelHead : excelHeadList) {
-                            Integer position = headerMap.get(excelHead.getTitle());
-                            if (position == null) {
-                                throw new BusinessException("excel中缺失数据：" + excelHead.getTitle());
-                            }
-                            excelHead.setPosition(position);
-                        }
+                for (ExcelHead excelHead : excelHeadList) {
+                    Integer position = headerMap.get(excelHead.getTitle());
+                    if (position == null) {
+                        throw new BusinessException("excel中缺失数据：" + excelHead.getTitle());
                     }
-                })
-                .sheet()
-                .doRead();
+                    excelHead.setPosition(position);
+                }
+            }
+        }).sheet().doRead();
         return mapList;
     }
 
     public static <T> List<T> readExcel(String absoluteFile, Class clazz) {
         List<T> resultList = new ArrayList<T>();
         EasyExcel.read(absoluteFile, clazz, new AnalysisEventListener<T>() {
-                    // 读取除表头外的每行数据执行该方法
-                    @Override
-                    public void invoke(T data, AnalysisContext context) {
-                        log.info("读取当前行数据为{}", JSONUtil.toJsonStr(data));
-                        resultList.add(data);
-                    }
+            // 读取除表头外的每行数据执行该方法
+            @Override
+            public void invoke(T data, AnalysisContext context) {
+                log.info("读取当前行数据为{}", JSONUtil.toJsonStr(data));
+                resultList.add(data);
+            }
 
-                    // 获取表头数据
-                    @Override
-                    public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
-                        log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
-                    }
+            // 获取表头数据
+            @Override
+            public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
+                log.info("读取表头{}", JSONUtil.toJsonStr(headMap));
+            }
 
-                    // 读取结束执行该方法
-                    @Override
-                    public void doAfterAllAnalysed(AnalysisContext context) {
-                        log.info("读取完毕");
-                    }
-                })
-                .sheet()
-                .doRead();
+            // 读取结束执行该方法
+            @Override
+            public void doAfterAllAnalysed(AnalysisContext context) {
+                log.info("读取完毕");
+            }
+        }).sheet().doRead();
         return resultList;
     }
 
@@ -230,19 +221,13 @@ public class ExcelUtil {
         log.info("sheetName:{}", sheetName);
         log.info("list:{}", list);
 
-        EasyExcel.write(absoluteFile, clazz)
-                .sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1")
-                .head(clazz)
-                .registerWriteHandler(getHorizontalCellStyleStrategy())
-                .registerWriteHandler(new CustomCellWriteHeightConfig())
-                .registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz)))
-                .registerWriteHandler(new CustomCellWriteWidthConfig())
-                .doWrite(list);
+        EasyExcel.write(absoluteFile, clazz).sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1").head(clazz).registerWriteHandler(getHorizontalCellStyleStrategy())
+                .registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz)))
+                .registerWriteHandler(new CustomCellWriteWidthConfig()).doWrite(list);
         log.info("{}文件生成完毕", absoluteFile);
     }
 
-    public static <T> void writeExcel(
-            String fileName, String sheetName, List<T> list, Class<T> clazz, HttpServletResponse response) {
+    public static <T> void writeExcel(String fileName, String sheetName, List<T> list, Class<T> clazz, HttpServletResponse response) {
         ServletOutputStream out = null;
         try {
             out = response.getOutputStream();
@@ -250,17 +235,11 @@ public class ExcelUtil {
             response.setContentType("application/vnd.ms-excel");
             // 设置编码格式
             response.setCharacterEncoding("utf-8");
-            response.setHeader(
-                    "Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8") + ".xlsx");
+            response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8") + ".xlsx");
             // 创建excel
-            EasyExcel.write(response.getOutputStream(), clazz)
-                    .sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1")
-                    .head(clazz)
-                    .registerWriteHandler(getHorizontalCellStyleStrategy())
-                    .registerWriteHandler(new CustomCellWriteHeightConfig())
-                    .registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz)))
-                    .registerWriteHandler(new CustomCellWriteWidthConfig())
-                    .doWrite(list);
+            EasyExcel.write(response.getOutputStream(), clazz).sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1").head(clazz).registerWriteHandler(getHorizontalCellStyleStrategy())
+                    .registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz)))
+                    .registerWriteHandler(new CustomCellWriteWidthConfig()).doWrite(list);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -284,8 +263,7 @@ public class ExcelUtil {
         EasyExcel.write(filePath, clazz).withTemplate(file).sheet().doFill(list);
     }
 
-    public static <T> void fillExcel(
-            String excelTemplatePath, List<T> list, Class<T> clazz, HttpServletResponse response) {
+    public static <T> void fillExcel(String excelTemplatePath, List<T> list, Class<T> clazz, HttpServletResponse response) {
 
         File file = new File(excelTemplatePath);
         if (!file.exists()) {
@@ -300,8 +278,7 @@ public class ExcelUtil {
             response.setContentType("application/vnd.ms-excel");
             // 设置编码格式
             response.setCharacterEncoding("utf-8");
-            response.setHeader(
-                    "Content-disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
+            response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));
             EasyExcel.write(out, clazz).withTemplate(file).sheet().doFill(list);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -319,11 +296,7 @@ public class ExcelUtil {
     /**
      * 写excel
      */
-    public static void write(
-            HttpServletResponse response,
-            List<ExcelHead> headList,
-            List<Map<String, Object>> dataList,
-            String fileName) {
+    public static void write(HttpServletResponse response, List<ExcelHead> headList, List<Map<String, Object>> dataList, String fileName) {
         ServletOutputStream out = null;
         try {
             out = response.getOutputStream();
@@ -333,10 +306,7 @@ public class ExcelUtil {
             response.setCharacterEncoding("utf-8");
             response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
             ExcelWriterBuilder writerBuilder = EasyExcel.write();
-            writerBuilder
-                    .registerWriteHandler(getHorizontalCellStyleStrategy())
-                    .registerWriteHandler(new CustomCellWriteHeightConfig())
-                    .registerWriteHandler(new CustomCellWriteWidthConfig())
+            writerBuilder.registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new CustomCellWriteWidthConfig())
                     .excelType(ExcelTypeEnum.XLSX);
             writerBuilder.autoCloseStream(true);
             writerBuilder.file(out);
@@ -357,7 +327,8 @@ public class ExcelUtil {
     /**
      * 写excel
      *
-     * @param filePath 保存的路径名
+     * @param filePath
+     *            保存的路径名
      * @param headList
      * @param dataList
      */
@@ -367,13 +338,8 @@ public class ExcelUtil {
         writerBuilder.excelType(ExcelTypeEnum.XLSX);
         writerBuilder.autoCloseStream(true);
 
-        writerBuilder
-                .registerWriteHandler(getHorizontalCellStyleStrategy())
-                .registerWriteHandler(new CustomCellWriteHeightConfig())
-                .registerWriteHandler(new CustomCellWriteWidthConfig())
-                .head(convertHead(headList))
-                .sheet("sheet1")
-                .doWrite(convertData(headList, dataList));
+        writerBuilder.registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new CustomCellWriteWidthConfig())
+                .head(convertHead(headList)).sheet("sheet1").doWrite(convertData(headList, dataList));
     }
 
     private static Map<String, Integer> reversalHead(Map headMap) {
@@ -397,7 +363,8 @@ public class ExcelUtil {
 
     /**
      * @param headList
-     * @param dataList key为head里的fieldName
+     * @param dataList
+     *            key为head里的fieldName
      * @return
      */
     private static List<List<Object>> convertData(List<ExcelHead> headList, List<Map<String, Object>> dataList) {
@@ -451,8 +418,7 @@ public class ExcelUtil {
         headWriteCellStyle.setFillForegroundColor(IndexedColors.GREEN.getIndex());
         headWriteCellStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
         headWriteCellStyle.setWriteFont(contentWriteFont);
-        HorizontalCellStyleStrategy horizontalCellStyleStrategy =
-                new HorizontalCellStyleStrategy(headWriteCellStyle, contentWriteCellStyle);
+        HorizontalCellStyleStrategy horizontalCellStyleStrategy = new HorizontalCellStyleStrategy(headWriteCellStyle, contentWriteCellStyle);
         return horizontalCellStyleStrategy;
     }
 
@@ -477,21 +443,15 @@ public class ExcelUtil {
                     return -1;
                 } else {
                     switch (type) {
-                        case STRING:
+                        case STRING :
                             // 换行符（数据需要提前解析好）
                             int index = cellData.getStringValue().indexOf("\n");
-                            return index != -1
-                                    ? cellData.getStringValue()
-                                                    .substring(0, index)
-                                                    .getBytes()
-                                                    .length
-                                            + 1
-                                    : cellData.getStringValue().getBytes().length + 1;
-                        case BOOLEAN:
+                            return index != -1 ? cellData.getStringValue().substring(0, index).getBytes().length + 1 : cellData.getStringValue().getBytes().length + 1;
+                        case BOOLEAN :
                             return cellData.getBooleanValue().toString().getBytes().length;
-                        case NUMBER:
+                        case NUMBER :
                             return cellData.getNumberValue().toString().getBytes().length;
-                        default:
+                        default :
                             return -1;
                     }
                 }
@@ -499,17 +459,10 @@ public class ExcelUtil {
         }
 
         @Override
-        protected void setColumnWidth(
-                WriteSheetHolder writeSheetHolder,
-                List<CellData> list,
-                Cell cell,
-                Head head,
-                Integer integer,
-                Boolean isHead) {
+        protected void setColumnWidth(WriteSheetHolder writeSheetHolder, List<CellData> list, Cell cell, Head head, Integer integer, Boolean isHead) {
             boolean needSetWidth = isHead || !CollectionUtils.isEmpty(list);
             if (needSetWidth) {
-                Map<Integer, Integer> maxColumnWidthMap =
-                        CACHE.computeIfAbsent(writeSheetHolder.getSheetNo(), k -> new HashMap<>());
+                Map<Integer, Integer> maxColumnWidthMap = CACHE.computeIfAbsent(writeSheetHolder.getSheetNo(), k -> new HashMap<>());
 
                 Integer columnWidth = this.dataLength(list, cell, isHead);
                 // 单元格文本长度大于60换行
@@ -535,7 +488,8 @@ public class ExcelUtil {
         private static final Integer DEFAULT_HEIGHT = 300;
 
         @Override
-        protected void setHeadColumnHeight(Row row, int relativeRowIndex) {}
+        protected void setHeadColumnHeight(Row row, int relativeRowIndex) {
+        }
 
         @Override
         protected void setContentColumnHeight(Row row, int relativeRowIndex) {
@@ -556,8 +510,7 @@ public class ExcelUtil {
                     }
                     if (num > 0) {
                         for (int i = 0; i < num; i++) {
-                            value = value.substring(0, (i + 1) * 50 + i) + "\n"
-                                    + value.substring((i + 1) * 50 + i, len + i);
+                            value = value.substring(0, (i + 1) * 50 + i) + "\n" + value.substring((i + 1) * 50 + i, len + i);
                         }
                     }
                     if (value.contains("\n")) {
@@ -573,8 +526,10 @@ public class ExcelUtil {
     /**
      * 解析表头类中的下拉注解
      *
-     * @param head 表头类
-     * @param <T>  泛型
+     * @param head
+     *            表头类
+     * @param <T>
+     *            泛型
      * @return Map<下拉框列索引, 下拉框内容> map
      */
     public static <T> Map<Integer, ExcelSelectedResolve> resolveSelectedAnnotation(Class<T> head) {

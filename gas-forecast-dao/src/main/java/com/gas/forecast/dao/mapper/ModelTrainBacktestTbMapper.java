@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
  * @createDate 2026-09-10 08:27:48
  * @Entity com.gas.forecast.dao.domain.ModelTrainBacktestTb
  */
-public interface ModelTrainBacktestTbMapper extends BaseMapper<ModelTrainBacktestTb> {}
+public interface ModelTrainBacktestTbMapper extends BaseMapper<ModelTrainBacktestTb> {
+}

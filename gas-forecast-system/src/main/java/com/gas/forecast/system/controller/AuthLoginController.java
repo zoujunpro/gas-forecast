@@ -40,7 +40,8 @@ public class AuthLoginController {
     @WebLog("获取登录验证码")
     @GetMapping("/captcha")
     public ResponseResult<AuthCaptchaResponse> captcha() {
-        return ResponseResult.success(captchaService.createCaptcha());
+        var result = captchaService.createCaptcha();
+        return ResponseResult.success(result);
     }
 
     /**
@@ -53,25 +54,29 @@ public class AuthLoginController {
     @WebLog("获取登录RSA公钥")
     @GetMapping("/rsa-public-key")
     public ResponseResult<AuthRsaPublicKeyResponse> rsaPublicKey() {
-        return ResponseResult.success(new AuthRsaPublicKeyResponse(loginEncryptionService.createRsaPublicKey()));
+        var result = new AuthRsaPublicKeyResponse(loginEncryptionService.createRsaPublicKey());
+        return ResponseResult.success(result);
     }
 
     /**
      * 用户登录。
      *
-     * @param reqDTO 登录请求参数
+     * @param reqDTO
+     *            登录请求参数
      * @return 登录用户信息、角色、权限、菜单和访问令牌
      */
     @WebLog("用户登录")
     @PostMapping("/login")
     public ResponseResult<AuthLoginResponse> login(@Valid @RequestBody AuthLoginRequest reqDTO) {
-        return ResponseResult.success(authService.login(reqDTO));
+        var result = authService.login(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 用户退出登录。
      *
-     * @param request HTTP 请求
+     * @param request
+     *            HTTP 请求
      * @return 空结果
      */
     @WebLog("用户退出登录")
@@ -89,7 +94,8 @@ public class AuthLoginController {
     @WebLog("获取当前登录用户信息")
     @GetMapping("/me")
     public ResponseResult<AuthUserResponse> me() {
-        return ResponseResult.success(authService.currentUser(currentUsername()));
+        var result = authService.currentUser(currentUsername());
+        return ResponseResult.success(result);
     }
 
     /**
@@ -100,7 +106,8 @@ public class AuthLoginController {
     @WebLog("获取当前登录用户权限")
     @GetMapping("/permissions")
     public ResponseResult<AuthLoginResponse> permissions() {
-        return ResponseResult.success(authService.currentProfile(currentUsername()));
+        var result = authService.currentProfile(currentUsername());
+        return ResponseResult.success(result);
     }
 
     /**
@@ -119,7 +126,8 @@ public class AuthLoginController {
     /**
      * 从请求头中解析访问令牌。
      *
-     * @param request HTTP 请求
+     * @param request
+     *            HTTP 请求
      * @return 访问令牌
      */
     private String resolveToken(HttpServletRequest request) {

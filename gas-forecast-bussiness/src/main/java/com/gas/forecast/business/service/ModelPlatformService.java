@@ -50,11 +50,11 @@ public class ModelPlatformService {
             if (errors.isArray()) {
                 errors.forEach(error -> {
                     String message = error.path("message").asText("").trim();
-                    if (TextUtils.hasText(message)) messages.add(message);
+                    if (TextUtils.hasText(message))
+                        messages.add(message);
                 });
             }
-            throw new BusinessException(
-                    messages.isEmpty() ? "训练数据不满足当前模型要求" : "训练数据校验未通过：" + String.join("；", messages));
+            throw new BusinessException(messages.isEmpty() ? "训练数据不满足当前模型要求" : "训练数据校验未通过：" + String.join("；", messages));
         }
         return objectMapper.convertValue(data, ModelTrainingValidationResponse.class);
     }

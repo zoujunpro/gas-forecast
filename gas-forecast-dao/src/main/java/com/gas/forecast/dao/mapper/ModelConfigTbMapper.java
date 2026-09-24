@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.ModelConfigTb;
  * @createDate 2026-09-17 08:12:35
  * @Entity com.gas.forecast.dao.domain.ModelConfigTb
  */
-public interface ModelConfigTbMapper extends BaseMapper<ModelConfigTb> {}
+public interface ModelConfigTbMapper extends BaseMapper<ModelConfigTb> {
+}

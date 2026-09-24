@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
  * @createDate 2026-09-17 10:14:42
  * @Entity com.gas.forecast.dao.domain.ModelFeatureDefinitionTb
  */
-public interface ModelFeatureDefinitionTbMapper extends BaseMapper<ModelFeatureDefinitionTb> {}
+public interface ModelFeatureDefinitionTbMapper extends BaseMapper<ModelFeatureDefinitionTb> {
+}

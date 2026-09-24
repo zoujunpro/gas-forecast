@@ -21,7 +21,8 @@ public class SelectedSheetWriteHandler implements SheetWriteHandler {
     private final int columnSelectMaxLength = 255;
 
     @Override
-    public void beforeSheetCreate(WriteWorkbookHolder writeWorkbookHolder, WriteSheetHolder writeSheetHolder) {}
+    public void beforeSheetCreate(WriteWorkbookHolder writeWorkbookHolder, WriteSheetHolder writeSheetHolder) {
+    }
 
     @Override
     public void afterSheetCreate(WriteWorkbookHolder writeWorkbookHolder, WriteSheetHolder writeSheetHolder) {
@@ -40,8 +41,7 @@ public class SelectedSheetWriteHandler implements SheetWriteHandler {
                 Name categoryName = workbook.createName();
                 categoryName.setNameName(sheetName);
                 categoryName.setRefersToFormula(sheetName + "!$A$1:$A$" + source.length);
-                CellRangeAddressList addressList = new CellRangeAddressList(
-                        selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
+                CellRangeAddressList addressList = new CellRangeAddressList(selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
                 DataValidationConstraint constraint = helper.createFormulaListConstraint(sheetName);
                 DataValidation validation = helper.createValidation(constraint, addressList);
                 validation.setErrorStyle(DataValidation.ErrorStyle.STOP);
@@ -50,8 +50,7 @@ public class SelectedSheetWriteHandler implements SheetWriteHandler {
                 validation.createErrorBox("提示", "请输入下拉选项中的内容");
                 sheet.addValidationData(validation);
             } else {
-                CellRangeAddressList rangeList = new CellRangeAddressList(
-                        selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
+                CellRangeAddressList rangeList = new CellRangeAddressList(selected.getFirstRow(), selected.getLastRow(), columnIndex, columnIndex);
                 DataValidationConstraint constraint = helper.createExplicitListConstraint(source);
                 DataValidation validation = helper.createValidation(constraint, rangeList);
                 validation.setErrorStyle(DataValidation.ErrorStyle.STOP);

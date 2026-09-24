@@ -29,7 +29,8 @@ public class SysRoleController {
     @PostMapping("listPage")
     @RequirePermission("sys:role:list")
     public ResponseResult<PageInfoDTO<Map<String, Object>>> listPage(@RequestBody Map<String, Object> req) {
-        return ResponseResult.success(systemManagementService.listRoles(req));
+        var result = systemManagementService.listRoles(req);
+        return ResponseResult.success(result);
     }
 
     /**
@@ -38,7 +39,8 @@ public class SysRoleController {
     @PostMapping("save")
     @RequirePermission("sys:role:save")
     public ResponseResult<Map<String, Object>> save(@RequestBody Map<String, Object> req) {
-        return ResponseResult.success(systemManagementService.saveRole(req));
+        var result = systemManagementService.saveRole(req);
+        return ResponseResult.success(result);
     }
 
     /**

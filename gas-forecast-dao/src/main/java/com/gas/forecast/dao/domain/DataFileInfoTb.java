@@ -7,6 +7,7 @@ import lombok.Data;
 
 /**
  * 原始数据文件信息表
+ *
  * @TableName data_file_info_tb
  */
 @TableName(value = "data_file_info_tb")
@@ -39,7 +40,7 @@ public class DataFileInfoTb {
     private String fileHash;
 
     /**
-     * 处理状态：UPLOADED    已上传，等待处理    ；PROCESSING  正在处理；SUCCESS  全部处理成功；FAILED  处理失败
+     * 处理状态：UPLOADED 已上传，等待处理 ；PROCESSING 正在处理；SUCCESS 全部处理成功；FAILED 处理失败
      */
     private String status;
 

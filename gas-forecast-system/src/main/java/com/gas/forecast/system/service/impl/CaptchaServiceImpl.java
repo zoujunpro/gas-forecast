@@ -89,8 +89,7 @@ public class CaptchaServiceImpl implements CaptchaService {
         for (int index = 0; index < 8; index++) {
             graphics.setColor(new Color(180 + random.nextInt(50), 190 + random.nextInt(45), 205 + random.nextInt(40)));
             int y = random.nextInt(HEIGHT);
-            graphics.drawLine(
-                    random.nextInt(WIDTH / 2), y, WIDTH / 2 + random.nextInt(WIDTH / 2), random.nextInt(HEIGHT));
+            graphics.drawLine(random.nextInt(WIDTH / 2), y, WIDTH / 2 + random.nextInt(WIDTH / 2), random.nextInt(HEIGHT));
         }
         for (int index = 0; index < 32; index++) {
             graphics.setColor(new Color(180 + random.nextInt(60), 190 + random.nextInt(55), 205 + random.nextInt(45)));

@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 天然气客户行业基础信息表
+ *
  * @TableName base_industry_tb
  */
 @TableName(value = "base_industry_tb")

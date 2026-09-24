@@ -31,47 +31,53 @@ public class BaseIndustryController {
     /**
      * 分页查询行业列表。
      *
-     * @param reqDTO 行业分页查询条件
+     * @param reqDTO
+     *            行业分页查询条件
      * @return 行业分页数据
      */
     @PostMapping("listPage")
     @WebLog("行业列表查询")
     @RequirePermission("base:industry:list")
-    public ResponseResult<PageInfoDTO<BaseIndustryResponse>> listPage(
-            @Valid @RequestBody BaseIndustryPageRequest reqDTO) {
-        return ResponseResult.success(baseIndustryService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<BaseIndustryResponse>> listPage(@Valid @RequestBody BaseIndustryPageRequest reqDTO) {
+        var result = baseIndustryService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增行业。
      *
-     * @param reqDTO 行业新增参数
+     * @param reqDTO
+     *            行业新增参数
      * @return 新增后的行业信息
      */
     @PostMapping("create")
     @WebLog("新增行业")
     @RequirePermission("base:industry:create")
     public ResponseResult<BaseIndustryResponse> create(@Valid @RequestBody BaseIndustryCreateRequest reqDTO) {
-        return ResponseResult.success(baseIndustryService.createIndustry(reqDTO));
+        var result = baseIndustryService.createIndustry(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新行业。
      *
-     * @param reqDTO 行业更新参数
+     * @param reqDTO
+     *            行业更新参数
      * @return 更新后的行业信息
      */
     @PostMapping("update")
     @WebLog("编辑行业")
     @RequirePermission("base:industry:update")
     public ResponseResult<BaseIndustryResponse> update(@Valid @RequestBody BaseIndustryUpdateRequest reqDTO) {
-        return ResponseResult.success(baseIndustryService.update(reqDTO));
+        var result = baseIndustryService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除行业。
      *
-     * @param id 行业主键
+     * @param id
+     *            行业主键
      * @return 空响应
      */
     @GetMapping("delete")

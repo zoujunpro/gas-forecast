@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.BaseCustomerTb;
  * @createDate 2026-09-15 21:47:59
  * @Entity com.gas.forecast.dao.domain.BaseCustomerTb
  */
-public interface BaseCustomerTbMapper extends BaseMapper<BaseCustomerTb> {}
+public interface BaseCustomerTbMapper extends BaseMapper<BaseCustomerTb> {
+}

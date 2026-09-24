@@ -61,9 +61,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private SysUserTb loadEnabledUser(String username) {
-        SysUserTb user = sysUserTbMapper.selectOne(Wrappers.<SysUserTb>lambdaQuery()
-                .eq(SysUserTb::getUsername, username)
-                .eq(SysUserTb::getDeleted, 0));
+        SysUserTb user = sysUserTbMapper.selectOne(Wrappers.<SysUserTb>lambdaQuery().eq(SysUserTb::getUsername, username).eq(SysUserTb::getDeleted, 0));
         if (user == null) {
             throw new BusinessException(BusinessResponseCode.LOGIN_FAILED);
         }
@@ -83,47 +81,23 @@ public class AuthServiceImpl implements AuthService {
     private AuthLoginResponse profile(SysUserTb user, String token) {
         List<String> roles = sysUserRoleRefMapper.selectRoleCodesByUsername(user.getUsername());
         List<SysPermissionTb> permissions = sysPermissionTbMapper.selectByUsername(user.getUsername());
-        List<String> perms = permissions.stream()
-                .map(SysPermissionTb::getPerms)
-                .filter(value -> value != null && !value.isBlank())
-                .distinct()
-                .sorted()
-                .toList();
-        List<AuthMenuResponse> menus = buildMenuTree(permissions.stream()
-                .filter(item -> "DIRECTORY".equals(item.getPermissionType()) || "MENU".equals(item.getPermissionType()))
-                .toList());
+        List<String> perms = permissions.stream().map(SysPermissionTb::getPerms).filter(value -> value != null && !value.isBlank()).distinct().sorted().toList();
+        List<AuthMenuResponse> menus = buildMenuTree(permissions.stream().filter(item -> "DIRECTORY".equals(item.getPermissionType()) || "MENU".equals(item.getPermissionType())).toList());
         return new AuthLoginResponse(token, toUser(user), roles, perms, menus);
     }
 
     private AuthUserResponse toUser(SysUserTb user) {
-        return new AuthUserResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getRealName(),
-                user.getAvatar(),
-                user.getEmail(),
-                user.getPhone(),
-                user.getOrgCode());
+        return new AuthUserResponse(user.getId(), user.getUsername(), user.getRealName(), user.getAvatar(), user.getEmail(), user.getPhone(), user.getOrgCode());
     }
 
     private List<AuthMenuResponse> buildMenuTree(List<SysPermissionTb> permissions) {
-        Map<Long, List<SysPermissionTb>> byParent = permissions.stream()
-                .collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
+        Map<Long, List<SysPermissionTb>> byParent = permissions.stream().collect(Collectors.groupingBy(item -> item.getParentId() == null ? 0L : item.getParentId()));
         return buildChildren(0L, byParent);
     }
 
     private List<AuthMenuResponse> buildChildren(Long parentId, Map<Long, List<SysPermissionTb>> byParent) {
-        return byParent.getOrDefault(parentId, List.of()).stream()
-                .sorted(Comparator.comparing(SysPermissionTb::getSortNo).thenComparing(SysPermissionTb::getId))
-                .map(item -> new AuthMenuResponse(
-                        item.getId(),
-                        item.getParentId(),
-                        item.getPermissionName(),
-                        item.getPath(),
-                        item.getComponent(),
-                        item.getIcon(),
-                        item.getSortNo(),
-                        item.getHidden(),
+        return byParent.getOrDefault(parentId, List.of()).stream().sorted(Comparator.comparing(SysPermissionTb::getSortNo).thenComparing(SysPermissionTb::getId))
+                .map(item -> new AuthMenuResponse(item.getId(), item.getParentId(), item.getPermissionName(), item.getPath(), item.getComponent(), item.getIcon(), item.getSortNo(), item.getHidden(),
                         new ArrayList<>(buildChildren(item.getId(), byParent))))
                 .toList();
     }

@@ -72,9 +72,7 @@ public class AuthTokenService {
         try {
             Mac mac = Mac.getInstance(HMAC_ALGORITHM);
             mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
-            return Base64.getUrlEncoder()
-                    .withoutPadding()
-                    .encodeToString(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to sign auth token", exception);
         }

@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 模型配置表
+ *
  * @TableName model_config_tb
  */
 @TableName(value = "model_config_tb")

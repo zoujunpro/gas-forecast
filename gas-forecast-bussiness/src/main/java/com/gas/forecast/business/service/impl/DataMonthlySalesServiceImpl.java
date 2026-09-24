@@ -25,18 +25,8 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         LambdaQueryWrapper<DataMonthlySalesTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(DataMonthlySalesTb::getRegionCode, keyword)
-                    .or()
-                    .like(DataMonthlySalesTb::getRegionName, keyword)
-                    .or()
-                    .like(DataMonthlySalesTb::getIndustryCode, keyword)
-                    .or()
-                    .like(DataMonthlySalesTb::getIndustryName, keyword)
-                    .or()
-                    .like(DataMonthlySalesTb::getCustomerCode, keyword)
-                    .or()
-                    .like(DataMonthlySalesTb::getCustomerName, keyword)
-                    .or()
+            query.and(wrapper -> wrapper.like(DataMonthlySalesTb::getRegionCode, keyword).or().like(DataMonthlySalesTb::getRegionName, keyword).or().like(DataMonthlySalesTb::getIndustryCode, keyword)
+                    .or().like(DataMonthlySalesTb::getIndustryName, keyword).or().like(DataMonthlySalesTb::getCustomerCode, keyword).or().like(DataMonthlySalesTb::getCustomerName, keyword).or()
                     .like(DataMonthlySalesTb::getFileId, keyword));
         }
         if (TextUtils.hasText(reqDTO.startDate())) {
@@ -48,27 +38,15 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         query.orderByDesc(DataMonthlySalesTb::getStatDate).orderByDesc(DataMonthlySalesTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<DataMonthlySalesTb> result =
-                dataMonthlySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<DataMonthlySalesTb> result = dataMonthlySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     private DataSalesResponse toResp(DataMonthlySalesTb item) {
         if (item == null) {
             return null;
         }
-        return new DataSalesResponse(
-                item.getId(),
-                item.getStatDate(),
-                item.getRegionCode(),
-                item.getRegionName(),
-                item.getIndustryCode(),
-                item.getIndustryName(),
-                item.getCustomerCode(),
-                item.getCustomerName(),
-                item.getGasSales(),
-                item.getFileId(),
-                item.getCreatedAt());
+        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(),
+                item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
     }
 }

@@ -9,6 +9,7 @@ import lombok.Data;
 
 /**
  * 模型训练滚动回测明细表
+ *
  * @TableName model_train_backtest_tb
  */
 @TableName(value = "model_train_backtest_tb")

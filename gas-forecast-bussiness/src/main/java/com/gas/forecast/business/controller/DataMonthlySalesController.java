@@ -27,13 +27,15 @@ public class DataMonthlySalesController {
     /**
      * 分页查询月销量标准数据。
      *
-     * @param reqDTO 月销量分页查询条件
+     * @param reqDTO
+     *            月销量分页查询条件
      * @return 月销量分页数据
      */
     @PostMapping("listPage")
     @WebLog("月销量标准数据分页查询")
     @RequirePermission("data:monthly-sales:list")
     public ResponseResult<PageInfoDTO<DataSalesResponse>> listPage(@Valid @RequestBody DataSalesPageRequest reqDTO) {
-        return ResponseResult.success(dataMonthlySalesService.listPage(reqDTO));
+        var result = dataMonthlySalesService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 }

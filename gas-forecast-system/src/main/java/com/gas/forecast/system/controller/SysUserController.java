@@ -29,7 +29,8 @@ public class SysUserController {
     @PostMapping("listPage")
     @RequirePermission("sys:user:list")
     public ResponseResult<PageInfoDTO<Map<String, Object>>> listPage(@RequestBody Map<String, Object> req) {
-        return ResponseResult.success(systemManagementService.listUsers(req));
+        var result = systemManagementService.listUsers(req);
+        return ResponseResult.success(result);
     }
 
     /**
@@ -38,7 +39,8 @@ public class SysUserController {
     @PostMapping("save")
     @RequirePermission("sys:user:save")
     public ResponseResult<Map<String, Object>> save(@RequestBody Map<String, Object> req) {
-        return ResponseResult.success(systemManagementService.saveUser(req));
+        var result = systemManagementService.saveUser(req);
+        return ResponseResult.success(result);
     }
 
     /**

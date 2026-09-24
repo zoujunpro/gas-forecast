@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.ModelFeatureRef;
  * @createDate 2026-09-17 13:36:55
  * @Entity com.gas.forecast.dao.domain.ModelFeatureRef
  */
-public interface ModelFeatureRefMapper extends BaseMapper<ModelFeatureRef> {}
+public interface ModelFeatureRefMapper extends BaseMapper<ModelFeatureRef> {
+}

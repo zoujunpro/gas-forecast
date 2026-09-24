@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 模型配置作用范围表
+ *
  * @TableName model_config_scope_tb
  */
 @TableName(value = "model_config_scope_tb")

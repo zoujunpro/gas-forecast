@@ -25,18 +25,8 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         LambdaQueryWrapper<DataDailySalesTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(DataDailySalesTb::getRegionCode, keyword)
-                    .or()
-                    .like(DataDailySalesTb::getRegionName, keyword)
-                    .or()
-                    .like(DataDailySalesTb::getIndustryCode, keyword)
-                    .or()
-                    .like(DataDailySalesTb::getIndustryName, keyword)
-                    .or()
-                    .like(DataDailySalesTb::getCustomerCode, keyword)
-                    .or()
-                    .like(DataDailySalesTb::getCustomerName, keyword)
-                    .or()
+            query.and(wrapper -> wrapper.like(DataDailySalesTb::getRegionCode, keyword).or().like(DataDailySalesTb::getRegionName, keyword).or().like(DataDailySalesTb::getIndustryCode, keyword).or()
+                    .like(DataDailySalesTb::getIndustryName, keyword).or().like(DataDailySalesTb::getCustomerCode, keyword).or().like(DataDailySalesTb::getCustomerName, keyword).or()
                     .like(DataDailySalesTb::getFileId, keyword));
         }
         if (TextUtils.hasText(reqDTO.startDate())) {
@@ -49,25 +39,14 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<DataDailySalesTb> result = dataDailySalesTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     private DataSalesResponse toResp(DataDailySalesTb item) {
         if (item == null) {
             return null;
         }
-        return new DataSalesResponse(
-                item.getId(),
-                item.getStatDate(),
-                item.getRegionCode(),
-                item.getRegionName(),
-                item.getIndustryCode(),
-                item.getIndustryName(),
-                item.getCustomerCode(),
-                item.getCustomerName(),
-                item.getGasSales(),
-                item.getFileId(),
-                item.getCreatedAt());
+        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(),
+                item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
     }
 }

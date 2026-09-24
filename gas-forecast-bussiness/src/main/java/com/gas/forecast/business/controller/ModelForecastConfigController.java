@@ -31,47 +31,53 @@ public class ModelForecastConfigController {
     /**
      * 分页查询模型预测配置。
      *
-     * @param reqDTO 模型预测配置分页查询条件
+     * @param reqDTO
+     *            模型预测配置分页查询条件
      * @return 模型预测配置分页数据
      */
     @PostMapping("listPage")
     @WebLog("模型预测配置列表查询")
     @RequirePermission("model:forecast:list")
-    public ResponseResult<PageInfoDTO<ModelForecastConfigTb>> listPage(
-            @Valid @RequestBody ModelForecastConfigPageRequest reqDTO) {
-        return ResponseResult.success(modelForecastManagementService.listConfigs(reqDTO));
+    public ResponseResult<PageInfoDTO<ModelForecastConfigTb>> listPage(@Valid @RequestBody ModelForecastConfigPageRequest reqDTO) {
+        var result = modelForecastManagementService.listConfigs(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增模型预测配置。
      *
-     * @param reqDTO 模型预测配置新增参数
+     * @param reqDTO
+     *            模型预测配置新增参数
      * @return 新增后的模型预测配置
      */
     @PostMapping("create")
     @WebLog("新增模型预测配置")
     @RequirePermission("model:forecast:create")
     public ResponseResult<ModelForecastConfigTb> create(@Valid @RequestBody ModelForecastConfigCreateRequest reqDTO) {
-        return ResponseResult.success(modelForecastManagementService.createConfig(reqDTO));
+        var result = modelForecastManagementService.createConfig(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新模型预测配置。
      *
-     * @param reqDTO 模型预测配置更新参数
+     * @param reqDTO
+     *            模型预测配置更新参数
      * @return 更新后的模型预测配置
      */
     @PostMapping("update")
     @WebLog("编辑模型预测配置")
     @RequirePermission("model:forecast:update")
     public ResponseResult<ModelForecastConfigTb> update(@Valid @RequestBody ModelForecastConfigUpdateRequest reqDTO) {
-        return ResponseResult.success(modelForecastManagementService.updateConfig(reqDTO));
+        var result = modelForecastManagementService.updateConfig(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除模型预测配置。
      *
-     * @param id 模型预测配置主键
+     * @param id
+     *            模型预测配置主键
      * @return 空响应
      */
     @GetMapping("delete")

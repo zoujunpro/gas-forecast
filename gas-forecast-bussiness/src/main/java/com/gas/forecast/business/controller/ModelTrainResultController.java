@@ -25,12 +25,14 @@ public class ModelTrainResultController {
     /**
      * 查询模型训练批次及其训练结果。
      *
-     * @param reqDTO 模型训练结果查询条件
+     * @param reqDTO
+     *            模型训练结果查询条件
      * @return 模型训练结果
      */
     @PostMapping({"query", "result"})
     @WebLog("查看模型训练结果")
     public ResponseResult<ModelTrainResultResponse> query(@Valid @RequestBody ModelTrainResultRequest reqDTO) {
-        return ResponseResult.success(modelTrainExecutionService.getTrainResult(reqDTO));
+        var result = modelTrainExecutionService.getTrainResult(reqDTO);
+        return ResponseResult.success(result);
     }
 }

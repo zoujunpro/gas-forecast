@@ -25,6 +25,7 @@ public class ModelPlatformController {
     @GetMapping("/models")
     @WebLog("查询模型平台模型列表")
     public ResponseResult<JsonNode> models() {
-        return ResponseResult.success(modelPlatformService.listModels());
+        var result = modelPlatformService.listModels();
+        return ResponseResult.success(result);
     }
 }

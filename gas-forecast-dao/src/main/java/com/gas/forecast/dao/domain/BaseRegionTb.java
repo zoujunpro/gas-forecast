@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 区域基础信息表
+ *
  * @TableName base_region_tb
  */
 @TableName(value = "base_region_tb")

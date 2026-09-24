@@ -48,8 +48,7 @@ public class LoginEncryptionServiceImpl implements LoginEncryptionService {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] bytes = digest.digest(publicKey.getBytes(StandardCharsets.UTF_8));
-            return RSA_PRIVATE_KEY_PREFIX
-                    + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+            return RSA_PRIVATE_KEY_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to build RSA private key cache key", exception);
         }

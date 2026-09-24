@@ -37,18 +37,13 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         LambdaQueryWrapper<BaseRegionTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(BaseRegionTb::getRegionCode, keyword)
-                    .or()
-                    .like(BaseRegionTb::getRegionName, keyword)
-                    .or()
-                    .like(BaseRegionTb::getRemark, keyword));
+            query.and(wrapper -> wrapper.like(BaseRegionTb::getRegionCode, keyword).or().like(BaseRegionTb::getRegionName, keyword).or().like(BaseRegionTb::getRemark, keyword));
         }
         query.orderByDesc(BaseRegionTb::getUpdatedAt).orderByDesc(BaseRegionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<BaseRegionTb> result = baseRegionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
@@ -85,8 +80,7 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         if (region == null) {
             return;
         }
-        long customerCount = baseCustomerTbMapper.selectCount(
-                Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getRegionCode, region.getRegionCode()));
+        long customerCount = baseCustomerTbMapper.selectCount(Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getRegionCode, region.getRegionCode()));
         if (customerCount > 0) {
             throw new BusinessException("该地区已被客户引用，不能删除");
         }
@@ -97,13 +91,7 @@ public class BaseRegionServiceImpl implements BaseRegionService {
         if (region == null) {
             return null;
         }
-        return new BaseRegionResponse(
-                region.getId(),
-                region.getRegionCode(),
-                region.getRegionName(),
-                region.getRemark(),
-                region.getCreatedAt(),
-                region.getUpdatedAt());
+        return new BaseRegionResponse(region.getId(), region.getRegionCode(), region.getRegionName(), region.getRemark(), region.getCreatedAt(), region.getUpdatedAt());
     }
 
     private BaseRegionTb toEntity(BaseRegionCreateRequest reqDTO) {

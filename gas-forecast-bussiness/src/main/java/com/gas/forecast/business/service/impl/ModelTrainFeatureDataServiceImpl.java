@@ -38,26 +38,12 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         LambdaQueryWrapper<ModelTrainFeatureDataTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(ModelTrainFeatureDataTb::getStatDate, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getTimeGranularity, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getRegionCode, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getRegionName, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getCustomerCode, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getCustomerName, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getIndustryCode, keyword)
-                    .or()
-                    .like(ModelTrainFeatureDataTb::getIndustryName, keyword));
+            query.and(wrapper -> wrapper.like(ModelTrainFeatureDataTb::getStatDate, keyword).or().like(ModelTrainFeatureDataTb::getTimeGranularity, keyword).or()
+                    .like(ModelTrainFeatureDataTb::getRegionCode, keyword).or().like(ModelTrainFeatureDataTb::getRegionName, keyword).or().like(ModelTrainFeatureDataTb::getCustomerCode, keyword).or()
+                    .like(ModelTrainFeatureDataTb::getCustomerName, keyword).or().like(ModelTrainFeatureDataTb::getIndustryCode, keyword).or().like(ModelTrainFeatureDataTb::getIndustryName, keyword));
         }
         if (TextUtils.hasText(reqDTO.timeGranularity())) {
-            query.eq(
-                    ModelTrainFeatureDataTb::getTimeGranularity,
-                    reqDTO.timeGranularity().trim());
+            query.eq(ModelTrainFeatureDataTb::getTimeGranularity, reqDTO.timeGranularity().trim());
         }
         if (TextUtils.hasText(reqDTO.statDate())) {
             query.like(ModelTrainFeatureDataTb::getStatDate, reqDTO.statDate().trim());
@@ -66,18 +52,13 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
             query.eq(ModelTrainFeatureDataTb::getRegionCode, reqDTO.regionCode().trim());
         }
         if (TextUtils.hasText(reqDTO.industryCode())) {
-            query.eq(
-                    ModelTrainFeatureDataTb::getIndustryCode,
-                    reqDTO.industryCode().trim());
+            query.eq(ModelTrainFeatureDataTb::getIndustryCode, reqDTO.industryCode().trim());
         }
         if (TextUtils.hasText(reqDTO.customerCode())) {
-            query.eq(
-                    ModelTrainFeatureDataTb::getCustomerCode,
-                    reqDTO.customerCode().trim());
+            query.eq(ModelTrainFeatureDataTb::getCustomerCode, reqDTO.customerCode().trim());
         }
         if (TextUtils.hasText(reqDTO.statDateStart())) {
-            query.ge(
-                    ModelTrainFeatureDataTb::getStatDate, reqDTO.statDateStart().trim());
+            query.ge(ModelTrainFeatureDataTb::getStatDate, reqDTO.statDateStart().trim());
         }
         if (TextUtils.hasText(reqDTO.statDateEnd())) {
             query.le(ModelTrainFeatureDataTb::getStatDate, reqDTO.statDateEnd().trim());
@@ -85,14 +66,9 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         applySort(query, reqDTO);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<ModelTrainFeatureDataTb> result =
-                modelTrainFeatureDataTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        IPage<ModelTrainFeatureDataTb> result = modelTrainFeatureDataTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
         Map<String, String> featureCodeByColumn = featureCodeByColumn();
-        return PageUtils.toPage(
-                result,
-                result.getRecords().stream()
-                        .map(entity -> toResp(entity, featureCodeByColumn))
-                        .toList());
+        return PageUtils.toPage(result, result.getRecords().stream().map(entity -> toResp(entity, featureCodeByColumn)).toList());
     }
 
     @Override
@@ -128,60 +104,28 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         modelTrainFeatureDataTbMapper.deleteById(id);
     }
 
-    private ModelTrainFeatureDataResponse toResp(
-            ModelTrainFeatureDataTb entity, Map<String, String> featureCodeByColumn) {
+    private ModelTrainFeatureDataResponse toResp(ModelTrainFeatureDataTb entity, Map<String, String> featureCodeByColumn) {
         if (entity == null) {
             return null;
         }
         Map<String, Double> featureValues = featureValues(entity);
-        return new ModelTrainFeatureDataResponse(
-                entity.getId(),
-                entity.getStatDate(),
-                entity.getTimeGranularity(),
-                entity.getRegionCode(),
-                entity.getRegionName(),
-                entity.getCustomerCode(),
-                entity.getCustomerName(),
-                entity.getIndustryCode(),
-                entity.getIndustryName(),
-                entity.getGasSales(),
-                entity.getFeature001(),
-                entity.getFeature002(),
-                entity.getFeature003(),
-                entity.getFeature004(),
-                entity.getFeature005(),
-                entity.getFeature006(),
-                entity.getFeature007(),
-                entity.getFeature008(),
-                entity.getFeature009(),
-                entity.getFeature010(),
-                featureValues,
-                featureDetails(featureValues, featureCodeByColumn),
-                entity.getCreateTime(),
-                entity.getUpdateTime());
+        return new ModelTrainFeatureDataResponse(entity.getId(), entity.getStatDate(), entity.getTimeGranularity(), entity.getRegionCode(), entity.getRegionName(), entity.getCustomerCode(),
+                entity.getCustomerName(), entity.getIndustryCode(), entity.getIndustryName(), entity.getGasSales(), entity.getFeature001(), entity.getFeature002(), entity.getFeature003(),
+                entity.getFeature004(), entity.getFeature005(), entity.getFeature006(), entity.getFeature007(), entity.getFeature008(), entity.getFeature009(), entity.getFeature010(), featureValues,
+                featureDetails(featureValues, featureCodeByColumn), entity.getCreateTime(), entity.getUpdateTime());
     }
 
     private Map<String, String> featureCodeByColumn() {
         return modelFeatureDefinitionTbMapper
-                .selectList(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery()
-                        .select(ModelFeatureDefinitionTb::getFeatureColumn, ModelFeatureDefinitionTb::getFeatureCode)
+                .selectList(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().select(ModelFeatureDefinitionTb::getFeatureColumn, ModelFeatureDefinitionTb::getFeatureCode)
                         .eq(ModelFeatureDefinitionTb::getEnabled, 1))
-                .stream()
-                .filter(item -> TextUtils.hasText(item.getFeatureColumn()) && TextUtils.hasText(item.getFeatureCode()))
-                .collect(Collectors.toMap(
-                        ModelFeatureDefinitionTb::getFeatureColumn,
-                        ModelFeatureDefinitionTb::getFeatureCode,
-                        (left, right) -> left));
+                .stream().filter(item -> TextUtils.hasText(item.getFeatureColumn()) && TextUtils.hasText(item.getFeatureCode()))
+                .collect(Collectors.toMap(ModelFeatureDefinitionTb::getFeatureColumn, ModelFeatureDefinitionTb::getFeatureCode, (left, right) -> left));
     }
 
-    private List<ModelTrainFeatureValueResponse> featureDetails(
-            Map<String, Double> featureValues, Map<String, String> featureCodeByColumn) {
+    private List<ModelTrainFeatureValueResponse> featureDetails(Map<String, Double> featureValues, Map<String, String> featureCodeByColumn) {
         return featureValues.entrySet().stream()
-                .map(entry -> new ModelTrainFeatureValueResponse(
-                        entry.getKey(),
-                        featureCodeByColumn.getOrDefault(featureColumn(entry.getKey()), "-"),
-                        entry.getValue()))
-                .toList();
+                .map(entry -> new ModelTrainFeatureValueResponse(entry.getKey(), featureCodeByColumn.getOrDefault(featureColumn(entry.getKey()), "-"), entry.getValue())).toList();
     }
 
     private String featureColumn(String featureNo) {
@@ -194,8 +138,7 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
     private void applySort(LambdaQueryWrapper<ModelTrainFeatureDataTb> query, ModelTrainFeatureDataPageRequest reqDTO) {
         boolean asc = "asc".equalsIgnoreCase(reqDTO.sortOrder()) || "ascending".equalsIgnoreCase(reqDTO.sortOrder());
         boolean desc = "desc".equalsIgnoreCase(reqDTO.sortOrder()) || "descending".equalsIgnoreCase(reqDTO.sortOrder());
-        String sortField =
-                TextUtils.hasText(reqDTO.sortField()) ? reqDTO.sortField().trim() : "statDate";
+        String sortField = TextUtils.hasText(reqDTO.sortField()) ? reqDTO.sortField().trim() : "statDate";
         if (!asc && !desc) {
             desc = true;
         }
@@ -214,9 +157,7 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         for (int i = 1; i <= 200; i++) {
             String property = String.format("feature%03d", i);
             try {
-                Object value = ModelTrainFeatureDataTb.class
-                        .getMethod("get" + Character.toUpperCase(property.charAt(0)) + property.substring(1))
-                        .invoke(entity);
+                Object value = ModelTrainFeatureDataTb.class.getMethod("get" + Character.toUpperCase(property.charAt(0)) + property.substring(1)).invoke(entity);
                 if (value instanceof Double doubleValue && doubleValue != null) {
                     values.put(property, doubleValue);
                 }

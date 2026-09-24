@@ -116,8 +116,7 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
             return;
         }
         long now = System.currentTimeMillis();
-        Iterator<Map.Entry<String, LocalCacheValue>> iterator =
-                localCache.entrySet().iterator();
+        Iterator<Map.Entry<String, LocalCacheValue>> iterator = localCache.entrySet().iterator();
         while (iterator.hasNext() && localCache.size() >= localMaxSize) {
             Map.Entry<String, LocalCacheValue> entry = iterator.next();
             if (entry.getValue().expiresAt() <= now) {
@@ -137,13 +136,9 @@ public class RedisLocalFallbackCacheClient implements CacheClient {
 
     private void markRedisUnavailable(RuntimeException exception) {
         if (isRedisConnectionException(exception)) {
-            long unavailableUntil =
-                    System.currentTimeMillis() + properties.redisRetryInterval().toMillis();
+            long unavailableUntil = System.currentTimeMillis() + properties.redisRetryInterval().toMillis();
             redisUnavailableUntil.set(unavailableUntil);
-            log.warn(
-                    "Redis is unavailable, use local cache fallback for {} ms",
-                    properties.redisRetryInterval().toMillis(),
-                    exception);
+            log.warn("Redis is unavailable, use local cache fallback for {} ms", properties.redisRetryInterval().toMillis(), exception);
             return;
         }
         throw exception;

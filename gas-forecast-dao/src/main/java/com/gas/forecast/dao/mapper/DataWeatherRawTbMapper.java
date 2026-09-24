@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.DataWeatherRawTb;
  * @createDate 2026-09-10 08:27:48
  * @Entity com.gas.forecast.dao.domain.DataWeatherRawTb
  */
-public interface DataWeatherRawTbMapper extends BaseMapper<DataWeatherRawTb> {}
+public interface DataWeatherRawTbMapper extends BaseMapper<DataWeatherRawTb> {
+}

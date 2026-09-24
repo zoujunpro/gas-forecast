@@ -27,13 +27,15 @@ public class DataDailySalesController {
     /**
      * 分页查询日销量标准数据。
      *
-     * @param reqDTO 日销量分页查询条件
+     * @param reqDTO
+     *            日销量分页查询条件
      * @return 日销量分页数据
      */
     @PostMapping("listPage")
     @WebLog("日销量标准数据分页查询")
     @RequirePermission("data:daily-sales:list")
     public ResponseResult<PageInfoDTO<DataSalesResponse>> listPage(@Valid @RequestBody DataSalesPageRequest reqDTO) {
-        return ResponseResult.success(dataDailySalesService.listPage(reqDTO));
+        var result = dataDailySalesService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 }

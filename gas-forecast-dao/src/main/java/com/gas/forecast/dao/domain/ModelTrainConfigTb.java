@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 智能体训练配置表
+ *
  * @TableName model_train_config_tb
  */
 @TableName(value = "model_train_config_tb")

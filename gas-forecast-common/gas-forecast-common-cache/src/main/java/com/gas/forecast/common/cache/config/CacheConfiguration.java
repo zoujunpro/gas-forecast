@@ -17,8 +17,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class CacheConfiguration {
 
     @Bean
-    public RedisTemplate<String, Object> appRedisTemplate(
-            RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+    public RedisTemplate<String, Object> appRedisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         redisTemplate.setKeySerializer(new StringRedisSerializer());
@@ -31,10 +30,7 @@ public class CacheConfiguration {
     }
 
     @Bean
-    public CacheClient cacheClient(
-            RedisTemplate<String, Object> appRedisTemplate,
-            ObjectMapper objectMapper,
-            CacheProperties cacheProperties) {
+    public CacheClient cacheClient(RedisTemplate<String, Object> appRedisTemplate, ObjectMapper objectMapper, CacheProperties cacheProperties) {
         return new RedisLocalFallbackCacheClient(appRedisTemplate, objectMapper, cacheProperties);
     }
 }

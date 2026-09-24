@@ -6,6 +6,7 @@ import lombok.Data;
 
 /**
  * 原始天气表
+ *
  * @TableName data_weather_raw_tb
  */
 @TableName(value = "data_weather_raw_tb")

@@ -24,8 +24,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private final ObjectMapper objectMapper;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-            throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String token = resolveToken(request);
         AuthTokenPayload payload = authTokenService.parse(token);
         if (payload == null) {
@@ -35,9 +34,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         AuthContext.set(payload);
         ThreadLocalUtil.setLoginUser(payload.userId(), payload.username(), token);
         RequirePermission requirePermission = resolveRequirePermission(handler);
-        if (requirePermission != null
-                && permissionChecker.hasPermissions(
-                        payload.username(), requirePermission.value(), requirePermission.logical())) {
+        if (requirePermission != null && permissionChecker.hasPermissions(payload.username(), requirePermission.value(), requirePermission.logical())) {
             writeError(response, HttpServletResponse.SC_FORBIDDEN, "403", "无权访问该功能");
             return false;
         }
@@ -74,8 +71,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(
-            HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         AuthContext.clear();
         ThreadLocalUtil.clear();
     }

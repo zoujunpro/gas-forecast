@@ -7,7 +7,8 @@ import java.util.List;
 
 public final class PageUtils {
 
-    private PageUtils() {}
+    private PageUtils() {
+    }
 
     public static <T> Page<T> pageRequest(int page, int size) {
         return Page.of(Math.max(page, 1), Math.max(size, 1));

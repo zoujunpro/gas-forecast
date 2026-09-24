@@ -31,46 +31,53 @@ public class BaseRegionController {
     /**
      * 分页查询区域列表。
      *
-     * @param reqDTO 区域分页查询条件
+     * @param reqDTO
+     *            区域分页查询条件
      * @return 区域分页数据
      */
     @PostMapping("listPage")
     @WebLog("区域列表查询")
     @RequirePermission("base:region:list")
     public ResponseResult<PageInfoDTO<BaseRegionResponse>> listPage(@Valid @RequestBody BaseRegionPageRequest reqDTO) {
-        return ResponseResult.success(baseRegionService.listPage(reqDTO));
+        var result = baseRegionService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增区域。
      *
-     * @param reqDTO 区域新增参数
+     * @param reqDTO
+     *            区域新增参数
      * @return 新增后的区域信息
      */
     @PostMapping("create")
     @WebLog("新增区域")
     @RequirePermission("base:region:create")
     public ResponseResult<BaseRegionResponse> create(@Valid @RequestBody BaseRegionCreateRequest reqDTO) {
-        return ResponseResult.success(baseRegionService.createRegion(reqDTO));
+        var result = baseRegionService.createRegion(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新区域。
      *
-     * @param reqDTO 区域更新参数
+     * @param reqDTO
+     *            区域更新参数
      * @return 更新后的区域信息
      */
     @PostMapping("update")
     @WebLog("编辑区域")
     @RequirePermission("base:region:update")
     public ResponseResult<BaseRegionResponse> update(@Valid @RequestBody BaseRegionUpdateRequest reqDTO) {
-        return ResponseResult.success(baseRegionService.update(reqDTO));
+        var result = baseRegionService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除区域。
      *
-     * @param id 区域主键
+     * @param id
+     *            区域主键
      * @return 空响应
      */
     @GetMapping("delete")

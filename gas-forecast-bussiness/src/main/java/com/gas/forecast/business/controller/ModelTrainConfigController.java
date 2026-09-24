@@ -31,47 +31,53 @@ public class ModelTrainConfigController {
     /**
      * 分页查询模型训练配置。
      *
-     * @param reqDTO 模型训练配置分页查询条件
+     * @param reqDTO
+     *            模型训练配置分页查询条件
      * @return 模型训练配置分页数据
      */
     @PostMapping("listPage")
     @WebLog("模型训练配置列表查询")
     @RequirePermission("model:train-config:list")
-    public ResponseResult<PageInfoDTO<ModelTrainConfigResponse>> listPage(
-            @Valid @RequestBody ModelTrainConfigPageRequest reqDTO) {
-        return ResponseResult.success(modelTrainConfigService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<ModelTrainConfigResponse>> listPage(@Valid @RequestBody ModelTrainConfigPageRequest reqDTO) {
+        var result = modelTrainConfigService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增模型训练配置。
      *
-     * @param reqDTO 模型训练配置新增参数
+     * @param reqDTO
+     *            模型训练配置新增参数
      * @return 新增后的模型训练配置
      */
     @PostMapping("create")
     @WebLog("新增模型训练配置")
     @RequirePermission("model:train-config:create")
     public ResponseResult<ModelTrainConfigResponse> create(@Valid @RequestBody ModelTrainConfigCreateRequest reqDTO) {
-        return ResponseResult.success(modelTrainConfigService.create(reqDTO));
+        var result = modelTrainConfigService.create(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新模型训练配置。
      *
-     * @param reqDTO 模型训练配置更新参数
+     * @param reqDTO
+     *            模型训练配置更新参数
      * @return 更新后的模型训练配置
      */
     @PostMapping("update")
     @WebLog("编辑模型训练配置")
     @RequirePermission("model:train-config:update")
     public ResponseResult<ModelTrainConfigResponse> update(@Valid @RequestBody ModelTrainConfigUpdateRequest reqDTO) {
-        return ResponseResult.success(modelTrainConfigService.update(reqDTO));
+        var result = modelTrainConfigService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除模型训练配置。
      *
-     * @param id 模型训练配置主键
+     * @param id
+     *            模型训练配置主键
      * @return 空响应
      */
     @GetMapping("delete")

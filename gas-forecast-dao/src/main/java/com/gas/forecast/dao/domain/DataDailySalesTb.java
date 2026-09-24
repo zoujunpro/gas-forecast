@@ -7,6 +7,7 @@ import lombok.Data;
 
 /**
  * 天然气销量原始数据表
+ *
  * @TableName data_daily_sales_tb
  */
 @TableName(value = "data_daily_sales_tb")

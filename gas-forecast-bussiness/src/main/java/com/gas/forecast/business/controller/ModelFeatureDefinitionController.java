@@ -31,49 +31,53 @@ public class ModelFeatureDefinitionController {
     /**
      * 分页查询特征定义。
      *
-     * @param reqDTO 特征定义分页查询条件
+     * @param reqDTO
+     *            特征定义分页查询条件
      * @return 特征定义分页数据
      */
     @PostMapping("listPage")
     @WebLog("特征定义列表查询")
     @RequirePermission("model:feature-definition:list")
-    public ResponseResult<PageInfoDTO<ModelFeatureDefinitionResponse>> listPage(
-            @Valid @RequestBody ModelFeatureDefinitionPageRequest reqDTO) {
-        return ResponseResult.success(modelFeatureDefinitionService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<ModelFeatureDefinitionResponse>> listPage(@Valid @RequestBody ModelFeatureDefinitionPageRequest reqDTO) {
+        var result = modelFeatureDefinitionService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增特征定义。
      *
-     * @param reqDTO 特征定义新增参数
+     * @param reqDTO
+     *            特征定义新增参数
      * @return 新增后的特征定义
      */
     @PostMapping("create")
     @WebLog("新增特征定义")
     @RequirePermission("model:feature-definition:create")
-    public ResponseResult<ModelFeatureDefinitionResponse> create(
-            @Valid @RequestBody ModelFeatureDefinitionCreateRequest reqDTO) {
-        return ResponseResult.success(modelFeatureDefinitionService.create(reqDTO));
+    public ResponseResult<ModelFeatureDefinitionResponse> create(@Valid @RequestBody ModelFeatureDefinitionCreateRequest reqDTO) {
+        var result = modelFeatureDefinitionService.create(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新特征定义。
      *
-     * @param reqDTO 特征定义更新参数
+     * @param reqDTO
+     *            特征定义更新参数
      * @return 更新后的特征定义
      */
     @PostMapping("update")
     @WebLog("编辑特征定义")
     @RequirePermission("model:feature-definition:update")
-    public ResponseResult<ModelFeatureDefinitionResponse> update(
-            @Valid @RequestBody ModelFeatureDefinitionUpdateRequest reqDTO) {
-        return ResponseResult.success(modelFeatureDefinitionService.update(reqDTO));
+    public ResponseResult<ModelFeatureDefinitionResponse> update(@Valid @RequestBody ModelFeatureDefinitionUpdateRequest reqDTO) {
+        var result = modelFeatureDefinitionService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除特征定义。
      *
-     * @param id 特征定义主键
+     * @param id
+     *            特征定义主键
      * @return 空响应
      */
     @GetMapping("delete")

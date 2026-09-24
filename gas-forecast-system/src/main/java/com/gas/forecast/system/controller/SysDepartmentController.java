@@ -29,7 +29,8 @@ public class SysDepartmentController {
     @GetMapping("list")
     @RequirePermission("sys:department:list")
     public ResponseResult<List<Map<String, Object>>> list(@RequestParam(required = false) String keyword) {
-        return ResponseResult.success(systemManagementService.listDepartments(keyword));
+        var result = systemManagementService.listDepartments(keyword);
+        return ResponseResult.success(result);
     }
 
     /**
@@ -38,7 +39,8 @@ public class SysDepartmentController {
     @PostMapping("save")
     @RequirePermission("sys:department:save")
     public ResponseResult<Map<String, Object>> save(@RequestBody Map<String, Object> req) {
-        return ResponseResult.success(systemManagementService.saveDepartment(req));
+        var result = systemManagementService.saveDepartment(req);
+        return ResponseResult.success(result);
     }
 
     /**

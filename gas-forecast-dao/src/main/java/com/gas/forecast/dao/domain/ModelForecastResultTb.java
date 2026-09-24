@@ -9,6 +9,7 @@ import lombok.Data;
 
 /**
  * 旬度预测结果
+ *
  * @TableName model_forecast_result_tb
  */
 @TableName(value = "model_forecast_result_tb")

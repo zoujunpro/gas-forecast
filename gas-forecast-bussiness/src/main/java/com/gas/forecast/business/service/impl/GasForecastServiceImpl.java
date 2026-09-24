@@ -59,42 +59,29 @@ public class GasForecastServiceImpl implements GasForecastService {
 
     @Override
     public List<ForecastSummaryResponse> listSummaries() {
-        Map<String, ModelTrainRecordTb> trainDetailByRegionCode = selectWinnerTrainDetails().stream()
-                .collect(Collectors.toMap(ModelTrainRecordTb::getRegionCode, item -> item, (left, right) -> left));
-        return selectProvinceRegions().stream()
-                .map(province -> toSummaryDTO(trainDetailByRegionCode.get(province.getRegionCode()), province))
-                .toList();
+        Map<String, ModelTrainRecordTb> trainDetailByRegionCode = selectWinnerTrainDetails().stream().collect(Collectors.toMap(ModelTrainRecordTb::getRegionCode, item -> item, (left, right) -> left));
+        return selectProvinceRegions().stream().map(province -> toSummaryDTO(trainDetailByRegionCode.get(province.getRegionCode()), province)).toList();
     }
 
     @Override
     public ForecastDimensionResponse listDimensions(String areaCode, String provinceCode) {
-        List<BaseRegionTb> provinces = selectProvinceRegions().stream()
-                .filter(item ->
-                        !StringUtils.hasText(areaCode) || item.getRegionCode().equals(areaCode))
-                .toList();
+        List<BaseRegionTb> provinces = selectProvinceRegions().stream().filter(item -> !StringUtils.hasText(areaCode) || item.getRegionCode().equals(areaCode)).toList();
         List<BaseCustomerTb> customers = selectCustomers(areaCode, provinceCode);
 
-        return new ForecastDimensionResponse(
-                List.of(),
-                provinces.stream().map(this::toProvinceDimensionItemResponse).toList(),
-                customers.stream().map(this::toCustomerDimensionItemResponse).toList());
+        return new ForecastDimensionResponse(List.of(), provinces.stream().map(this::toProvinceDimensionItemResponse).toList(), customers.stream().map(this::toCustomerDimensionItemResponse).toList());
     }
 
     @Override
     public ForecastDashboardResponse getDashboard(String province) {
         BaseRegionTb targetProvince = StringUtils.hasText(province)
                 ? selectProvinceByName(province)
-                : selectProvinceRegions().stream()
-                        .findFirst()
-                        .orElseThrow(() -> new NoSuchElementException("数据库中暂无预测数据"));
+                : selectProvinceRegions().stream().findFirst().orElseThrow(() -> new NoSuchElementException("数据库中暂无预测数据"));
         return dashboard(targetProvince, null);
     }
 
     @Override
     public ForecastDashboardResponse getDashboardByCode(String provinceCode, String customerCode) {
-        BaseRegionTb province = selectProvinceRegions().stream()
-                .filter(item -> item.getRegionCode().equals(provinceCode))
-                .findFirst()
+        BaseRegionTb province = selectProvinceRegions().stream().filter(item -> item.getRegionCode().equals(provinceCode)).findFirst()
                 .orElseThrow(() -> new NoSuchElementException("未找到省份编码: " + provinceCode));
         return dashboard(province, customerCode);
     }
@@ -102,47 +89,27 @@ public class GasForecastServiceImpl implements GasForecastService {
     private ForecastDashboardResponse dashboard(BaseRegionTb province, String customerCode) {
         ModelTrainRecordTb trainDetail = selectWinnerTrainDetail(province);
         List<ModelForecastResultTb> forecastResults = selectForecastResults(province);
-        return new ForecastDashboardResponse(
-                toSummaryDTO(trainDetail, province),
-                forecastResults.stream().map(this::toForecastPointResponse).toList(),
-                toCustomerForecastPointResponses(province, customerCode, forecastResults),
-                selectModelRanks(province).stream()
-                        .map(this::toModelRankResponse)
-                        .toList(),
-                List.<FeatureRankResponse>of(),
-                selectBacktestDetails(province, trainDetail).stream()
-                        .map(this::toBacktestDetailResponse)
-                        .toList());
+        return new ForecastDashboardResponse(toSummaryDTO(trainDetail, province), forecastResults.stream().map(this::toForecastPointResponse).toList(),
+                toCustomerForecastPointResponses(province, customerCode, forecastResults), selectModelRanks(province).stream().map(this::toModelRankResponse).toList(), List.<FeatureRankResponse>of(),
+                selectBacktestDetails(province, trainDetail).stream().map(this::toBacktestDetailResponse).toList());
     }
 
     private List<BaseRegionTb> selectProvinceRegions() {
-        return baseRegionTbMapper.selectList(Wrappers.<BaseRegionTb>lambdaQuery()
-                .eq(BaseRegionTb::getRemark, "winner-agent模拟省份")
-                .orderByAsc(BaseRegionTb::getId));
+        return baseRegionTbMapper.selectList(Wrappers.<BaseRegionTb>lambdaQuery().eq(BaseRegionTb::getRemark, "winner-agent模拟省份").orderByAsc(BaseRegionTb::getId));
     }
 
     private BaseRegionTb selectProvinceByName(String province) {
-        return selectProvinceRegions().stream()
-                .filter(item -> item.getRegionName().equals(province))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("未找到省份预测数据: " + province));
+        return selectProvinceRegions().stream().filter(item -> item.getRegionName().equals(province)).findFirst().orElseThrow(() -> new NoSuchElementException("未找到省份预测数据: " + province));
     }
 
     private List<BaseCustomerTb> selectCustomers(String areaCode, String provinceCode) {
-        List<String> provinceCodes = selectProvinceRegions().stream()
-                .filter(item ->
-                        !StringUtils.hasText(areaCode) || item.getRegionCode().equals(areaCode))
-                .filter(item -> !StringUtils.hasText(provinceCode)
-                        || item.getRegionCode().equals(provinceCode))
-                .map(BaseRegionTb::getRegionCode)
-                .toList();
+        List<String> provinceCodes = selectProvinceRegions().stream().filter(item -> !StringUtils.hasText(areaCode) || item.getRegionCode().equals(areaCode))
+                .filter(item -> !StringUtils.hasText(provinceCode) || item.getRegionCode().equals(provinceCode)).map(BaseRegionTb::getRegionCode).toList();
         if ((StringUtils.hasText(areaCode) || StringUtils.hasText(provinceCode)) && provinceCodes.isEmpty()) {
             return List.of();
         }
 
-        LambdaQueryWrapper<BaseCustomerTb> wrapper = Wrappers.<BaseCustomerTb>lambdaQuery()
-                .orderByAsc(BaseCustomerTb::getRegionCode)
-                .orderByAsc(BaseCustomerTb::getId);
+        LambdaQueryWrapper<BaseCustomerTb> wrapper = Wrappers.<BaseCustomerTb>lambdaQuery().orderByAsc(BaseCustomerTb::getRegionCode).orderByAsc(BaseCustomerTb::getId);
         if (!provinceCodes.isEmpty()) {
             wrapper.in(BaseCustomerTb::getRegionCode, provinceCodes);
         }
@@ -150,66 +117,38 @@ public class GasForecastServiceImpl implements GasForecastService {
     }
 
     private List<ModelTrainRecordTb> selectWinnerTrainDetails() {
-        return modelTrainDetailTbMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-")
-                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
-                .orderByDesc(ModelTrainRecordTb::getId));
+        return modelTrainDetailTbMapper.selectList(
+                Wrappers.<ModelTrainRecordTb>lambdaQuery().likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-").orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId));
     }
 
     private ModelTrainRecordTb selectWinnerTrainDetail(BaseRegionTb province) {
-        return modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .eq(ModelTrainRecordTb::getRegionCode, province.getRegionCode())
-                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-")
-                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
-                .orderByDesc(ModelTrainRecordTb::getId)
-                .last("limit 1"));
+        return modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getRegionCode, province.getRegionCode())
+                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-").orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
     }
 
     private List<ModelTrainRecordTb> selectModelRanks(BaseRegionTb province) {
-        return modelTrainDetailTbMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                .eq(ModelTrainRecordTb::getRegionCode, province.getRegionCode())
-                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-")
-                .orderByDesc(ModelTrainRecordTb::getUpdatedAt)
-                .orderByDesc(ModelTrainRecordTb::getId)
-                .last("limit 10"));
+        return modelTrainDetailTbMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getRegionCode, province.getRegionCode())
+                .likeRight(ModelTrainRecordTb::getBatchNo, "WGTRAIN-").orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 10"));
     }
 
     private List<ModelTrainBacktestTb> selectBacktestDetails(BaseRegionTb province, ModelTrainRecordTb trainDetail) {
-        String batchNo = trainDetail != null && StringUtils.hasText(trainDetail.getBatchNo())
-                ? trainDetail.getBatchNo()
-                : "WGTRAIN-" + province.getRegionName();
-        return modelTrainBacktestTbMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
-                .eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo)
-                .orderByAsc(ModelTrainBacktestTb::getTrainDate));
+        String batchNo = trainDetail != null && StringUtils.hasText(trainDetail.getBatchNo()) ? trainDetail.getBatchNo() : "WGTRAIN-" + province.getRegionName();
+        return modelTrainBacktestTbMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery().eq(ModelTrainBacktestTb::getTrainBatchNo, batchNo).orderByAsc(ModelTrainBacktestTb::getTrainDate));
     }
 
     private List<ModelForecastResultTb> selectForecastResults(BaseRegionTb province) {
-        ModelForecastRecordTb latest = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
-                .eq(ModelForecastRecordTb::getRegionCode, province.getRegionCode())
-                .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode())
-                .orderByDesc(ModelForecastRecordTb::getCreatedAt)
-                .orderByDesc(ModelForecastRecordTb::getId)
+        ModelForecastRecordTb latest = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery().eq(ModelForecastRecordTb::getRegionCode, province.getRegionCode())
+                .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode()).orderByDesc(ModelForecastRecordTb::getCreatedAt).orderByDesc(ModelForecastRecordTb::getId)
                 .last("limit 1"));
         String batchNo = latest == null ? "WGFC-" + province.getRegionName() : latest.getForecastBatchNo();
-        return modelForecastResultTbMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
-                .eq(ModelForecastResultTb::getForecastBatchNo, batchNo)
-                .orderByAsc(ModelForecastResultTb::getForecastDate));
+        return modelForecastResultTbMapper
+                .selectList(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, batchNo).orderByAsc(ModelForecastResultTb::getForecastDate));
     }
 
     private ForecastSummaryResponse toSummaryDTO(ModelTrainRecordTb trainDetail, BaseRegionTb province) {
-        return new ForecastSummaryResponse(
-                province.getRegionCode(),
-                province.getRegionName(),
-                trainDetail != null && StringUtils.hasText(trainDetail.getBestModel())
-                        ? trainDetail.getBestModel()
-                        : "-",
-                trainDetail == null ? null : trainDetail.getMape(),
-                trainDetail == null ? null : trainDetail.getWmape(),
-                trainDetail == null ? null : trainDetail.getRmse(),
-                null,
-                15,
-                "用户提供未来气象",
-                chartPath(province.getRegionName()));
+        return new ForecastSummaryResponse(province.getRegionCode(), province.getRegionName(),
+                trainDetail != null && StringUtils.hasText(trainDetail.getBestModel()) ? trainDetail.getBestModel() : "-", trainDetail == null ? null : trainDetail.getMape(),
+                trainDetail == null ? null : trainDetail.getWmape(), trainDetail == null ? null : trainDetail.getRmse(), null, 15, "用户提供未来气象", chartPath(province.getRegionName()));
     }
 
     private DimensionItemResponse toProvinceDimensionItemResponse(BaseRegionTb item) {
@@ -217,82 +156,42 @@ public class GasForecastServiceImpl implements GasForecastService {
     }
 
     private DimensionItemResponse toCustomerDimensionItemResponse(BaseCustomerTb item) {
-        return new DimensionItemResponse(
-                item.getCustomerCode(), item.getCustomerName(), item.getRegionCode(), item.getIndustryName());
+        return new DimensionItemResponse(item.getCustomerCode(), item.getCustomerName(), item.getRegionCode(), item.getIndustryName());
     }
 
     private ForecastPointResponse toForecastPointResponse(ModelForecastResultTb point) {
         LocalDate forecastDate = toLocalDate(point.getForecastDate());
         BigDecimal prediction = point.getForecastValue();
-        return new ForecastPointResponse(
-                forecastDate,
-                tendayLabel(forecastDate),
-                null,
-                null,
-                null,
-                null,
-                null,
-                "用户提供未来气象",
-                prediction,
-                multiply(prediction, LOWER_RATIO),
+        return new ForecastPointResponse(forecastDate, tendayLabel(forecastDate), null, null, null, null, null, "用户提供未来气象", prediction, multiply(prediction, LOWER_RATIO),
                 multiply(prediction, UPPER_RATIO));
     }
 
-    private List<CustomerForecastPointResponse> toCustomerForecastPointResponses(
-            BaseRegionTb province, String customerCode, List<ModelForecastResultTb> forecastResults) {
-        LambdaQueryWrapper<BaseCustomerTb> wrapper = Wrappers.<BaseCustomerTb>lambdaQuery()
-                .eq(BaseCustomerTb::getRegionCode, province.getRegionCode())
-                .orderByAsc(BaseCustomerTb::getId);
+    private List<CustomerForecastPointResponse> toCustomerForecastPointResponses(BaseRegionTb province, String customerCode, List<ModelForecastResultTb> forecastResults) {
+        LambdaQueryWrapper<BaseCustomerTb> wrapper = Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getRegionCode, province.getRegionCode()).orderByAsc(BaseCustomerTb::getId);
         if (StringUtils.hasText(customerCode)) {
             wrapper.eq(BaseCustomerTb::getCustomerCode, customerCode);
         }
         List<BaseCustomerTb> customers = baseCustomerTbMapper.selectList(wrapper);
-        return customers.stream()
-                .flatMap(customer ->
-                        forecastResults.stream().map(point -> toCustomerForecastPointResponse(customer, point)))
-                .toList();
+        return customers.stream().flatMap(customer -> forecastResults.stream().map(point -> toCustomerForecastPointResponse(customer, point))).toList();
     }
 
-    private CustomerForecastPointResponse toCustomerForecastPointResponse(
-            BaseCustomerTb customer, ModelForecastResultTb point) {
+    private CustomerForecastPointResponse toCustomerForecastPointResponse(BaseCustomerTb customer, ModelForecastResultTb point) {
         LocalDate forecastDate = toLocalDate(point.getForecastDate());
         BigDecimal prediction = multiply(point.getForecastValue(), customerRatio(customer.getIndustryName()));
-        return new CustomerForecastPointResponse(
-                customer.getCustomerCode(),
-                customer.getCustomerName(),
-                customer.getIndustryName(),
-                forecastDate,
-                tendayLabel(forecastDate),
-                prediction,
-                multiply(prediction, LOWER_RATIO),
-                multiply(prediction, UPPER_RATIO));
+        return new CustomerForecastPointResponse(customer.getCustomerCode(), customer.getCustomerName(), customer.getIndustryName(), forecastDate, tendayLabel(forecastDate), prediction,
+                multiply(prediction, LOWER_RATIO), multiply(prediction, UPPER_RATIO));
     }
 
     private ModelRankResponse toModelRankResponse(ModelTrainRecordTb rank) {
-        return new ModelRankResponse(
-                StringUtils.hasText(rank.getBestModel()) ? rank.getBestModel() : "winner-agent",
-                "ml",
-                rank.getMape(),
-                rank.getWmape(),
-                rank.getRmse(),
-                rank.getMae(),
-                rank.getR2(),
-                null);
+        return new ModelRankResponse(StringUtils.hasText(rank.getBestModel()) ? rank.getBestModel() : "winner-agent", "ml", rank.getMape(), rank.getWmape(), rank.getRmse(), rank.getMae(),
+                rank.getR2(), null);
     }
 
     private BacktestDetailResponse toBacktestDetailResponse(ModelTrainBacktestTb detail) {
         LocalDate trainDate = toLocalDate(detail.getTrainDate());
-        BigDecimal absoluteError = detail.getActualValue() == null || detail.getPredictedValue() == null
-                ? null
-                : detail.getActualValue().subtract(detail.getPredictedValue()).abs();
-        return new BacktestDetailResponse(
-                "winner-agent",
-                trainDate == null ? null : trainDate.getYear() + "-" + (trainDate.getYear() + 1),
-                trainDate,
-                detail.getActualValue(),
-                detail.getPredictedValue(),
-                absoluteError,
-                apePct(detail.getActualValue(), absoluteError));
+        BigDecimal absoluteError = detail.getActualValue() == null || detail.getPredictedValue() == null ? null : detail.getActualValue().subtract(detail.getPredictedValue()).abs();
+        return new BacktestDetailResponse("winner-agent", trainDate == null ? null : trainDate.getYear() + "-" + (trainDate.getYear() + 1), trainDate, detail.getActualValue(),
+                detail.getPredictedValue(), absoluteError, apePct(detail.getActualValue(), absoluteError));
     }
 
     private String chartPath(String province) {
@@ -352,10 +251,7 @@ public class GasForecastServiceImpl implements GasForecastService {
         }
         String text = value.toString();
         if (text.length() == 8 && text.chars().allMatch(Character::isDigit)) {
-            return LocalDate.of(
-                    Integer.parseInt(text.substring(0, 4)),
-                    Integer.parseInt(text.substring(4, 6)),
-                    Integer.parseInt(text.substring(6, 8)));
+            return LocalDate.of(Integer.parseInt(text.substring(0, 4)), Integer.parseInt(text.substring(4, 6)), Integer.parseInt(text.substring(6, 8)));
         }
         return LocalDate.parse(text);
     }

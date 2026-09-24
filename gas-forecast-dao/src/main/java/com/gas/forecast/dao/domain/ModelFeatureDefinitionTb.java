@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 特征定义表
+ *
  * @TableName model_feature_definition_tb
  */
 @TableName(value = "model_feature_definition_tb")
@@ -40,7 +41,7 @@ public class ModelFeatureDefinitionTb {
     private String timeGranularity;
 
     /**
-     * 是否启用 1  0
+     * 是否启用 1 0
      */
     private Integer enabled;
 

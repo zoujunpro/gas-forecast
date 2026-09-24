@@ -37,46 +37,27 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(ModelTrainConfigTb::getTrainCode, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getTrainName, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getAgentCode, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getModelId, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getModelCode, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getModelName, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getRegionName, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getIndustryName, keyword)
-                    .or()
-                    .like(ModelTrainConfigTb::getCustomerName, keyword));
+            query.and(wrapper -> wrapper.like(ModelTrainConfigTb::getTrainCode, keyword).or().like(ModelTrainConfigTb::getTrainName, keyword).or().like(ModelTrainConfigTb::getAgentCode, keyword).or()
+                    .like(ModelTrainConfigTb::getModelId, keyword).or().like(ModelTrainConfigTb::getModelCode, keyword).or().like(ModelTrainConfigTb::getModelName, keyword).or()
+                    .like(ModelTrainConfigTb::getRegionName, keyword).or().like(ModelTrainConfigTb::getIndustryName, keyword).or().like(ModelTrainConfigTb::getCustomerName, keyword));
         }
         if (TextUtils.hasText(reqDTO.getAgentCode())) {
             query.eq(ModelTrainConfigTb::getAgentCode, reqDTO.getAgentCode().trim());
         }
         if (TextUtils.hasText(reqDTO.getTimeGranularity())) {
-            query.eq(
-                    ModelTrainConfigTb::getTimeGranularity,
-                    reqDTO.getTimeGranularity().trim());
+            query.eq(ModelTrainConfigTb::getTimeGranularity, reqDTO.getTimeGranularity().trim());
         }
         query.orderByDesc(ModelTrainConfigTb::getUpdatedAt).orderByDesc(ModelTrainConfigTb::getId);
         int page = reqDTO.getPage() == null ? 1 : reqDTO.getPage();
         int size = reqDTO.getSize() == null ? 10 : reqDTO.getSize();
-        IPage<ModelTrainConfigTb> result =
-                modelTrainConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<ModelTrainConfigTb> result = modelTrainConfigTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
     @Transactional
     public ModelTrainConfigResponse create(ModelTrainConfigCreateRequest reqDTO) {
-        String trainCode =
-                TextUtils.hasText(reqDTO.getTrainCode()) ? reqDTO.getTrainCode().trim() : generateTrainCode();
+        String trainCode = TextUtils.hasText(reqDTO.getTrainCode()) ? reqDTO.getTrainCode().trim() : generateTrainCode();
         ensureTrainCodeUnique(trainCode, null);
         ModelConfigTb modelConfig = requireModel(reqDTO.getModelId());
         ModelTrainConfigTb entity = toEntity(reqDTO, trainCode, modelConfig);
@@ -116,8 +97,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
     }
 
     private void ensureTrainCodeUnique(String trainCode, Long excludeId) {
-        LambdaQueryWrapper<ModelTrainConfigTb> query =
-                Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getTrainCode, trainCode);
+        LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getTrainCode, trainCode);
         if (excludeId != null) {
             query.ne(ModelTrainConfigTb::getId, excludeId);
         }
@@ -130,73 +110,24 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         return baseCodeGenerateService.nextCode(BaseCodeType.MODEL_TRAIN_CONFIG);
     }
 
-    private ModelTrainConfigTb toEntity(
-            ModelTrainConfigCreateRequest reqDTO, String trainCode, ModelConfigTb modelConfig) {
+    private ModelTrainConfigTb toEntity(ModelTrainConfigCreateRequest reqDTO, String trainCode, ModelConfigTb modelConfig) {
         ModelTrainConfigTb entity = new ModelTrainConfigTb();
-        fillEntity(
-                entity,
-                trainCode,
-                reqDTO.getTrainName(),
-                reqDTO.getAgentCode(),
-                modelConfig,
-                reqDTO.getRegionCode(),
-                reqDTO.getRegionName(),
-                reqDTO.getIndustryCode(),
-                reqDTO.getIndustryName(),
-                reqDTO.getCustomerCode(),
-                reqDTO.getCustomerName(),
-                reqDTO.getTrainStartDate(),
-                reqDTO.getTrainEndDate(),
-                reqDTO.getTrainMode(),
-                reqDTO.getTimeGranularity(),
-                reqDTO.getRecentPeriods(),
-                reqDTO.getEnabled(),
-                reqDTO.getRemark());
+        fillEntity(entity, trainCode, reqDTO.getTrainName(), reqDTO.getAgentCode(), modelConfig, reqDTO.getRegionCode(), reqDTO.getRegionName(), reqDTO.getIndustryCode(), reqDTO.getIndustryName(),
+                reqDTO.getCustomerCode(), reqDTO.getCustomerName(), reqDTO.getTrainStartDate(), reqDTO.getTrainEndDate(), reqDTO.getTrainMode(), reqDTO.getTimeGranularity(), reqDTO.getRecentPeriods(),
+                reqDTO.getEnabled(), reqDTO.getRemark());
         return entity;
     }
 
     private ModelTrainConfigTb toEntity(ModelTrainConfigUpdateRequest reqDTO, ModelConfigTb modelConfig) {
         ModelTrainConfigTb entity = new ModelTrainConfigTb();
-        fillEntity(
-                entity,
-                reqDTO.getTrainCode(),
-                reqDTO.getTrainName(),
-                reqDTO.getAgentCode(),
-                modelConfig,
-                reqDTO.getRegionCode(),
-                reqDTO.getRegionName(),
-                reqDTO.getIndustryCode(),
-                reqDTO.getIndustryName(),
-                reqDTO.getCustomerCode(),
-                reqDTO.getCustomerName(),
-                reqDTO.getTrainStartDate(),
-                reqDTO.getTrainEndDate(),
-                reqDTO.getTrainMode(),
-                reqDTO.getTimeGranularity(),
-                reqDTO.getRecentPeriods(),
-                reqDTO.getEnabled(),
-                reqDTO.getRemark());
+        fillEntity(entity, reqDTO.getTrainCode(), reqDTO.getTrainName(), reqDTO.getAgentCode(), modelConfig, reqDTO.getRegionCode(), reqDTO.getRegionName(), reqDTO.getIndustryCode(),
+                reqDTO.getIndustryName(), reqDTO.getCustomerCode(), reqDTO.getCustomerName(), reqDTO.getTrainStartDate(), reqDTO.getTrainEndDate(), reqDTO.getTrainMode(), reqDTO.getTimeGranularity(),
+                reqDTO.getRecentPeriods(), reqDTO.getEnabled(), reqDTO.getRemark());
         return entity;
     }
 
-    private void fillEntity(
-            ModelTrainConfigTb entity,
-            String trainCode,
-            String trainName,
-            String agentCode,
-            ModelConfigTb modelConfig,
-            String regionCode,
-            String regionName,
-            String industryCode,
-            String industryName,
-            String customerCode,
-            String customerName,
-            String trainStartDate,
-            String trainEndDate,
-            String trainMode,
-            String timeGranularity,
-            Integer recentPeriods,
-            Integer enabled,
+    private void fillEntity(ModelTrainConfigTb entity, String trainCode, String trainName, String agentCode, ModelConfigTb modelConfig, String regionCode, String regionName, String industryCode,
+            String industryName, String customerCode, String customerName, String trainStartDate, String trainEndDate, String trainMode, String timeGranularity, Integer recentPeriods, Integer enabled,
             String remark) {
         entity.setTrainCode(trainCode);
         entity.setTrainName(trainName);
@@ -216,8 +147,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         entity.setTrainStartDate("RANGE".equals(normalizedTrainMode) ? trainStartDate : null);
         entity.setTrainEndDate("RANGE".equals(normalizedTrainMode) ? trainEndDate : null);
         entity.setTimeGranularity(TextUtils.hasText(timeGranularity) ? timeGranularity : "MONTH");
-        entity.setRecentPeriods(
-                "RECENT".equals(normalizedTrainMode) ? (recentPeriods == null ? 36 : recentPeriods) : null);
+        entity.setRecentPeriods("RECENT".equals(normalizedTrainMode) ? (recentPeriods == null ? 36 : recentPeriods) : null);
         entity.setEnabled(enabled);
         entity.setRemark(remark);
     }
@@ -226,31 +156,10 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         if (entity == null) {
             return null;
         }
-        return new ModelTrainConfigResponse(
-                entity.getId(),
-                entity.getTrainCode(),
-                entity.getTrainName(),
-                entity.getAgentCode(),
-                entity.getModelId(),
-                entity.getModelCode(),
-                entity.getModelName(),
-                entity.getRegionCode(),
-                entity.getRegionName(),
-                entity.getIndustryCode(),
-                entity.getIndustryName(),
-                entity.getCustomerCode(),
-                entity.getCustomerName(),
-                entity.getTrainStartDate(),
-                entity.getTrainEndDate(),
-                entity.getTrainMode(),
-                entity.getTimeGranularity(),
-                entity.getRecentPeriods(),
-                entity.getEnabled(),
-                entity.getRemark(),
-                entity.getCreatedBy(),
-                entity.getCreatedByName(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt());
+        return new ModelTrainConfigResponse(entity.getId(), entity.getTrainCode(), entity.getTrainName(), entity.getAgentCode(), entity.getModelId(), entity.getModelCode(), entity.getModelName(),
+                entity.getRegionCode(), entity.getRegionName(), entity.getIndustryCode(), entity.getIndustryName(), entity.getCustomerCode(), entity.getCustomerName(), entity.getTrainStartDate(),
+                entity.getTrainEndDate(), entity.getTrainMode(), entity.getTimeGranularity(), entity.getRecentPeriods(), entity.getEnabled(), entity.getRemark(), entity.getCreatedBy(),
+                entity.getCreatedByName(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     private ModelConfigTb requireModel(Long modelId) {

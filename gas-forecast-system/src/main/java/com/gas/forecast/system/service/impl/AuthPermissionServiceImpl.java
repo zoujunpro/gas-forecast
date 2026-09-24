@@ -45,9 +45,6 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
     }
 
     private Set<String> loadPermissions(String username) {
-        return sysPermissionTbMapper.selectByUsername(username).stream()
-                .map(SysPermissionTb::getPerms)
-                .filter(value -> value != null && !value.isBlank())
-                .collect(Collectors.toSet());
+        return sysPermissionTbMapper.selectByUsername(username).stream().map(SysPermissionTb::getPerms).filter(value -> value != null && !value.isBlank()).collect(Collectors.toSet());
     }
 }

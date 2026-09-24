@@ -24,10 +24,9 @@ public class SysOptionController {
      * 查询用户、角色、部门、菜单等公共选项。
      */
     @GetMapping("options")
-    @RequirePermission(
-            value = {"sys:user:list", "sys:role:list", "sys:department:list", "sys:permission:list"},
-            logical = Logical.OR)
+    @RequirePermission(value = {"sys:user:list", "sys:role:list", "sys:department:list", "sys:permission:list"}, logical = Logical.OR)
     public ResponseResult<Map<String, Object>> options() {
-        return ResponseResult.success(systemManagementService.options());
+        var result = systemManagementService.options();
+        return ResponseResult.success(result);
     }
 }

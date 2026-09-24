@@ -1,14 +1,7 @@
 package com.gas.forecast.business.enums;
 
 public enum BaseCodeType {
-    REGION("REG", 6),
-    INDUSTRY("IND", 6),
-    CUSTOMER("CUS", 6),
-    FILE("FIL", 6),
-    MODEL_CONFIG("MODEL", 6),
-    MODEL_TRAIN_CONFIG("TRCFG-", 5),
-    MODEL_FORECAST_CONFIG("FCCFG-", 5),
-    TRAIN_BATCH("TRBATCH-", 5);
+    REGION("REG", 6), INDUSTRY("IND", 6), CUSTOMER("CUS", 6), FILE("FIL", 6), MODEL_CONFIG("MODEL", 6), MODEL_TRAIN_CONFIG("TRCFG-", 5), MODEL_FORECAST_CONFIG("FCCFG-", 5), TRAIN_BATCH("TRBATCH-", 5);
 
     private final String prefix;
     private final int width;

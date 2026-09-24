@@ -137,7 +137,10 @@
                             <include>src/**/*.java</include>
                             <include>scripts/**/*.java</include>
                         </includes>
-                        <palantirJavaFormat/>
+                        <eclipse>
+                            <version>4.35</version>
+                            <file>${maven.multiModuleProjectDirectory}/config/eclipse-java-formatter.xml</file>
+                        </eclipse>
                         <removeUnusedImports/>
                         <trimTrailingWhitespace/>
                         <endWithNewline/>

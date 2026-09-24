@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 模型特征关联表
+ *
  * @TableName model_feature_ref
  */
 @TableName(value = "model_feature_ref")

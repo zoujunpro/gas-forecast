@@ -31,47 +31,53 @@ public class DataFileInfoController {
     /**
      * 分页查询原始数据文件列表。
      *
-     * @param reqDTO 原始数据文件分页查询条件
+     * @param reqDTO
+     *            原始数据文件分页查询条件
      * @return 原始数据文件分页数据
      */
     @PostMapping("listPage")
     @WebLog("原始数据文件分页查询")
     @RequirePermission("data:file-info:list")
-    public ResponseResult<PageInfoDTO<DataFileInfoResponse>> listPage(
-            @Valid @RequestBody DataFileInfoPageRequest reqDTO) {
-        return ResponseResult.success(dataFileInfoService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<DataFileInfoResponse>> listPage(@Valid @RequestBody DataFileInfoPageRequest reqDTO) {
+        var result = dataFileInfoService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增原始数据文件信息。
      *
-     * @param reqDTO 原始数据文件新增参数
+     * @param reqDTO
+     *            原始数据文件新增参数
      * @return 新增后的原始数据文件信息
      */
     @PostMapping("create")
     @WebLog("新增原始数据文件信息")
     @RequirePermission("data:file-info:create")
     public ResponseResult<DataFileInfoResponse> create(@Valid @RequestBody DataFileInfoCreateRequest reqDTO) {
-        return ResponseResult.success(dataFileInfoService.create(reqDTO));
+        var result = dataFileInfoService.create(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新原始数据文件信息。
      *
-     * @param reqDTO 原始数据文件更新参数
+     * @param reqDTO
+     *            原始数据文件更新参数
      * @return 更新后的原始数据文件信息
      */
     @PostMapping("update")
     @WebLog("编辑原始数据文件信息")
     @RequirePermission("data:file-info:update")
     public ResponseResult<DataFileInfoResponse> update(@Valid @RequestBody DataFileInfoUpdateRequest reqDTO) {
-        return ResponseResult.success(dataFileInfoService.update(reqDTO));
+        DataFileInfoResponse result = dataFileInfoService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除原始数据文件信息。
      *
-     * @param id 原始数据文件主键
+     * @param id
+     *            原始数据文件主键
      * @return 空响应
      */
     @GetMapping("delete")

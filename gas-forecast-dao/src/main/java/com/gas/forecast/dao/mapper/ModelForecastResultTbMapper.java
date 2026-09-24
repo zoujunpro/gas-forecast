@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.ModelForecastResultTb;
  * @createDate 2026-09-10 08:27:48
  * @Entity com.gas.forecast.dao.domain.ModelForecastResultTb
  */
-public interface ModelForecastResultTbMapper extends BaseMapper<ModelForecastResultTb> {}
+public interface ModelForecastResultTbMapper extends BaseMapper<ModelForecastResultTb> {
+}

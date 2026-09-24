@@ -39,24 +39,14 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         LambdaQueryWrapper<DataFileInfoTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(DataFileInfoTb::getFileCode, keyword)
-                    .or()
-                    .like(DataFileInfoTb::getFileName, keyword)
-                    .or()
-                    .like(DataFileInfoTb::getObjectKey, keyword)
-                    .or()
-                    .like(DataFileInfoTb::getFileHash, keyword)
-                    .or()
-                    .like(DataFileInfoTb::getStatus, keyword)
-                    .or()
-                    .like(DataFileInfoTb::getCreatedByName, keyword));
+            query.and(wrapper -> wrapper.like(DataFileInfoTb::getFileCode, keyword).or().like(DataFileInfoTb::getFileName, keyword).or().like(DataFileInfoTb::getObjectKey, keyword).or()
+                    .like(DataFileInfoTb::getFileHash, keyword).or().like(DataFileInfoTb::getStatus, keyword).or().like(DataFileInfoTb::getCreatedByName, keyword));
         }
         query.orderByDesc(DataFileInfoTb::getUpdatedAt).orderByDesc(DataFileInfoTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
         IPage<DataFileInfoTb> result = dataFileInfoTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     /**
@@ -102,19 +92,8 @@ public class DataFileInfoServiceImpl implements DataFileInfoService {
         if (fileInfo == null) {
             return null;
         }
-        return new DataFileInfoResponse(
-                fileInfo.getId(),
-                fileInfo.getFileCode(),
-                fileInfo.getFileName(),
-                fileInfo.getObjectKey(),
-                fileInfo.getFileHash(),
-                fileInfo.getStatus(),
-                fileInfo.getTotalCount(),
-                fileInfo.getErrorMessage(),
-                fileInfo.getCreatedAt(),
-                fileInfo.getUpdatedAt(),
-                fileInfo.getCreatedBy(),
-                fileInfo.getCreatedByName());
+        return new DataFileInfoResponse(fileInfo.getId(), fileInfo.getFileCode(), fileInfo.getFileName(), fileInfo.getObjectKey(), fileInfo.getFileHash(), fileInfo.getStatus(),
+                fileInfo.getTotalCount(), fileInfo.getErrorMessage(), fileInfo.getCreatedAt(), fileInfo.getUpdatedAt(), fileInfo.getCreatedBy(), fileInfo.getCreatedByName());
     }
 
     private DataFileInfoTb toEntity(DataFileInfoCreateRequest reqDTO) {

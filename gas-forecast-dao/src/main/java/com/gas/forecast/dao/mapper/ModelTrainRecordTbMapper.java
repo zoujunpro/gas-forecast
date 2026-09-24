@@ -6,4 +6,5 @@ import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 /**
  * 模型训练结果明细 Mapper。
  */
-public interface ModelTrainRecordTbMapper extends BaseMapper<ModelTrainRecordTb> {}
+public interface ModelTrainRecordTbMapper extends BaseMapper<ModelTrainRecordTb> {
+}

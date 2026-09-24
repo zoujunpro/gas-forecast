@@ -49,28 +49,30 @@ public class GasForecastController {
     /**
      * 查询预测维度选项。
      *
-     * @param areaCode 区域编码，可为空
-     * @param provinceCode 省份编码，可为空
+     * @param areaCode
+     *            区域编码，可为空
+     * @param provinceCode
+     *            省份编码，可为空
      * @return 预测维度数据
      */
     @GetMapping("/dimensions")
-    public ForecastDimensionResponse listDimensions(
-            @RequestParam(required = false) String areaCode, @RequestParam(required = false) String provinceCode) {
+    public ForecastDimensionResponse listDimensions(@RequestParam(required = false) String areaCode, @RequestParam(required = false) String provinceCode) {
         return gasForecastService.listDimensions(areaCode, provinceCode);
     }
 
     /**
      * 查询预测看板数据。
      *
-     * @param province 省份名称，可为空
-     * @param provinceCode 省份编码，可为空
-     * @param customerCode 客户编码，可为空
+     * @param province
+     *            省份名称，可为空
+     * @param provinceCode
+     *            省份编码，可为空
+     * @param customerCode
+     *            客户编码，可为空
      * @return 预测看板数据
      */
     @GetMapping("/dashboard")
-    public ForecastDashboardResponse getDashboard(
-            @RequestParam(required = false) String province,
-            @RequestParam(required = false) String provinceCode,
+    public ForecastDashboardResponse getDashboard(@RequestParam(required = false) String province, @RequestParam(required = false) String provinceCode,
             @RequestParam(required = false) String customerCode) {
         if (provinceCode != null && !provinceCode.isBlank()) {
             return gasForecastService.getDashboardByCode(provinceCode, customerCode);
@@ -91,7 +93,8 @@ public class GasForecastController {
     /**
      * 处理数据不存在异常。
      *
-     * @param exception 数据不存在异常
+     * @param exception
+     *            数据不存在异常
      * @return HTTP 404 错误信息
      */
     @org.springframework.web.bind.annotation.ExceptionHandler(NoSuchElementException.class)

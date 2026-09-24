@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.DataFileInfoTb;
  * @createDate 2026-09-10 08:27:48
  * @Entity com.gas.forecast.dao.domain.DataFileInfoTb
  */
-public interface DataFileInfoTbMapper extends BaseMapper<DataFileInfoTb> {}
+public interface DataFileInfoTbMapper extends BaseMapper<DataFileInfoTb> {
+}

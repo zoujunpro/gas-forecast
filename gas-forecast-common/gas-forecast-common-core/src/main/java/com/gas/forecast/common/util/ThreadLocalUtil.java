@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 public final class ThreadLocalUtil {
     private static final ThreadLocal<LoginUser> LOGIN_USER = new ThreadLocal<>();
 
-    private ThreadLocalUtil() {}
+    private ThreadLocalUtil() {
+    }
 
     public static void setLoginUser(Long userId, String username, String token) {
         LOGIN_USER.set(new LoginUser(userId, username, token));

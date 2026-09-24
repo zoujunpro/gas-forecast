@@ -32,60 +32,68 @@ public class ModelConfigController {
     /**
      * 分页查询模型配置。
      *
-     * @param reqDTO 模型配置分页查询条件
+     * @param reqDTO
+     *            模型配置分页查询条件
      * @return 模型配置分页数据
      */
     @PostMapping("listPage")
     @WebLog("模型列表查询")
     @RequirePermission("model:config:list")
-    public ResponseResult<PageInfoDTO<ModelConfigResponse>> listPage(
-            @Valid @RequestBody ModelConfigPageRequest reqDTO) {
-        return ResponseResult.success(modelConfigService.listPage(reqDTO));
+    public ResponseResult<PageInfoDTO<ModelConfigResponse>> listPage(@Valid @RequestBody ModelConfigPageRequest reqDTO) {
+        var result = modelConfigService.listPage(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 新增模型配置。
      *
-     * @param reqDTO 模型配置新增参数
+     * @param reqDTO
+     *            模型配置新增参数
      * @return 新增后的模型配置
      */
     @PostMapping("create")
     @WebLog("新增模型")
     @RequirePermission("model:config:create")
     public ResponseResult<ModelConfigResponse> create(@Valid @RequestBody ModelConfigCreateRequest reqDTO) {
-        return ResponseResult.success(modelConfigService.create(reqDTO));
+        var result = modelConfigService.create(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新模型配置。
      *
-     * @param reqDTO 模型配置更新参数
+     * @param reqDTO
+     *            模型配置更新参数
      * @return 更新后的模型配置
      */
     @PostMapping("update")
     @WebLog("编辑模型")
     @RequirePermission("model:config:update")
     public ResponseResult<ModelConfigResponse> update(@Valid @RequestBody ModelConfigUpdateRequest reqDTO) {
-        return ResponseResult.success(modelConfigService.update(reqDTO));
+        var result = modelConfigService.update(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 更新模型适用范围及关联特征。
      *
-     * @param reqDTO 模型适用范围更新参数
+     * @param reqDTO
+     *            模型适用范围更新参数
      * @return 更新后的模型配置
      */
     @PostMapping("updateScope")
     @WebLog("配置模型适用范围")
     @RequirePermission("model:config:update")
     public ResponseResult<ModelConfigResponse> updateScope(@Valid @RequestBody ModelConfigScopeUpdateRequest reqDTO) {
-        return ResponseResult.success(modelConfigService.updateScope(reqDTO));
+        var result = modelConfigService.updateScope(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 删除模型配置。
      *
-     * @param id 模型配置主键
+     * @param id
+     *            模型配置主键
      * @return 空响应
      */
     @GetMapping("delete")

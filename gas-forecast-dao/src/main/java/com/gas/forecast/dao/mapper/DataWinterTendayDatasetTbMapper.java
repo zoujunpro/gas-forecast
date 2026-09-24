@@ -9,4 +9,5 @@ import com.gas.forecast.dao.domain.DataWinterTendayDatasetTb;
  * @createDate 2026-09-10 08:27:48
  * @Entity com.gas.forecast.dao.domain.DataWinterTendayDatasetTb
  */
-public interface DataWinterTendayDatasetTbMapper extends BaseMapper<DataWinterTendayDatasetTb> {}
+public interface DataWinterTendayDatasetTbMapper extends BaseMapper<DataWinterTendayDatasetTb> {
+}

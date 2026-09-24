@@ -7,6 +7,7 @@ import lombok.Data;
 
 /**
  * 天然气销量原始数据表
+ *
  * @TableName data_monthly_sales_tb
  */
 @TableName(value = "data_monthly_sales_tb")

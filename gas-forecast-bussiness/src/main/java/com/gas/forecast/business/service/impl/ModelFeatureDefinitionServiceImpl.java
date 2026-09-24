@@ -31,28 +31,18 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(ModelFeatureDefinitionTb::getFeatureCode, keyword)
-                    .or()
-                    .like(ModelFeatureDefinitionTb::getFeatureName, keyword)
-                    .or()
-                    .like(ModelFeatureDefinitionTb::getFeatureColumn, keyword)
-                    .or()
-                    .like(ModelFeatureDefinitionTb::getTimeGranularity, keyword)
-                    .or()
+            query.and(wrapper -> wrapper.like(ModelFeatureDefinitionTb::getFeatureCode, keyword).or().like(ModelFeatureDefinitionTb::getFeatureName, keyword).or()
+                    .like(ModelFeatureDefinitionTb::getFeatureColumn, keyword).or().like(ModelFeatureDefinitionTb::getTimeGranularity, keyword).or()
                     .like(ModelFeatureDefinitionTb::getDescription, keyword));
         }
         if (TextUtils.hasText(reqDTO.timeGranularity())) {
-            query.eq(
-                    ModelFeatureDefinitionTb::getTimeGranularity,
-                    reqDTO.timeGranularity().trim());
+            query.eq(ModelFeatureDefinitionTb::getTimeGranularity, reqDTO.timeGranularity().trim());
         }
         query.orderByDesc(ModelFeatureDefinitionTb::getCreatedAt).orderByDesc(ModelFeatureDefinitionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
         int size = reqDTO.size() == null ? 10 : reqDTO.size();
-        IPage<ModelFeatureDefinitionTb> result =
-                modelFeatureDefinitionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<ModelFeatureDefinitionTb> result = modelFeatureDefinitionTbMapper.selectPage(PageUtils.pageRequest(page, size), query);
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     @Override
@@ -78,10 +68,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         ensureFeatureCodeUnique(reqDTO.featureCode(), reqDTO.timeGranularity(), reqDTO.id());
         ModelFeatureDefinitionTb entity = toEntity(reqDTO);
         entity.setId(reqDTO.id());
-        entity.setFeatureColumn(
-                TextUtils.hasText(reqDTO.featureColumn())
-                        ? resolveFeatureColumn(reqDTO.featureColumn(), reqDTO.id())
-                        : exists.getFeatureColumn());
+        entity.setFeatureColumn(TextUtils.hasText(reqDTO.featureColumn()) ? resolveFeatureColumn(reqDTO.featureColumn(), reqDTO.id()) : exists.getFeatureColumn());
         entity.setCreatedAt(exists.getCreatedAt());
         entity.setCreatedBy(exists.getCreatedBy());
         entity.setUpdatedByName(SecurityContextHolder.getUserName());
@@ -96,8 +83,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
     }
 
     private void ensureFeatureCodeUnique(String featureCode, String timeGranularity, Long excludeId) {
-        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery()
-                .eq(ModelFeatureDefinitionTb::getFeatureCode, featureCode)
+        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureCode, featureCode)
                 .eq(ModelFeatureDefinitionTb::getTimeGranularity, timeGranularity);
         if (excludeId != null) {
             query.ne(ModelFeatureDefinitionTb::getId, excludeId);
@@ -123,9 +109,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
 
         for (int slot = 1; slot <= 200; slot++) {
             String candidate = String.format("feature_%03d", slot);
-            if (modelFeatureDefinitionTbMapper.selectCount(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery()
-                            .eq(ModelFeatureDefinitionTb::getFeatureColumn, candidate))
-                    == 0) {
+            if (modelFeatureDefinitionTbMapper.selectCount(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureColumn, candidate)) == 0) {
                 return candidate;
             }
         }
@@ -133,8 +117,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
     }
 
     private void ensureFeatureColumnUnique(String featureColumn, Long excludeId) {
-        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery()
-                .eq(ModelFeatureDefinitionTb::getFeatureColumn, featureColumn);
+        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureColumn, featureColumn);
         if (excludeId != null) {
             query.ne(ModelFeatureDefinitionTb::getId, excludeId);
         }
@@ -147,17 +130,8 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         if (entity == null) {
             return null;
         }
-        return new ModelFeatureDefinitionResponse(
-                entity.getId(),
-                entity.getFeatureCode(),
-                entity.getFeatureName(),
-                entity.getFeatureColumn(),
-                entity.getTimeGranularity(),
-                entity.getEnabled(),
-                entity.getDescription(),
-                entity.getCreatedAt(),
-                entity.getCreatedBy(),
-                entity.getUpdatedByName());
+        return new ModelFeatureDefinitionResponse(entity.getId(), entity.getFeatureCode(), entity.getFeatureName(), entity.getFeatureColumn(), entity.getTimeGranularity(), entity.getEnabled(),
+                entity.getDescription(), entity.getCreatedAt(), entity.getCreatedBy(), entity.getUpdatedByName());
     }
 
     private ModelFeatureDefinitionTb toEntity(ModelFeatureDefinitionCreateRequest reqDTO) {

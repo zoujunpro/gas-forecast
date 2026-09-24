@@ -10,6 +10,7 @@ import lombok.Data;
 
 /**
  * 模型训练结果明细。
+ *
  * @TableName model_train_record_tb
  */
 @TableName(value = "model_train_record_tb")

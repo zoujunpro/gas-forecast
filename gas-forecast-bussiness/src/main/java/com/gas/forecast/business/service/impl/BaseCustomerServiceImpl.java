@@ -46,20 +46,13 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         LambdaQueryWrapper<BaseCustomerTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword)
-                    .or()
-                    .like(BaseCustomerTb::getCustomerName, keyword)
-                    .or()
-                    .like(BaseCustomerTb::getRegionName, keyword)
-                    .or()
+            query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword).or().like(BaseCustomerTb::getCustomerName, keyword).or().like(BaseCustomerTb::getRegionName, keyword).or()
                     .like(BaseCustomerTb::getIndustryName, keyword));
         }
         query.orderByDesc(BaseCustomerTb::getUpdatedAt).orderByDesc(BaseCustomerTb::getId);
 
-        IPage<BaseCustomerTb> result =
-                baseCustomerTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);
-        return PageUtils.toPage(
-                result, result.getRecords().stream().map(this::toResp).toList());
+        IPage<BaseCustomerTb> result = baseCustomerTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);
+        return PageUtils.toPage(result, result.getRecords().stream().map(this::toResp).toList());
     }
 
     /**
@@ -107,18 +100,8 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         if (customer == null) {
             return null;
         }
-        return new BaseCustomerResponse(
-                customer.getId(),
-                customer.getCustomerCode(),
-                customer.getCustomerName(),
-                customer.getIndustryCode(),
-                customer.getIndustryName(),
-                customer.getRegionCode(),
-                customer.getRegionName(),
-                customer.getRawRegionName(),
-                customer.getRawIndustryName(),
-                customer.getCreatedAt(),
-                customer.getUpdatedAt());
+        return new BaseCustomerResponse(customer.getId(), customer.getCustomerCode(), customer.getCustomerName(), customer.getIndustryCode(), customer.getIndustryName(), customer.getRegionCode(),
+                customer.getRegionName(), customer.getRawRegionName(), customer.getRawIndustryName(), customer.getCreatedAt(), customer.getUpdatedAt());
     }
 
     private BaseCustomerTb toEntity(BaseCustomerCreateRequest reqDTO) {
@@ -150,9 +133,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
     }
 
     private BaseRegionTb requireRegion(String regionCode) {
-        BaseRegionTb region = baseRegionTbMapper.selectOne(Wrappers.<BaseRegionTb>lambdaQuery()
-                .eq(BaseRegionTb::getRegionCode, regionCode)
-                .last("limit 1"));
+        BaseRegionTb region = baseRegionTbMapper.selectOne(Wrappers.<BaseRegionTb>lambdaQuery().eq(BaseRegionTb::getRegionCode, regionCode).last("limit 1"));
         if (region == null) {
             throw new BusinessException("区域不存在: " + regionCode);
         }
@@ -160,9 +141,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
     }
 
     private BaseIndustryTb requireIndustry(String industryCode) {
-        BaseIndustryTb industry = baseIndustryTbMapper.selectOne(Wrappers.<BaseIndustryTb>lambdaQuery()
-                .eq(BaseIndustryTb::getIndustryCode, industryCode)
-                .last("limit 1"));
+        BaseIndustryTb industry = baseIndustryTbMapper.selectOne(Wrappers.<BaseIndustryTb>lambdaQuery().eq(BaseIndustryTb::getIndustryCode, industryCode).last("limit 1"));
         if (industry == null) {
             throw new BusinessException("行业不存在: " + industryCode);
         }

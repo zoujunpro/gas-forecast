@@ -10,13 +10,11 @@ import java.util.List;
 
 public class SqlImporter {
     public static void main(String[] args) throws Exception {
-        String url =
-                "jdbc:mysql://127.0.0.1:3306/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
+        String url = "jdbc:mysql://127.0.0.1:3306/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
         try (Connection connection = DriverManager.getConnection(url, "root", "mysql2026")) {
             if (args.length == 0) {
                 executeFile(connection, Path.of("forecast-bussiness-dao/src/main/resources/sql/00_schema.sql"));
-                executeFile(
-                        connection, Path.of("forecast-bussiness-dao/src/main/resources/sql/01_seed_winner_agent.sql"));
+                executeFile(connection, Path.of("forecast-bussiness-dao/src/main/resources/sql/01_seed_winner_agent.sql"));
             } else {
                 for (String arg : args) {
                     executeFile(connection, Path.of(arg));
@@ -85,8 +83,7 @@ public class SqlImporter {
     }
 
     private static void printCount(Connection connection, String tableName) throws Exception {
-        try (Statement statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery("select count(*) from " + tableName)) {
+        try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery("select count(*) from " + tableName)) {
             resultSet.next();
             System.out.println(tableName + ": " + resultSet.getLong(1));
         } catch (Exception exception) {

@@ -24,71 +24,43 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ResponseResult<Void>> handleBusinessException(
-            BusinessException exception, HttpServletRequest request) {
-        log.warn(
-                "Business exception, uri={}, code={}, message={}",
-                request.getRequestURI(),
-                exception.getCode(),
-                exception.getMessage());
+    public ResponseEntity<ResponseResult<Void>> handleBusinessException(BusinessException exception, HttpServletRequest request) {
+        log.warn("Business exception, uri={}, code={}, message={}", request.getRequestURI(), exception.getCode(), exception.getMessage());
         return ResponseEntity.ok(ResponseResult.error(exception.getCode(), exception.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ResponseResult<Void>> handleValidationException(
-            MethodArgumentNotValidException exception, HttpServletRequest request) {
-        String message = exception.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .map(error -> error.getDefaultMessage() == null
-                        ? BusinessResponseCode.PARAM_ERROR.getMessage()
-                        : error.getDefaultMessage())
-                .orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
+    public ResponseEntity<ResponseResult<Void>> handleValidationException(MethodArgumentNotValidException exception, HttpServletRequest request) {
+        String message = exception.getBindingResult().getFieldErrors().stream().findFirst()
+                .map(error -> error.getDefaultMessage() == null ? BusinessResponseCode.PARAM_ERROR.getMessage() : error.getDefaultMessage()).orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
         log.warn("Validation failed, uri={}, message={}", request.getRequestURI(), message);
         return ResponseEntity.badRequest().body(ResponseResult.error(BusinessResponseCode.PARAM_ERROR, message));
     }
 
     @ExceptionHandler(BindException.class)
-    public ResponseEntity<ResponseResult<Void>> handleBindException(
-            BindException exception, HttpServletRequest request) {
-        String message = exception.getBindingResult().getFieldErrors().stream()
-                .findFirst()
-                .map(error -> error.getDefaultMessage() == null
-                        ? BusinessResponseCode.PARAM_ERROR.getMessage()
-                        : error.getDefaultMessage())
-                .orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
+    public ResponseEntity<ResponseResult<Void>> handleBindException(BindException exception, HttpServletRequest request) {
+        String message = exception.getBindingResult().getFieldErrors().stream().findFirst()
+                .map(error -> error.getDefaultMessage() == null ? BusinessResponseCode.PARAM_ERROR.getMessage() : error.getDefaultMessage()).orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
         log.warn("Bind failed, uri={}, message={}", request.getRequestURI(), message);
         return ResponseEntity.badRequest().body(ResponseResult.error(BusinessResponseCode.PARAM_ERROR, message));
     }
 
-    @ExceptionHandler({
-        MissingServletRequestParameterException.class,
-        MethodArgumentTypeMismatchException.class,
-        HttpMessageNotReadableException.class
-    })
-    public ResponseEntity<ResponseResult<Void>> handleBadRequestException(
-            Exception exception, HttpServletRequest request) {
+    @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class, HttpMessageNotReadableException.class})
+    public ResponseEntity<ResponseResult<Void>> handleBadRequestException(Exception exception, HttpServletRequest request) {
         log.warn("Bad request, uri={}, message={}", request.getRequestURI(), exception.getMessage());
         return ResponseEntity.badRequest().body(ResponseResult.error(BusinessResponseCode.PARAM_ERROR));
     }
 
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ResponseResult<Void>> handleNotFoundException(
-            NoSuchElementException exception, HttpServletRequest request) {
+    public ResponseEntity<ResponseResult<Void>> handleNotFoundException(NoSuchElementException exception, HttpServletRequest request) {
         log.warn("Resource not found, uri={}, message={}", request.getRequestURI(), exception.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ResponseResult.error(BusinessResponseCode.NOT_FOUND, exception.getMessage()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ResponseResult.error(BusinessResponseCode.NOT_FOUND, exception.getMessage()));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ResponseResult<Void>> handleMethodNotSupportedException(
-            HttpRequestMethodNotSupportedException exception, HttpServletRequest request) {
-        log.warn(
-                "Method not allowed, uri={}, method={}, supported={}",
-                request.getRequestURI(),
-                exception.getMethod(),
-                exception.getSupportedHttpMethods());
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ResponseResult.error(BusinessResponseCode.METHOD_NOT_ALLOWED));
+    public ResponseEntity<ResponseResult<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException exception, HttpServletRequest request) {
+        log.warn("Method not allowed, uri={}, method={}, supported={}", request.getRequestURI(), exception.getMethod(), exception.getSupportedHttpMethods());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(ResponseResult.error(BusinessResponseCode.METHOD_NOT_ALLOWED));
     }
 
     @ExceptionHandler(Exception.class)

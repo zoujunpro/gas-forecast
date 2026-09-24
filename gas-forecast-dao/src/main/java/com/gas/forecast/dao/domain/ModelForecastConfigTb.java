@@ -8,6 +8,7 @@ import lombok.Data;
 
 /**
  * 模型预测配置表
+ *
  * @TableName model_forecast_config_tb
  */
 @TableName(value = "model_forecast_config_tb")

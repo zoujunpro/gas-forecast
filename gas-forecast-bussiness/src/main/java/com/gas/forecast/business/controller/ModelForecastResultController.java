@@ -28,26 +28,28 @@ public class ModelForecastResultController {
     /**
      * 分页查询模型预测结果。
      *
-     * @param reqDTO 模型预测结果分页查询条件
+     * @param reqDTO
+     *            模型预测结果分页查询条件
      * @return 模型预测结果分页数据
      */
     @PostMapping("listPage")
     @WebLog("模型预测结果分页查询")
-    public ResponseResult<PageInfoDTO<ModelForecastResultTb>> listPage(
-            @Valid @RequestBody ModelForecastResultPageRequest reqDTO) {
-        return ResponseResult.success(modelForecastManagementService.listResults(reqDTO));
+    public ResponseResult<PageInfoDTO<ModelForecastResultTb>> listPage(@Valid @RequestBody ModelForecastResultPageRequest reqDTO) {
+        var result = modelForecastManagementService.listResults(reqDTO);
+        return ResponseResult.success(result);
     }
 
     /**
      * 查询预测批次对应的历史对比数据。
      *
-     * @param reqDTO 模型预测批次参数
+     * @param reqDTO
+     *            模型预测批次参数
      * @return 历史实际值与预测值对比数据
      */
     @PostMapping("history")
     @WebLog("模型预测历史数据查询")
-    public ResponseResult<List<ModelForecastHistoryPointResponse>> history(
-            @Valid @RequestBody ModelForecastBatchRequest reqDTO) {
-        return ResponseResult.success(modelForecastManagementService.resultHistory(reqDTO));
+    public ResponseResult<List<ModelForecastHistoryPointResponse>> history(@Valid @RequestBody ModelForecastBatchRequest reqDTO) {
+        var result = modelForecastManagementService.resultHistory(reqDTO);
+        return ResponseResult.success(result);
     }
 }

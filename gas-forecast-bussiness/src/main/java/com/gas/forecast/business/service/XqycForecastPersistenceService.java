@@ -40,20 +40,16 @@ public class XqycForecastPersistenceService {
         return persist(agentId, request, BATCH_TIME_FORMAT.format(LocalDateTime.now()), false);
     }
 
-    private PersistSummary persist(String agentId, JsonNode request, String batchTime, boolean replaceBatch)
-            throws Exception {
+    private PersistSummary persist(String agentId, JsonNode request, String batchTime, boolean replaceBatch) throws Exception {
         AgentFiles agentFiles = AgentFiles.from(agentId);
         Resource[] resources = resolver.getResources("classpath*:" + agentFiles.pattern());
         Arrays.sort(resources, Comparator.comparing(resource -> {
             String filename = resource.getFilename();
             return filename == null ? "" : filename;
         }));
-        String requestedProvince =
-                request.path("province").asText(request.path("region_name").asText(""));
-        String requestedIndustry = normalizeIndustry(
-                request.path("industry").asText(request.path("industry_name").asText("")));
-        String requestedCustomer =
-                request.path("customer").asText(request.path("customer_name").asText(""));
+        String requestedProvince = request.path("province").asText(request.path("region_name").asText(""));
+        String requestedIndustry = normalizeIndustry(request.path("industry").asText(request.path("industry_name").asText("")));
+        String requestedCustomer = request.path("customer").asText(request.path("customer_name").asText(""));
         AtomicInteger sequence = new AtomicInteger(1);
         int batchCount = 0;
         int resultCount = 0;
@@ -66,18 +62,12 @@ public class XqycForecastPersistenceService {
             }
 
             FileParts fileParts = parseName(resource.getFilename());
-            String industry =
-                    result.path("industry").asText(fileParts.industry() == null ? "全部行业" : fileParts.industry());
-            String customer =
-                    result.path("customer").asText(fileParts.customer() == null ? "全部客户" : fileParts.customer());
-            if (!requestedIndustry.isBlank()
-                    && !"全部行业".equals(requestedIndustry)
-                    && !requestedIndustry.equals(normalizeIndustry(industry))) {
+            String industry = result.path("industry").asText(fileParts.industry() == null ? "全部行业" : fileParts.industry());
+            String customer = result.path("customer").asText(fileParts.customer() == null ? "全部客户" : fileParts.customer());
+            if (!requestedIndustry.isBlank() && !"全部行业".equals(requestedIndustry) && !requestedIndustry.equals(normalizeIndustry(industry))) {
                 continue;
             }
-            if (!requestedCustomer.isBlank()
-                    && !"全部客户".equals(requestedCustomer)
-                    && !requestedCustomer.equals(customer)) {
+            if (!requestedCustomer.isBlank() && !"全部客户".equals(requestedCustomer) && !requestedCustomer.equals(customer)) {
                 continue;
             }
             List<ModelForecastResultTb> points = buildResultRecords(agentId, batchTime, sequence.get(), result);
@@ -99,15 +89,12 @@ public class XqycForecastPersistenceService {
     }
 
     private void deleteForecastResults(String batchNo) {
-        modelForecastResultTbMapper.delete(
-                Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
+        modelForecastResultTbMapper.delete(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, batchNo));
     }
 
-    private List<ModelForecastResultTb> buildResultRecords(
-            String agentId, String batchTime, int sequence, JsonNode result) {
+    private List<ModelForecastResultTb> buildResultRecords(String agentId, String batchTime, int sequence, JsonNode result) {
         JsonNode dates = result.hasNonNull("future_dates") ? result.get("future_dates") : result.get("dates");
-        JsonNode values =
-                result.hasNonNull("future_predicted") ? result.get("future_predicted") : result.get("predicted");
+        JsonNode values = result.hasNonNull("future_predicted") ? result.get("future_predicted") : result.get("predicted");
         List<ModelForecastResultTb> records = new ArrayList<>();
         if (dates == null || values == null || !dates.isArray() || !values.isArray()) {
             return records;
@@ -152,13 +139,12 @@ public class XqycForecastPersistenceService {
     }
 
     private String batchNo(String agentId, String batchTime, int sequence) {
-        String prefix =
-                switch (agentId) {
-                    case "winter-supply" -> "WSFC";
-                    case "monthly-sales" -> "MSFC";
-                    case "short-term" -> "STFC";
-                    default -> "XQFC";
-                };
+        String prefix = switch (agentId) {
+            case "winter-supply" -> "WSFC";
+            case "monthly-sales" -> "MSFC";
+            case "short-term" -> "STFC";
+            default -> "XQFC";
+        };
         return String.format(Locale.ROOT, "%s-%s-%03d", prefix, batchTime, sequence);
     }
 

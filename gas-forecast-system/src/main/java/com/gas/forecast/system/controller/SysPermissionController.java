@@ -29,7 +29,8 @@ public class SysPermissionController {
     @GetMapping("list")
     @RequirePermission("sys:permission:list")
     public ResponseResult<List<Map<String, Object>>> list(@RequestParam(required = false) String keyword) {
-        return ResponseResult.success(systemManagementService.listPermissions(keyword));
+        var result = systemManagementService.listPermissions(keyword);
+        return ResponseResult.success(result);
     }
 
     /**
@@ -38,7 +39,8 @@ public class SysPermissionController {
     @PostMapping("save")
     @RequirePermission("sys:permission:save")
     public ResponseResult<Map<String, Object>> save(@RequestBody Map<String, Object> req) {
-        return ResponseResult.success(systemManagementService.savePermission(req));
+        var result = systemManagementService.savePermission(req);
+        return ResponseResult.success(result);
     }
 
     @PostMapping("move")
@@ -46,7 +48,8 @@ public class SysPermissionController {
     public ResponseResult<Map<String, Object>> move(@RequestBody Map<String, Object> req) {
         Long id = Long.valueOf(String.valueOf(req.get("id")));
         int direction = Integer.parseInt(String.valueOf(req.get("direction")));
-        return ResponseResult.success(systemManagementService.movePermission(id, direction));
+        var result = systemManagementService.movePermission(id, direction);
+        return ResponseResult.success(result);
     }
 
     /**

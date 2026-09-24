@@ -41,8 +41,7 @@ public class WebLogAspect {
         String arguments = formatArguments(signature.getParameterNames(), point.getArgs());
 
         if (request != null) {
-            log.info(
-                    "Request [{}] {} {} args={}", description, request.getMethod(), request.getRequestURI(), arguments);
+            log.info("Request [{}] {} {} args={}", description, request.getMethod(), request.getRequestURI(), arguments);
         } else {
             log.info("Request [{}] args={}", description, arguments);
         }
@@ -52,11 +51,7 @@ public class WebLogAspect {
             log.info("Request [{}] completed in {} ms", description, System.currentTimeMillis() - start);
             return result;
         } catch (Throwable throwable) {
-            log.warn(
-                    "Request [{}] failed in {} ms, message={}",
-                    description,
-                    System.currentTimeMillis() - start,
-                    throwable.getMessage());
+            log.warn("Request [{}] failed in {} ms, message={}", description, System.currentTimeMillis() - start, throwable.getMessage());
             throw throwable;
         }
     }
@@ -81,16 +76,8 @@ public class WebLogAspect {
     }
 
     private boolean shouldSkipArgument(Object arg) {
-        return arg == null
-                || arg instanceof HttpServletRequest
-                || arg instanceof HttpServletResponse
-                || arg instanceof BindingResult
-                || arg instanceof MultipartFile
-                || arg instanceof MultipartFile[]
-                || arg instanceof ResponseEntity<?>
-                || arg instanceof InputStream
-                || arg instanceof OutputStream
-                || arg instanceof Principal;
+        return arg == null || arg instanceof HttpServletRequest || arg instanceof HttpServletResponse || arg instanceof BindingResult || arg instanceof MultipartFile || arg instanceof MultipartFile[]
+                || arg instanceof ResponseEntity<?> || arg instanceof InputStream || arg instanceof OutputStream || arg instanceof Principal;
     }
 
     private Object formatValue(Object value) {
