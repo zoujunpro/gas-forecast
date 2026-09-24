@@ -215,7 +215,6 @@ public class SystemManagementServiceImpl implements SystemManagementService {
                         item.getPermissionName(),
                         item.getPath(),
                         item.getPerms(),
-                        item.getButtonCode(),
                         item.getPermissionType()))
                 .map(this::permissionRow)
                 .toList();
@@ -228,15 +227,18 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         if (permission == null) {
             throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "权限不存在");
         }
-        permission.setParentId(longOrNull(req.get("parentId")));
+        Long parentId = longOrNull(req.get("parentId"));
+        boolean appendToSiblings = id == null || !java.util.Objects.equals(permission.getParentId(), parentId);
+        permission.setParentId(parentId);
         permission.setPermissionName(required(req, "permissionName"));
         permission.setPath(nullableString(req.get("path")));
         permission.setComponent(nullableString(req.get("component")));
         permission.setPermissionType(required(req, "permissionType"));
         permission.setPerms(nullableString(req.get("perms")));
-        permission.setButtonCode(nullableString(req.get("buttonCode")));
-        permission.setIcon(nullableString(req.get("icon")));
-        permission.setSortNo(intValue(req.get("sortNo"), 0));
+        permission.setIcon("DIRECTORY".equals(permission.getPermissionType()) ? nullableString(req.get("icon")) : null);
+        if (appendToSiblings) {
+            permission.setSortNo(nextPermissionSortNo(parentId));
+        }
         permission.setHidden(intValue(req.get("hidden"), 0));
         permission.setStatus(intValue(req.get("status"), 1));
         if (id == null) {
@@ -245,6 +247,48 @@ public class SystemManagementServiceImpl implements SystemManagementService {
             permissionMapper.updateById(permission);
         }
         return Map.of("id", permission.getId());
+    }
+
+    @Transactional
+    public Map<String, Object> movePermission(Long id, int direction) {
+        if (direction != -1 && direction != 1) {
+            throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "排序方向无效");
+        }
+        SysPermissionTb current = permissionMapper.selectById(id);
+        if (current == null || "BUTTON".equals(current.getPermissionType())) {
+            throw new BusinessException(BusinessResponseCode.SYSTEM_ERROR, "目录或菜单不存在");
+        }
+        List<SysPermissionTb> siblings = permissionMapper.selectList(Wrappers.<SysPermissionTb>lambdaQuery()
+                .eq(current.getParentId() != null, SysPermissionTb::getParentId, current.getParentId())
+                .isNull(current.getParentId() == null, SysPermissionTb::getParentId)
+                .ne(SysPermissionTb::getPermissionType, "BUTTON")
+                .orderByAsc(SysPermissionTb::getSortNo)
+                .orderByAsc(SysPermissionTb::getId));
+        int index = java.util.stream.IntStream.range(0, siblings.size())
+                .filter(i -> siblings.get(i).getId().equals(id))
+                .findFirst()
+                .orElse(-1);
+        int targetIndex = index + direction;
+        if (index < 0 || targetIndex < 0 || targetIndex >= siblings.size()) {
+            return Map.of("moved", false);
+        }
+        java.util.Collections.swap(siblings, index, targetIndex);
+        for (int i = 0; i < siblings.size(); i++) {
+            siblings.get(i).setSortNo(i + 1);
+            permissionMapper.updateById(siblings.get(i));
+        }
+        return Map.of("moved", true);
+    }
+
+    private int nextPermissionSortNo(Long parentId) {
+        return permissionMapper.selectList(Wrappers.<SysPermissionTb>lambdaQuery()
+                        .eq(parentId != null, SysPermissionTb::getParentId, parentId)
+                        .isNull(parentId == null, SysPermissionTb::getParentId))
+                .stream()
+                .map(SysPermissionTb::getSortNo)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
     }
 
     public void deletePermission(Long id) {
@@ -340,7 +384,6 @@ public class SystemManagementServiceImpl implements SystemManagementService {
         row.put("component", item.getComponent());
         row.put("permissionType", item.getPermissionType());
         row.put("perms", item.getPerms());
-        row.put("buttonCode", item.getButtonCode());
         row.put("icon", item.getIcon());
         row.put("sortNo", item.getSortNo());
         row.put("hidden", item.getHidden());

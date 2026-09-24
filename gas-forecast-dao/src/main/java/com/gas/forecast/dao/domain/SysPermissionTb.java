@@ -29,9 +29,6 @@ public class SysPermissionTb {
     private String perms;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
-    private String buttonCode;
-
-    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String icon;
 
     private Integer sortNo;

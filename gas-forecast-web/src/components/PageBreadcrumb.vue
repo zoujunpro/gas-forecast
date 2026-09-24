@@ -47,7 +47,7 @@ const title = computed(
 }
 
 .separator {
-  color: #98a2b3;
+  color: var(--app-text-muted);
   padding: 0 6px;
 }
 

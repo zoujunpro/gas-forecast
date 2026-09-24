@@ -13,24 +13,173 @@
   --app-font-size-secondary: 13px;
   --app-line-height-body: 1.5715;
   --app-font-weight-regular: 400;
-  --app-font-weight-medium: 500;
+  --app-font-weight-medium: 550;
   --app-font-weight-semibold: 600;
-  --app-bg: #f4f7fb;
+  --app-bg: #f3f6fa;
   --app-surface: #ffffff;
-  --app-border: #e4e7ec;
-  --app-border-soft: #f1f5f9;
+  --app-border: #d9e0e8;
+  --app-border-soft: #e9eef4;
   --app-primary: #1677ff;
-  --app-primary-dark: #0f7fe5;
-  --app-primary-soft: #eaf6fd;
-  --app-text: #1d2129;
-  --app-text-secondary: #4e5969;
-  --app-text-muted: #86909c;
-  --app-text-disabled: #c9cdd4;
+  --app-primary-hover: #0958d9;
+  --app-primary-dark: #003eb3;
+  --app-primary-soft: #e6f4ff;
+  --app-success: #16a34a;
+  --app-warning: #d97706;
+  --app-danger: #dc2626;
+  --app-text: #111827;
+  --app-text-secondary: #374151;
+  --app-text-muted: #667085;
+  --app-text-disabled: #a8b0bd;
+  --el-color-primary: var(--app-primary);
+  --el-color-primary-dark-2: var(--app-primary-hover);
+  --el-color-success: var(--app-success);
+  --el-color-warning: var(--app-warning);
+  --el-color-danger: var(--app-danger);
+  --el-color-error: var(--app-danger);
   --el-text-color-primary: var(--app-text);
   --el-text-color-regular: var(--app-text-secondary);
   --el-text-color-secondary: var(--app-text-muted);
-  --el-text-color-placeholder: #a9aeb8;
+  --el-text-color-placeholder: #8c96a5;
+  --el-border-color: var(--app-border);
+  --el-border-color-light: #e1e7ee;
+  --el-border-color-lighter: #e9eef4;
+  --el-fill-color-light: #f5f7fa;
+  --el-fill-color-lighter: #f8fafc;
+  --el-bg-color-page: var(--app-bg);
   --app-radius: 8px;
   --app-gap: 14px;
   --app-control-height: 38px;
+}
+
+html,
+body,
+#app {
+  color: var(--app-text);
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--app-font-family);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+strong {
+  color: var(--app-text);
+}
+
+.el-button {
+  min-height: 32px;
+  border-radius: 6px;
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.el-button--primary:not(.is-link):not(.is-text) {
+  --el-button-bg-color: var(--app-primary);
+  --el-button-border-color: var(--app-primary);
+  --el-button-hover-bg-color: var(--app-primary-hover);
+  --el-button-hover-border-color: var(--app-primary-hover);
+  --el-button-active-bg-color: var(--app-primary-dark);
+  --el-button-active-border-color: var(--app-primary-dark);
+}
+
+.el-button.is-link,
+.el-button.is-text {
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.el-button--primary.is-link,
+.el-button--primary.is-text {
+  color: #0958d9;
+}
+
+.el-button--danger.is-link,
+.el-button--danger.is-text {
+  color: var(--app-danger);
+}
+
+.el-button--success.is-link,
+.el-button--success.is-text {
+  color: #15803d;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner,
+.el-input-number {
+  border-radius: 6px;
+}
+
+.el-input__inner,
+.el-select__selected-item,
+.el-textarea__inner {
+  color: var(--app-text);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.el-form-item__label {
+  color: var(--app-text-secondary);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.el-table {
+  --el-table-header-bg-color: #f3f6fa;
+  --el-table-header-text-color: var(--app-text);
+  --el-table-text-color: var(--app-text-secondary);
+  --el-table-border-color: #e1e7ee;
+  --el-table-row-hover-bg-color: #e8f3ff;
+}
+
+.el-table th.el-table__cell {
+  background: #f3f6fa;
+  color: var(--app-text);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.el-table td.el-table__cell {
+  color: var(--app-text-secondary);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.el-dialog__title,
+.el-drawer__title,
+.el-message-box__title {
+  color: var(--app-text);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.el-tag {
+  font-weight: var(--app-font-weight-medium);
+}
+
+.el-pagination button,
+.el-pagination .number {
+  color: var(--app-text-secondary);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.el-pagination .number.is-active {
+  color: #ffffff;
+  background: var(--app-primary);
+}
+
+.el-dropdown-menu__item,
+.el-menu-item,
+.el-sub-menu__title,
+.el-tree-node__label {
+  color: var(--app-text-secondary);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.el-empty__description p,
+.el-form-item__error,
+.el-input__count {
+  font-weight: var(--app-font-weight-medium);
 }

@@ -380,8 +380,8 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 0 12px;
   overflow: hidden;
-  background: #ffffff;
-  border-bottom: 1px solid #e6eaf0;
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .page-tabs :deep(.el-dropdown) {
@@ -395,10 +395,10 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border: 1px solid #e6eaf0;
+  border: 1px solid var(--app-border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #536071;
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
   cursor: pointer;
   transition:
     color 0.2s,
@@ -407,15 +407,15 @@ onBeforeUnmount(() => {
 }
 
 .tabs-nav-button:hover:not(:disabled) {
-  color: #0284c7;
-  border-color: #bae6fd;
-  background: #f0f9ff;
+  color: var(--app-primary-hover);
+  border-color: #91caff;
+  background: var(--app-primary-soft);
 }
 
 .tabs-nav-button:disabled {
-  color: #b5beca;
+  color: var(--app-text-disabled);
   cursor: not-allowed;
-  background: #f8fafc;
+  background: #f5f7fa;
 }
 
 .tabs-scroll {
@@ -447,10 +447,10 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   min-width: 0;
   padding: 0 10px;
-  border: 1px solid #e6eaf0;
+  border: 1px solid var(--app-border);
   border-radius: 6px;
-  background: #f8fafc;
-  color: #536071;
+  background: #f5f7fa;
+  color: var(--app-text-secondary);
   font-family: inherit;
   font-size: 13px;
   white-space: nowrap;
@@ -462,9 +462,9 @@ onBeforeUnmount(() => {
 }
 
 .tab-item.active {
-  color: #0284c7;
-  border-color: #bae6fd;
-  background: #eaf6fd;
+  color: var(--app-primary-hover);
+  border-color: #91caff;
+  background: var(--app-primary-soft);
   font-weight: 600;
 }
 
@@ -480,11 +480,11 @@ onBeforeUnmount(() => {
   height: 14px;
   flex-shrink: 0;
   border-radius: 50%;
-  color: #8a95a6;
+  color: var(--app-text-muted);
 }
 
 .tab-close:hover {
-  color: #172033;
+  color: var(--app-text);
   background: rgba(15, 23, 42, 0.08);
 }
 
@@ -495,17 +495,17 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid #e6eaf0;
+  border: 1px solid var(--app-border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #536071;
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
   cursor: pointer;
 }
 
 .tabs-action:hover {
-  color: #0284c7;
-  border-color: #bae6fd;
-  background: #f0f9ff;
+  color: var(--app-primary-hover);
+  border-color: #91caff;
+  background: var(--app-primary-soft);
 }
 
 .tab-context-menu {
@@ -513,9 +513,9 @@ onBeforeUnmount(() => {
   z-index: 3000;
   width: 120px;
   padding: 4px;
-  border: 1px solid #e6eaf0;
+  border: 1px solid var(--app-border);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--app-surface);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
@@ -528,7 +528,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #172033;
+  color: var(--app-text);
   font-family: inherit;
   font-size: 13px;
   text-align: left;
@@ -536,18 +536,18 @@ onBeforeUnmount(() => {
 }
 
 .context-menu-item:hover:not(:disabled) {
-  color: #0284c7;
-  background: #f0f9ff;
+  color: var(--app-primary-hover);
+  background: var(--app-primary-soft);
 }
 
 .context-menu-item:disabled {
-  color: #b5beca;
+  color: var(--app-text-disabled);
   cursor: not-allowed;
 }
 
 .context-menu-item.divided {
   margin-top: 4px;
-  border-top: 1px solid #eef2f6;
+  border-top: 1px solid var(--app-border-soft);
   border-radius: 0 0 4px 4px;
 }
 </style>

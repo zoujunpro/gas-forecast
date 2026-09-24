@@ -5,8 +5,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { hasPermission } from '@/utils/auth'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { hasPermission, PROFILE_UPDATED_EVENT } from '@/utils/auth'
 
 defineOptions({
   name: 'PermissionButton',
@@ -17,5 +17,15 @@ const props = defineProps<{
   permission?: string
 }>()
 
-const allowed = computed(() => !props.permission || hasPermission(props.permission))
+const profileVersion = ref(0)
+const refreshPermission = () => {
+  profileVersion.value += 1
+}
+const allowed = computed(() => {
+  void profileVersion.value
+  return !props.permission || hasPermission(props.permission)
+})
+
+onMounted(() => window.addEventListener(PROFILE_UPDATED_EVENT, refreshPermission))
+onBeforeUnmount(() => window.removeEventListener(PROFILE_UPDATED_EVENT, refreshPermission))
 </script>

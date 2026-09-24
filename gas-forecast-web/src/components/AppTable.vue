@@ -23,14 +23,14 @@ defineOptions({
 }
 
 .app-table :deep(th.el-table__cell) {
-  background: #f8fafc;
-  color: #1f2937;
+  background: #f3f6fa;
+  color: var(--app-text);
   font-size: 14px;
   font-weight: 600;
 }
 
 .app-table :deep(td.el-table__cell) {
-  color: #344054;
+  color: var(--app-text-secondary);
   font-size: 14px;
   font-weight: 500;
 }
@@ -102,7 +102,7 @@ defineOptions({
 }
 
 .app-table :deep(.mono-text) {
-  color: #475467;
+  color: var(--app-text-secondary);
   font-family: inherit;
   font-size: 13px;
 }

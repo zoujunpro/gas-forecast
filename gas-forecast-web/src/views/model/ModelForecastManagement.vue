@@ -15,7 +15,11 @@
         </el-select>
         <el-button type="primary" :icon="Search" @click="loadData">查询</el-button>
       </template>
-      <template #actions><el-button type="primary" :icon="Plus" @click="openCreate">新增</el-button></template>
+      <template #actions
+        ><PermissionButton type="primary" :icon="Plus" permission="model:forecast:create" @click="openCreate"
+          >新增</PermissionButton
+        ></template
+      >
       <AppTable v-loading="loading" :data="rows" border stripe @row-click="openInstances">
         <el-table-column prop="forecastName" label="预测名称" min-width="190" fixed />
         <el-table-column prop="agentCode" label="智能体" min-width="140"
@@ -39,11 +43,19 @@
         <el-table-column label="操作" width="330" fixed="right"
           ><template #default="{ row }"
             ><span @click.stop
-              ><el-button link type="success" :loading="runningCode === row.id" @click="openPredict(row)"
-                >发起预测</el-button
+              ><PermissionButton
+                link
+                type="success"
+                permission="model:forecast:execute"
+                :loading="runningCode === row.id"
+                @click="openPredict(row)"
+                >发起预测</PermissionButton
               ><el-button link type="primary" @click="openInstances(row)">查看预测实例</el-button
-              ><el-button link type="primary" @click="openEdit(row)">编辑</el-button
-              ><el-button link type="danger" @click="remove(row)">删除</el-button></span
+              ><PermissionButton link type="primary" permission="model:forecast:update" @click="openEdit(row)"
+                >编辑</PermissionButton
+              ><PermissionButton link type="danger" permission="model:forecast:delete" @click="remove(row)"
+                >删除</PermissionButton
+              ></span
             ></template
           ></el-table-column
         >
@@ -401,6 +413,7 @@ import AppPagination from '@/components/AppPagination.vue'
 import AppTable from '@/components/AppTable.vue'
 import AppTablePanel from '@/components/AppTablePanel.vue'
 import PageBreadcrumb from '@/components/PageBreadcrumb.vue'
+import PermissionButton from '@/components/PermissionButton.vue'
 
 const agents = [
   { label: '冬季保供', value: 'winter-supply' },

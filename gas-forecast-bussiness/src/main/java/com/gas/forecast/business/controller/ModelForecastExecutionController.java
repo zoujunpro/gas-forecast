@@ -4,6 +4,7 @@ import com.gas.forecast.business.dto.request.ModelForecastExecuteRequest;
 import com.gas.forecast.business.dto.response.ModelForecastExecuteResponse;
 import com.gas.forecast.business.service.ModelForecastManagementService;
 import com.gas.forecast.common.core.ResponseResult;
+import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class ModelForecastExecutionController {
      */
     @PostMapping("execute")
     @WebLog("执行模型预测")
+    @RequirePermission("model:forecast:execute")
     public ResponseResult<ModelForecastExecuteResponse> execute(
             @Valid @RequestBody ModelForecastExecuteRequest reqDTO) {
         return ResponseResult.success(modelForecastManagementService.execute(reqDTO));

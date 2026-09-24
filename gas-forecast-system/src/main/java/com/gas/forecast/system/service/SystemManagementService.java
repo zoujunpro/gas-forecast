@@ -27,6 +27,8 @@ public interface SystemManagementService {
 
     Map<String, Object> savePermission(Map<String, Object> req);
 
+    Map<String, Object> movePermission(Long id, int direction);
+
     void deletePermission(Long id);
 
     Map<String, Object> options();

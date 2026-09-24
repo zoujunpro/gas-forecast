@@ -84,18 +84,6 @@ const pageMap: Record<string, { module: string; title: string; description: stri
     description: '查看预测任务批次、智能体来源、执行状态和请求参数。',
     scopes: ['批次号和智能体编码', '预测范围和执行状态', '请求参数和创建信息']
   },
-  forecastResultsData: {
-    module: '后台数据管理',
-    title: '预测结果表',
-    description: '查看预测日期、预测值和批次归属。',
-    scopes: ['预测批次号和预测日期', '预测值明细', '结果导出和图表追溯']
-  },
-  trainBatchesData: {
-    module: '后台数据管理',
-    title: '训练批次表',
-    description: '查看模型训练批次、回测指标、训练状态和模型版本。',
-    scopes: ['训练批次和模型版本', '训练状态和回测指标', '训练数据范围']
-  },
   usersSystem: {
     module: '系统管理',
     title: '用户管理',

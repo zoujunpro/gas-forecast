@@ -5,55 +5,35 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change afterPath="$PROJECT_DIR$/.github/workflows/frontend-ci.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/36_normalize_forecast_batch_case.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/eslint.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/assets/home-hero-lng-v2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/assets/home-hero-lng-v2.webp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/assets/login-home.webp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/assets/login-mobile-home.webp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/echarts.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/markdown.test.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/markdown.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/menuIcons.test.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/menuIcons.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/vitest.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/easyapi-cache/.api.local.storage.v2.db" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/easyapi-cache/.api.local.storage.v2.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelConfigCreateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelConfigCreateRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelConfigServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelConfigServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/35_update_forecast_batch_no.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/35_update_forecast_batch_no.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastConfigController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastConfigController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastExecutionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastExecutionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/SysPermissionTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/SysPermissionTb.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/06_create_auth_tables.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/06_create_auth_tables.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/12_add_permission_button_code.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/13_fix_empty_permission_paths.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/13_fix_empty_permission_paths.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/21_add_model_train_config_menu.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/21_add_model_train_config_menu.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysPermissionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/controller/SysPermissionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/service/SystemManagementService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/service/SystemManagementService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/service/impl/SystemManagementServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-system/src/main/java/com/gas/forecast/system/service/impl/SystemManagementServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/App.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/AppDialog.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/AppDialog.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/AppTable.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/AppTable.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/FormFieldRenderer.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/FormFieldRenderer.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/ManagementTableCell.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/ManagementTableCell.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/PageBreadcrumb.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/PageBreadcrumb.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/SidebarMenu.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/SidebarMenu.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/composables/usePageQuery.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/composables/usePageQuery.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/PageTabs.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/PageTabs.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/PermissionButton.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/PermissionButton.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/main.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/styles/tokens.css" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/styles/tokens.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/utils/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/utils/http.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/http.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/auth/Login.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/auth/Login.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/business/sales/StandardSalesData.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/business/sales/StandardSalesData.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/business/base/baseDataManagementConfigs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/business/base/baseDataManagementConfigs.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/business/file/BaseFileInfoManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/business/file/BaseFileInfoManagement.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/common/Placeholder.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/common/Placeholder.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/dashboard/Home.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/dashboard/Home.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelConfigManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelConfigManagement.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ForecastDataManagement.vue" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelForecastManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/ModelForecastManagement.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/shared/managementTypes.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/shared/managementTypes.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/system/SystemManagement.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/system/SystemManagement.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/system/systemManagementConfigs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/system/systemManagementConfigs.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_debug.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_info.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" beforeDir="false" afterPath="$PROJECT_DIR$/logs/gas-forecast/log_warn.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,7 +41,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="15031" />
+    <option name="cachedIndexableFilesCount" value="15042" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -272,7 +252,8 @@
       <workItem from="1790139781842" duration="13067000" />
       <workItem from="1790155293705" duration="2906000" />
       <workItem from="1790164604077" duration="5469000" />
-      <workItem from="1790171019900" duration="2779000" />
+      <workItem from="1790171019900" duration="3780000" />
+      <workItem from="1790207612701" duration="4760000" />
     </task>
     <task id="LOCAL-00001" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -426,7 +407,23 @@
       <option name="project" value="LOCAL" />
       <updated>1790150774058</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1790173909642</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1790173909642</updated>
+    </task>
+    <task id="LOCAL-00021" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1790174853413</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1790174853413</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

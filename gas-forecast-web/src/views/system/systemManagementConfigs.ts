@@ -48,7 +48,7 @@ export const usersSystemConfig: SystemPageConfig = {
     departmentIds: [],
     status: 1
   },
-  permissions: { create: 'system:user:create', update: 'system:user:update', delete: 'system:user:delete' }
+  permissions: { create: 'sys:user:save', update: 'sys:user:save', delete: 'sys:user:delete' }
 }
 
 export const rolesSystemConfig: SystemPageConfig = {
@@ -107,7 +107,6 @@ export const permissionsSystemConfig: SystemPageConfig = {
     { prop: 'path', label: '路由路径', minWidth: 170 },
     { prop: 'component', label: '组件', minWidth: 140 },
     { prop: 'perms', label: '权限码', minWidth: 180 },
-    { prop: 'buttonCode', label: '按钮标识', minWidth: 130 },
     { prop: 'status', label: '状态', minWidth: 90, displayType: 'status' },
     { prop: 'sortNo', label: '排序', minWidth: 80, align: 'right' }
   ],
@@ -118,7 +117,6 @@ export const permissionsSystemConfig: SystemPageConfig = {
     { prop: 'path', label: '路由路径' },
     { prop: 'component', label: '组件' },
     { prop: 'perms', label: '权限码' },
-    { prop: 'buttonCode', label: '按钮标识' },
     {
       prop: 'icon',
       label: '图标',
@@ -126,7 +124,6 @@ export const permissionsSystemConfig: SystemPageConfig = {
       placeholder: '请选择菜单图标',
       options: menuIconOptions.map(({ label, value }) => ({ label, value }))
     },
-    { prop: 'sortNo', label: '排序', type: 'number' },
     {
       prop: 'hidden',
       label: '侧边栏显示',
@@ -154,9 +151,7 @@ export const permissionsSystemConfig: SystemPageConfig = {
     path: '',
     component: '',
     perms: '',
-    buttonCode: '',
     icon: '',
-    sortNo: 0,
     hidden: 0,
     status: 1
   },

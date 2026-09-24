@@ -1,7 +1,9 @@
 <template>
   <BaseDataManagement ref="managementRef" :page-config="fileInfoDataConfig">
     <template #table-actions>
-      <el-button type="success" :icon="Upload" @click="openUpload">上传文件</el-button>
+      <PermissionButton type="success" :icon="Upload" permission="data:file-info:create" @click="openUpload"
+        >上传文件</PermissionButton
+      >
     </template>
   </BaseDataManagement>
 
@@ -50,6 +52,7 @@ import type { UploadUserFile } from 'element-plus'
 import { Upload, UploadFilled } from '@element-plus/icons-vue'
 import { createRow } from '@/api/management'
 import AppDialog from '@/components/AppDialog.vue'
+import PermissionButton from '@/components/PermissionButton.vue'
 import BaseDataManagement from '../base/BaseDataManagement.vue'
 import { fileInfoDataConfig } from '../base/baseDataManagementConfigs'
 

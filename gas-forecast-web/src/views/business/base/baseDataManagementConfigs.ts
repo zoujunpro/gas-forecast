@@ -137,5 +137,5 @@ export const fileInfoDataConfig: BaseDataPageConfig = {
     totalCount: 0,
     errorMessage: ''
   },
-  permissions: { create: 'data:file:create', update: 'data:file:update', delete: 'data:file:delete' }
+  permissions: { create: 'data:file-info:create', update: 'data:file-info:update', delete: 'data:file-info:delete' }
 }

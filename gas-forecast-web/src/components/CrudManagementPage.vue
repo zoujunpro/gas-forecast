@@ -112,7 +112,14 @@
           label-class-name="action-column"
         >
           <template #default="{ row }">
-            <el-button v-if="config.trainExecution" link type="success" @click="openExecute(row)">执行</el-button>
+            <PermissionButton
+              v-if="config.trainExecution"
+              link
+              type="success"
+              :permission="config.permissions?.execute"
+              @click="openExecute(row)"
+              >执行</PermissionButton
+            >
             <el-button v-if="config.trainExecution" link type="primary" :icon="View" @click="openTrainResult(row)"
               >训练结果</el-button
             >

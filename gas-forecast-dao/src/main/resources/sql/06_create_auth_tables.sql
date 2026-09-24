@@ -37,7 +37,6 @@ create table if not exists sys_permission_tb (
     component varchar(255),
     permission_type varchar(16) not null comment 'DIRECTORY, MENU or BUTTON',
     perms varchar(128),
-    button_code varchar(64) comment 'custom button identifier',
     icon varchar(64),
     sort_no int not null default 0,
     hidden tinyint not null default 0,
@@ -148,8 +147,6 @@ insert ignore into sys_permission_tb (id, parent_id, permission_name, path, comp
     (49, 40, '原始数据文件管理', '/data/file-info', 'views/business/file/BaseFileInfoManagement.vue', 'MENU', 'data:file-info:list', null, 49, 0, 1),
     (44, 40, '日销量标准数据', '/data/daily-sales', 'views/business/sales/StandardSalesData.vue', 'MENU', 'data:daily-sales:list', null, 44, 0, 1),
     (45, 40, '月销量标准数据', '/data/monthly-sales', 'views/business/sales/StandardSalesData.vue', 'MENU', 'data:monthly-sales:list', null, 45, 0, 1),
-    (47, 40, '预测结果表', '/data/forecast-results', 'views/model/ForecastDataManagement.vue', 'MENU', null, null, 47, 0, 1),
-    (48, 40, '训练批次表', '/data/train-batches', 'views/common/Placeholder.vue', 'MENU', null, null, 48, 0, 1),
     (60, null, '模型管理', '/model', null, 'MENU', null, 'DataAnalysis', 60, 0, 1),
     (61, 60, '模型列表', '/model/list', 'views/model/ModelConfigManagement.vue', 'MENU', 'model:config:list', null, 61, 0, 1),
     (62, 60, '训练数据管理', '/model/train-feature-data', 'views/model/ModelTrainFeatureDataManagement.vue', 'MENU', 'model:train-feature-data:list', null, 62, 0, 1),
@@ -170,8 +167,7 @@ update sys_permission_tb set permission_name = '原始数据文件管理', path 
 update sys_permission_tb set component = 'views/business/sales/StandardSalesData.vue', perms = 'data:daily-sales:list' where id = 44;
 update sys_permission_tb set component = 'views/business/sales/StandardSalesData.vue', perms = 'data:monthly-sales:list' where id = 45;
 update sys_permission_tb set component = 'views/agent/AgentDetail.vue' where id in (11, 12, 13);
-update sys_permission_tb set component = 'views/model/ForecastDataManagement.vue' where id = 47;
-update sys_permission_tb set component = 'views/common/Placeholder.vue' where id in (48, 55, 56);
+update sys_permission_tb set component = 'views/common/Placeholder.vue' where id in (55, 56);
 update sys_permission_tb set permission_name = '模型管理', path = '/model', component = null, perms = null, icon = 'DataAnalysis', sort_no = 60 where id = 60;
 update sys_permission_tb set permission_name = '模型列表', path = '/model/list', component = 'views/model/ModelConfigManagement.vue', perms = 'model:config:list', sort_no = 61 where id = 61;
 update sys_permission_tb set permission_name = '训练数据管理', path = '/model/train-feature-data', component = 'views/model/ModelTrainFeatureDataManagement.vue', perms = 'model:train-feature-data:list', sort_no = 62 where id = 62;
@@ -212,7 +208,11 @@ insert ignore into sys_permission_tb (id, parent_id, permission_name, path, comp
     (5301, 53, '保存部门', null, null, 'BUTTON', 'sys:department:save', null, 5301, 1, 1),
     (5302, 53, '删除部门', null, null, 'BUTTON', 'sys:department:delete', null, 5302, 1, 1),
     (5401, 54, '保存菜单', null, null, 'BUTTON', 'sys:permission:save', null, 5401, 1, 1),
-    (5402, 54, '删除菜单', null, null, 'BUTTON', 'sys:permission:delete', null, 5402, 1, 1);
+    (5402, 54, '删除菜单', null, null, 'BUTTON', 'sys:permission:delete', null, 5402, 1, 1),
+    (6501, 65, '新增预测配置', null, null, 'BUTTON', 'model:forecast:create', null, 6501, 1, 1),
+    (6502, 65, '编辑预测配置', null, null, 'BUTTON', 'model:forecast:update', null, 6502, 1, 1),
+    (6503, 65, '删除预测配置', null, null, 'BUTTON', 'model:forecast:delete', null, 6503, 1, 1),
+    (6504, 65, '执行预测', null, null, 'BUTTON', 'model:forecast:execute', null, 6504, 1, 1);
 
 insert ignore into sys_user_role_ref (user_id, role_id)
 select u.id, r.id from sys_user_tb u join sys_role_tb r

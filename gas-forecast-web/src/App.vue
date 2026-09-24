@@ -221,11 +221,12 @@ select {
 .el-button,
 .el-form-item__label,
 .el-table th.el-table__cell > .cell {
-  font-weight: var(--app-font-weight-medium);
+  font-weight: var(--app-font-weight-semibold);
 }
 
 .el-table td.el-table__cell {
   color: var(--app-text-secondary);
+  font-weight: var(--app-font-weight-medium);
 }
 
 .el-table th.el-table__cell {
@@ -241,21 +242,21 @@ select {
 }
 
 .el-table {
-  --el-table-row-hover-bg-color: #dff1ff;
+  --el-table-row-hover-bg-color: #e8f3ff;
 }
 
 .el-table__body tr:hover > .el-table__cell,
 .el-table__body tr.hover-row > .el-table__cell,
 .el-table__body tr.hover-row.current-row > .el-table__cell,
 .el-table__body tr.hover-row.el-table__row--striped > .el-table__cell {
-  background-color: #dff1ff !important;
+  background-color: #e8f3ff !important;
 }
 
 .el-table__body tr:hover > .el-table-fixed-column--left,
 .el-table__body tr:hover > .el-table-fixed-column--right,
 .el-table__body tr.hover-row > .el-table-fixed-column--left,
 .el-table__body tr.hover-row > .el-table-fixed-column--right {
-  background-color: #dff1ff !important;
+  background-color: #e8f3ff !important;
 }
 </style>
 
@@ -264,7 +265,7 @@ select {
   display: flex;
   min-height: 100vh;
   background: var(--app-bg);
-  color: #172033;
+  color: var(--app-text);
 }
 
 .sidebar {
@@ -355,7 +356,7 @@ select {
   height: 42px;
   line-height: 42px;
   border-radius: 8px;
-  color: #536071;
+  color: var(--app-text-secondary);
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -380,8 +381,8 @@ select {
 }
 
 .side-menu :deep(.el-menu-item.is-active) {
-  background: #eaf6fd;
-  color: #0284c7;
+  background: var(--app-primary-soft);
+  color: var(--app-primary-hover);
   font-weight: 600;
 }
 
@@ -400,8 +401,8 @@ select {
   justify-content: space-between;
   gap: 20px;
   padding: 0 24px;
-  background: #1890ff;
-  border-bottom: 1px solid #0f7fe5;
+  background: var(--app-primary);
+  border-bottom: 1px solid var(--app-primary-dark);
 }
 
 .topbar-heading {
@@ -489,7 +490,7 @@ select {
 }
 
 .user-avatar {
-  color: #1890ff;
+  color: var(--app-primary);
   background: rgba(255, 255, 255, 0.88);
 }
 
@@ -514,9 +515,9 @@ select {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: #ffffff;
-  border-top: 1px solid #e6eaf0;
-  color: #8a95a6;
+  background: var(--app-surface);
+  border-top: 1px solid var(--app-border);
+  color: var(--app-text-muted);
   font-size: 13px;
 }
 

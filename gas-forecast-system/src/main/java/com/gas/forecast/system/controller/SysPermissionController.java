@@ -41,6 +41,14 @@ public class SysPermissionController {
         return ResponseResult.success(systemManagementService.savePermission(req));
     }
 
+    @PostMapping("move")
+    @RequirePermission("sys:permission:save")
+    public ResponseResult<Map<String, Object>> move(@RequestBody Map<String, Object> req) {
+        Long id = Long.valueOf(String.valueOf(req.get("id")));
+        int direction = Integer.parseInt(String.valueOf(req.get("direction")));
+        return ResponseResult.success(systemManagementService.movePermission(id, direction));
+    }
+
     /**
      * 删除菜单权限。
      */
