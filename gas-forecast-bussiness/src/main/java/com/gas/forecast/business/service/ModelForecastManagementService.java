@@ -61,11 +61,13 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ModelForecastManagementService {
     private final ModelForecastConfigTbMapper configMapper;
     private final ModelForecastRecordTbMapper recordMapper;
@@ -78,6 +80,7 @@ public class ModelForecastManagementService {
     private final ModelTrainFeatureDataTbMapper featureDataMapper;
     private final ObjectMapper objectMapper;
     private final ModelPlatformClient modelPlatformClient;
+    private final ForecastAnalysisService forecastAnalysisService;
 
     public PageInfoDTO<ModelForecastConfigTb> listConfigs(ModelForecastConfigPageRequest request) {
         var query = Wrappers.<ModelForecastConfigTb>lambdaQuery();
@@ -229,6 +232,12 @@ public class ModelForecastManagementService {
             record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
+            try {
+                forecastAnalysisService.submit(forecastBatchNo);
+            } catch (RuntimeException analysisException) {
+                // 分析属于预测后的附加能力，提交失败不能把已成功的预测改成失败。
+                log.error("预测批次 {} 的大模型分析任务提交失败", forecastBatchNo, analysisException);
+            }
             return new ModelForecastExecuteResponse(forecastId, forecastBatchNo, response.getPoints().size());
         } catch (RuntimeException exception) {
             record.setStatus(ModelForecastStatus.FAILED.getCode());

@@ -793,7 +793,7 @@
         <button class="ai-clear" @click="clearChat">清空</button>
       </div>
       <div class="ai-messages" ref="messagesRef">
-        <div v-for="msg in messages" :key="msg.id" class="msg" :class="msg.role">
+        <div v-for="msg in messages" v-show="msg.role === 'user' || msg.content" :key="msg.id" class="msg" :class="msg.role">
           <div class="msg-avatar" :class="msg.role">
             <span v-if="msg.role === 'user'">我</span>
             <svg v-else viewBox="0 0 24 24" fill="none">
@@ -832,7 +832,7 @@
           type="textarea"
           :rows="2"
           placeholder="输入问题，获取智能分析..."
-          @keydown.enter.ctrl="sendMessage"
+          @keydown.enter.exact.prevent="sendMessage"
           resize="none"
         />
         <button v-if="isStreaming" class="send-btn stop-btn" @click="stopStreaming">
@@ -1121,6 +1121,7 @@ const loadMonthlyResult = async () => {
     if (!data.error) {
       const monthlyData = normalizeMonthlyResult(data)
       currentResult.value = monthlyData
+      void loadForecastAnalysis(monthlyData.forecast_batch_no)
       nextTick(() => initMonthlyChart(monthlyData))
     }
   } catch (e) {
@@ -1236,6 +1237,7 @@ const loadStResult = async () => {
     const data = await resp.json()
     if (!data.error) {
       currentResult.value = data
+      void loadForecastAnalysis(data.forecast_batch_no)
       nextTick(() => initMonthlyChart(data))
     }
   } catch (e) {
@@ -1325,6 +1327,7 @@ const loadWsResult = async () => {
     const data = await resp.json()
     if (!data.error) {
       currentResult.value = data
+      void loadForecastAnalysis(data.forecast_batch_no)
       nextTick(() => initMonthlyChart(data))
     }
   } catch (e) {
@@ -1738,18 +1741,46 @@ const stopStreaming = () => {
   if (controller) controller.abort()
 }
 
-const updateMsgInStorage = (id: string, msgId: string, content: string) => {
+const chatMemory = new Map<string, ChatMessage[]>()
+
+const updateMsgInMemory = (id: string, msgId: string, content: string) => {
+  const msgs = chatMemory.get(id)
+  const msg = msgs?.find((item) => item.id === msgId)
+  if (msg) msg.content = content
+}
+
+const analysisRequests = new Set<string>()
+
+const loadForecastAnalysis = async (forecastBatchNo?: string, attempt = 0) => {
+  if (!forecastBatchNo || analysisRequests.has(forecastBatchNo)) return
+  analysisRequests.add(forecastBatchNo)
   try {
-    const saved = sessionStorage.getItem(getChatKey(id))
-    if (saved) {
-      const msgs: ChatMessage[] = JSON.parse(saved)
-      const msg = msgs.find((m) => m.id === msgId)
-      if (msg) {
-        msg.content = content
-        sessionStorage.setItem(getChatKey(id), JSON.stringify(msgs))
-      }
+    const response = await fetch('/model-forecast-analysis/get', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ forecastBatchNo })
+    })
+    if (!response.ok) return
+    const payload = await response.json()
+    const analysis = payload?.data
+    if (!analysis) return
+    if (analysis.analysisStatus === 'SUCCESS' && analysis.analysisContent) {
+      if (currentResult.value?.forecast_batch_no !== forecastBatchNo) return
+      const msgId = `forecast-analysis-${forecastBatchNo}`
+      const content = renderMarkdown(analysis.analysisContent)
+      const existing = messages.value.find((message) => message.id === msgId)
+      if (existing) existing.content = content
+      else messages.value.push({ id: msgId, role: 'assistant', content, time: new Date().toLocaleTimeString() })
+      saveChatToMemory(agentId.value)
+      scrollToBottom()
+    } else if ((analysis.analysisStatus === 'PENDING' || analysis.analysisStatus === 'RUNNING') && attempt < 20) {
+      window.setTimeout(() => void loadForecastAnalysis(forecastBatchNo, attempt + 1), 3000)
     }
-  } catch {}
+  } catch (error) {
+    console.error('加载预测分析失败:', error)
+  } finally {
+    analysisRequests.delete(forecastBatchNo)
+  }
 }
 
 const sendMessage = async () => {
@@ -1767,7 +1798,7 @@ const sendMessage = async () => {
   streamingSet.add(streamId)
   const msgId = (Date.now() + 1).toString()
   messages.value.push({ id: msgId, role: 'assistant', content: '', time: new Date().toLocaleTimeString() })
-  saveChatToStorage(streamId)
+  saveChatToMemory(streamId)
 
   const controller = new AbortController()
   abortControllers.set(streamId, controller)
@@ -1784,15 +1815,22 @@ const sendMessage = async () => {
         message: userMessage,
         context: context || {},
         conversation_history: messages.value
-          .slice(-6)
-          .map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
+          .slice(0, -2)
+          .slice(-8)
+          .map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: toPlainText(m.content) }))
       }),
       signal: controller.signal
     })
+    if (!response.ok) {
+      throw new Error(`对话请求失败：HTTP ${response.status}`)
+    }
     const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('浏览器未收到流式响应')
+    }
     const decoder = new TextDecoder()
     let buffer = ''
-    while (reader) {
+    while (true) {
       const { done, value } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
@@ -1826,11 +1864,14 @@ const sendMessage = async () => {
         }
       }
     }
+    if (!fullResponse) {
+      throw new Error('大模型未返回有效内容，请稍后重试')
+    }
     // Stream completed
     if (agentId.value === streamId) {
-      saveChatToStorage(streamId)
+      saveChatToMemory(streamId)
     } else {
-      updateMsgInStorage(streamId, msgId, renderMarkdown(fullResponse))
+      updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
     }
   } catch (e: any) {
     if (e.name === 'AbortError') {
@@ -1838,14 +1879,18 @@ const sendMessage = async () => {
       if (agentId.value === streamId) {
         const msg = messages.value.find((m) => m.id === msgId)
         if (msg) msg.content = content
-        saveChatToStorage(streamId)
+        saveChatToMemory(streamId)
       } else {
-        updateMsgInStorage(streamId, msgId, content)
+        updateMsgInMemory(streamId, msgId, content)
       }
     } else {
+      const errorMessage = e instanceof Error && e.message ? e.message : '网络错误'
       if (agentId.value === streamId) {
         const msg = messages.value.find((m) => m.id === msgId)
-        if (msg) msg.content = renderMarkdown('⚠️ 网络错误')
+        if (msg) msg.content = renderMarkdown(`⚠️ ${errorMessage}`)
+        saveChatToMemory(streamId)
+      } else {
+        updateMsgInMemory(streamId, msgId, renderMarkdown(`⚠️ ${errorMessage}`))
       }
     }
   } finally {
@@ -1856,23 +1901,26 @@ const sendMessage = async () => {
 }
 
 const sendAnalysisMessage = async (analysisText: string) => {
-  streamingSet.add(agentId.value)
+  const streamId = agentId.value
+  streamingSet.add(streamId)
   const msgId = Date.now().toString()
   messages.value.push({ id: msgId, role: 'assistant', content: '', time: new Date().toLocaleTimeString() })
-  if (analysisText && analysisText.length > 20) {
+  try {
     const msg = messages.value.find((m) => m.id === msgId)
-    if (msg) {
-      const html = renderMarkdown(analysisText)
-      for (let i = 0; i <= html.length; i += Math.ceil(html.length / 40)) {
+    if (!msg) return
+    if (analysisText.length > 20) {
+      const step = Math.max(1, Math.ceil(analysisText.length / 40))
+      for (let i = step; i < analysisText.length; i += step) {
         await new Promise((r) => setTimeout(r, 12))
-        msg.content = html.substring(0, i)
-        scrollToBottom()
+        msg.content = renderMarkdown(analysisText.substring(0, i))
+        if (agentId.value === streamId) scrollToBottom()
       }
-      msg.content = html
     }
-    streamingSet.delete(agentId.value)
-    saveChatToStorage(agentId.value)
-    scrollToBottom()
+    msg.content = renderMarkdown(analysisText || '分析已完成。')
+  } finally {
+    streamingSet.delete(streamId)
+    saveChatToMemory(streamId)
+    if (agentId.value === streamId) scrollToBottom()
   }
 }
 
@@ -1885,26 +1933,24 @@ const clearChat = () => {
       time: new Date().toLocaleTimeString()
     }
   ]
-  saveChatToStorage(agentId.value)
+  saveChatToMemory(agentId.value)
 }
 
-const getChatKey = (id: string) => `chat_${id}`
-
-const saveChatToStorage = (id: string) => {
-  try {
-    sessionStorage.setItem(getChatKey(id), JSON.stringify(messages.value))
-  } catch {}
+const saveChatToMemory = (id: string) => {
+  chatMemory.set(id, messages.value.map((message) => ({ ...message })))
 }
 
-const loadChatFromStorage = (id: string): boolean => {
-  try {
-    const saved = sessionStorage.getItem(getChatKey(id))
-    if (saved) {
-      messages.value = JSON.parse(saved)
-      return true
-    }
-  } catch {}
-  return false
+const loadChatFromMemory = (id: string): boolean => {
+  const saved = chatMemory.get(id)
+  if (!saved) return false
+  messages.value = saved.map((message) => ({ ...message }))
+  return true
+}
+
+const toPlainText = (content: string) => {
+  const container = document.createElement('div')
+  container.innerHTML = content
+  return container.textContent || ''
 }
 
 const getGreeting = (id: string): string => {
@@ -1919,7 +1965,7 @@ const getGreeting = (id: string): string => {
 
 const initOrRestoreChat = (id: string) => {
   inputMessage.value = ''
-  if (!loadChatFromStorage(id)) {
+  if (!loadChatFromMemory(id)) {
     messages.value = [
       { id: '1', role: 'assistant', content: renderMarkdown(getGreeting(id)), time: new Date().toLocaleTimeString() }
     ]
@@ -1968,7 +2014,7 @@ onMounted(() => {
 // 切换智能体时重新加载
 watch(agentId, (newId, oldId) => {
   if (newId === oldId) return
-  saveChatToStorage(oldId)
+  saveChatToMemory(oldId)
   modelResult.value = null
   currentResult.value = null
   initOrRestoreChat(newId)
@@ -2002,8 +2048,8 @@ watch(chartType, () => {
 <style scoped>
 .agent-detail {
   display: flex;
-  height: 100%;
-  min-height: 680px;
+  height: calc(100vh - 163px);
+  min-height: 520px;
   overflow: hidden;
 }
 .agent-detail.dragging {
@@ -3066,6 +3112,7 @@ watch(chartType, () => {
 .ai-panel {
   flex: 1 1 0;
   min-width: 0;
+  min-height: 0;
   background: white;
   border: 1px solid #f1f5f9;
   border-radius: 16px;
@@ -3074,6 +3121,7 @@ watch(chartType, () => {
   overflow: hidden;
 }
 .ai-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3133,8 +3181,11 @@ watch(chartType, () => {
 }
 
 .ai-messages {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -3259,6 +3310,7 @@ watch(chartType, () => {
 }
 
 .ai-input {
+  flex-shrink: 0;
   padding: 12px 16px 16px;
   border-top: 1px solid #f1f5f9;
   display: flex;

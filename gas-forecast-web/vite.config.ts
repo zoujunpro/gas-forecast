@@ -30,6 +30,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
+      '^/dashboard/.*': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => `/gas-forecast${path}`
+      },
       '^/system/options$': {
         target: 'http://localhost:8080',
         changeOrigin: true,
@@ -61,7 +66,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
-      '^/(model-forecast-config|model-forecast-execution|model-forecast-record|model-forecast-result)/.*': {
+      '^/(model-forecast-config|model-forecast-execution|model-forecast-record|model-forecast-result|model-forecast-analysis)/.*': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`

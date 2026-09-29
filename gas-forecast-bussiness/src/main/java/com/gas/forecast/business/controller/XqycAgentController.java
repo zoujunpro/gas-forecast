@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.enums.ModelTrainStatus;
+import com.gas.forecast.business.component.ForecastAnalysisLlmClient;
 import com.gas.forecast.business.service.XqycForecastPersistenceService;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
@@ -63,6 +64,7 @@ public class XqycAgentController {
 
     private final ObjectMapper objectMapper;
     private final XqycForecastPersistenceService persistenceService;
+    private final ForecastAnalysisLlmClient forecastAnalysisLlmClient;
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final ModelTrainBacktestTbMapper trainBacktestMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
@@ -369,10 +371,18 @@ public class XqycAgentController {
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public StreamingResponseBody chat(@RequestBody JsonNode request) {
         String agentId = request.path("agent_id").asText("winter-supply");
-        String text = "已基于 " + AGENTS.getOrDefault(agentId, AGENTS.get("winter-supply")).name() + " 的预测上下文生成分析。当前 Java 后端返回的是迁移后的本地结果数据。";
         return outputStream -> {
-            writeEvent(outputStream, objectMapper.createObjectNode().put("type", "stream").put("content", text));
-            writeEvent(outputStream, objectMapper.createObjectNode().put("type", "complete").put("content", text));
+            StringBuilder content = new StringBuilder();
+            try {
+                String text = forecastAnalysisLlmClient.chatStream(agentId, request.path("message").asText(""), request.path("context"), request.path("conversation_history"), chunk -> {
+                    content.append(chunk);
+                    writeEvent(outputStream, objectMapper.createObjectNode().put("type", "stream").put("content", chunk));
+                });
+                writeEvent(outputStream, objectMapper.createObjectNode().put("type", "complete").put("content", text));
+            } catch (Exception exception) {
+                if (content.isEmpty())
+                    writeEvent(outputStream, objectMapper.createObjectNode().put("type", "error").put("message", exception.getMessage()));
+            }
         };
     }
 

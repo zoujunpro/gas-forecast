@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "gas.security")
 public class SecurityProperties {
-    private List<String> includePathPatterns = new ArrayList<>(List.of("/auth/**", "/system/**", "/base-region/**", "/base-customer/**", "/base-industry/**", "/data-file-info/**",
+    private List<String> includePathPatterns = new ArrayList<>(List.of("/auth/**", "/system/**", "/dashboard/**", "/base-region/**", "/base-customer/**", "/base-industry/**", "/data-file-info/**",
             "/data-daily-sales/**", "/data-monthly-sales/**", "/forecast/**", "/agents/**", "/predict", "/chat"));
     private List<String> excludePathPatterns = new ArrayList<>(
             List.of("/auth/captcha", "/auth/rsa-public-key", "/auth/login", "/auth/logout", "/monthly-results/**", "/short-term-results/**", "/winter-supply-results/**"));

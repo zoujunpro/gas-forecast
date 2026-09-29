@@ -1,0 +1,27 @@
+[2026-09-29 10:13:31.206] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-29 10:13:31.228] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - Starting ForecastAnalysisBackfillTest using Java 21.0.11 with PID 82912 (started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup)
+[2026-09-29 10:13:31.229] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-29 10:13:31.561] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-29 10:13:31.562] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-29 10:13:31.583] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 14 ms. Found 0 Redis repository interfaces.
+[2026-09-29 10:13:32.705] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - Started ForecastAnalysisBackfillTest in 1.714 seconds (process running for 2.26)
+[2026-09-29 10:13:33.179] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [main] [INFO] - HikariPool-1 - Starting...
+[2026-09-29 10:13:33.268] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [main] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@49f9758
+[2026-09-29 10:13:33.269] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [main] [INFO] - HikariPool-1 - Start completed.
+[2026-09-29 10:13:33.306] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - 发现 5 个成功预测批次，其中 3 个需要补充分析
+[2026-09-29 10:13:36.431] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-29 10:13:36.435] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.
+[2026-09-29 10:14:08.151] [gas-forecast] [] [] [o.h.validator.internal.util.Version] [background-preinit] [INFO] - HV000001: Hibernate Validator 8.0.1.Final
+[2026-09-29 10:14:08.174] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - Starting ForecastAnalysisBackfillTest using Java 21.0.11 with PID 83183 (started by zoujun in /Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-startup)
+[2026-09-29 10:14:08.175] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - The following 1 profile is active: "dev"
+[2026-09-29 10:14:08.465] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Multiple Spring Data modules found, entering strict repository configuration mode
+[2026-09-29 10:14:08.466] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+[2026-09-29 10:14:08.486] [gas-forecast] [] [] [o.s.d.r.c.RepositoryConfigurationDelegate] [main] [INFO] - Finished Spring Data repository scanning in 14 ms. Found 0 Redis repository interfaces.
+[2026-09-29 10:14:09.572] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - Started ForecastAnalysisBackfillTest in 1.571 seconds (process running for 1.927)
+[2026-09-29 10:14:09.990] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [main] [INFO] - HikariPool-1 - Starting...
+[2026-09-29 10:14:10.065] [gas-forecast] [] [] [com.zaxxer.hikari.pool.HikariPool] [main] [INFO] - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2823b7c5
+[2026-09-29 10:14:10.066] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [main] [INFO] - HikariPool-1 - Start completed.
+[2026-09-29 10:14:10.104] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - 发现 5 个成功预测批次，其中 3 个需要补充分析
+[2026-09-29 10:19:25.553] [gas-forecast] [] [] [c.g.f.ForecastAnalysisBackfillTest] [main] [INFO] - 历史预测分析回填完成，共成功入库 3 个批次
+[2026-09-29 10:19:25.600] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown initiated...
+[2026-09-29 10:19:25.605] [gas-forecast] [] [] [com.zaxxer.hikari.HikariDataSource] [SpringApplicationShutdownHook] [INFO] - HikariPool-1 - Shutdown completed.

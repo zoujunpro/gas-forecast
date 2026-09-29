@@ -105,7 +105,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Calendar, Cpu, DataBoard, Grid, Location, User } from '@element-plus/icons-vue'
-import { listPage } from '@/api/management'
+import { getJson } from '@/api/management'
 
 const router = useRouter()
 const capabilities = ['需求预测', '安全保供', '能源分析', '智能决策']
@@ -133,28 +133,28 @@ const platformStats = computed(() => [
 
 const loadPlatformStats = async () => {
   statsLoading.value = true
-  const requests = await Promise.allSettled([
-    listPage('/base-region', { page: 1, size: 1 }),
-    listPage('/base-industry', { page: 1, size: 1 }),
-    listPage('/base-customer', { page: 1, size: 1 }),
-    listPage('/data-daily-sales', { page: 1, size: 1 }),
-    listPage('/data-monthly-sales', { page: 1, size: 1 }),
-    listPage('/model-config', { page: 1, size: 1 }),
-    listPage('/model-forecast-record', { page: 1, size: 1 })
-  ])
-  const page = (index: number) => (requests[index].status === 'fulfilled' ? requests[index].value : null)
-  const daily = page(3)?.total ?? null
-  const monthly = page(4)?.total ?? null
-  const latestRecord = page(6)?.records?.[0]
-  stats.value = {
-    regions: page(0)?.total ?? null,
-    industries: page(1)?.total ?? null,
-    customers: page(2)?.total ?? null,
-    history: daily === null && monthly === null ? null : (daily || 0) + (monthly || 0),
-    models: page(5)?.total ?? null,
-    latestUpdate: String(latestRecord?.updatedAt || latestRecord?.createdAt || '').slice(0, 10)
+  try {
+    const result = await getJson<{
+      regions: number
+      industries: number
+      customers: number
+      history: number
+      models: number
+      latestUpdate: string
+    }>('/dashboard/statistics')
+    stats.value = {
+      regions: result.data?.regions ?? null,
+      industries: result.data?.industries ?? null,
+      customers: result.data?.customers ?? null,
+      history: result.data?.history ?? null,
+      models: result.data?.models ?? null,
+      latestUpdate: result.data?.latestUpdate || ''
+    }
+  } catch {
+    // 保持占位状态，避免概览接口异常影响首页其他功能。
+  } finally {
+    statsLoading.value = false
   }
-  statsLoading.value = false
 }
 
 onMounted(loadPlatformStats)

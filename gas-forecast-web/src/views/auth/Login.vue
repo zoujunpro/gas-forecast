@@ -55,6 +55,12 @@
               </button>
             </div>
           </el-form-item>
+          <div class="password-options">
+            <el-checkbox v-model="rememberPassword">记住密码</el-checkbox>
+            <el-button class="clear-password-button" link type="primary" @click="clearSavedPassword">
+              清空密码
+            </el-button>
+          </div>
           <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
           <el-button class="login-button" type="primary" size="large" :loading="loading" @click="submit">
             登录
@@ -83,12 +89,45 @@ const loading = ref(false)
 const errorMessage = ref('')
 const captchaImage = ref('')
 const rsaPublicKey = ref('')
+const rememberPassword = ref(false)
+const REMEMBERED_LOGIN_KEY = 'gas-forecast-remembered-login'
 const form = reactive({
   username: 'admin',
   password: 'admin123',
   captchaId: '',
   captchaCode: ''
 })
+
+const restoreSavedPassword = () => {
+  try {
+    const savedLogin = localStorage.getItem(REMEMBERED_LOGIN_KEY)
+    if (!savedLogin) {
+      return
+    }
+    const saved = JSON.parse(savedLogin) as { username?: string; password?: string }
+    if (saved.password) {
+      form.username = saved.username || form.username
+      form.password = saved.password
+      rememberPassword.value = true
+    }
+  } catch {
+    localStorage.removeItem(REMEMBERED_LOGIN_KEY)
+  }
+}
+
+const savePasswordPreference = () => {
+  if (rememberPassword.value) {
+    localStorage.setItem(REMEMBERED_LOGIN_KEY, JSON.stringify({ username: form.username, password: form.password }))
+    return
+  }
+  localStorage.removeItem(REMEMBERED_LOGIN_KEY)
+}
+
+const clearSavedPassword = () => {
+  localStorage.removeItem(REMEMBERED_LOGIN_KEY)
+  form.password = ''
+  rememberPassword.value = false
+}
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -167,6 +206,7 @@ const submit = async () => {
       permissions: result.data.permissions,
       menus: result.data.menus
     })
+    savePasswordPreference()
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     await router.replace(redirect)
   } catch {
@@ -179,6 +219,7 @@ const submit = async () => {
 }
 
 onMounted(() => {
+  restoreSavedPassword()
   loadCaptcha()
   loadRsaPublicKey()
 })
@@ -296,6 +337,23 @@ onMounted(() => {
   border-radius: 4px;
   background: #2196f3;
   font-weight: 600;
+}
+
+.password-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -6px;
+  margin-bottom: 2px;
+}
+
+.password-options :deep(.el-checkbox__label),
+.clear-password-button {
+  font-size: 13px;
+}
+
+.clear-password-button {
+  padding: 0;
 }
 
 .login-button:hover,

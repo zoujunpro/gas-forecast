@@ -3,8 +3,12 @@ server:
 
 spring:
   config:
+    import: optional:file:.env[.properties]
     activate:
       on-profile: dev
+  mvc:
+    async:
+      request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:180s}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
@@ -23,6 +27,15 @@ gas:
     predict-url: ${GAS_AGENT_PREDICT_URL:http://127.0.0.1:8090/api/v1/predict}
     models-url: ${GAS_AGENT_MODELS_URL:http://127.0.0.1:8090/api/v1/models}
     validate-training-url: ${GAS_AGENT_VALIDATE_TRAINING_URL:http://127.0.0.1:8090/api/v1/models/validate-training-data}
+  analysis:
+    mode: ${LLM_DEFAULT_MODE:api}
+    local-base-url: ${LLM_LOCAL_BASE_URL:http://192.168.0.105:9997/v1}
+    local-model: ${LLM_LOCAL_MODEL:qwen3.6-27b}
+    local-api-key: ${LLM_LOCAL_API_KEY:local}
+    api-base-url: ${LLM_API_BASE_URL:https://api.deepseek.com}
+    api-model: ${LLM_API_MODEL:deepseek-v4-pro}
+    api-key: ${LLM_API_KEY:}
+    timeout-seconds: ${GAS_ANALYSIS_TIMEOUT_SECONDS:120}
   cache:
     redis-retry-interval: ${CACHE_REDIS_RETRY_INTERVAL:30s}
     local-max-size: ${CACHE_LOCAL_MAX_SIZE:10000}
