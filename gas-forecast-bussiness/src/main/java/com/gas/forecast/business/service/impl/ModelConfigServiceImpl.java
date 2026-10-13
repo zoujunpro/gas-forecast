@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
+import com.gas.forecast.business.component.ModelPlatformClient;
+import com.gas.forecast.business.component.dto.ModelInfoApiResponse;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
@@ -60,6 +62,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     private final ModelFeatureRefMapper modelFeatureRefMapper;
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
+    private final ModelPlatformClient modelPlatformClient;
 
     @Override
     public PageInfoDTO<ModelConfigResponse> listPage(ModelConfigPageRequest request) {
@@ -78,8 +81,71 @@ public class ModelConfigServiceImpl implements ModelConfigService {
 
     @Override
     @Transactional
+    public int syncFromPlatform() {
+        List<ModelInfoApiResponse> platformModels = modelPlatformClient.listModels();
+        Date now = new Date();
+        int synchronizedCount = 0;
+        for (ModelInfoApiResponse platformModel : platformModels) {
+            if (!TextUtils.hasText(platformModel.getModelCode()) || !TextUtils.hasText(platformModel.getAgentCode())) {
+                continue;
+            }
+            ForecastAgentEnum agent = ForecastAgentEnum.ofAgentCode(platformModel.getAgentCode()).orElse(null);
+            if (agent == null) {
+                continue;
+            }
+            ModelConfigTb entity = modelConfigTbMapper.selectOne(Wrappers.<ModelConfigTb>lambdaQuery().eq(ModelConfigTb::getModelCode, platformModel.getModelCode()).last("limit 1"));
+            boolean creating = entity == null;
+            if (creating) {
+                entity = new ModelConfigTb();
+                entity.setModelCode(platformModel.getModelCode());
+                entity.setCreatedAt(now);
+                entity.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
+                entity.setCreatedByName(SecurityContextHolder.getUserName());
+                entity.setMinForecastHorizon(1);
+                entity.setMaxForecastHorizon(defaultMaxForecastHorizon(platformModel.getAgentCode()));
+            }
+            entity.setModelName(platformModel.getModelName());
+            entity.setModelVersion(platformModel.getModelVersion());
+            entity.setAgentCode(platformModel.getAgentCode());
+            entity.setDescription(platformModel.getDescription());
+            var trainingRange = platformModel.getTrainingDataRange();
+            if (trainingRange != null && !trainingRange.isNull()) {
+                entity.setTimeGranularity(defaultGranularity(trainingRange.path("frequency").asText(), platformModel.getAgentCode()));
+                int minimum = trainingRange.path("minimum_history_before_period").asInt(0);
+                if (minimum <= 0) {
+                    minimum = trainingRange.path("minimum").asInt(0);
+                }
+                if (minimum > 0) {
+                    entity.setMinimumTrainingRows(minimum);
+                    if (entity.getRecommendedTrainingPeriods() == null)
+                        entity.setRecommendedTrainingPeriods(minimum);
+                }
+                entity.setTrainingDataRequirement(trainingRange.path("description").asText(null));
+            } else {
+                entity.setTimeGranularity(defaultGranularity(null, platformModel.getAgentCode()));
+                if (entity.getMinimumTrainingRows() == null) {
+                    entity.setMinimumTrainingRows(defaultMinimumTrainingRows(platformModel.getAgentCode()));
+                }
+                if (entity.getRecommendedTrainingPeriods() == null)
+                    entity.setRecommendedTrainingPeriods(entity.getMinimumTrainingRows());
+            }
+            entity.setUpdatedAt(now);
+            if (creating) {
+                modelConfigTbMapper.insert(entity);
+            } else {
+                modelConfigTbMapper.updateById(entity);
+                syncTrainConfigModelDisplay(entity);
+            }
+            synchronizedCount++;
+        }
+        return synchronizedCount;
+    }
+
+    @Override
+    @Transactional
     public ModelConfigResponse create(ModelConfigCreateRequest reqDTO) {
         ForecastAgentEnum agent = validateAgent(reqDTO.getAgentCode(), reqDTO.getSceneCode());
+        validateCapability(reqDTO.getMinForecastHorizon(), reqDTO.getMaxForecastHorizon());
         ModelConfigTb modelConfig = toEntity(reqDTO);
         String modelCode = modelConfig.getModelCode().trim();
         ensureModelCodeUnique(modelCode, null);
@@ -98,17 +164,26 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     @Transactional
     public ModelConfigResponse update(ModelConfigUpdateRequest reqDTO) {
         validateAgent(reqDTO.agentCode(), reqDTO.sceneCode());
+        validateCapability(reqDTO.getMinForecastHorizon(), reqDTO.getMaxForecastHorizon());
         ModelConfigTb exists = modelConfigTbMapper.selectById(reqDTO.id());
         if (exists == null) {
             throw new BusinessException("模型配置不存在");
         }
         ModelConfigTb modelConfig = toEntity(reqDTO);
+        // 模型能力由模型平台同步，普通编辑接口不得覆盖能力边界。
+        modelConfig.setTimeGranularity(exists.getTimeGranularity());
+        modelConfig.setMinForecastHorizon(exists.getMinForecastHorizon());
+        modelConfig.setMaxForecastHorizon(exists.getMaxForecastHorizon());
+        modelConfig.setMinimumTrainingRows(exists.getMinimumTrainingRows());
+        modelConfig.setRecommendedTrainingPeriods(exists.getRecommendedTrainingPeriods());
+        modelConfig.setTrainingDataRequirement(exists.getTrainingDataRequirement());
         String modelCode = TextUtils.hasText(modelConfig.getModelCode()) ? modelConfig.getModelCode().trim() : exists.getModelCode();
         ensureModelCodeUnique(modelCode, reqDTO.id());
         modelConfig.setModelCode(modelCode);
         modelConfig.setUpdatedAt(new Date());
         modelConfigTbMapper.updateById(modelConfig);
         ModelConfigTb updated = modelConfigTbMapper.selectById(reqDTO.id());
+        syncScopeModelCode(updated);
         syncTrainConfigModelDisplay(updated);
         return toResp(updated, loadScopeContext(List.of(updated)));
     }
@@ -121,6 +196,9 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             throw new BusinessException("模型配置不存在");
         }
         ForecastAgentEnum agent = ForecastAgentEnum.ofAgentCode(exists.getAgentCode()).orElseThrow(() -> new BusinessException("智能体编码不合法"));
+        // 模型能力边界只能由模型平台同步，业务配置仅维护适用范围和输入特征。
+        exists.setUpdatedAt(new Date());
+        modelConfigTbMapper.updateById(exists);
         saveScopes(exists.getId(), exists.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(), reqDTO.regionCodes(), reqDTO.industryCodes(),
                 reqDTO.customerCodes());
         saveFeatureRefs(reqDTO.id(), reqDTO.featureRefs());
@@ -179,24 +257,30 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             BaseCustomerTb item = scopeContext.customers().get(code);
             return item == null ? code : item.getCustomerName();
         }).toList();
-        List<ModelFeatureRefResponse> featureRefs = scopeContext.featureRefs().getOrDefault(modelConfig.getId(), Collections.emptyList()).stream().sorted((left, right) -> {
+        List<ModelFeatureRefResponse> featureRefs = scopeContext.featureRefs().getOrDefault(modelConfig.getId(), Collections.emptyList()).stream().filter(ref -> {
+            ModelFeatureDefinitionTb definition = scopeContext.features().get(ref.getFeatureId());
+            return definition != null && Integer.valueOf(1).equals(definition.getEnabled());
+        }).sorted((left, right) -> {
             int leftOrder = left.getFeatureOrder() == null ? 0 : left.getFeatureOrder();
             int rightOrder = right.getFeatureOrder() == null ? 0 : right.getFeatureOrder();
             return leftOrder == rightOrder ? left.getId().compareTo(right.getId()) : Integer.compare(leftOrder, rightOrder);
         }).map(ref -> {
             ModelFeatureDefinitionTb definition = scopeContext.features().get(ref.getFeatureId());
             return new ModelFeatureRefResponse(ref.getId(), ref.getFeatureId(), definition == null ? null : definition.getFeatureCode(), definition == null ? null : definition.getFeatureName(),
-                    definition == null ? null : definition.getFeatureColumn(), definition == null ? null : definition.getTimeGranularity(), ref.getRequiredFlag(), ref.getFeatureOrder());
+                    TextUtils.hasText(ref.getOutputFeatureCode()) ? ref.getOutputFeatureCode() : definition == null ? null : definition.getFeatureCode(), ref.getRequiredFlag(), ref.getFeatureOrder());
         }).toList();
-        boolean allScope = scopes.isEmpty();
+        // 每个维度独立表达“全部”：例如指定行业但未指定地区，代表所有地区，
+        // 不能只有三个维度都为空时才显示“全部”。
+        boolean allRegions = regionCodes.isEmpty();
+        boolean allIndustries = industryCodes.isEmpty();
+        boolean allCustomers = customerCodes.isEmpty();
         return new ModelConfigResponse(modelConfig.getId(), modelConfig.getModelCode(), modelConfig.getModelName(), modelConfig.getModelVersion(), modelConfig.getAgentCode(),
                 agent == null ? null : agent.getAgentName(), agent == null ? null : agent.getSceneCode(), agent == null ? null : agent.getStrategyType(), regionCode,
-                allScope ? "全部" : region == null ? null : region.getRegionName(), industryCode,
-                allScope && agent != ForecastAgentEnum.WINTER_SUPPLY ? "全部" : industry == null ? null : industry.getIndustryName(), customerCode,
-                allScope && agent != ForecastAgentEnum.WINTER_SUPPLY ? "全部" : customer == null ? null : customer.getCustomerName(), regionCodes, allScope ? List.of("全部") : regionNames, industryCodes,
-                allScope && agent != ForecastAgentEnum.WINTER_SUPPLY ? List.of("全部") : industryNames, customerCodes,
-                allScope && agent != ForecastAgentEnum.WINTER_SUPPLY ? List.of("全部") : customerNames, featureRefs, modelConfig.getDescription(), modelConfig.getCreatedAt(),
-                modelConfig.getUpdatedAt());
+                allRegions ? "全部" : region == null ? null : region.getRegionName(), industryCode, allIndustries ? "全部" : industry == null ? null : industry.getIndustryName(), customerCode,
+                allCustomers ? "全部" : customer == null ? null : customer.getCustomerName(), regionCodes, allRegions ? List.of("全部") : regionNames, industryCodes,
+                allIndustries ? List.of("全部") : industryNames, customerCodes, allCustomers ? List.of("全部") : customerNames, featureRefs, modelConfig.getTimeGranularity(),
+                modelConfig.getMinForecastHorizon(), modelConfig.getMaxForecastHorizon(), modelConfig.getMinimumTrainingRows(),
+                modelConfig.getRecommendedTrainingPeriods(), modelConfig.getTrainingDataRequirement(), modelConfig.getDescription(), modelConfig.getCreatedAt(), modelConfig.getUpdatedAt());
     }
 
     private ScopeContext loadScopeContext(List<ModelConfigTb> configs) {
@@ -242,13 +326,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         List<String> normalizedRegionCodes = normalizeCodes(regionCodes, regionCode);
         List<String> normalizedIndustryCodes = normalizeCodes(industryCodes, industryCode);
         List<String> normalizedCustomerCodes = normalizeCodes(customerCodes, customerCode);
-
-        if (agent == ForecastAgentEnum.WINTER_SUPPLY) {
-            for (String code : normalizedRegionCodes) {
-                insertScope(modelId, modelCode, code, null, null);
-            }
-            return;
-        }
 
         if (normalizedRegionCodes.isEmpty() && normalizedIndustryCodes.isEmpty() && normalizedCustomerCodes.isEmpty()) {
             return;
@@ -299,16 +376,19 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         if (featureIds.isEmpty()) {
             return;
         }
-        long existingCount = modelFeatureDefinitionTbMapper
-                .selectCount(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().in(ModelFeatureDefinitionTb::getId, featureIds).eq(ModelFeatureDefinitionTb::getEnabled, 1));
-        if (existingCount != featureIds.size()) {
-            throw new BusinessException(BusinessResponseCode.PARAM_ERROR, "存在未启用或不存在的特征");
+        List<ModelFeatureDefinitionTb> enabledFeatures = modelFeatureDefinitionTbMapper
+                .selectList(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().in(ModelFeatureDefinitionTb::getId, featureIds).eq(ModelFeatureDefinitionTb::getEnabled, 1));
+        List<Long> enabledFeatureIds = enabledFeatures.stream().map(ModelFeatureDefinitionTb::getId).toList();
+        List<Long> invalidFeatureIds = featureIds.stream().filter(id -> !enabledFeatureIds.contains(id)).toList();
+        if (!invalidFeatureIds.isEmpty()) {
+            throw new BusinessException(BusinessResponseCode.PARAM_ERROR, "未启用或不存在的特征ID: " + invalidFeatureIds);
         }
         int index = 1;
         for (ModelConfigScopeUpdateRequest.FeatureRefItem item : distinctRefs) {
             ModelFeatureRef ref = new ModelFeatureRef();
             ref.setModelId(modelConfigId);
             ref.setFeatureId(item.featureId());
+            ref.setOutputFeatureCode(TextUtils.hasText(item.outputFeatureCode()) ? item.outputFeatureCode().trim() : null);
             ref.setRequiredFlag(item.requiredFlag() == null ? 0 : item.requiredFlag());
             ref.setFeatureOrder(item.featureOrder() == null ? index : item.featureOrder());
             ref.setCreatedAt(new Date());
@@ -354,6 +434,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         }
     }
 
+    private void validateCapability(Integer minimum, Integer maximum) {
+        if (minimum != null && maximum != null && minimum > maximum) {
+            throw new BusinessException("最小预测周期不能大于最大预测周期");
+        }
+    }
+
     private void syncTrainConfigModelDisplay(ModelConfigTb modelConfig) {
         if (modelConfig == null || modelConfig.getId() == null) {
             return;
@@ -365,6 +451,14 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             trainConfig.setUpdatedAt(new Date());
             modelTrainConfigTbMapper.updateById(trainConfig);
         }
+    }
+
+    private void syncScopeModelCode(ModelConfigTb modelConfig) {
+        if (modelConfig == null || modelConfig.getId() == null) {
+            return;
+        }
+        modelConfigScopeTbMapper.update(null,
+                Wrappers.<ModelConfigScopeTb>lambdaUpdate().eq(ModelConfigScopeTb::getModelId, modelConfig.getId()).set(ModelConfigScopeTb::getModelCode, modelConfig.getModelCode()));
     }
 
     @Data
@@ -418,6 +512,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setModelName(reqDTO.getConfigName());
         modelConfig.setModelVersion(TextUtils.hasText(reqDTO.getModelVersion()) ? reqDTO.getModelVersion() : "V1.0");
         modelConfig.setAgentCode(reqDTO.getAgentCode());
+        modelConfig.setTimeGranularity(defaultGranularity(reqDTO.getTimeGranularity(), reqDTO.getAgentCode()));
+        modelConfig.setMinForecastHorizon(reqDTO.getMinForecastHorizon() == null ? 1 : reqDTO.getMinForecastHorizon());
+        modelConfig.setMaxForecastHorizon(reqDTO.getMaxForecastHorizon() == null ? 30 : reqDTO.getMaxForecastHorizon());
+        modelConfig.setMinimumTrainingRows(reqDTO.getMinimumTrainingRows() == null ? 140 : reqDTO.getMinimumTrainingRows());
+        modelConfig.setRecommendedTrainingPeriods(reqDTO.getRecommendedTrainingPeriods() == null ? modelConfig.getMinimumTrainingRows() : reqDTO.getRecommendedTrainingPeriods());
+        modelConfig.setTrainingDataRequirement(reqDTO.getTrainingDataRequirement());
         modelConfig.setDescription(reqDTO.getDescription());
         return modelConfig;
     }
@@ -429,7 +529,39 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setModelName(reqDTO.configName());
         modelConfig.setModelVersion(TextUtils.hasText(reqDTO.modelVersion()) ? reqDTO.modelVersion() : "V1.0");
         modelConfig.setAgentCode(reqDTO.agentCode());
+        modelConfig.setTimeGranularity(defaultGranularity(reqDTO.getTimeGranularity(), reqDTO.agentCode()));
+        modelConfig.setMinForecastHorizon(reqDTO.getMinForecastHorizon() == null ? 1 : reqDTO.getMinForecastHorizon());
+        modelConfig.setMaxForecastHorizon(reqDTO.getMaxForecastHorizon() == null ? 30 : reqDTO.getMaxForecastHorizon());
+        modelConfig.setMinimumTrainingRows(reqDTO.getMinimumTrainingRows() == null ? 140 : reqDTO.getMinimumTrainingRows());
+        modelConfig.setRecommendedTrainingPeriods(reqDTO.getRecommendedTrainingPeriods() == null ? modelConfig.getMinimumTrainingRows() : reqDTO.getRecommendedTrainingPeriods());
+        modelConfig.setTrainingDataRequirement(reqDTO.getTrainingDataRequirement());
         modelConfig.setDescription(reqDTO.description());
         return modelConfig;
+    }
+
+    private String defaultGranularity(String value, String agentCode) {
+        if (TextUtils.hasText(value))
+            return value.trim().toUpperCase();
+        if ("monthly-sales".equals(agentCode))
+            return "MONTH";
+        if ("winter-supply".equals(agentCode))
+            return "TENDAY";
+        return "DAY";
+    }
+
+    private int defaultMaxForecastHorizon(String agentCode) {
+        if ("monthly-sales".equals(agentCode))
+            return 24;
+        if ("winter-supply".equals(agentCode))
+            return 18;
+        return 90;
+    }
+
+    private int defaultMinimumTrainingRows(String agentCode) {
+        if ("monthly-sales".equals(agentCode))
+            return 24;
+        if ("winter-supply".equals(agentCode))
+            return 18;
+        return 140;
     }
 }

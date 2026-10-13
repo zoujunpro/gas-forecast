@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 /**
  * HTTP调用工具。
@@ -16,11 +17,18 @@ public final class HttpUtil {
     }
 
     public static JsonNode postJson(String url, JsonNode body) {
+        return postJson(url, body, 10000, 300000);
+    }
+
+    public static JsonNode postJson(String url, JsonNode body, int connectTimeoutMs, int readTimeoutMs) {
         if (!TextUtils.hasText(url)) {
             throw new IllegalArgumentException("HTTP请求地址不能为空");
         }
         try {
-            ResponseEntity<JsonNode> response = REST_TEMPLATE.postForEntity(url, body, JsonNode.class);
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(Math.max(connectTimeoutMs, 1000));
+            factory.setReadTimeout(Math.max(readTimeoutMs, 1000));
+            ResponseEntity<JsonNode> response = new RestTemplate(factory).postForEntity(url, body, JsonNode.class);
             return response.getBody();
         } catch (RestClientException e) {
             throw new IllegalStateException("HTTP请求失败：" + e.getMessage(), e);

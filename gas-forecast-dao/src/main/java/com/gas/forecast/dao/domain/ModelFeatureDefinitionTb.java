@@ -31,14 +31,26 @@ public class ModelFeatureDefinitionTb {
     private String featureName;
 
     /**
-     * 宽表字段
+     * 数据来源 DATABASE/API/REPORT_LLM
      */
-    private String featureColumn;
+    private String sourceType;
+
+    private String valueSource;
+
+    private String sourceField;
+
+    private String calculationType;
+
+    private String calculationParams;
+
+    private String aggregationMethod;
+
+    private String missingValueStrategy;
 
     /**
-     * 时间粒度 DAY/TENDAY/MONTH
+     * 特征状态 CANDIDATE/ACTIVE/DISABLED
      */
-    private String timeGranularity;
+    private String status;
 
     /**
      * 是否启用 1 0

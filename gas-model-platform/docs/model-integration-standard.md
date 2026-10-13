@@ -23,9 +23,9 @@ model_code: MODEL_<业务名称>_V<主版本>.<次版本>
 示例：
 
 ```text
-MODEL_JIANGSHU_DIANLI_V1.0
-models/short_agent/model_jiangshu_dianli_v1.py
-ModelJiangshuDianliV1Handler
+MODEL_POWER_GENERATION_V1.0
+models/short_agent/model_power_generation_v1.py
+ModelPowerGenerationV1Handler
 ```
 
 `model_version` 使用语义化版本 `x.y.z`。算法、特征或选模规则不兼容时升级主版本；兼容性能力增加升级次版本；缺陷修复升级修订版本。

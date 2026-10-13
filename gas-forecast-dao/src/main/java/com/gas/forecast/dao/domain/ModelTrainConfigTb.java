@@ -1,6 +1,8 @@
 package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
@@ -53,41 +55,49 @@ public class ModelTrainConfigTb {
     /**
      * 区域编号
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String regionCode;
 
     /**
      * 区域名称
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String regionName;
 
     /**
      * 行业编号
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String industryCode;
 
     /**
      * 行业名称
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String industryName;
 
     /**
      * 客户编号
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String customerCode;
 
     /**
      * 客户名称
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String customerName;
 
     /**
      * 训练数据开始日期
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String trainStartDate;
 
     /**
      * 训练数据结束日期
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String trainEndDate;
 
     /**
@@ -103,6 +113,7 @@ public class ModelTrainConfigTb {
     /**
      * 最近周期数
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer recentPeriods;
 
     /**
@@ -113,6 +124,7 @@ public class ModelTrainConfigTb {
     /**
      * 备注
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 
     /**

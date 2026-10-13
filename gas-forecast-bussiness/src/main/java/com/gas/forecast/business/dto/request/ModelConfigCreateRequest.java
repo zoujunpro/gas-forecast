@@ -1,6 +1,7 @@
 package com.gas.forecast.business.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -43,6 +44,24 @@ public class ModelConfigCreateRequest {
     private List<@Size(max = 32, message = "行业编码长度不能超过32个字符") String> industryCodes;
 
     private List<@Size(max = 64, message = "客户编码长度不能超过64个字符") String> customerCodes;
+
+    @NotBlank(message = "时间粒度不能为空")
+    private @Size(max = 16, message = "时间粒度长度不能超过16个字符") String timeGranularity;
+
+    @Min(value = 1, message = "最小预测周期必须大于0")
+    private Integer minForecastHorizon;
+
+    @Min(value = 1, message = "最大预测周期必须大于0")
+    private Integer maxForecastHorizon;
+
+    @Min(value = 1, message = "最短训练数据量必须大于0")
+    private Integer minimumTrainingRows;
+
+    @Min(value = 1, message = "推荐训练周期数必须大于0")
+    private Integer recommendedTrainingPeriods;
+
+    @Size(max = 500, message = "训练数据要求长度不能超过500个字符")
+    private String trainingDataRequirement;
 
     @Size(max = 500, message = "描述长度不能超过500个字符")
     private String description;

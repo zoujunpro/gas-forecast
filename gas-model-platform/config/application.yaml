@@ -12,6 +12,10 @@ server:
   port: 8090
   reload: false
 
+training:
+  # 单个模型平台进程允许同时执行的训练数；按机器 CPU、内存实测调整。
+  max_concurrency: 4
+
 logging:
   level: INFO
   directory: logs

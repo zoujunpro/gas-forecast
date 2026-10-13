@@ -40,6 +40,7 @@ export interface SystemFieldConfig {
   activeText?: string
   inactiveText?: string
   readonly?: boolean
+  disabled?: boolean
   displayType?: FieldDisplayType
   enumMap?: Record<string, string>
   tagTypeMap?: Record<string, string>
@@ -93,6 +94,7 @@ export interface BaseDataFieldConfig {
   activeText?: string
   inactiveText?: string
   readonly?: boolean
+  disabled?: boolean
   displayType?: FieldDisplayType
   enumMap?: Record<string, string>
   tagTypeMap?: Record<string, string>

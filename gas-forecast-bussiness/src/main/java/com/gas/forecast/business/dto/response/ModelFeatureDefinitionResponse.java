@@ -28,15 +28,18 @@ public class ModelFeatureDefinitionResponse {
      */
     private String featureName;
 
-    /**
-     * 特征字段。
-     */
-    private String featureColumn;
+    /** 数据来源。 */
+    private String sourceType;
 
-    /**
-     * 时间粒度。
-     */
-    private String timeGranularity;
+    private String valueSource;
+    private String sourceField;
+    private String calculationType;
+    private String calculationParams;
+    private String aggregationMethod;
+    private String missingValueStrategy;
+
+    /** 特征状态。 */
+    private String status;
 
     /**
      * 启用状态。

@@ -25,6 +25,12 @@ public class ModelFeatureDefinitionPageRequest {
     @Size(max = 32, message = "时间跨度长度不能超过32个字符")
     private String timeGranularity;
 
+    @Size(max = 20, message = "数据来源长度不能超过20个字符")
+    private String sourceType;
+
+    @Size(max = 20, message = "特征状态长度不能超过20个字符")
+    private String status;
+
     public Integer page() {
         return page;
     }
@@ -39,5 +45,13 @@ public class ModelFeatureDefinitionPageRequest {
 
     public String timeGranularity() {
         return timeGranularity;
+    }
+
+    public String sourceType() {
+        return sourceType;
+    }
+
+    public String status() {
+        return status;
     }
 }

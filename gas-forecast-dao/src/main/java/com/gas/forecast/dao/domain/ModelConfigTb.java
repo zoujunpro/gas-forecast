@@ -40,6 +40,25 @@ public class ModelConfigTb {
      */
     private String agentCode;
 
+    /** 支持的时间粒度：DAY/TENDAY/MONTH。 */
+    private String timeGranularity;
+
+
+    /** 最小预测周期数。 */
+    private Integer minForecastHorizon;
+
+    /** 最大预测周期数。 */
+    private Integer maxForecastHorizon;
+
+    /** 最短训练数据量，单位为当前时间粒度对应的记录数。 */
+    private Integer minimumTrainingRows;
+
+    /** 自动训练时建议使用的最近周期数。 */
+    private Integer recommendedTrainingPeriods;
+
+    /** 训练数据要求的补充说明。 */
+    private String trainingDataRequirement;
+
     /**
      * 描述
      */

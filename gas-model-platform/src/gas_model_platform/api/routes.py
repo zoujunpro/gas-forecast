@@ -12,11 +12,14 @@ from gas_model_platform.api.feature_routes import (
     router as feature_router,
 )
 from gas_model_platform.api.model_routes import (
+    active_training_tasks,
     backtest,
     list_models,
     predict,
     router as model_router,
     train,
+    training_capacity,
+    training_task,
     validate_training_data,
 )
 
@@ -26,11 +29,14 @@ router.include_router(model_router)
 
 __all__ = [
     "backtest",
+    "active_training_tasks",
     "compute_features",
     "compute_features_batch",
     "list_models",
     "predict",
     "router",
     "train",
+    "training_capacity",
+    "training_task",
     "validate_training_data",
 ]

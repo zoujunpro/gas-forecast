@@ -34,6 +34,7 @@ class Settings:
     server_host: str = "0.0.0.0"
     server_port: int = 8090
     server_reload: bool = False
+    training_max_concurrency: int = 4
     artifact_root: Path = Path("artifacts")
     log_dir: Path = Path("logs")
     log_level: str = "INFO"
@@ -118,6 +119,7 @@ def load_settings(
 
     app = _section(payload, "app")
     server = _section(payload, "server")
+    training = _section(payload, "training")
     storage = _section(payload, "storage")
     logging_config = _section(payload, "logging")
 
@@ -130,6 +132,15 @@ def load_settings(
         ),
         server_reload=_as_bool(
             env.get("GAS_MODEL_SERVER_RELOAD", server.get("reload", False))
+        ),
+        training_max_concurrency=max(
+            1,
+            int(
+                env.get(
+                    "GAS_MODEL_TRAINING_MAX_CONCURRENCY",
+                    str(training.get("max_concurrency", 4)),
+                )
+            ),
         ),
         artifact_root=_resolve_path(
             env.get("GAS_MODEL_ARTIFACT_ROOT", str(storage.get("artifact_root", "artifacts"))),

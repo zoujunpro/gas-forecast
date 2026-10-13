@@ -14,18 +14,21 @@ import com.gas.forecast.business.component.dto.ModelTrainingValidationApiRespons
 import com.gas.forecast.business.dto.request.ModelTrainExecuteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.dto.response.ModelTrainExecuteResponse;
+import com.gas.forecast.business.dto.response.ModelTrainExecutionStepResponse;
 import com.gas.forecast.business.dto.response.ModelTrainRecordResponse;
 import com.gas.forecast.business.dto.response.ModelTrainResultResponse;
 import com.gas.forecast.business.enums.BaseCodeType;
 import com.gas.forecast.business.enums.ModelTrainStatus;
-import com.gas.forecast.business.enums.ModelTrainMode;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
+import com.gas.forecast.business.service.DynamicFeatureResult;
+import com.gas.forecast.business.service.DynamicTrainingFeatureService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
+import com.gas.forecast.business.service.ModelTrainStepRecorder;
+import com.gas.forecast.business.service.TrainingDatasetAssembler;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.enums.ForecastAgentEnum;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.ModelConfigScopeTb;
 import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.domain.ModelFeatureRef;
@@ -33,22 +36,19 @@ import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
-import com.gas.forecast.dao.mapper.ModelConfigScopeTbMapper;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainExecutionStepTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -76,17 +76,35 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelConfigTbMapper modelConfigTbMapper;
-    private final ModelConfigScopeTbMapper modelConfigScopeTbMapper;
     private final ModelFeatureRefMapper modelFeatureRefMapper;
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
-    private final ModelTrainFeatureDataTbMapper modelTrainFeatureDataTbMapper;
     private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
     private final ModelTrainRecordTbMapper modelTrainDetailTbMapper;
+    private final ModelTrainExecutionStepTbMapper modelTrainExecutionStepTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
     private final ObjectMapper objectMapper;
     private final Executor modelTrainTaskExecutor;
     private final TransactionTemplate transactionTemplate;
     private final ModelPlatformClient modelPlatformClient;
+    private final DynamicTrainingFeatureService dynamicTrainingFeatureService;
+    private final ModelTrainStepRecorder trainStepRecorder;
+    private final TrainingDatasetAssembler trainingDatasetAssembler;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ModelTrainExecutionStepResponse> getExecutionSteps(String batchNo) {
+        if (!TextUtils.hasText(batchNo))
+            throw new BusinessException("训练批次号不能为空");
+        return modelTrainExecutionStepTbMapper
+                .selectList(Wrappers.<com.gas.forecast.dao.domain.ModelTrainExecutionStepTb>lambdaQuery().eq(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getTrainBatchNo, batchNo)
+                        .orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getAttemptNo).orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getStepLevel)
+                        .orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getStepOrder).orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getId))
+                .stream()
+                .map(step -> new ModelTrainExecutionStepResponse(step.getId(), step.getTrainBatchNo(), step.getAttemptNo(), step.getParentStepId(), step.getStepLevel(), step.getStepCode(),
+                        step.getStepName(), step.getStepOrder(), step.getStatus(), step.getInputSummary(), step.getOutputSummary(), step.getProducedCount(), step.getErrorMessage(),
+                        step.getStartedAt(), step.getFinishedAt(), step.getDurationMs()))
+                .toList();
+    }
 
     @Override
     @Transactional
@@ -106,37 +124,31 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             throw new BusinessException("所属模型不存在");
         }
 
-        // 3. 按模型特征定义、训练时间和业务范围读取本次训练数据。
-        List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
-        List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig);
-        if (trainData.isEmpty()) {
-            throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
+        // 队列在创建时已经分配批次号。首次执行准备数据；失败重试优先复用请求快照。
+        if (TextUtils.hasText(reqDTO.getRetryBatchNo())) {
+            String batchNo = reqDTO.getRetryBatchNo().trim();
+            ModelTrainRecordTb existing = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo).last("limit 1"));
+            if (existing == null)
+                throw new BusinessException("训练批次不存在：" + batchNo);
+            if (existing.getRequestParam() != null && existing.getRequestParam().length > 0) {
+                return retryWithSnapshot(trainConfig, batchNo);
+            }
+            java.util.Date now = new java.util.Date();
+            modelTrainDetailTbMapper.update(null, Wrappers.<ModelTrainRecordTb>lambdaUpdate().eq(ModelTrainRecordTb::getId, existing.getId()).set(ModelTrainRecordTb::getStatus, "PREPARING")
+                    .set(ModelTrainRecordTb::getStartedAt, now).set(ModelTrainRecordTb::getErrorMessage, null).set(ModelTrainRecordTb::getUpdatedAt, now));
+            ObjectNode payload = objectMapper.createObjectNode().put("model_code", modelConfig.getModelCode()).put("preparation_status", "PREPARING");
+            submitPreparationAfterCommit(batchNo, trainConfig, modelConfig);
+            return new ModelTrainExecuteResponse(trainConfig.getTrainCode(), batchNo, modelConfig.getModelCode(), 0, ModelTrainStatus.PENDING.getCode(), payload,
+                    objectMapper.createObjectNode().put("message", "训练批次已领取，后台正在准备训练数据。").put("train_batch_no", batchNo));
         }
 
-        // 4. 正式创建批次前先调用模型平台校验数据，校验失败时不产生训练记录。
-        ModelTrainApiRequest validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
-        modelPlatformClient.validateTrainingData(validationRequest);
-
-        // 5. 新训练生成批次号；失败重试继续使用原批次号，便于覆盖原结果。
-        String retryBatchNo = reqDTO.getRetryBatchNo();
-        String batchNo = TextUtils.hasText(retryBatchNo) ? retryBatchNo : generateTrainBatchNo();
-        ModelTrainApiRequest trainRequest = buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features);
-        // 6. 保存完整请求快照。重试时先抢占失败记录，防止重复提交同一批次。
-        JsonNode requestPayload = objectMapper.valueToTree(trainRequest);
-        if (TextUtils.hasText(retryBatchNo)) {
-            resetFailedTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, requestPayload);
-        } else {
-            saveTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, requestPayload, null);
-        }
-        // 7. 根据训练接口是否启用确定初始状态，并保存提交结果说明。
-        ModelTrainStatus status = modelPlatformClient.isTrainingEnabled() ? ModelTrainStatus.RUNNING : ModelTrainStatus.PENDING;
-        ObjectNode submitResponse = objectMapper.createObjectNode().put("message", modelPlatformClient.isTrainingEnabled() ? "训练任务已提交，后台等待模型系统返回结果。" : "未配置 gas.agent.train-url，已生成训练请求入参。")
-                .put("model_code", trainRequest.getModelCode()).put("train_batch_no", batchNo);
-        updateTrainDetailAfterSubmit(batchNo, status, submitResponse, null);
-        // 8. 当前事务提交成功后异步调用模型平台，避免平台读取到尚未提交的数据。
-        submitTrainAfterCommit(batchNo, trainRequest);
-        // 9. 立即返回批次信息，实际训练结果由异步任务或平台回调更新。
-        return new ModelTrainExecuteResponse(trainConfig.getTrainCode(), batchNo, trainRequest.getModelCode(), trainData.size(), status.getCode(), requestPayload, submitResponse);
+        // 3. 数据准备阶段不分配批次号；预校验通过并正式创建训练记录时才生成。
+        String batchNo = null;
+        ObjectNode pendingPayload = objectMapper.createObjectNode().put("model_code", modelConfig.getModelCode()).put("preparation_status", ModelTrainStatus.PENDING.getCode());
+        ObjectNode createdResponse = objectMapper.createObjectNode().put("message", "训练任务已领取，后台正在准备训练数据和动态指标。").put("model_code", modelConfig.getModelCode());
+        // 准备阶段不写训练批次；只有动态特征和平台预校验通过后才创建正式批次记录。
+        submitPreparationAfterCommit(batchNo, trainConfig, modelConfig);
+        return new ModelTrainExecuteResponse(trainConfig.getTrainCode(), batchNo, modelConfig.getModelCode(), 0, ModelTrainStatus.PENDING.getCode(), pendingPayload, createdResponse);
     }
 
     @Override
@@ -162,8 +174,41 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
         }
         // 4. 只调用平台预校验，不创建批次和训练记录。
-        ModelTrainApiRequest validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features);
+        DynamicFeatureResult dynamicFeatures = dynamicTrainingFeatureService.prepare(trainConfig, trainData);
+        ModelTrainApiRequest validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features, dynamicFeatures);
         return modelPlatformClient.validateTrainingData(validationRequest);
+    }
+
+    private ModelTrainExecuteResponse retryWithSnapshot(ModelTrainConfigTb trainConfig, String batchNo) {
+        ModelTrainRecordTb record = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
+        if (record == null || record.getRequestParam() == null || record.getRequestParam().length == 0) {
+            throw new BusinessException("重试训练批次缺少原始请求快照：" + batchNo);
+        }
+        try {
+            JsonNode payload = objectMapper.readTree(record.getRequestParam());
+            if (payload.has("preparation_status")) {
+                ModelConfigTb modelConfig = modelConfigTbMapper.selectById(trainConfig.getModelId());
+                if (modelConfig == null) {
+                    throw new BusinessException("所属模型不存在");
+                }
+                resetFailedTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, payload);
+                submitPreparationAfterCommit(batchNo, trainConfig, modelConfig);
+                ObjectNode response = objectMapper.createObjectNode().put("message", "失败批次已重新进入后台数据准备流程。").put("model_code", modelConfig.getModelCode()).put("train_batch_no", batchNo);
+                return new ModelTrainExecuteResponse(trainConfig.getTrainCode(), batchNo, modelConfig.getModelCode(), 0, ModelTrainStatus.PENDING.getCode(), payload, response);
+            }
+            ModelTrainApiRequest trainRequest = objectMapper.treeToValue(payload, ModelTrainApiRequest.class);
+            trainRequest.setTrainBatchNo(batchNo);
+            JsonNode normalizedPayload = objectMapper.valueToTree(trainRequest);
+            resetFailedTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, normalizedPayload);
+            ObjectNode submitResponse = objectMapper.createObjectNode().put("message", "失败批次已创建后台重试任务。").put("model_code", trainRequest.getModelCode()).put("train_batch_no", batchNo);
+            submitValidationAfterCommit(batchNo, trainRequest);
+            int dataSize = trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size();
+            return new ModelTrainExecuteResponse(trainConfig.getTrainCode(), batchNo, trainRequest.getModelCode(), dataSize, ModelTrainStatus.PENDING.getCode(), normalizedPayload, submitResponse);
+        } catch (BusinessException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new BusinessException("无法读取原始训练请求快照：" + exception.getMessage());
+        }
     }
 
     private String generateTrainBatchNo() {
@@ -198,11 +243,20 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         ModelTrainStatus status = ModelTrainStatus.SUCCESS;
         updateTrainDetail(trainResult, batchNo, status, null);
         replaceBacktestDetails(batchNo, trainResult);
+        markTrainBatchSuccess(batchNo);
 
         // 4. 从保存的请求快照恢复模型和数据量信息，组装接口响应。
         JsonNode requestPayload = parseRequestPayload(detail.getRequestParam());
         String modelCode = requestPayload == null ? null : requestPayload.path("model_code").asText(null);
         return new ModelTrainExecuteResponse(null, batchNo, modelCode, datasetSize(requestPayload), status.getCode(), requestPayload, trainResult);
+    }
+
+    /** 训练结果与批次调度状态在同一张表中结束，不依赖定时状态核对。 */
+    private void markTrainBatchSuccess(String batchNo) {
+        java.util.Date now = new java.util.Date();
+        modelTrainDetailTbMapper.update(null,
+                Wrappers.<ModelTrainRecordTb>lambdaUpdate().eq(ModelTrainRecordTb::getBatchNo, batchNo).set(ModelTrainRecordTb::getStatus, "SUCCESS").set(ModelTrainRecordTb::getActiveDedupKey, null)
+                        .set(ModelTrainRecordTb::getErrorMessage, null).set(ModelTrainRecordTb::getFinishedAt, now).set(ModelTrainRecordTb::getUpdatedAt, now));
     }
 
     @Override
@@ -211,18 +265,24 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery();
         String batchNo = reqDTO.getBatchNo();
         boolean loadDetail = TextUtils.hasText(batchNo);
+        if (!loadDetail && reqDTO.getTrainConfigId() == null) {
+            throw new BusinessException("查询训练批次列表时训练配置ID不能为空");
+        }
         if (loadDetail) {
             query.eq(ModelTrainRecordTb::getBatchNo, batchNo);
         } else {
             // 请求和结果字段可能包含完整训练集，列表查询不读取大字段，选中批次后再按需加载。
-            query.select(ModelTrainRecordTb::getId, ModelTrainRecordTb::getBatchNo, ModelTrainRecordTb::getAgentCode, ModelTrainRecordTb::getRegionCode, ModelTrainRecordTb::getRegionName,
-                    ModelTrainRecordTb::getIndustryCode, ModelTrainRecordTb::getIndustryName, ModelTrainRecordTb::getCustomerCode, ModelTrainRecordTb::getCustomerName,
-                    ModelTrainRecordTb::getTrainStartDate, ModelTrainRecordTb::getTrainEndDate, ModelTrainRecordTb::getStatus, ModelTrainRecordTb::getBestModel, ModelTrainRecordTb::getMape,
-                    ModelTrainRecordTb::getWmape, ModelTrainRecordTb::getSmape, ModelTrainRecordTb::getRmse, ModelTrainRecordTb::getMae, ModelTrainRecordTb::getR2,
+            query.select(ModelTrainRecordTb::getId, ModelTrainRecordTb::getTrainConfigId, ModelTrainRecordTb::getBatchNo, ModelTrainRecordTb::getAgentCode, ModelTrainRecordTb::getRegionCode,
+                    ModelTrainRecordTb::getRegionName, ModelTrainRecordTb::getIndustryCode, ModelTrainRecordTb::getIndustryName, ModelTrainRecordTb::getCustomerCode,
+                    ModelTrainRecordTb::getCustomerName, ModelTrainRecordTb::getTrainStartDate, ModelTrainRecordTb::getTrainEndDate, ModelTrainRecordTb::getStatus, ModelTrainRecordTb::getBestModel,
+                    ModelTrainRecordTb::getMape, ModelTrainRecordTb::getWmape, ModelTrainRecordTb::getSmape, ModelTrainRecordTb::getRmse, ModelTrainRecordTb::getMae, ModelTrainRecordTb::getR2,
                     ModelTrainRecordTb::getTrainDurationSeconds, ModelTrainRecordTb::getModelVersion, ModelTrainRecordTb::getErrorMessage, ModelTrainRecordTb::getCreatedAt,
                     ModelTrainRecordTb::getUpdatedAt);
         }
         // 2. 追加页面传入的业务范围和训练时间过滤条件。
+        if (reqDTO.getTrainConfigId() != null) {
+            query.eq(ModelTrainRecordTb::getTrainConfigId, reqDTO.getTrainConfigId());
+        }
         eqIfText(query, ModelTrainRecordTb::getAgentCode, reqDTO.getAgentCode());
         eqIfText(query, ModelTrainRecordTb::getRegionCode, reqDTO.getRegionCode());
         eqIfText(query, ModelTrainRecordTb::getIndustryCode, reqDTO.getIndustryCode());
@@ -258,7 +318,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             item.setModelVersion(detail.getModelVersion());
             item.setErrorMessage(detail.getErrorMessage());
             if (TextUtils.hasText(detail.getErrorMessage())) {
-                item.setMessage(detail.getErrorMessage());
+                item.setMessage(customerFailureMessage(detail));
             }
             item.setCreatedAt(detail.getCreatedAt());
             item.setUpdatedAt(detail.getUpdatedAt());
@@ -320,9 +380,11 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         Map<Long, ModelFeatureDefinitionTb> definitions = modelFeatureDefinitionTbMapper.selectBatchIds(featureIds).stream().filter(item -> item.getEnabled() == null || item.getEnabled() == 1)
                 .collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity(), (left, right) -> left));
         // 3. 将特征编码、物理字段和时间粒度整理为训练请求映射。
-        List<FeatureMapping> mappings = refs.stream().map(ref -> definitions.get(ref.getFeatureId()))
-                .filter(definition -> definition != null && TextUtils.hasText(definition.getFeatureCode()) && TextUtils.hasText(definition.getFeatureColumn()))
-                .map(definition -> new FeatureMapping(definition.getFeatureCode(), definition.getFeatureColumn())).toList();
+        List<FeatureMapping> mappings = refs.stream().filter(ref -> definitions.containsKey(ref.getFeatureId())).map(ref -> {
+            ModelFeatureDefinitionTb definition = definitions.get(ref.getFeatureId());
+            String payloadKey = TextUtils.hasText(ref.getOutputFeatureCode()) ? ref.getOutputFeatureCode() : definition.getFeatureCode();
+            return new FeatureMapping(payloadKey, definition.getSourceField(), definition.getCalculationType(), definition.getMissingValueStrategy());
+        }).filter(mapping -> TextUtils.hasText(mapping.getPayloadKey()) && TextUtils.hasText(mapping.getSourceField())).toList();
         if (mappings.isEmpty()) {
             throw new BusinessException("所属模型没有可用训练特征");
         }
@@ -330,71 +392,11 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     }
 
     private List<ModelTrainFeatureDataTb> loadTrainData(ModelTrainConfigTb trainConfig, ModelConfigTb modelConfig) {
-        // 1. 训练数据严格使用训练配置中已经校验通过的时间粒度。
-        var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery();
-        String timeGranularity = trainConfig.getTimeGranularity();
-        if (!TextUtils.hasText(timeGranularity)) {
-            throw new BusinessException("训练配置的时间粒度不能为空");
-        }
-        query.eq(ModelTrainFeatureDataTb::getTimeGranularity, timeGranularity);
-        // 2. 指定范围模式按起止日期过滤；最近模式由数量限制决定范围。
-        boolean recentMode = ModelTrainMode.RECENT.name().equals(trainConfig.getTrainMode());
-        if (!recentMode && TextUtils.hasText(trainConfig.getTrainStartDate())) {
-            query.ge(ModelTrainFeatureDataTb::getStatDate, trainConfig.getTrainStartDate());
-        }
-        if (!recentMode && TextUtils.hasText(trainConfig.getTrainEndDate())) {
-            query.le(ModelTrainFeatureDataTb::getStatDate, trainConfig.getTrainEndDate());
-        }
-        // 3. 叠加训练配置或模型默认作用范围。
-        applyTrainScope(query, trainConfig, modelConfig.getId());
-        if (recentMode) {
-            // 4. 最近模式先倒序截取最新 N 条，再恢复为时间正序供模型训练。
-            Integer recentPeriods = trainConfig.getRecentPeriods();
-            if (recentPeriods == null || recentPeriods <= 0) {
-                throw new BusinessException("训练配置的最近周期数无效，请先修改训练配置");
-            }
-            query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId).last("limit " + recentPeriods);
-            return modelTrainFeatureDataTbMapper.selectList(query).stream().sorted(Comparator.comparing(ModelTrainFeatureDataTb::getStatDate).thenComparing(ModelTrainFeatureDataTb::getId)).toList();
-        }
-        // 5. 指定范围模式直接按日期正序返回全部匹配数据。
-        query.orderByAsc(ModelTrainFeatureDataTb::getStatDate).orderByAsc(ModelTrainFeatureDataTb::getId);
-        return modelTrainFeatureDataTbMapper.selectList(query);
+        return trainingDatasetAssembler.assemble(trainConfig, modelConfig);
     }
 
-    private void applyTrainScope(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelTrainFeatureDataTb> query, ModelTrainConfigTb trainConfig, Long modelId) {
-        // 1. 训练配置明确指定范围时，优先使用配置自身的地区、行业和客户条件。
-        if (TextUtils.hasText(trainConfig.getRegionCode())) {
-            query.eq(ModelTrainFeatureDataTb::getRegionCode, trainConfig.getRegionCode());
-        }
-        if (TextUtils.hasText(trainConfig.getIndustryCode())) {
-            query.eq(ModelTrainFeatureDataTb::getIndustryCode, trainConfig.getIndustryCode());
-        }
-        if (TextUtils.hasText(trainConfig.getCustomerCode())) {
-            query.eq(ModelTrainFeatureDataTb::getCustomerCode, trainConfig.getCustomerCode());
-        }
-        // 任意一个范围条件存在即表示配置已明确范围，不再叠加模型默认范围。
-        if (TextUtils.hasText(trainConfig.getRegionCode()) || TextUtils.hasText(trainConfig.getIndustryCode()) || TextUtils.hasText(trainConfig.getCustomerCode())) {
-            return;
-        }
-
-        // 2. 配置未指定范围时，读取模型绑定的全部默认作用范围。
-        List<ModelConfigScopeTb> scopes = modelConfigScopeTbMapper.selectList(Wrappers.<ModelConfigScopeTb>lambdaQuery().eq(ModelConfigScopeTb::getModelId, modelId));
-        List<String> regionCodes = scopes.stream().map(ModelConfigScopeTb::getRegionCode).filter(TextUtils::hasText).distinct().toList();
-        List<String> industryCodes = scopes.stream().map(ModelConfigScopeTb::getIndustryCode).filter(TextUtils::hasText).distinct().toList();
-        List<String> customerCodes = scopes.stream().map(ModelConfigScopeTb::getCustomerCode).filter(TextUtils::hasText).distinct().toList();
-        // 3. 每个维度只在存在有效值时追加 IN 条件。
-        if (!regionCodes.isEmpty()) {
-            query.in(ModelTrainFeatureDataTb::getRegionCode, regionCodes);
-        }
-        if (!industryCodes.isEmpty()) {
-            query.in(ModelTrainFeatureDataTb::getIndustryCode, industryCodes);
-        }
-        if (!customerCodes.isEmpty()) {
-            query.in(ModelTrainFeatureDataTb::getCustomerCode, customerCodes);
-        }
-    }
-
-    private ModelTrainApiRequest buildTrainRequest(ModelTrainConfigTb trainConfig, ModelConfigTb modelConfig, String batchNo, List<ModelTrainFeatureDataTb> trainData, List<FeatureMapping> features) {
+    private ModelTrainApiRequest buildTrainRequest(ModelTrainConfigTb trainConfig, ModelConfigTb modelConfig, String batchNo, List<ModelTrainFeatureDataTb> trainData, List<FeatureMapping> features,
+            DynamicFeatureResult dynamicFeatures) {
         // 1. 将标准训练数据逐行转换成模型平台约定的 dataset 结构。
         List<JsonNode> dataset = new ArrayList<>();
         for (ModelTrainFeatureDataTb row : trainData) {
@@ -403,13 +405,21 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             item.put("date", row.getStatDate());
             putDecimal(item, "gas_sales", row.getGasSales());
             for (FeatureMapping feature : features) {
-                Double value = readFeatureValue(row, feature.getFeatureColumn());
+                Double value = readSourceValue(row, feature);
+                if (value == null && "ZERO".equalsIgnoreCase(feature.getMissingValueStrategy()))
+                    value = 0D;
+                if (value == null && "ERROR".equalsIgnoreCase(feature.getMissingValueStrategy())) {
+                    throw new BusinessException("训练数据缺少特征值：日期=" + row.getStatDate() + "，特征=" + feature.getPayloadKey() + "，来源字段=" + feature.getSourceField());
+                }
                 if (value != null) {
                     item.put(feature.getPayloadKey(), value);
                 }
             }
+            dynamicFeatures.appendValues(item, row.getStatDate());
             dataset.add(item);
         }
+        LOGGER.info("训练数据拼接完成: trainCode={}, rows={}, baseFeatures={}, dynamicFeatures={}, dynamicValueCount={}", trainConfig.getTrainCode(), dataset.size(), features.size(),
+                dynamicFeatures.featureCodes(), dynamicFeatures.valueCount());
         // 2. 组装模型、批次、作用范围、扩展参数和数据集等请求上下文。
         ModelTrainApiRequest request = new ModelTrainApiRequest();
         request.setAgentCode(trainConfig.getAgentCode());
@@ -421,7 +431,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         request.setIndustryName(trainConfig.getIndustryName());
         request.setCustomerCode(trainConfig.getCustomerCode());
         request.setCustomerName(trainConfig.getCustomerName());
-        request.setParams(objectMapper.createObjectNode());
+        ObjectNode params = objectMapper.createObjectNode();
+        params.set("dynamic_feature_snapshot", dynamicFeatures.snapshot());
+        request.setParams(params);
         request.setDataset(dataset);
         return request;
     }
@@ -431,14 +443,17 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return modelPlatformClient.train(trainRequest);
     }
 
-    private void submitTrainAfterCommit(String batchNo, ModelTrainApiRequest trainRequest) {
-        // 1. 未配置训练接口时保留本地待处理记录，不启动异步任务。
-        if (!modelPlatformClient.isTrainingEnabled()) {
-            return;
-        }
-        // 2. 将远程训练包装为线程池任务，避免阻塞接口请求线程。
-        Runnable submitTask = () -> modelTrainTaskExecutor.execute(() -> waitTrainResultAndPersist(batchNo, trainRequest));
-        // 3. 存在事务时必须等事务提交成功后调用平台，事务回滚则不提交训练。
+    private void submitPreparationAfterCommit(String batchNo, ModelTrainConfigTb trainConfig, ModelConfigTb modelConfig) {
+        submitAfterCommit(() -> prepareValidateAndTrain(batchNo, trainConfig, modelConfig));
+    }
+
+    private void submitValidationAfterCommit(String batchNo, ModelTrainApiRequest trainRequest) {
+        submitAfterCommit(() -> validateAndTrain(batchNo, trainRequest));
+    }
+
+    private void submitAfterCommit(Runnable asyncTask) {
+        Runnable submitTask = () -> modelTrainTaskExecutor.execute(asyncTask);
+        // 存在事务时必须等事务提交成功后启动后台流程，事务回滚则不创建异步任务。
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -448,24 +463,144 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             });
             return;
         }
-        // 4. 没有活动事务时直接提交异步任务。
+        // 没有活动事务时直接提交异步任务。
         submitTask.run();
     }
 
-    private void waitTrainResultAndPersist(String batchNo, ModelTrainApiRequest trainRequest) {
+    private void prepareValidateAndTrain(String batchNo, ModelTrainConfigTb trainConfig, ModelConfigTb modelConfig) {
+        int attemptNo = currentAttemptNo(batchNo);
+        Long currentStep = null;
+        try {
+            currentStep = startStep(batchNo, attemptNo, "LOAD_DATA", "加载训练数据", 1, "trainConfigId=" + trainConfig.getId());
+            List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
+            List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig);
+            if (trainData.isEmpty()) {
+                throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
+            }
+            trainStepRecorder.success(currentStep, "基础特征=" + features.size() + "，训练数据=" + trainData.size(), trainData.size());
+            currentStep = null;
+
+            currentStep = startStep(batchNo, attemptNo, "DYNAMIC_FEATURE", "计算动态特征", 2, "基础训练数据=" + trainData.size());
+            LOGGER.info("后台开始计算动态指标: batchNo={}, trainCode={}, baseRows={}", batchNo, trainConfig.getTrainCode(), trainData.size());
+            DynamicFeatureResult dynamicFeatures = dynamicTrainingFeatureService.prepare(trainConfig, trainData, batchNo, attemptNo, currentStep);
+            LOGGER.info("后台动态指标计算完成: batchNo={}, status={}, featureCodes={}, valueCount={}", batchNo, dynamicFeatures.snapshot().path("status").asText(), dynamicFeatures.featureCodes(),
+                    dynamicFeatures.valueCount());
+            trainStepRecorder.success(currentStep, dynamicFeatures.snapshot().toString(), dynamicFeatures.valueCount());
+            currentStep = null;
+
+            currentStep = startStep(batchNo, attemptNo, "BUILD_REQUEST", "组装训练请求", 3, "模型=" + modelConfig.getModelCode());
+            ModelTrainApiRequest trainRequest = buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features, dynamicFeatures);
+            trainStepRecorder.success(currentStep, "dataset=" + trainRequest.getDataset().size(), trainRequest.getDataset().size());
+            currentStep = null;
+            validateAndTrain(batchNo, trainConfig, trainRequest, attemptNo);
+        } catch (RuntimeException exception) {
+            trainStepRecorder.fail(currentStep, exception);
+            markPreparationFailed(batchNo, exception);
+        }
+    }
+
+    private void validateAndTrain(String batchNo, ModelTrainConfigTb trainConfig, ModelTrainApiRequest trainRequest, int attemptNo) {
+        Long validationStep = startStep(batchNo, attemptNo, "VALIDATE_DATA", "校验训练数据", 4, "dataset=" + (trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size()));
+        try {
+            modelPlatformClient.validateTrainingData(trainRequest);
+            trainStepRecorder.success(validationStep, "模型平台校验通过", trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size());
+            validationStep = null;
+            ModelTrainStatus status = modelPlatformClient.isTrainingEnabled() ? ModelTrainStatus.RUNNING : ModelTrainStatus.PENDING;
+            // 批次号使用数据库序列生成，生成器要求必须处于事务中。因此批次分配、
+            // 训练记录创建和任务状态回写必须在同一个事务内完成。
+            String resolvedBatchNo = transactionTemplate.execute(tx -> {
+                String value = TextUtils.hasText(batchNo) ? batchNo : generateTrainBatchNo();
+                trainRequest.setTrainBatchNo(value);
+                JsonNode requestPayload = objectMapper.valueToTree(trainRequest);
+                ObjectNode submitResponse = objectMapper.createObjectNode().put("message", modelPlatformClient.isTrainingEnabled() ? "动态指标和数据校验完成，已提交模型训练。" : "动态指标和数据校验完成，未配置训练接口。")
+                        .put("model_code", trainRequest.getModelCode()).put("train_batch_no", value);
+                ModelTrainRecordTb existing = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, value).last("limit 1"));
+                if (existing == null)
+                    saveTrainDetail(trainConfig, value, status, requestPayload, submitResponse);
+                else
+                    updatePreparedTrainDetail(value, requestPayload, status, submitResponse);
+                return value;
+            });
+            if (!TextUtils.hasText(resolvedBatchNo))
+                throw new BusinessException("训练批次号生成失败");
+            if (modelPlatformClient.isTrainingEnabled())
+                waitTrainResultAndPersist(resolvedBatchNo, trainRequest, attemptNo);
+        } catch (RuntimeException exception) {
+            trainStepRecorder.fail(validationStep, exception);
+            markPreparationFailed(batchNo, exception);
+        }
+    }
+
+    private void validateAndTrain(String batchNo, ModelTrainApiRequest trainRequest) {
+        int attemptNo = currentAttemptNo(batchNo);
+        Long validationStep = startStep(batchNo, attemptNo, "VALIDATE_DATA", "校验训练数据", 4, "复用请求快照，dataset=" + (trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size()));
+        try {
+            // 数据和动态指标准备完成后再进行平台校验，并保存可供失败重试复用的完整请求快照。
+            modelPlatformClient.validateTrainingData(trainRequest);
+            trainStepRecorder.success(validationStep, "模型平台校验通过", trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size());
+            validationStep = null;
+            JsonNode requestPayload = objectMapper.valueToTree(trainRequest);
+            ModelTrainStatus status = modelPlatformClient.isTrainingEnabled() ? ModelTrainStatus.RUNNING : ModelTrainStatus.PENDING;
+            ObjectNode submitResponse = objectMapper.createObjectNode().put("message", modelPlatformClient.isTrainingEnabled() ? "动态指标和数据校验完成，已提交模型训练。" : "动态指标和数据校验完成，未配置训练接口。")
+                    .put("model_code", trainRequest.getModelCode()).put("train_batch_no", batchNo);
+            transactionTemplate.executeWithoutResult(tx -> updatePreparedTrainDetail(batchNo, requestPayload, status, submitResponse));
+            if (modelPlatformClient.isTrainingEnabled()) {
+                waitTrainResultAndPersist(batchNo, trainRequest, attemptNo);
+            }
+        } catch (RuntimeException exception) {
+            trainStepRecorder.fail(validationStep, exception);
+            markPreparationFailed(batchNo, exception);
+        }
+    }
+
+    private void markPreparationFailed(String batchNo, RuntimeException exception) {
+        LOGGER.error("model train preparation failed batchNo={}", batchNo, exception);
+        String message = modelPlatformClient.extractErrorMessage(exception, "训练数据准备失败");
+        // 批次即任务；准备失败直接回写当前批次，后续由调度器安排自动重试。
+        if (modelTrainDetailTbMapper.selectCount(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo)) > 0) {
+            ObjectNode failedResult = objectMapper.createObjectNode().put("train_batch_no", batchNo).put("status", ModelTrainStatus.FAILED.getCode()).put("message", message);
+            transactionTemplate.executeWithoutResult(tx -> updateTrainDetailAfterSubmit(batchNo, ModelTrainStatus.FAILED, failedResult, message));
+        }
+    }
+
+    private void waitTrainResultAndPersist(String batchNo, ModelTrainApiRequest trainRequest, int attemptNo) {
+        Long trainStep = startStep(batchNo, attemptNo, "MODEL_TRAIN", "执行模型训练", 5, "model=" + trainRequest.getModelCode());
         try {
             // 1. 调用平台并将标准响应信封转换为训练结果数据。
             ModelTrainApiResponse agentResponse = callTrainAgent(trainRequest);
             JsonNode trainResult = normalizeTrainResult(batchNo, agentResponse);
+            trainStepRecorder.success(trainStep, "模型平台训练完成", null);
+            trainStep = null;
+            Long persistStep = startStep(batchNo, attemptNo, "PERSIST_RESULT", "保存训练结果", 6, "保存指标及回测明细");
             // 2. 异步线程不继承原事务，使用独立事务保存成功结果和回测明细。
-            transactionTemplate.executeWithoutResult(status -> updateTrainResult(trainResult));
+            try {
+                transactionTemplate.executeWithoutResult(status -> updateTrainResult(trainResult));
+                int count = trainResult.path("rolling_backtest_results").isArray() ? trainResult.path("rolling_backtest_results").size() : 0;
+                trainStepRecorder.success(persistStep, "训练指标和回测结果已入库", count);
+            } catch (RuntimeException persistException) {
+                trainStepRecorder.fail(persistStep, persistException);
+                throw persistException;
+            }
         } catch (RuntimeException e) {
+            trainStepRecorder.fail(trainStep, e);
             // 3. 远程调用或结果处理失败时提取平台消息，并在独立事务中标记批次失败。
             LOGGER.error("model train failed batchNo={}", batchNo, e);
             String message = modelPlatformClient.extractErrorMessage(e, "模型训练失败");
             ObjectNode failedResult = objectMapper.createObjectNode().put("train_batch_no", batchNo).put("status", ModelTrainStatus.FAILED.getCode()).put("message", message);
             transactionTemplate.executeWithoutResult(status -> updateTrainDetailAfterSubmit(batchNo, ModelTrainStatus.FAILED, failedResult, message));
         }
+    }
+
+    private int currentAttemptNo(String batchNo) {
+        if (!TextUtils.hasText(batchNo))
+            return 1;
+        ModelTrainRecordTb record = modelTrainDetailTbMapper
+                .selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().select(ModelTrainRecordTb::getRetryCount).eq(ModelTrainRecordTb::getBatchNo, batchNo).last("limit 1"));
+        return record == null || record.getRetryCount() == null ? 1 : record.getRetryCount() + 1;
+    }
+
+    private Long startStep(String batchNo, int attemptNo, String code, String name, int order, String input) {
+        return TextUtils.hasText(batchNo) ? trainStepRecorder.start(batchNo, attemptNo, code, name, order, input) : null;
     }
 
     private JsonNode normalizeTrainResult(String batchNo, ModelTrainApiResponse response) {
@@ -495,6 +630,19 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private void updateTrainDetailAfterSubmit(String batchNo, ModelTrainStatus status, JsonNode agentResponse, String errorMessage) {
         // 提交阶段和异步失败阶段共用训练记录更新逻辑。
         updateTrainDetail(agentResponse, batchNo, status, errorMessage);
+    }
+
+    private void updatePreparedTrainDetail(String batchNo, JsonNode requestPayload, ModelTrainStatus status, JsonNode result) {
+        ModelTrainRecordTb detail = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
+        if (detail == null) {
+            throw new BusinessException("训练批次不存在：" + batchNo);
+        }
+        detail.setRequestParam(requestPayload.toString().getBytes(StandardCharsets.UTF_8));
+        detail.setStatus(status.getCode());
+        detail.setResultJson(jsonText(result));
+        detail.setErrorMessage(null);
+        detail.setUpdatedAt(new java.util.Date());
+        modelTrainDetailTbMapper.updateById(detail);
     }
 
     private void saveTrainDetail(ModelTrainConfigTb trainConfig, String batchNo, ModelTrainStatus status, JsonNode payload, JsonNode result) {
@@ -529,8 +677,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         // 1. 使用“失败状态”作为更新条件原子抢占批次，防止并发重复重试。
         java.util.Date now = new java.util.Date();
         int claimed = modelTrainDetailTbMapper.update(null,
-                Wrappers.<ModelTrainRecordTb>lambdaUpdate().eq(ModelTrainRecordTb::getBatchNo, batchNo).eq(ModelTrainRecordTb::getStatus, ModelTrainStatus.FAILED.getCode())
-                        .set(ModelTrainRecordTb::getStatus, status.getCode()).set(ModelTrainRecordTb::getErrorMessage, null).set(ModelTrainRecordTb::getUpdatedAt, now));
+                Wrappers.<ModelTrainRecordTb>lambdaUpdate().eq(ModelTrainRecordTb::getBatchNo, batchNo)
+                        .in(ModelTrainRecordTb::getStatus, ModelTrainStatus.FAILED.getCode(), "FAILED_FINAL", "WAITING", "CLAIMED").set(ModelTrainRecordTb::getStatus, status.getCode())
+                        .set(ModelTrainRecordTb::getErrorMessage, null).set(ModelTrainRecordTb::getUpdatedAt, now));
         // 2. 抢占失败时区分批次不存在和批次已被其他请求提交。
         if (claimed == 0) {
             ModelTrainRecordTb current = modelTrainDetailTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo));
@@ -651,6 +800,37 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return null;
     }
 
+    private String customerFailureMessage(ModelTrainRecordTb detail) {
+        String error = detail.getErrorMessage();
+        if (!TextUtils.hasText(error))
+            return null;
+        java.util.regex.Matcher requiredDays = java.util.regex.Pattern.compile("至少需要?(\\d+)天|至少需要\\s*(\\d+)\\s*条").matcher(error);
+        if (requiredDays.find()) {
+            int required = Integer.parseInt(requiredDays.group(1) != null ? requiredDays.group(1) : requiredDays.group(2));
+            Integer actual = trainingDays(detail.getTrainStartDate(), detail.getTrainEndDate());
+            if (actual != null) {
+                int missing = Math.max(0, required - actual);
+                return "暂时无法完成训练：当前训练范围只有" + actual + "天有效周期，模型至少需要" + required + "天，还需补充" + missing + "天数据。请扩大训练范围后重试。";
+            }
+            return "暂时无法完成训练：有效历史数据不足，模型至少需要" + required + "天数据。请补充数据后重试。";
+        }
+        if (error.matches(".*(insufficient data|数据不足|有效数据不足|连续.*数据).*"))
+            return "暂时无法完成训练：该客户的有效历史数据不足或不连续。请检查销量数据完整性后重试。";
+        if (error.matches(".*(401|403|Authentication|api key|连接|timeout|timed out|Connection).*"))
+            return "预测服务暂时不可用，请稍后重试；如持续失败，请联系平台管理员。";
+        return "本次训练未能完成。请检查该客户的历史数据和模型适用范围后重试；如仍失败，请将批次号提供给平台管理员。";
+    }
+
+    private Integer trainingDays(String start, String end) {
+        if (!TextUtils.hasText(start) || !TextUtils.hasText(end))
+            return null;
+        try {
+            return Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(LocalDate.parse(start), LocalDate.parse(end)) + 1);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private JsonNode parseRequestPayload(byte[] requestParam) {
         // 空快照直接返回，避免无意义的 JSON 解析。
         if (requestParam == null || requestParam.length == 0) {
@@ -752,26 +932,35 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         }
     }
 
-    private Double readFeatureValue(ModelTrainFeatureDataTb row, String featureColumn) {
-        // 1. 将数据库 feature_xxx 字段名转换为 Java Bean 属性名。
-        String property = toFeatureProperty(featureColumn);
-        try {
-            // 2. 通过 Getter 动态读取模型配置指定的特征列。
-            Method method = ModelTrainFeatureDataTb.class.getMethod("get" + property);
-            Object value = method.invoke(row);
-            return value instanceof Number number ? number.doubleValue() : null;
-        } catch (ReflectiveOperationException e) {
-            throw new BusinessException("训练特征字段不存在：" + featureColumn);
-        }
-    }
-
-    private String toFeatureProperty(String featureColumn) {
-        // 只允许 feature_加三位数字，防止错误配置访问任意实体方法。
-        String column = featureColumn == null ? "" : featureColumn.trim().toLowerCase();
-        if (!column.matches("feature_\\d{3}")) {
-            throw new BusinessException("训练特征字段格式不合法：" + featureColumn);
-        }
-        return "Feature" + column.substring("feature_".length());
+    private Double readSourceValue(ModelTrainFeatureDataTb row, FeatureMapping feature) {
+        if ("EXTREME_COLD_DAYS".equalsIgnoreCase(feature.getCalculationType()))
+            return row.getFeature005();
+        if ("HDD".equalsIgnoreCase(feature.getCalculationType()))
+            return row.getFeature004();
+        String sourceField = feature.getSourceField();
+        return switch (sourceField == null ? "" : sourceField.trim().toLowerCase()) {
+            case "gas_sales" -> row.getGasSales() == null ? null : row.getGasSales().doubleValue();
+            case "temp_max" -> row.getFeature006();
+            case "temp_min" -> row.getFeature007();
+            case "temp_avg" -> row.getFeature008();
+            case "feels_like_max" -> row.getFeature009();
+            case "feels_like_min" -> row.getFeature010();
+            case "feels_like_avg" -> row.getFeature011();
+            case "dew_point" -> row.getFeature012();
+            case "humidity" -> row.getFeature013();
+            case "precipitation" -> row.getFeature014();
+            case "wind_gust" -> row.getFeature015();
+            case "wind_speed" -> row.getFeature016();
+            case "sea_level_pressure" -> row.getFeature017();
+            case "cloud_cover" -> row.getFeature018();
+            case "visibility" -> row.getFeature019();
+            case "solar_radiation" -> row.getFeature020();
+            case "solar_energy" -> row.getFeature021();
+            case "uv_index" -> row.getFeature022();
+            case "hdd" -> row.getFeature004();
+            case "extreme_cold_days" -> row.getFeature005();
+            default -> throw new BusinessException("特征来源字段不存在或不支持：" + sourceField);
+        };
     }
 
     @Data
@@ -781,7 +970,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         /** 模型平台请求中的特征键。 */
         private String payloadKey;
 
-        /** 训练特征数据表中的物理字段。 */
-        private String featureColumn;
+        private String sourceField;
+        private String calculationType;
+        private String missingValueStrategy;
     }
 }

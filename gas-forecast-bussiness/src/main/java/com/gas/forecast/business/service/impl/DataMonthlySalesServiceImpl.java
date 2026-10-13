@@ -55,7 +55,7 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         if (item == null) {
             return null;
         }
-        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(),
+        return new DataSalesResponse(item.getId(), item.getStatDate(), null, null, item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(),
                 item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
     }
 }

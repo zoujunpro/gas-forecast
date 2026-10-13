@@ -12,36 +12,23 @@ import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
-import com.gas.forecast.dao.domain.ModelFeatureRef;
 import com.gas.forecast.dao.domain.ModelForecastAnalysisTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
-import com.gas.forecast.dao.domain.ModelTrainConfigTb;
-import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
-import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
-import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
 import com.gas.forecast.dao.mapper.ModelForecastAnalysisTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -61,10 +48,6 @@ public class ForecastAnalysisService {
     private final ModelForecastResultTbMapper resultMapper;
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final ModelTrainBacktestTbMapper trainBacktestMapper;
-    private final ModelTrainFeatureDataTbMapper featureDataMapper;
-    private final ModelTrainConfigTbMapper trainConfigMapper;
-    private final ModelFeatureRefMapper featureRefMapper;
-    private final ModelFeatureDefinitionTbMapper featureDefinitionMapper;
     private final ForecastAnalysisLlmClient llmClient;
     private final ObjectMapper objectMapper;
     /** 字段名与 Bean 名一致，Spring 在多个 Executor 中按名称选择。 */
@@ -93,9 +76,8 @@ public class ForecastAnalysisService {
             analysis.setAnalysisStatus(PENDING);
             analysis.setErrorMessage(null);
             analysis.setUpdateTime(now);
-            analysisMapper.update(null, Wrappers.<ModelForecastAnalysisTb>lambdaUpdate().eq(ModelForecastAnalysisTb::getId, analysis.getId())
-                    .set(ModelForecastAnalysisTb::getAnalysisStatus, PENDING).set(ModelForecastAnalysisTb::getAnalysisContent, null)
-                    .set(ModelForecastAnalysisTb::getErrorMessage, null).set(ModelForecastAnalysisTb::getUpdateTime, now));
+            analysisMapper.update(null, Wrappers.<ModelForecastAnalysisTb>lambdaUpdate().eq(ModelForecastAnalysisTb::getId, analysis.getId()).set(ModelForecastAnalysisTb::getAnalysisStatus, PENDING)
+                    .set(ModelForecastAnalysisTb::getAnalysisContent, null).set(ModelForecastAnalysisTb::getErrorMessage, null).set(ModelForecastAnalysisTb::getUpdateTime, now));
         }
         forecastAnalysisTaskExecutor.execute(() -> generate(forecastBatchNo));
     }
@@ -126,10 +108,10 @@ public class ForecastAnalysisService {
         if (analysis == null)
             return;
         try {
-            int claimed = analysisMapper.update(null, Wrappers.<ModelForecastAnalysisTb>lambdaUpdate().eq(ModelForecastAnalysisTb::getId, analysis.getId())
-                    .eq(ModelForecastAnalysisTb::getAnalysisStatus, PENDING).set(ModelForecastAnalysisTb::getAnalysisStatus, RUNNING)
-                    .set(ModelForecastAnalysisTb::getLlmModel, llmClient.model()).set(ModelForecastAnalysisTb::getErrorMessage, null)
-                    .set(ModelForecastAnalysisTb::getUpdateTime, new Date()));
+            int claimed = analysisMapper.update(null,
+                    Wrappers.<ModelForecastAnalysisTb>lambdaUpdate().eq(ModelForecastAnalysisTb::getId, analysis.getId()).eq(ModelForecastAnalysisTb::getAnalysisStatus, PENDING)
+                            .set(ModelForecastAnalysisTb::getAnalysisStatus, RUNNING).set(ModelForecastAnalysisTb::getLlmModel, llmClient.model()).set(ModelForecastAnalysisTb::getErrorMessage, null)
+                            .set(ModelForecastAnalysisTb::getUpdateTime, new Date()));
             if (claimed != 1)
                 return;
             analysis.setAnalysisStatus(RUNNING);
@@ -154,9 +136,8 @@ public class ForecastAnalysisService {
         ModelForecastRecordTb record = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
                 .select(ModelForecastRecordTb::getId, ModelForecastRecordTb::getForecastBatchNo, ModelForecastRecordTb::getAgentCode, ModelForecastRecordTb::getScopeType,
                         ModelForecastRecordTb::getRegionCode, ModelForecastRecordTb::getRegionName, ModelForecastRecordTb::getIndustryCode, ModelForecastRecordTb::getIndustryName,
-                        ModelForecastRecordTb::getCustomerCode, ModelForecastRecordTb::getCustomerName, ModelForecastRecordTb::getForecastStartDate,
-                        ModelForecastRecordTb::getForecastHorizon, ModelForecastRecordTb::getForecastFrequency, ModelForecastRecordTb::getFeatureSnapshot,
-                        ModelForecastRecordTb::getRequestParam)
+                        ModelForecastRecordTb::getCustomerCode, ModelForecastRecordTb::getCustomerName, ModelForecastRecordTb::getForecastStartDate, ModelForecastRecordTb::getForecastHorizon,
+                        ModelForecastRecordTb::getForecastFrequency, ModelForecastRecordTb::getFeatureSnapshot, ModelForecastRecordTb::getRequestParam)
                 .eq(ModelForecastRecordTb::getForecastBatchNo, forecastBatchNo).last("limit 1"));
         if (record == null)
             throw new IllegalStateException("预测记录不存在：" + forecastBatchNo);
@@ -166,11 +147,8 @@ public class ForecastAnalysisService {
             throw new IllegalStateException("预测结果不存在：" + forecastBatchNo);
 
         ForecastAnalysisContext context = buildAnalysisContext(record, points);
-        String prompt = "请严格依据以下 JSON 分析天然气预测结果。输出必须包含：1.总体趋势；2.峰谷值及对应日期和原始数值；"
-                + "3.结合历史销量和回测指标评价预测可信度；4.结合未来特征解释有数据支撑的变化；5.明显波动或风险；6.业务建议。"
-                + "每一个数字和原因都必须来自 JSON，并注明依据来自预测结果、历史特征、未来特征、训练数据或回测数据。"
-                + "不得补充 JSON 中不存在的天气、供给、价格、库存或业务原因。数据不足时必须明确写出无法判断以及缺少的字段。\n\n"
-                + objectMapper.writeValueAsString(context);
+        String prompt = "请严格依据以下 JSON 简要分析天然气预测结果。只回答两项：1.整体趋势是上升、下降还是基本平稳；" + "2.造成该走势的主要原因。全文控制在2至3句话、120个汉字以内，不罗列全部指标，不输出长篇风险和业务建议。" + "趋势需要依据预测序列及历史数据；原因只能引用 JSON 中已有的历史特征、未来特征、训练或回测数据。"
+                + "不得补充 JSON 中不存在的天气、供给、价格、库存或业务事实；证据不足时直接说明暂不能判断外部原因。\n\n" + objectMapper.writeValueAsString(context);
         return new PromptData(record.getAgentCode(), prompt);
     }
 
@@ -232,56 +210,29 @@ public class ForecastAnalysisService {
 
     private ForecastAnalysisContext.DatasetSection loadHistoricalFeatures(ModelForecastRecordTb forecast, ModelTrainRecordTb trainRecord) {
         int limit = historyLimit(forecast.getForecastFrequency());
-        var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery().eq(ModelTrainFeatureDataTb::getTimeGranularity, granularity(forecast.getForecastFrequency()));
-        if (TextUtils.hasText(forecast.getForecastStartDate()))
-            query.lt(ModelTrainFeatureDataTb::getStatDate, forecast.getForecastStartDate());
-        eqText(query, ModelTrainFeatureDataTb::getRegionCode, forecast.getRegionCode());
-        eqText(query, ModelTrainFeatureDataTb::getIndustryCode, forecast.getIndustryCode());
-        eqText(query, ModelTrainFeatureDataTb::getCustomerCode, forecast.getCustomerCode());
-        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId).last("limit " + limit);
-        List<ModelTrainFeatureDataTb> rows = new ArrayList<>(featureDataMapper.selectList(query));
-        Collections.reverse(rows);
-        Map<String, String> featureMappings = loadFeatureMappings(trainRecord);
         ArrayNode data = objectMapper.createArrayNode();
-        for (ModelTrainFeatureDataTb row : rows) {
-            ObjectNode item = data.addObject();
-            item.put("date", row.getStatDate());
-            putDecimal(item, "gas_sales", row.getGasSales());
-            for (Map.Entry<String, String> feature : featureMappings.entrySet()) {
-                Double value = readFeatureValue(row, feature.getValue());
-                if (value != null)
-                    item.put(feature.getKey(), value);
+        if (trainRecord != null && trainRecord.getRequestParam() != null) {
+            try {
+                JsonNode dataset = objectMapper.readTree(trainRecord.getRequestParam()).path("dataset");
+                List<JsonNode> rows = new ArrayList<>();
+                if (dataset.isArray())
+                    dataset.forEach(item -> {
+                        if (!TextUtils.hasText(forecast.getForecastStartDate()) || item.path("date").asText().compareTo(forecast.getForecastStartDate()) < 0)
+                            rows.add(item);
+                    });
+                rows.stream().skip(Math.max(0, rows.size() - limit)).forEach(item -> data.add(item.deepCopy()));
+            } catch (Exception exception) {
+                log.warn("读取训练请求数据快照失败 batchNo={}", trainRecord.getBatchNo(), exception);
             }
         }
-        return new ForecastAnalysisContext.DatasetSection("model_train_feature_data_tb最近历史窗口", data.size(), false, data);
-    }
-
-    private Map<String, String> loadFeatureMappings(ModelTrainRecordTb trainRecord) {
-        if (trainRecord == null || trainRecord.getTrainConfigId() == null)
-            return Collections.emptyMap();
-        ModelTrainConfigTb config = trainConfigMapper.selectById(trainRecord.getTrainConfigId());
-        if (config == null || config.getModelId() == null)
-            return Collections.emptyMap();
-        List<ModelFeatureRef> refs = featureRefMapper.selectList(Wrappers.<ModelFeatureRef>lambdaQuery().eq(ModelFeatureRef::getModelId, config.getModelId()).orderByAsc(ModelFeatureRef::getFeatureOrder));
-        if (refs.isEmpty())
-            return Collections.emptyMap();
-        Map<Long, ModelFeatureDefinitionTb> definitions = featureDefinitionMapper.selectBatchIds(refs.stream().map(ModelFeatureRef::getFeatureId).distinct().toList()).stream()
-                .collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity()));
-        Map<String, String> mappings = new LinkedHashMap<>();
-        for (ModelFeatureRef ref : refs) {
-            ModelFeatureDefinitionTb definition = definitions.get(ref.getFeatureId());
-            if (definition != null && TextUtils.hasText(definition.getFeatureCode()) && TextUtils.hasText(definition.getFeatureColumn()))
-                mappings.put(definition.getFeatureCode(), definition.getFeatureColumn());
-        }
-        return mappings;
+        return new ForecastAnalysisContext.DatasetSection("训练批次数据快照最近历史窗口", data.size(), false, data);
     }
 
     private List<ForecastAnalysisContext.BacktestPoint> loadBacktests(ModelTrainRecordTb trainRecord) {
         if (trainRecord == null || !TextUtils.hasText(trainRecord.getBatchNo()))
             return Collections.emptyList();
         List<ModelTrainBacktestTb> rows = new ArrayList<>(trainBacktestMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
-                .eq(ModelTrainBacktestTb::getTrainBatchNo, trainRecord.getBatchNo()).orderByDesc(ModelTrainBacktestTb::getTrainDate)
-                .orderByDesc(ModelTrainBacktestTb::getId).last("limit 30")));
+                .eq(ModelTrainBacktestTb::getTrainBatchNo, trainRecord.getBatchNo()).orderByDesc(ModelTrainBacktestTb::getTrainDate).orderByDesc(ModelTrainBacktestTb::getId).last("limit 30")));
         Collections.reverse(rows);
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         return rows.stream().map(row -> new ForecastAnalysisContext.BacktestPoint(formatter.format(row.getTrainDate()), row.getActualValue(), row.getPredictedValue())).toList();
@@ -305,9 +256,8 @@ public class ForecastAnalysisService {
     private ModelForecastAnalysisTb find(String forecastBatchNo, boolean includeContent) {
         var query = Wrappers.<ModelForecastAnalysisTb>lambdaQuery().eq(ModelForecastAnalysisTb::getForecastBatchNo, forecastBatchNo).last("limit 1");
         if (includeContent)
-            query.select(ModelForecastAnalysisTb::getId, ModelForecastAnalysisTb::getForecastBatchNo, ModelForecastAnalysisTb::getAnalysisContent,
-                    ModelForecastAnalysisTb::getLlmModel, ModelForecastAnalysisTb::getAnalysisStatus, ModelForecastAnalysisTb::getErrorMessage,
-                    ModelForecastAnalysisTb::getCreateTime, ModelForecastAnalysisTb::getUpdateTime);
+            query.select(ModelForecastAnalysisTb::getId, ModelForecastAnalysisTb::getForecastBatchNo, ModelForecastAnalysisTb::getAnalysisContent, ModelForecastAnalysisTb::getLlmModel,
+                    ModelForecastAnalysisTb::getAnalysisStatus, ModelForecastAnalysisTb::getErrorMessage, ModelForecastAnalysisTb::getCreateTime, ModelForecastAnalysisTb::getUpdateTime);
         return analysisMapper.selectOne(query);
     }
 
@@ -348,27 +298,6 @@ public class ForecastAnalysisService {
             node.put(field, value);
     }
 
-    private Double readFeatureValue(ModelTrainFeatureDataTb row, String column) {
-        try {
-            StringBuilder camel = new StringBuilder();
-            boolean upper = false;
-            for (char character : column.toCharArray()) {
-                if (character == '_') {
-                    upper = true;
-                } else {
-                    camel.append(upper ? Character.toUpperCase(character) : character);
-                    upper = false;
-                }
-            }
-            Method getter = ModelTrainFeatureDataTb.class.getMethod("get" + Character.toUpperCase(camel.charAt(0)) + camel.substring(1));
-            Object value = getter.invoke(row);
-            return value instanceof Number number ? number.doubleValue() : null;
-        } catch (Exception exception) {
-            log.warn("无法读取历史特征字段 {}，本次分析跳过该特征", column);
-            return null;
-        }
-    }
-
     private int historyLimit(String frequency) {
         return switch (frequency == null ? "" : frequency.toUpperCase()) {
             case "MONTH", "MONTHLY" -> 24;
@@ -385,8 +314,7 @@ public class ForecastAnalysisService {
         };
     }
 
-    private <T> void eqText(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<T> query,
-            com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, ?> field, String value) {
+    private <T> void eqText(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<T> query, com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, ?> field, String value) {
         if (TextUtils.hasText(value) && !"ALL".equalsIgnoreCase(value))
             query.eq(field, value);
     }

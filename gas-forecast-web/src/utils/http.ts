@@ -22,6 +22,9 @@ export const apiFetch = async (input: RequestInfo | URL, options: RequestOptions
     if (controller.signal.reason instanceof DOMException && controller.signal.reason.name === 'TimeoutError') {
       throw new Error(`请求超时（${Math.round(timeoutMs / 1000)}秒）`)
     }
+    if (error instanceof TypeError && /fetch|network|load/i.test(error.message)) {
+      throw new Error('暂时无法连接后台服务，请确认服务已启动后重试')
+    }
     throw error
   } finally {
     window.clearTimeout(timer)

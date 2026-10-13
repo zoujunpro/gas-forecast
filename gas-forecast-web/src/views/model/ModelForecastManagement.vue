@@ -114,6 +114,11 @@
                 />
               </el-select>
             </el-form-item>
+            <el-form-item v-if="selectedTrainConfig?.agentCode === 'short-term'" label="预测客户" prop="customerCode">
+              <el-select v-model="form.customerCode" filterable placeholder="请选择该省份行业下的客户">
+                <el-option v-for="item in filteredCustomerOptions" :key="item.customerCode" :label="`${item.customerName}（${item.customerCode}）`" :value="item.customerCode" />
+              </el-select>
+            </el-form-item>
           </div>
 
           <div v-if="selectedTrainConfig" class="train-config-card">
@@ -191,6 +196,40 @@
         ><el-button @click="drawerVisible = false">取消</el-button
         ><el-button type="primary" :loading="saving" @click="save">保存</el-button></template
       >
+    </el-dialog>
+
+    <el-dialog
+      v-model="predictDialogVisible"
+      width="min(520px, calc(100vw - 32px))"
+      title="发起预测"
+      destroy-on-close
+      align-center
+    >
+      <el-form ref="predictFormRef" label-position="top" :model="predictForm" :rules="predictRules">
+        <el-form-item label="预测开始日期" prop="forecastStartDate">
+          <el-date-picker
+            v-model="predictForm.forecastStartDate"
+            type="date"
+            value-format="YYYY-MM-DD"
+            placeholder="请选择本次预测开始日期"
+          />
+        </el-form-item>
+        <el-form-item label="时间颗粒度" prop="forecastFrequency">
+          <el-select v-model="predictForm.forecastFrequency">
+            <el-option label="按日预测" value="DAILY" />
+            <el-option label="按旬预测" value="TENDAY" />
+            <el-option label="按月预测" value="MONTHLY" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="预测周期" prop="forecastHorizon">
+          <el-input-number v-model="predictForm.forecastHorizon" :min="1" :max="366" controls-position="right" />
+          <span class="field-help">共预测 {{ predictFrequencyUnit }}</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="predictDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="runningCode !== null" @click="submitPredict">开始预测</el-button>
+      </template>
     </el-dialog>
 
     <el-dialog
@@ -319,10 +358,13 @@
                 <template v-if="Number(activeRecord.status) === 2">
                   <div class="result-heading">
                     <h4 class="section-title">预测结果趋势</h4>
-                    <el-radio-group v-model="resultView" size="small" @change="handleResultViewChange"
-                      ><el-radio-button value="chart">图表</el-radio-button
-                      ><el-radio-button value="table">列表</el-radio-button></el-radio-group
-                    >
+                    <div class="result-controls">
+                      <el-radio-group v-model="resultDisplayMode" size="small" @change="handleResultDisplayModeChange">
+                        <el-radio-button value="line">折线</el-radio-button>
+                        <el-radio-button value="bar">柱状</el-radio-button>
+                        <el-radio-button value="table">列表</el-radio-button>
+                      </el-radio-group>
+                    </div>
                   </div>
                   <div
                     v-show="resultView === 'chart'"
@@ -333,6 +375,12 @@
                   <template v-if="resultView === 'table'">
                     <AppTable v-loading="resultLoading" :data="resultRows" border stripe
                       ><el-table-column prop="forecastDate" label="预测日期" min-width="160" /><el-table-column
+                        label="同期值"
+                        min-width="180"
+                        align="right"
+                      >
+                        <template #default="{ row }">{{ samePeriodValue(row.forecastDate) }}</template>
+                      </el-table-column><el-table-column
                         prop="forecastValue"
                         label="预测值"
                         min-width="180"
@@ -379,27 +427,6 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="predictVisible" title="填写预测特征数据" width="900px" destroy-on-close align-center>
-      <el-alert
-        title="请输入 JSON 数组，每条数据必须包含 date 字段；确认后将作为预测接口的 dataset 参数。"
-        type="info"
-        :closable="false"
-        show-icon
-      />
-      <el-input
-        v-model="featureDataJson"
-        class="feature-json-input"
-        type="textarea"
-        :rows="18"
-        resize="vertical"
-        spellcheck="false"
-        placeholder='[{"date":"2026-05-26","未来动态特征":100}]'
-      />
-      <template #footer>
-        <el-button @click="predictVisible = false">取消</el-button>
-        <el-button type="primary" :loading="runningCode !== null" @click="confirmPredict">确认预测</el-button>
-      </template>
-    </el-dialog>
   </section>
 </template>
 
@@ -428,6 +455,9 @@ const rows = ref<Record<string, any>[]>([]),
   runningCode = ref<number | null>(null)
 const saving = ref(false),
   formRef = ref<FormInstance>()
+const predictDialogVisible = ref(false),
+  predictFormRef = ref<FormInstance>(),
+  pendingPredictConfig = ref<Record<string, any> | null>(null)
 const page = ref(1),
   size = ref(20),
   total = ref(0)
@@ -443,9 +473,6 @@ const recordStatusTabs = [
   { label: '成功', value: 'success' },
   { label: '失败', value: 'failed' }
 ] as const
-const predictVisible = ref(false),
-  featureDataJson = ref('[\n  {\n    "date": ""\n  }\n]'),
-  pendingForecast = ref<Record<string, any> | null>(null)
 const activeRecord = ref<Record<string, any> | null>(null)
 const resultLoading = ref(false),
   resultRows = ref<Record<string, any>[]>([]),
@@ -453,6 +480,8 @@ const resultLoading = ref(false),
   resultSize = ref(20),
   resultTotal = ref(0)
 const resultView = ref<'chart' | 'table'>('chart'),
+  resultChartType = ref<'line' | 'bar'>('line'),
+  resultDisplayMode = ref<'line' | 'bar' | 'table'>('line'),
   resultChartRef = ref<HTMLElement>(),
   chartRows = ref<Record<string, any>[]>([]),
   historyRows = ref<Record<string, any>[]>([]),
@@ -518,13 +547,6 @@ const forecastOverviewRows = computed(() => {
     { label: '未来预测结束', value: predictionInfo.value.futureEnd },
     { label: '预测步长', value: `${predictionInfo.value.futureCount} ${predictionInfo.value.unit}` },
     { label: '时间颗粒度', value: predictionInfo.value.frequency },
-    { label: '历史预测开始', value: predictionInfo.value.historyPredictionStart },
-    { label: '历史预测结束', value: predictionInfo.value.historyPredictionEnd },
-    {
-      label: '历史预测数量',
-      value: `${predictionInfo.value.historyPredictionCount} ${predictionInfo.value.unit}`
-    },
-    { label: '历史实际区间', value: predictionInfo.value.historyActualRange },
     { label: '训练配置', value: record.trainConfigCode || config.trainConfigCode || '-' },
     { label: '智能体', value: agentLabel(record.agentCode || config.agentCode) },
     { label: '预测创建时间', value: formatDateTime(record.createdAt) },
@@ -532,7 +554,7 @@ const forecastOverviewRows = computed(() => {
     { label: '发起人', value: record.createdByName || '-' },
     { label: '区域', value: record.regionName || '全部' },
     { label: '行业', value: record.industryName || '全部' },
-    { label: '客户', value: record.customerName || '全部' },
+    { label: '客户', value: record.customerName || config.customerName || '全部' },
     { label: '备注', value: record.remark || '-' }
   ]
 })
@@ -548,7 +570,7 @@ const forecastSummaryGroups = computed(() => {
     {
       title: '预测范围',
       icon: Calendar,
-      items: pick('未来预测开始', '未来预测结束', '预测步长', '时间颗粒度', '历史预测数量', '历史实际区间')
+      items: pick('未来预测开始', '未来预测结束', '预测步长', '时间颗粒度')
     },
     {
       title: '业务范围',
@@ -579,11 +601,24 @@ const filteredRecordRows = computed(() => {
       .includes(keywordValue)
   })
 })
+const samePeriodValueByDate = computed(() => {
+  const values = new Map<string, unknown>()
+  historyRows.value.forEach((item) => {
+    const date = String(item.date || '')
+    if (date) values.set(date, item.lastYearValue)
+  })
+  return values
+})
+const samePeriodValue = (date: unknown) => {
+  const value = samePeriodValueByDate.value.get(String(date || ''))
+  return value === null || value === undefined || value === '' ? '-' : value
+}
 const pagedRecordRows = computed(() => {
   const start = (recordPage.value - 1) * recordSize.value
   return filteredRecordRows.value.slice(start, start + recordSize.value)
 })
 const trainConfigOptions = ref<Record<string, any>[]>([])
+const customerOptions = ref<Record<string, any>[]>([])
 const emptyForm = () => ({
   id: undefined as number | undefined,
   forecastName: '',
@@ -614,10 +649,30 @@ const rules: FormRules = {
 const selectedTrainConfig = computed(() =>
   trainConfigOptions.value.find((item) => item.trainCode === form.trainConfigCode)
 )
+const filteredCustomerOptions = computed(() => customerOptions.value.filter((item) =>
+  (!selectedTrainConfig.value?.regionCode || item.regionCode === selectedTrainConfig.value.regionCode) &&
+  (!selectedTrainConfig.value?.industryCode || item.industryCode === selectedTrainConfig.value.industryCode)))
 const forecastFrequencyUnit = computed(
   () =>
     ({ DAILY: '天', TENDAY: '旬', MONTHLY: '个月' })[form.forecastFrequency as 'DAILY' | 'TENDAY' | 'MONTHLY'] || '期'
 )
+const predictForm = reactive({
+  forecastStartDate: '',
+  forecastHorizon: 30,
+  forecastFrequency: 'DAILY'
+})
+const predictRules: FormRules = {
+  forecastStartDate: [{ required: true, message: '请选择预测开始日期', trigger: 'change' }],
+  forecastHorizon: [{ required: true, message: '请输入预测步长', trigger: 'change' }],
+  forecastFrequency: [{ required: true, message: '请选择时间颗粒度', trigger: 'change' }]
+}
+const predictFrequencyUnit = computed(() => {
+  const unit =
+    ({ DAILY: '天', TENDAY: '旬', MONTHLY: '个月' })[
+      predictForm.forecastFrequency as 'DAILY' | 'TENDAY' | 'MONTHLY'
+    ] || '期'
+  return `${predictForm.forecastHorizon || 0} ${unit}`
+})
 const agentLabel = (code: string) => agents.find((item) => item.value === code)?.label || code
 const formatDate = (value: unknown) => (value ? String(value).slice(0, 10) : '-')
 const formatDateTime = (value: unknown) => {
@@ -646,6 +701,10 @@ const loadTrainConfigs = async () => {
   const configs = await listPage('/model-train-config', { page: 1, size: 1000 })
   trainConfigOptions.value = configs.records.filter((item: any) => Number(item.enabled) === 1)
 }
+const loadCustomers = async () => {
+  const customers = await listPage('/base-customer', { page: 1, size: 1000 })
+  customerOptions.value = customers.records
+}
 const handleTrainConfigChange = () => {
   const item = selectedTrainConfig.value
   if (!item) return
@@ -655,8 +714,13 @@ const handleTrainConfigChange = () => {
   form.regionName = item.regionName || ''
   form.industryCode = item.industryCode || ''
   form.industryName = item.industryName || ''
-  form.customerCode = item.customerCode || ''
-  form.customerName = item.customerName || ''
+  if (item.customerCode) {
+    form.customerCode = item.customerCode
+    form.customerName = item.customerName || ''
+  } else if (item.agentCode === 'short-term' && !filteredCustomerOptions.value.some((customer) => customer.customerCode === form.customerCode)) {
+    form.customerCode = ''
+    form.customerName = ''
+  }
   const defaults: Record<string, [string, number]> = {
     'winter-supply': ['TENDAY', 15],
     'monthly-sales': ['MONTHLY', 12],
@@ -666,7 +730,7 @@ const handleTrainConfigChange = () => {
 }
 const prepareDialogOptions = async () => {
   try {
-    await loadTrainConfigs()
+    await Promise.all([loadTrainConfigs(), loadCustomers()])
     if (form.trainConfigCode) handleTrainConfigChange()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '配置选项加载失败')
@@ -689,6 +753,10 @@ const openEdit = (row: Record<string, any>) => {
 }
 const save = async () => {
   if (!(await formRef.value?.validate().catch(() => false))) return
+  if (selectedTrainConfig.value?.agentCode === 'short-term' && !form.customerCode) {
+    ElMessage.warning('短期预测必须选择具体客户')
+    return
+  }
   saving.value = true
   try {
     await postJson(form.id ? '/model-forecast-config/update' : '/model-forecast-config/create', {
@@ -747,6 +815,8 @@ const openInstances = (row: Record<string, any>) => {
   recordStatusFilter.value = 'all'
   recordPage.value = 1
   resultView.value = 'chart'
+  resultChartType.value = 'line'
+  resultDisplayMode.value = 'line'
   detailTab.value = 'result'
   instancesVisible.value = true
   selectConfig(row)
@@ -817,38 +887,28 @@ const selectRecord = (row?: Record<string, any>) => {
 const renderResultChart = () => {
   if (!resultChartRef.value || resultView.value !== 'chart' || detailTab.value !== 'result') return
   resultChart = echarts.getInstanceByDom(resultChartRef.value) || echarts.init(resultChartRef.value)
-  const history = [...historyRows.value].sort((a, b) => String(a.date).localeCompare(String(b.date)))
   const forecast = [...chartRows.value].sort((a, b) => String(a.forecastDate).localeCompare(String(b.forecastDate)))
-  const dates = [...history.map((item) => String(item.date)), ...forecast.map((item) => String(item.forecastDate))]
-  const historyValues = [...history.map((item) => Number(item.actualValue)), ...forecast.map(() => null)]
-  const historicalForecastValues = [
-    ...history.map((item) => (item.predictedValue == null ? null : Number(item.predictedValue))),
-    ...forecast.map(() => null)
-  ]
-  const futureForecastValues = [
-    ...history.map(() => null as number | null),
-    ...forecast.map((item) => Number(item.forecastValue))
-  ]
-  const forecastBridgeValues = dates.map(() => null as number | null)
-  if (history.length && forecast.length) {
-    const lastHistoricalPrediction = historicalForecastValues[history.length - 1]
-    if (lastHistoricalPrediction != null) {
-      forecastBridgeValues[history.length - 1] = lastHistoricalPrediction
-      forecastBridgeValues[history.length] = Number(forecast[0].forecastValue)
-    }
-  }
-  const forecastStart = forecast[0]?.forecastDate
+  const allHistory = [...historyRows.value].sort((a, b) => String(a.date).localeCompare(String(b.date)))
+  const dates = forecast.map((item) => String(item.forecastDate))
+  const forecastStart = dates[0]
+  const lastYearByDate = new Map(allHistory.map((item) => [String(item.date), item.lastYearValue]))
+  const lastYearValues = dates.map((date) => {
+    const value = lastYearByDate.get(date)
+    return value == null ? null : Number(value)
+  })
+  const futureForecastValues = forecast.map((item) => Number(item.forecastValue))
+  const isBar = resultChartType.value === 'bar'
   resultChart.setOption(
     {
-      color: ['#3b82f6', '#10b981'],
+      color: ['#9ca3af', '#b91c1c'],
       animationDuration: 650,
       legend: {
         bottom: 4,
         left: 'center',
         itemWidth: 18,
-        itemHeight: 3,
+        itemHeight: isBar ? 8 : 3,
         textStyle: { color: '#64748b' },
-        data: ['历史实际值', '历史预测值', '未来预测值']
+        data: ['去年同期', '最新预测']
       },
       tooltip: {
         trigger: 'axis',
@@ -856,12 +916,14 @@ const renderResultChart = () => {
         borderWidth: 0,
         padding: [10, 12],
         textStyle: { color: '#fff' },
-        axisPointer: { type: 'line', lineStyle: { color: '#94a3b8', type: 'solid' } }
+        axisPointer: isBar
+          ? { type: 'shadow' }
+          : { type: 'line', lineStyle: { color: '#94a3b8', type: 'solid' } }
       },
       grid: { left: 62, right: 30, top: 48, bottom: dates.length > 45 ? 88 : 58 },
       xAxis: {
         type: 'category',
-        boundaryGap: false,
+        boundaryGap: isBar,
         data: dates,
         axisLine: { lineStyle: { color: '#dbe4f0' } },
         axisTick: { show: false },
@@ -876,10 +938,7 @@ const renderResultChart = () => {
       },
       yAxis: {
         type: 'value',
-        name: '用气量',
         scale: true,
-        nameGap: 18,
-        nameTextStyle: { color: '#94a3b8' },
         splitNumber: 5,
         splitLine: { lineStyle: { color: '#edf2f7' } },
         axisLabel: { color: '#64748b' }
@@ -901,54 +960,36 @@ const renderResultChart = () => {
           : [],
       series: [
         {
-          name: '历史实际值',
-          type: 'line',
-          smooth: 0.25,
+          name: '去年同期',
+          type: isBar ? 'bar' : 'line',
+          smooth: isBar ? false : 0.2,
           connectNulls: false,
           showSymbol: false,
-          data: historyValues,
-          lineStyle: { width: 2.5, color: '#3b82f6' },
-          itemStyle: { color: '#3b82f6' }
+          data: lastYearValues,
+          barMaxWidth: 18,
+          barGap: '18%',
+          lineStyle: { width: 2, color: '#9ca3af', type: 'dashed' },
+          itemStyle: { color: '#9ca3af' }
         },
         {
-          name: '历史预测值',
-          type: 'line',
-          smooth: 0.25,
-          connectNulls: false,
-          showSymbol: false,
-          symbolSize: 5,
-          data: historicalForecastValues,
-          lineStyle: { width: 2.25, color: '#f59e0b', type: 'solid' },
-          itemStyle: { color: '#f59e0b' }
-        },
-        {
-          name: '预测衔接',
-          type: 'line',
-          smooth: false,
-          connectNulls: false,
-          showSymbol: false,
-          silent: true,
-          tooltip: { show: false },
-          data: forecastBridgeValues,
-          lineStyle: { width: 2, color: '#64748b', type: 'solid' },
-          emphasis: { disabled: true }
-        },
-        {
-          name: '未来预测值',
-          type: 'line',
-          smooth: 0.25,
+          name: '最新预测',
+          type: isBar ? 'bar' : 'line',
+          smooth: isBar ? false : 0.25,
           connectNulls: false,
           showSymbol: false,
           data: futureForecastValues,
-          lineStyle: { width: 2.5, color: '#10b981' },
-          itemStyle: { color: '#10b981' },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(16, 185, 129, .14)' },
-              { offset: 1, color: 'rgba(16, 185, 129, 0)' }
-            ])
-          },
-          markLine: forecastStart
+          barMaxWidth: 18,
+          lineStyle: { width: 2.5, color: '#b91c1c' },
+          itemStyle: { color: '#b91c1c' },
+          areaStyle: isBar
+            ? undefined
+            : {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: 'rgba(185, 28, 28, .12)' },
+                  { offset: 1, color: 'rgba(185, 28, 28, 0)' }
+                ])
+              },
+          markLine: !isBar && forecastStart
             ? {
                 silent: true,
                 symbol: 'none',
@@ -973,6 +1014,11 @@ const handleResultViewChange = () => {
   resultPage.value = 1
   void loadResultRows()
 }
+const handleResultDisplayModeChange = () => {
+  resultView.value = resultDisplayMode.value === 'table' ? 'table' : 'chart'
+  if (resultDisplayMode.value !== 'table') resultChartType.value = resultDisplayMode.value
+  handleResultViewChange()
+}
 const handleDetailTabChange = (name: string | number) => {
   if (name !== 'result' || resultView.value !== 'chart') return
   void nextTick(() => {
@@ -980,44 +1026,38 @@ const handleDetailTabChange = (name: string | number) => {
     resultChart?.resize()
   })
 }
-const openPredict = (row: Record<string, any>) => {
-  pendingForecast.value = row
-  featureDataJson.value = '[\n  {\n    "date": ""\n  }\n]'
-  predictVisible.value = true
-}
-const confirmPredict = async () => {
-  let dataset: unknown
-  try {
-    dataset = JSON.parse(featureDataJson.value)
-  } catch {
-    ElMessage.error('特征数据不是有效的 JSON')
-    return
-  }
-  if (!Array.isArray(dataset) || dataset.length === 0) {
-    ElMessage.error('特征数据必须是非空 JSON 数组')
-    return
-  }
-  if (
-    dataset.some(
-      (item) => !item || typeof item !== 'object' || !String((item as Record<string, unknown>).date || '').trim()
-    )
-  ) {
-    ElMessage.error('每条特征数据都必须包含 date 字段')
-    return
-  }
-  if (dataset.some((item) => !/^\d{4}-\d{2}-\d{2}$/.test(String((item as Record<string, unknown>).date)))) {
-    ElMessage.error('date 格式必须为 YYYY-MM-DD')
-    return
-  }
-  const row = pendingForecast.value
-  if (!row) return
+const openPredict = async (row: Record<string, any>) => {
   const forecastId = Number(row.forecastId || row.id)
+  pendingPredictConfig.value = row
+  Object.assign(predictForm, {
+    forecastStartDate: row.forecastStartDate || '',
+    forecastHorizon: Number(row.forecastHorizon || 30),
+    forecastFrequency: row.forecastFrequency || 'DAILY'
+  })
+  predictDialogVisible.value = true
+  await nextTick()
+  predictFormRef.value?.clearValidate()
+  currentForecastId.value = forecastId
+}
+const submitPredict = async () => {
+  if (!(await predictFormRef.value?.validate().catch(() => false))) return
+  const row = pendingPredictConfig.value
+  const forecastId = Number(row?.forecastId || row?.id)
+  if (!forecastId) {
+    ElMessage.error('预测配置信息不完整，无法发起预测')
+    return
+  }
   runningCode.value = forecastId
   try {
-    const response = await postJson('/model-forecast-execution/execute', { forecastId, dataset })
+    const response = await postJson('/model-forecast-execution/execute', {
+      forecastId,
+      forecastStartDate: predictForm.forecastStartDate,
+      forecastHorizon: predictForm.forecastHorizon,
+      forecastFrequency: predictForm.forecastFrequency
+    })
     const data = response.data || {}
-    predictVisible.value = false
     ElMessage.success(`预测成功：${data.resultCount || 0} 条结果`)
+    predictDialogVisible.value = false
     if (currentForecastId.value === forecastId) await loadRecords()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '预测失败')
@@ -1061,6 +1101,10 @@ onMounted(loadData)
 onBeforeUnmount(() => resultChart?.dispose())
 watch(recordKeyword, () => {
   recordPage.value = 1
+})
+
+watch(resultChartType, () => {
+  nextTick(renderResultChart)
 })
 </script>
 
@@ -1718,11 +1762,12 @@ watch(recordKeyword, () => {
   border-color: #dce7f5;
   color: #607089;
 }
-.result-heading > .el-radio-group {
+.result-controls {
   position: absolute;
   top: 8px;
   right: 0;
   z-index: 2;
+  display: flex;
 }
 .result-heading :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
   border-color: var(--app-primary);

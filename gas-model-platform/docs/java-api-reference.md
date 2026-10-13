@@ -71,7 +71,7 @@ GET /api/v1/models
 ### 3.2 查询指定模型
 
 ```http
-GET /api/v1/models?model_code=MODEL_JIANGSHU_DIANLI_V1.0
+GET /api/v1/models?model_code=MODEL_POWER_GENERATION_V1.0
 ```
 
 `model_code` 为可选查询参数。不传返回全部；传入后返回匹配模型。`data` 始终为数组。
@@ -85,9 +85,9 @@ GET /api/v1/models?model_code=MODEL_JIANGSHU_DIANLI_V1.0
   "data": [
     {
       "agent_code": "short-term",
-      "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+      "model_code": "MODEL_POWER_GENERATION_V1.0",
       "model_version": "1.0.0",
-      "model_name": "江苏电力日级预测模型 V1",
+      "model_name": "发电日级预测模型 V1",
       "description": "Prophet 与 LightGBM 残差融合，使用 Walk-Forward 回测选择参数。",
       "capabilities": ["train", "backtest", "predict"],
       "training_data_range": {
@@ -122,7 +122,7 @@ POST /api/v1/models/validate-training-data
 
 ```json
 {
-  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "model_code": "MODEL_POWER_GENERATION_V1.0",
   "region_code": "320000",
   "region_name": "江苏",
   "params": {},
@@ -147,7 +147,7 @@ POST /api/v1/models/validate-training-data
   "message": "success",
   "data": {
     "agent_code": "short-term",
-    "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+    "model_code": "MODEL_POWER_GENERATION_V1.0",
     "valid": false,
     "summary": {
       "row_count": 700,
@@ -160,7 +160,7 @@ POST /api/v1/models/validate-training-data
     "errors": [
       {
         "code": "INSUFFICIENT_HISTORY",
-        "message": "江苏电力模型至少需要880天数据，当前只有700天",
+        "message": "发电模型至少需要880天数据，当前只有700天",
         "expected": 880,
         "actual": 700
       },
@@ -209,7 +209,7 @@ POST /api/v1/train
 
 ```json
 {
-  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "model_code": "MODEL_POWER_GENERATION_V1.0",
   "train_batch_no": "TRAIN_20260922_001",
   "region_code": "320000",
   "region_name": "江苏",
@@ -290,7 +290,7 @@ POST /api/v1/predict
 
 ```json
 {
-  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "model_code": "MODEL_POWER_GENERATION_V1.0",
   "train_batch_no": "TRAIN_20260922_001",
   "forecast_batch_no": "FORECAST_20260922_001",
   "forecast_horizon": 2,

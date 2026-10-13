@@ -7,6 +7,8 @@ import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
+import com.gas.forecast.business.enums.FeatureSourceType;
+import com.gas.forecast.business.enums.FeatureStatus;
 import com.gas.forecast.business.service.ModelFeatureDefinitionService;
 import com.gas.forecast.business.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
@@ -32,11 +34,14 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
             query.and(wrapper -> wrapper.like(ModelFeatureDefinitionTb::getFeatureCode, keyword).or().like(ModelFeatureDefinitionTb::getFeatureName, keyword).or()
-                    .like(ModelFeatureDefinitionTb::getFeatureColumn, keyword).or().like(ModelFeatureDefinitionTb::getTimeGranularity, keyword).or()
-                    .like(ModelFeatureDefinitionTb::getDescription, keyword));
+                    .like(ModelFeatureDefinitionTb::getSourceType, keyword).or().like(ModelFeatureDefinitionTb::getValueSource, keyword).or().like(ModelFeatureDefinitionTb::getSourceField, keyword)
+                    .or().like(ModelFeatureDefinitionTb::getStatus, keyword).or().like(ModelFeatureDefinitionTb::getDescription, keyword));
         }
-        if (TextUtils.hasText(reqDTO.timeGranularity())) {
-            query.eq(ModelFeatureDefinitionTb::getTimeGranularity, reqDTO.timeGranularity().trim());
+        if (TextUtils.hasText(reqDTO.sourceType())) {
+            query.eq(ModelFeatureDefinitionTb::getSourceType, normalizeSourceType(reqDTO.sourceType()));
+        }
+        if (TextUtils.hasText(reqDTO.status())) {
+            query.eq(ModelFeatureDefinitionTb::getStatus, normalizeStatus(reqDTO.status()));
         }
         query.orderByDesc(ModelFeatureDefinitionTb::getCreatedAt).orderByDesc(ModelFeatureDefinitionTb::getId);
         int page = reqDTO.page() == null ? 1 : reqDTO.page();
@@ -48,10 +53,9 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
     @Override
     @Transactional
     public ModelFeatureDefinitionResponse create(ModelFeatureDefinitionCreateRequest reqDTO) {
-        ensureFeatureCodeUnique(reqDTO.featureCode(), reqDTO.timeGranularity(), null);
+        ensureFeatureCodeUnique(reqDTO.featureCode(), null);
         ModelFeatureDefinitionTb entity = toEntity(reqDTO);
         entity.setId(null);
-        entity.setFeatureColumn(resolveFeatureColumn(reqDTO.featureColumn(), null));
         entity.setCreatedAt(new Date());
         entity.setCreatedBy(SecurityContextHolder.getUserId());
         modelFeatureDefinitionTbMapper.insert(entity);
@@ -65,10 +69,9 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         if (exists == null) {
             throw new BusinessException("特征定义不存在");
         }
-        ensureFeatureCodeUnique(reqDTO.featureCode(), reqDTO.timeGranularity(), reqDTO.id());
+        ensureFeatureCodeUnique(reqDTO.featureCode(), reqDTO.id());
         ModelFeatureDefinitionTb entity = toEntity(reqDTO);
         entity.setId(reqDTO.id());
-        entity.setFeatureColumn(TextUtils.hasText(reqDTO.featureColumn()) ? resolveFeatureColumn(reqDTO.featureColumn(), reqDTO.id()) : exists.getFeatureColumn());
         entity.setCreatedAt(exists.getCreatedAt());
         entity.setCreatedBy(exists.getCreatedBy());
         entity.setUpdatedByName(SecurityContextHolder.getUserName());
@@ -82,47 +85,13 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         modelFeatureDefinitionTbMapper.deleteById(id);
     }
 
-    private void ensureFeatureCodeUnique(String featureCode, String timeGranularity, Long excludeId) {
-        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureCode, featureCode)
-                .eq(ModelFeatureDefinitionTb::getTimeGranularity, timeGranularity);
+    private void ensureFeatureCodeUnique(String featureCode, Long excludeId) {
+        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureCode, featureCode);
         if (excludeId != null) {
             query.ne(ModelFeatureDefinitionTb::getId, excludeId);
         }
         if (modelFeatureDefinitionTbMapper.selectCount(query) > 0) {
-            throw new BusinessException("相同时间跨度下特征编号已存在");
-        }
-    }
-
-    private String resolveFeatureColumn(String requestedColumn, Long excludeId) {
-        if (TextUtils.hasText(requestedColumn)) {
-            String normalized = requestedColumn.trim();
-            if (!normalized.matches("^feature_\\d{3}$")) {
-                throw new BusinessException("宽表字段格式必须为feature_001到feature_200");
-            }
-            int slot = Integer.parseInt(normalized.substring("feature_".length()));
-            if (slot < 1 || slot > 200) {
-                throw new BusinessException("宽表字段范围必须为feature_001到feature_200");
-            }
-            ensureFeatureColumnUnique(normalized, excludeId);
-            return normalized;
-        }
-
-        for (int slot = 1; slot <= 200; slot++) {
-            String candidate = String.format("feature_%03d", slot);
-            if (modelFeatureDefinitionTbMapper.selectCount(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureColumn, candidate)) == 0) {
-                return candidate;
-            }
-        }
-        throw new BusinessException("宽表特征槽位已用完");
-    }
-
-    private void ensureFeatureColumnUnique(String featureColumn, Long excludeId) {
-        LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().eq(ModelFeatureDefinitionTb::getFeatureColumn, featureColumn);
-        if (excludeId != null) {
-            query.ne(ModelFeatureDefinitionTb::getId, excludeId);
-        }
-        if (modelFeatureDefinitionTbMapper.selectCount(query) > 0) {
-            throw new BusinessException("宽表字段已被使用");
+            throw new BusinessException("特征编号已存在");
         }
     }
 
@@ -130,7 +99,8 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         if (entity == null) {
             return null;
         }
-        return new ModelFeatureDefinitionResponse(entity.getId(), entity.getFeatureCode(), entity.getFeatureName(), entity.getFeatureColumn(), entity.getTimeGranularity(), entity.getEnabled(),
+        return new ModelFeatureDefinitionResponse(entity.getId(), entity.getFeatureCode(), entity.getFeatureName(), entity.getSourceType(), entity.getValueSource(), entity.getSourceField(),
+                entity.getCalculationType(), entity.getCalculationParams(), entity.getAggregationMethod(), entity.getMissingValueStrategy(), entity.getStatus(), entity.getEnabled(),
                 entity.getDescription(), entity.getCreatedAt(), entity.getCreatedBy(), entity.getUpdatedByName());
     }
 
@@ -138,8 +108,9 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         ModelFeatureDefinitionTb entity = new ModelFeatureDefinitionTb();
         entity.setFeatureCode(reqDTO.featureCode());
         entity.setFeatureName(reqDTO.featureName());
-        entity.setFeatureColumn(reqDTO.featureColumn());
-        entity.setTimeGranularity(reqDTO.timeGranularity());
+        entity.setSourceType(normalizeSourceType(reqDTO.sourceType()));
+        fillValueSource(entity, reqDTO.valueSource(), reqDTO.sourceField(), reqDTO.calculationType(), reqDTO.calculationParams(), reqDTO.aggregationMethod(), reqDTO.missingValueStrategy());
+        entity.setStatus(normalizeStatus(reqDTO.status()));
         entity.setEnabled(reqDTO.enabled());
         entity.setDescription(reqDTO.description());
         return entity;
@@ -149,10 +120,73 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         ModelFeatureDefinitionTb entity = new ModelFeatureDefinitionTb();
         entity.setFeatureCode(reqDTO.featureCode());
         entity.setFeatureName(reqDTO.featureName());
-        entity.setFeatureColumn(reqDTO.featureColumn());
-        entity.setTimeGranularity(reqDTO.timeGranularity());
+        entity.setSourceType(normalizeSourceType(reqDTO.sourceType()));
+        fillValueSource(entity, reqDTO.valueSource(), reqDTO.sourceField(), reqDTO.calculationType(), reqDTO.calculationParams(), reqDTO.aggregationMethod(), reqDTO.missingValueStrategy());
+        entity.setStatus(normalizeStatus(reqDTO.status()));
         entity.setEnabled(reqDTO.enabled());
         entity.setDescription(reqDTO.description());
         return entity;
     }
+
+    private String normalizeSourceType(String code) {
+        try {
+            return FeatureSourceType.fromCode(code).name();
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(exception.getMessage());
+        }
+    }
+
+    private String normalizeStatus(String code) {
+        try {
+            return FeatureStatus.fromCode(code).name();
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException(exception.getMessage());
+        }
+    }
+
+    private void fillValueSource(ModelFeatureDefinitionTb entity, String valueSource, String sourceField, String calculationType, String calculationParams, String aggregationMethod,
+            String missingValueStrategy) {
+        String normalizedSource = valueSource.trim().toUpperCase();
+        java.util.Set<String> sources = java.util.Set.of("WEATHER_DAILY", "SALES_DAILY", "FEATURE_VALUE", "CALCULATED", "MODEL_INTERNAL");
+        if (!sources.contains(normalizedSource))
+            throw new BusinessException("不支持的取值来源：" + valueSource);
+        if (("WEATHER_DAILY".equals(normalizedSource) || "SALES_DAILY".equals(normalizedSource) || "CALCULATED".equals(normalizedSource)) && !TextUtils.hasText(sourceField))
+            throw new BusinessException("该取值来源必须配置来源字段");
+        validateSourceField(normalizedSource, sourceField);
+        if ("CALCULATED".equals(normalizedSource) && !TextUtils.hasText(calculationType))
+            throw new BusinessException("计算特征必须配置计算类型");
+        String missing = missingValueStrategy.trim().toUpperCase();
+        if (!java.util.Set.of("ERROR", "IGNORE", "ZERO", "FORWARD_FILL", "INTERPOLATE").contains(missing))
+            throw new BusinessException("不支持的缺失值策略：" + missingValueStrategy);
+        String aggregation = TextUtils.hasText(aggregationMethod) ? aggregationMethod.trim().toUpperCase() : null;
+        if (aggregation != null && !java.util.Set.of("AVG", "SUM", "MAX", "MIN", "COUNT", "LAST").contains(aggregation))
+            throw new BusinessException("不支持的聚合方式：" + aggregationMethod);
+        entity.setValueSource(normalizedSource);
+        entity.setSourceField(TextUtils.hasText(sourceField) ? sourceField.trim() : null);
+        entity.setCalculationType(TextUtils.hasText(calculationType) ? calculationType.trim().toUpperCase() : null);
+        entity.setCalculationParams(TextUtils.hasText(calculationParams) ? calculationParams.trim() : null);
+        entity.setAggregationMethod(aggregation);
+        entity.setMissingValueStrategy(missing);
+    }
+
+    private void validateSourceField(String valueSource, String sourceField) {
+        if (!TextUtils.hasText(sourceField))
+            return;
+        String field = sourceField.trim().toLowerCase();
+        java.util.Set<String> allowed;
+        if ("SALES_DAILY".equals(valueSource)) {
+            allowed = java.util.Set.of("gas_sales");
+        } else if ("WEATHER_DAILY".equals(valueSource)) {
+            allowed = java.util.Set.of("temp_max", "temp_min", "temp_avg", "feels_like_max", "feels_like_min", "feels_like_avg", "dew_point", "humidity", "precipitation", "wind_gust", "wind_speed",
+                    "sea_level_pressure", "cloud_cover", "visibility", "solar_radiation", "solar_energy", "uv_index", "hdd");
+        } else if ("CALCULATED".equals(valueSource)) {
+            allowed = java.util.Set.of("temp_max", "temp_min", "temp_avg", "hdd", "extreme_cold_days");
+        } else {
+            return;
+        }
+        if (!allowed.contains(field)) {
+            throw new BusinessException("取值来源 " + valueSource + " 不存在或不支持字段：" + sourceField);
+        }
+    }
+
 }

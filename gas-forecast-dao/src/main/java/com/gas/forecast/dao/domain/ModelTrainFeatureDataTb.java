@@ -3,17 +3,13 @@ package com.gas.forecast.dao.domain;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
 
 /**
- * 天然气预测模型统一训练特征宽表
- *
- * @TableName model_train_feature_data_tb
+ * 训练数据组装过程中的内存行对象。为兼容模型请求字段暂保留原类名，不再映射数据库表。
  */
-@TableName(value = "model_train_feature_data_tb")
 @Data
 public class ModelTrainFeatureDataTb {
     /**

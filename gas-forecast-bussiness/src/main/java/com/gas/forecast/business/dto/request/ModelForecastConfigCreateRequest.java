@@ -25,6 +25,9 @@ public class ModelForecastConfigCreateRequest {
     @NotBlank(message = "请选择模型训练配置")
     private String trainConfigCode;
 
+    @Size(max = 64)
+    private String customerCode;
+
     private Integer enabled;
 
     @Size(max = 512)

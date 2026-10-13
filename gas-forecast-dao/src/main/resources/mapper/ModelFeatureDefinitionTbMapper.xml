@@ -8,8 +8,14 @@
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="featureCode" column="feature_code" jdbcType="VARCHAR"/>
             <result property="featureName" column="feature_name" jdbcType="VARCHAR"/>
-            <result property="featureColumn" column="feature_column" jdbcType="VARCHAR"/>
-            <result property="timeGranularity" column="time_granularity" jdbcType="VARCHAR"/>
+            <result property="sourceType" column="source_type" jdbcType="VARCHAR"/>
+            <result property="valueSource" column="value_source" jdbcType="VARCHAR"/>
+            <result property="sourceField" column="source_field" jdbcType="VARCHAR"/>
+            <result property="calculationType" column="calculation_type" jdbcType="VARCHAR"/>
+            <result property="calculationParams" column="calculation_params" jdbcType="VARCHAR"/>
+            <result property="aggregationMethod" column="aggregation_method" jdbcType="VARCHAR"/>
+            <result property="missingValueStrategy" column="missing_value_strategy" jdbcType="VARCHAR"/>
+            <result property="status" column="status" jdbcType="VARCHAR"/>
             <result property="enabled" column="enabled" jdbcType="TINYINT"/>
             <result property="description" column="description" jdbcType="VARCHAR"/>
             <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
@@ -18,7 +24,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,feature_code,feature_name,feature_column,time_granularity,enabled,
+        id,feature_code,feature_name,source_type,value_source,source_field,calculation_type,
+        calculation_params,aggregation_method,missing_value_strategy,status,enabled,
         description,created_at,created_by,updated_by_name
     </sql>
 </mapper>

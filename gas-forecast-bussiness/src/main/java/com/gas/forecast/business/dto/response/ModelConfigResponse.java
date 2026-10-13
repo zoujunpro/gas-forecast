@@ -119,6 +119,24 @@ public class ModelConfigResponse {
      */
     private List<ModelFeatureRefResponse> featureRefs;
 
+    /** 支持的时间粒度。 */
+    private String timeGranularity;
+
+    /** 支持的最小预测周期。 */
+    private Integer minForecastHorizon;
+
+    /** 支持的最大预测周期。 */
+    private Integer maxForecastHorizon;
+
+    /** 最短训练数据量。 */
+    private Integer minimumTrainingRows;
+
+    /** 自动训练推荐使用的历史周期数。 */
+    private Integer recommendedTrainingPeriods;
+
+    /** 训练数据要求说明。 */
+    private String trainingDataRequirement;
+
     /**
      * 描述。
      */

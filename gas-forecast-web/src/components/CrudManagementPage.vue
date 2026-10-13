@@ -455,6 +455,14 @@
               :closable="false"
               show-icon
             />
+            <el-alert
+              v-else-if="metricUnavailableMessage"
+              title="评估指标不可用"
+              :description="metricUnavailableMessage"
+              type="warning"
+              :closable="false"
+              show-icon
+            />
 
             <section class="result-metrics-panel">
               <h4 class="train-section-title">
@@ -480,19 +488,62 @@
             </section>
 
             <el-tabs v-model="activeTrainResultTab" class="result-tabs">
+              <el-tab-pane name="execution" lazy>
+                <template #label
+                  ><span class="result-tab-label"
+                    ><el-icon><Tickets /></el-icon>执行记录</span
+                  ></template
+                >
+                <div v-loading="trainStepsLoading" class="execution-records">
+                  <section v-for="attempt in trainStepAttempts" :key="attempt.attemptNo" class="execution-attempt">
+                    <h4>第 {{ attempt.attemptNo }} 次执行</h4>
+                    <div v-for="step in attempt.steps" :key="step.id" class="execution-step" :class="`step-${String(step.status).toLowerCase()}`">
+                      <div class="execution-step-head">
+                        <span class="step-dot"></span>
+                        <strong>{{ step.stepName }}</strong>
+                        <el-tag size="small" :type="stepStatusType(step.status)">{{ stepStatusText(step.status) }}</el-tag>
+                        <small>{{ formatDuration(step.durationMs) }}</small>
+                      </div>
+                      <p v-if="step.errorMessage" class="step-error">{{ step.errorMessage }}</p>
+                      <div v-if="step.children.length" class="execution-children">
+                        <details v-for="child in step.children" :key="child.id" class="execution-child">
+                          <summary>
+                            <span>{{ child.stepName }}</span>
+                            <el-tag size="small" :type="stepStatusType(child.status)">{{ stepStatusText(child.status) }}</el-tag>
+                            <small>{{ formatDuration(child.durationMs) }}</small>
+                          </summary>
+                          <p v-if="child.inputSummary"><b>获取方式/输入：</b>{{ readableStepContent(child.inputSummary) }}</p>
+                          <p v-if="child.outputSummary"><b>结果：</b><pre>{{ readableStepContent(child.outputSummary) }}</pre></p>
+                          <p v-if="child.errorMessage" class="step-error">{{ child.errorMessage }}</p>
+                        </details>
+                      </div>
+                    </div>
+                  </section>
+                  <el-empty v-if="!trainStepsLoading && !trainStepAttempts.length" description="该批次暂无执行步骤记录" />
+                </div>
+              </el-tab-pane>
               <el-tab-pane name="dataset" lazy>
                 <template #label
                   ><span class="result-tab-label"
                     ><el-icon><DataLine /></el-icon>训练数据</span
                   ></template
                 >
+                <el-alert
+                  v-if="dynamicFeatureNotice"
+                  class="dynamic-feature-notice"
+                  :title="dynamicFeatureNotice.title"
+                  :description="dynamicFeatureNotice.description"
+                  :type="dynamicFeatureNotice.type"
+                  :closable="false"
+                  show-icon
+                />
                 <template v-if="requestDatasetRows.length">
                   <el-table :data="pagedRequestDatasetRows" border stripe height="320px">
                     <el-table-column
                       v-for="column in requestDatasetColumns"
                       :key="column"
                       :prop="column"
-                      :label="column"
+                      :label="requestDatasetColumnLabel(column)"
                       min-width="120"
                       show-overflow-tooltip
                     />
@@ -676,6 +727,8 @@ const featureDetailVisible = ref(false)
 const trainResultVisible = ref(false)
 const trainResultLoading = ref(false)
 const trainResultDetailLoading = ref(false)
+const trainStepsLoading = ref(false)
+const trainExecutionSteps = ref<Record<string, any>[]>([])
 const selectedRow = ref<Record<string, any> | null>(null)
 const executionConfig = ref<Record<string, any> | null>(null)
 const trainResultSource = ref<Record<string, any> | null>(null)
@@ -686,6 +739,33 @@ const trainBatchStatus = ref<'all' | 'running' | 'success' | 'failed'>('all')
 const trainBatchPage = ref(1)
 const trainBatchSize = ref(20)
 const activeTrainResultTab = ref('dataset')
+const trainStepAttempts = computed<Array<{ attemptNo: number; steps: Array<Record<string, any> & { children: Record<string, any>[] }> }>>(() => {
+  const groups = new Map<number, Record<string, any>[]>()
+  for (const step of trainExecutionSteps.value) {
+    const attempt = Number(step.attemptNo || 1)
+    if (!groups.has(attempt)) groups.set(attempt, [])
+    groups.get(attempt)!.push(step)
+  }
+  return Array.from(groups.entries()).sort((a, b) => b[0] - a[0]).map(([attemptNo, rows]) => {
+    const children = new Map<number, Record<string, any>[]>()
+    rows.filter((row) => row.parentStepId != null).forEach((row) => {
+      const parent = Number(row.parentStepId)
+      if (!children.has(parent)) children.set(parent, [])
+      children.get(parent)!.push(row)
+    })
+    const steps = rows.filter((row) => row.parentStepId == null)
+      .sort((a, b) => Number(a.stepOrder) - Number(b.stepOrder))
+      .map((row) => ({ ...row, children: (children.get(Number(row.id)) || []).sort((a, b) => Number(a.stepOrder) - Number(b.stepOrder)) }) as Record<string, any> & { children: Record<string, any>[] })
+    return { attemptNo, steps }
+  })
+})
+const stepStatusText = (status: unknown) => ({ RUNNING: '执行中', SUCCESS: '成功', FAILED: '失败', SKIPPED: '已跳过' }[String(status || '').toUpperCase()] || String(status || '-'))
+const stepStatusType = (status: unknown) => ({ SUCCESS: 'success', FAILED: 'danger', RUNNING: 'warning' }[String(status || '').toUpperCase()] || 'info') as 'success' | 'danger' | 'warning' | 'info'
+const formatDuration = (value: unknown) => value == null ? '-' : Number(value) < 1000 ? `${value}ms` : `${(Number(value) / 1000).toFixed(2)}s`
+const readableStepContent = (value: unknown) => {
+  const text = String(value || '')
+  try { return JSON.stringify(JSON.parse(text), null, 2) } catch { return text }
+}
 const backtestResultView = ref<'table' | 'chart'>('chart')
 const requestDatasetPage = ref(1)
 const requestDatasetSize = ref(20)
@@ -727,9 +807,17 @@ const resolvedFormOptionMap = computed<Record<string, Option[]>>(() => {
   if (!config.value.trainExecution) {
     return formOptionMap
   }
+  const regionCode = form.regionCode
+  const industryCode = form.industryCode
+  const customerOptions = (formOptionMap.customerCode || []).filter(
+    (option) =>
+      (!regionCode || option.raw?.regionCode === regionCode) &&
+      (!industryCode || option.raw?.industryCode === industryCode)
+  )
   return {
     ...formOptionMap,
-    modelId: (formOptionMap.modelId || []).filter((option) => option.raw?.agentCode === form.agentCode)
+    modelId: (formOptionMap.modelId || []).filter((option) => option.raw?.agentCode === form.agentCode),
+    customerCode: customerOptions
   }
 })
 const dialogTitle = computed(
@@ -806,14 +894,18 @@ const pagedTrainResultBatches = computed(() => {
 const statusTagType = (status: unknown) => {
   const value = String(status || '').toUpperCase()
   if (value === 'SUCCESS') return 'success'
-  if (value === 'FAILED') return 'danger'
-  if (value === 'RUNNING' || value === 'PENDING') return 'warning'
+  if (value === 'FAILED' || value === 'FAILED_FINAL') return 'danger'
+  if (['WAITING', 'CLAIMED', 'PREPARING', 'RUNNING', 'PENDING'].includes(value)) return 'warning'
   return 'info'
 }
 const statusText = (status: unknown) => {
   const value = String(status || '').toUpperCase()
   if (value === 'SUCCESS') return '训练成功'
   if (value === 'FAILED') return '训练失败'
+  if (value === 'FAILED_FINAL') return '最终失败'
+  if (value === 'WAITING') return '等待执行'
+  if (value === 'CLAIMED') return '已领取'
+  if (value === 'PREPARING') return '准备数据'
   if (value === 'RUNNING') return '训练中'
   if (value === 'PENDING') return '训练等待中'
   return status ? String(status) : '-'
@@ -828,6 +920,7 @@ const statusTone = (status: unknown) => {
   return ''
 }
 const metricValue = (value: unknown, suffix = '') => {
+  if (value === undefined || value === null || value === '') return '-'
   const numberValue = Number(value)
   if (!Number.isFinite(numberValue)) return '-'
   return `${Number(numberValue.toFixed(6))}${suffix}`
@@ -1007,7 +1100,7 @@ const selectedRequestJson = computed(() => asRecord(selectedTrainResult.value?.r
 const selectedResultJson = computed(() => asRecord(selectedTrainResult.value?.resultJson))
 const trainRequestJsonText = computed(() => stringifyJson(selectedTrainResult.value?.requestJson))
 const trainResultJsonText = computed(() => stringifyJson(selectedTrainResult.value?.resultJson))
-const isBatchFailed = (status: unknown) => String(status || '').toUpperCase() === 'FAILED'
+const isBatchFailed = (status: unknown) => ['FAILED', 'FAILED_FINAL'].includes(String(status || '').toUpperCase())
 const retrainBatch = async (batch: Record<string, any>) => {
   const retryBatchNo = String(batch.batchNo || batch.batch_no || '')
   if (!retryBatchNo || !trainResultSource.value?.id || retrainingBatchNo.value) {
@@ -1015,9 +1108,10 @@ const retrainBatch = async (batch: Record<string, any>) => {
   }
   retrainingBatchNo.value = retryBatchNo
   try {
-    const result = await postJson('/model-train-execution/execute', {
+    const result = await postJson('/auto-train/execute', {
       trainConfigId: trainResultSource.value?.id,
-      retryBatchNo
+      retryBatchNo,
+      triggerSource: 'MANUAL'
     })
     const data = (result as any).data || {}
     ElMessage.success(`已重新提交训练批次：${data.trainBatchNo || data.train_batch_no || '-'}`)
@@ -1032,6 +1126,33 @@ const retrainBatch = async (batch: Record<string, any>) => {
   }
 }
 const requestDatasetRows = computed(() => asArray(selectedRequestJson.value.dataset))
+const dynamicFeatureSnapshot = computed(() => {
+  const params = asRecord(selectedRequestJson.value.params)
+  return asRecord(params.dynamic_feature_snapshot)
+})
+const selectedDynamicIndexes = computed(() => asArray(dynamicFeatureSnapshot.value.selected_indexes))
+const dynamicFeatureNotice = computed(() => {
+  if (!Object.keys(dynamicFeatureSnapshot.value).length) return null
+  const status = String(dynamicFeatureSnapshot.value.status || '').toUpperCase()
+  const selectedCount = selectedDynamicIndexes.value.length
+  const excludedCount = asArray(dynamicFeatureSnapshot.value.excluded_indexes).length
+  if (selectedCount > 0) {
+    return {
+      title: `已加入 ${selectedCount} 个动态指标`,
+      description: '动态指标列已排列在 gas_sales 后面；无历史值的日期显示为空。',
+      type: 'success' as const
+    }
+  }
+  if (status === 'DISABLED') {
+    return { title: '动态指标未启用', description: '本批次仅使用基础特征训练。', type: 'info' as const }
+  }
+  const error = String(dynamicFeatureSnapshot.value.error || '')
+  return {
+    title: '本批次没有可用的动态指标',
+    description: error || `动态指标流程已执行，但 ${excludedCount} 个候选指标均未通过选择或数据覆盖率校验。`,
+    type: 'warning' as const
+  }
+})
 const pagedRequestDatasetRows = computed(() => {
   const start = (requestDatasetPage.value - 1) * requestDatasetSize.value
   return requestDatasetRows.value.slice(start, start + requestDatasetSize.value)
@@ -1041,8 +1162,32 @@ const requestDatasetColumns = computed(() => {
   requestDatasetRows.value.slice(0, 20).forEach((row) => {
     Object.keys(row).forEach((key) => keys.add(key))
   })
-  return Array.from(keys)
+  const columns = Array.from(keys)
+  const snapshotColumns = selectedDynamicIndexes.value.map((item) => String(item.runtime_code || '')).filter(Boolean)
+  const dynamicColumns = Array.from(
+    new Set([...snapshotColumns, ...columns.filter((key) => /^dynamic_\d+$/i.test(key))])
+  )
+  const baseColumns = columns.filter((key) => !dynamicColumns.includes(key))
+  const gasSalesIndex = baseColumns.indexOf('gas_sales')
+  if (!dynamicColumns.length || gasSalesIndex < 0) return [...dynamicColumns, ...baseColumns]
+  return [...baseColumns.slice(0, gasSalesIndex + 1), ...dynamicColumns, ...baseColumns.slice(gasSalesIndex + 1)]
 })
+const dynamicFeatureLabelMap = computed(() => {
+  return new Map(
+    selectedDynamicIndexes.value
+      .map((item) => {
+        const code = String(item.runtime_code || '')
+        const name = String(item.indicator_name || item.index_name || '')
+        return code ? [code, name] : null
+      })
+      .filter((item): item is [string, string] => item !== null)
+  )
+})
+const requestDatasetColumnLabel = (column: string) => {
+  if (!/^dynamic_\d+$/i.test(column)) return column
+  const name = dynamicFeatureLabelMap.value.get(column)
+  return name ? `${name} (${column})` : `动态指标 (${column})`
+}
 const resultMetricRows = computed(() => {
   const result = selectedResultJson.value
   const metrics = asRecord(result.metrics)
@@ -1130,6 +1275,18 @@ const candidateRows = computed<Record<string, any>[]>(() => {
     .map((row, index) => ({ ...row, rank: index + 1 }))
 })
 const backtestRows = computed(() => asArray(selectedResultJson.value.rolling_backtest_results))
+const metricUnavailableMessage = computed(() => {
+  const result = selectedTrainResult.value || {}
+  const unavailable = [result.mape, result.wmape, result.smape, result.r2]
+    .every((value) => value === undefined || value === null || value === '')
+  if (!unavailable) return ''
+  const rows = backtestRows.value
+  const allActualZero = rows.length > 0 && rows.every((row) => Number(row.actual_value) === 0)
+  if (allActualZero) {
+    return '本次回测区间的实际销量全部为 0，MAPE、WMAPE、SMAPE 和 R² 无法计算；RMSE、MAE 为 0 也不代表模型效果好。请先检查该客户训练数据中的销量。'
+  }
+  return '模型平台未返回可计算的百分比误差或 R²，请在“回测结果”和“原始 JSON”中检查评估数据。'
+})
 const issueRows = computed(() => asArray(selectedResultJson.value.issues))
 const getChart = (el?: HTMLDivElement) => {
   return el ? echarts.getInstanceByDom(el) || echarts.init(el) : null
@@ -1404,6 +1561,19 @@ const handleFormOptionSelect = (field: BaseDataFieldConfig, option?: Option) => 
       form.modelName = ''
     }
   }
+  if (config.value.trainExecution && (field.prop === 'regionCode' || field.prop === 'industryCode')) {
+    const selectedCustomer = (formOptionMap.customerCode || []).find(
+      (customerOption) => customerOption.value === form.customerCode
+    )
+    const customerDoesNotMatch =
+      selectedCustomer &&
+      ((form.regionCode && selectedCustomer.raw?.regionCode !== form.regionCode) ||
+        (form.industryCode && selectedCustomer.raw?.industryCode !== form.industryCode))
+    if (customerDoesNotMatch) {
+      form.customerCode = ''
+      form.customerName = ''
+    }
+  }
   if (!field.fillProps) {
     return
   }
@@ -1431,45 +1601,52 @@ const openFeatureDetail = (row: Record<string, any>) => {
   featureDetailVisible.value = true
 }
 
+let trainResultListRequestId = 0
 const openTrainResult = async (row: Record<string, any>) => {
+  const requestId = ++trainResultListRequestId
   trainResultSource.value = row
   trainResultBatches.value = []
   selectedTrainBatchNo.value = ''
   trainBatchKeyword.value = ''
   trainBatchStatus.value = 'all'
   trainBatchPage.value = 1
-  activeTrainResultTab.value = 'dataset'
+  activeTrainResultTab.value = 'execution'
+  trainExecutionSteps.value = []
   backtestResultView.value = 'chart'
   trainResultVisible.value = true
   trainResultLoading.value = true
   try {
-    // 训练配置的作用范围可能后续被编辑，历史批次仍应按智能体和区域展示。
-    // 批次详情再通过 batchNo 精确加载，避免新行业/客户范围屏蔽旧结果。
+    // 每条训练配置只展示由自身创建的批次，避免相同智能体和区域的数据互相串用。
     const result = await postJson('/model-train-execution/result', {
-      agentCode: row.agentCode,
-      regionCode: row.regionCode
+      trainConfigId: row.id
     })
+    if (requestId !== trainResultListRequestId || trainResultSource.value?.id !== row.id) return
     const data = (result as any).data || {}
     trainResultBatches.value = Array.isArray(data.batches) ? data.batches : []
     selectedTrainBatchNo.value = data.selectedBatchNo || trainResultBatches.value[0]?.batchNo || ''
     trainResultLoading.value = false
     if (selectedTrainBatchNo.value) {
       void loadTrainResultDetail(selectedTrainBatchNo.value)
+      void loadTrainExecutionSteps(selectedTrainBatchNo.value)
     }
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '训练结果加载失败')
+    if (requestId === trainResultListRequestId) {
+      ElMessage.error(error instanceof Error ? error.message : '训练结果加载失败')
+    }
   } finally {
-    trainResultLoading.value = false
+    if (requestId === trainResultListRequestId) {
+      trainResultLoading.value = false
+    }
   }
 }
 
 let trainResultDetailRequestId = 0
-const loadTrainResultDetail = async (batchNo: string) => {
+const loadTrainResultDetail = async (batchNo: string, force = false, silent = false) => {
   if (!batchNo) return
   const current = trainResultBatches.value.find((item) => item.batchNo === batchNo)
-  if (current?.requestJson != null || current?.resultJson != null) return
+  if (!force && (current?.requestJson != null || current?.resultJson != null)) return
   const requestId = ++trainResultDetailRequestId
-  trainResultDetailLoading.value = true
+  if (!silent) trainResultDetailLoading.value = true
   try {
     const result = await postJson('/model-train-execution/result', { batchNo })
     if (requestId !== trainResultDetailRequestId) return
@@ -1481,14 +1658,45 @@ const loadTrainResultDetail = async (batchNo: string) => {
       trainResultBatches.value[index] = { ...trainResultBatches.value[index], ...detail }
     }
   } catch (error) {
-    if (requestId === trainResultDetailRequestId) {
+    if (!silent && requestId === trainResultDetailRequestId) {
       ElMessage.error(error instanceof Error ? error.message : '训练批次详情加载失败')
     }
   } finally {
-    if (requestId === trainResultDetailRequestId) {
+    if (!silent && requestId === trainResultDetailRequestId) {
       trainResultDetailLoading.value = false
     }
   }
+}
+
+const loadTrainExecutionSteps = async (batchNo: string, silent = false) => {
+  if (!batchNo) return
+  if (!silent) trainStepsLoading.value = true
+  try {
+    const response = await postJson('/model-train-execution/steps', { batchNo })
+    if (selectedTrainBatchNo.value !== batchNo) return
+    trainExecutionSteps.value = Array.isArray((response as any).data) ? (response as any).data : []
+  } catch (error) {
+    if (!silent) ElMessage.error(error instanceof Error ? error.message : '执行记录加载失败')
+  } finally {
+    if (!silent) trainStepsLoading.value = false
+  }
+}
+
+let trainResultPollingTimer: number | undefined
+const stopTrainResultPolling = () => {
+  if (trainResultPollingTimer !== undefined) {
+    window.clearInterval(trainResultPollingTimer)
+    trainResultPollingTimer = undefined
+  }
+}
+const startTrainResultPolling = () => {
+  stopTrainResultPolling()
+  trainResultPollingTimer = window.setInterval(() => {
+    const status = String(selectedTrainResult.value?.status || '').toUpperCase()
+    if (!trainResultVisible.value || !selectedTrainBatchNo.value || !['PENDING', 'RUNNING'].includes(status)) return
+    void loadTrainResultDetail(selectedTrainBatchNo.value, true, true)
+    void loadTrainExecutionSteps(selectedTrainBatchNo.value, true)
+  }, 3000)
 }
 
 const handleTrainResultSelect = (row?: Record<string, any>) => {
@@ -1496,6 +1704,7 @@ const handleTrainResultSelect = (row?: Record<string, any>) => {
   requestDatasetPage.value = 1
   if (selectedTrainBatchNo.value) {
     void loadTrainResultDetail(selectedTrainBatchNo.value)
+    void loadTrainExecutionSteps(selectedTrainBatchNo.value)
   }
 }
 
@@ -1575,12 +1784,11 @@ const continueExecution = async () => {
   try {
     const saved = await persistCurrentForm()
     executionConfig.value = { ...form, ...saved }
-    await postJson('/model-train-execution/validate', { trainConfigId: executionConfig.value.id })
-    ElMessage.success('训练数据校验通过')
     dialogVisible.value = false
     previewPage.value = 1
     await loadPreviewData()
     previewVisible.value = true
+    ElMessage.success('已加载所选训练数据')
     await loadData()
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '训练数据预览加载失败')
@@ -1636,10 +1844,11 @@ const executeTraining = async () => {
     return
   }
   executing.value = true
+  previewVisible.value = false
+  ElMessage.info('训练任务正在提交，请稍候')
   try {
-    await postJson('/model-train-execution/execute', { trainConfigId: executionConfig.value.id })
+    await postJson('/auto-train/execute', { trainConfigId: executionConfig.value.id, triggerSource: 'MANUAL' })
     ElMessage.success('训练任务已提交')
-    previewVisible.value = false
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '执行训练失败')
   } finally {
@@ -1717,6 +1926,11 @@ watch(
   }
 )
 
+watch(trainResultVisible, (visible) => {
+  if (visible) startTrainResultPolling()
+  else stopTrainResultPolling()
+})
+
 onMounted(() => {
   resetFilters()
   resetForm()
@@ -1727,6 +1941,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  stopTrainResultPolling()
   window.removeEventListener('resize', resizeResultCharts)
   getChart(backtestChartRef.value)?.dispose()
 })
@@ -2651,6 +2866,24 @@ defineExpose({ loadData })
   font-size: 13px;
   font-weight: 600;
 }
+
+.execution-records { min-height: 220px; }
+.execution-attempt { margin-bottom: 18px; padding: 14px; border: 1px solid #e5eaf2; border-radius: 10px; background: #fbfcfe; }
+.execution-attempt > h4 { margin: 0 0 12px; color: #344054; }
+.execution-step { position: relative; margin-left: 8px; padding: 0 0 16px 24px; border-left: 2px solid #e5eaf2; }
+.execution-step:last-child { padding-bottom: 0; }
+.execution-step-head { display: flex; align-items: center; gap: 10px; min-height: 26px; }
+.execution-step-head small, .execution-child small { margin-left: auto; color: #98a2b3; }
+.step-dot { position: absolute; left: -6px; top: 8px; width: 10px; height: 10px; border: 2px solid #94a3b8; border-radius: 50%; background: #fff; }
+.step-success .step-dot { border-color: #22c55e; background: #dcfce7; }
+.step-running .step-dot { border-color: #f59e0b; background: #fef3c7; }
+.step-failed .step-dot { border-color: #ef4444; background: #fee2e2; }
+.execution-children { margin-top: 10px; }
+.execution-child { margin: 6px 0; padding: 8px 10px; border: 1px solid #edf0f5; border-radius: 7px; background: #fff; }
+.execution-child summary { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #475467; }
+.execution-child p { margin: 9px 0 0; color: #667085; font-size: 12px; line-height: 1.6; }
+.execution-child pre { max-height: 260px; margin: 5px 0 0; padding: 9px; overflow: auto; border-radius: 6px; background: #f8fafc; white-space: pre-wrap; word-break: break-word; }
+.step-error { color: #dc2626 !important; }
 
 .result-json {
   max-height: 300px;

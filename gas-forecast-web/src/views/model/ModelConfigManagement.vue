@@ -18,8 +18,8 @@
       </template>
 
       <template #actions>
-        <PermissionButton type="primary" :icon="Plus" permission="model:config:create" @click="openCreate"
-          >新增模型</PermissionButton
+        <PermissionButton type="primary" :icon="Refresh" :loading="syncing" permission="model:config:list" @click="syncModels(false)"
+          >同步模型</PermissionButton
         >
       </template>
 
@@ -55,15 +55,12 @@
         </el-table-column>
         <el-table-column
           label="操作"
-          width="210"
+          width="100"
           fixed="right"
           class-name="action-column"
           label-class-name="action-column"
         >
           <template #default="{ row }">
-            <PermissionButton link type="primary" :icon="Edit" permission="model:config:update" @click="openEdit(row)"
-              >编辑</PermissionButton
-            >
             <PermissionButton
               link
               type="success"
@@ -71,9 +68,6 @@
               permission="model:config:update"
               @click="openConfig(row)"
               >配置</PermissionButton
-            >
-            <PermissionButton link type="danger" :icon="Delete" permission="model:config:delete" @click="removeRow(row)"
-              >删除</PermissionButton
             >
           </template>
         </el-table-column>
@@ -133,9 +127,11 @@
                 v-model="form.configCode"
                 class="form-control"
                 filterable
+                allow-create
+                default-first-option
                 :loading="platformModelsLoading"
                 :empty-values="[]"
-                placeholder="请选择模型平台中的模型"
+                placeholder="请选择或输入模型编号"
                 @change="handlePlatformModelChange"
               >
                 <el-option
@@ -150,6 +146,7 @@
                   </div>
                 </el-option>
               </el-select>
+              <div class="field-help">模型平台在线时可从列表选择；平台离线时可直接输入完整模型编号。</div>
             </el-form-item>
           </div>
         </section>
@@ -161,6 +158,30 @@
             </el-form-item>
             <el-form-item label="模型版本" prop="modelVersion">
               <el-input v-model="form.modelVersion" clearable maxlength="32" placeholder="例如 V1.0" />
+            </el-form-item>
+            <el-form-item label="时间粒度" prop="timeGranularity">
+              <el-select v-model="form.timeGranularity" class="form-control">
+                <el-option v-for="item in granularityOptions" :key="item.value" :label="item.label" :value="item.value" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="支持的预测范围" required>
+              <div class="number-range">
+                <el-input-number v-model="form.minForecastHorizon" :min="1" :max="366" controls-position="right" />
+                <span>至</span>
+                <el-input-number v-model="form.maxForecastHorizon" :min="1" :max="366" controls-position="right" />
+                <span>{{ granularityUnit(form.timeGranularity) }}</span>
+              </div>
+            </el-form-item>
+            <el-form-item label="最短训练数据量" prop="minimumTrainingRows">
+              <el-input-number v-model="form.minimumTrainingRows" class="number-control" :min="1" :max="1000000" controls-position="right" />
+              <div class="field-help">按所选时间粒度计算的最少历史记录数。</div>
+            </el-form-item>
+            <el-form-item label="推荐训练周期数" prop="recommendedTrainingPeriods">
+              <el-input-number v-model="form.recommendedTrainingPeriods" class="number-control" :min="1" :max="1000000" controls-position="right" />
+              <div class="field-help">自动训练默认截取的最近周期数，单位跟随时间粒度。</div>
+            </el-form-item>
+            <el-form-item class="form-wide" label="训练数据要求说明">
+              <el-input v-model="form.trainingDataRequirement" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="例如：至少140天连续日数据，销量不能为空；建议使用最近2年完整历史。" />
             </el-form-item>
             <el-form-item class="form-wide" label="模型描述" prop="description">
               <el-input
@@ -236,12 +257,45 @@
               class="form-control"
               multiple
               filterable
+              :disabled="regionScopeMode === 'ALL'"
               placeholder="请选择地区"
-              @change="handleRegionCodesChange"
+              @change="handleScopeCodesChange"
             >
               <el-option v-for="item in regionOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
+          <div class="scope-row">
+            <el-radio-group v-model="industryScopeMode" @change="handleIndustryScopeModeChange">
+              <el-radio value="CUSTOM">指定行业</el-radio><el-radio value="ALL">所有行业</el-radio>
+            </el-radio-group>
+          </div>
+          <el-form-item label="行业">
+            <el-select v-model="configForm.industryCodes" class="form-control" multiple filterable :disabled="industryScopeMode === 'ALL'" placeholder="请选择行业" @change="handleScopeCodesChange">
+              <el-option v-for="item in industryOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+          <div class="scope-row">
+            <el-radio-group v-model="customerScopeMode" @change="handleCustomerScopeModeChange">
+              <el-radio value="CUSTOM">指定客户</el-radio><el-radio value="ALL">所有客户</el-radio>
+            </el-radio-group>
+          </div>
+          <el-form-item label="客户">
+            <el-select v-model="configForm.customerCodes" class="form-control" multiple filterable collapse-tags collapse-tags-tooltip :disabled="customerScopeMode === 'ALL'" placeholder="请选择客户">
+              <el-option v-for="item in filteredCustomerOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <div class="field-help">客户会根据已选地区和行业自动过滤。</div>
+          </el-form-item>
+        </section>
+
+        <section class="config-section">
+          <header class="section-header"><div class="section-title"><el-icon><TrendCharts /></el-icon><div><h3>模型能力边界</h3><span>由模型平台定义并自动同步，仅供查看，不需要人工配置</span></div></div><el-tag type="info" effect="plain">平台同步</el-tag></header>
+          <div class="capability-readonly-grid">
+            <div class="capability-item"><span>时间粒度</span><strong>{{ timeGranularityText(configForm.timeGranularity) }}</strong></div>
+            <div class="capability-item"><span>最短训练数据量</span><strong>{{ configForm.minimumTrainingRows || '-' }} {{ granularityUnit(configForm.timeGranularity) }}</strong></div>
+            <div class="capability-item"><span>推荐训练周期</span><strong>{{ configForm.recommendedTrainingPeriods || '-' }} {{ granularityUnit(configForm.timeGranularity) }}</strong></div>
+            <div class="capability-item"><span>支持的预测范围</span><strong>{{ configForm.minForecastHorizon || '-' }} 至 {{ configForm.maxForecastHorizon || '-' }} {{ granularityUnit(configForm.timeGranularity) }}</strong></div>
+            <div class="capability-item capability-item-wide"><span>训练数据要求</span><p>{{ configForm.trainingDataRequirement || '模型平台暂未提供说明' }}</p></div>
+          </div>
         </section>
 
         <section class="config-section">
@@ -250,7 +304,7 @@
               <el-icon><Histogram /></el-icon>
               <div>
                 <h3>输入特征</h3>
-                <span>选择模型训练需要的输入特征</span>
+                <span>特征统一基于日级原始数据，训练时按模型时间粒度自动聚合</span>
               </div>
             </div>
             <div class="feature-actions">
@@ -271,7 +325,7 @@
               row-key="id"
               border
               max-height="360"
-              empty-text="暂无特征"
+              empty-text="暂无可用特征"
               :row-class-name="featureRowClassName"
               @row-click="toggleFeatureSelection"
             >
@@ -286,12 +340,6 @@
               </el-table-column>
               <el-table-column type="index" label="序号" width="64" />
               <el-table-column prop="featureName" label="特征名称" min-width="160" show-overflow-tooltip />
-              <el-table-column prop="featureColumn" label="特征字段" min-width="150" show-overflow-tooltip />
-              <el-table-column label="时间跨度" width="110">
-                <template #default="{ row }">
-                  <el-tag effect="plain">{{ timeGranularityText(row.timeGranularity) }}</el-tag>
-                </template>
-              </el-table-column>
               <el-table-column prop="featureCode" label="特征编号" min-width="140" show-overflow-tooltip />
               <el-table-column label="状态" width="100" align="center">
                 <template #default="{ row }">
@@ -314,9 +362,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Box, Delete, Edit, Histogram, Location, Plus, Search, Setting } from '@element-plus/icons-vue'
-import { createRow, deleteRow, getJson, listPage, postJson, updateRow } from '@/api/management'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { Box, Histogram, Location, Refresh, Search, Setting, TrendCharts } from '@element-plus/icons-vue'
+import { createRow, getJson, listPage, postJson, updateRow } from '@/api/management'
 import { usePageQuery } from '@/composables/usePageQuery'
 import AppDialog from '@/components/AppDialog.vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -333,6 +381,7 @@ const endpoint = '/model-config'
 const formRef = ref<FormInstance>()
 const saving = ref(false)
 const configSaving = ref(false)
+const syncing = ref(false)
 const dialogVisible = ref(false)
 const configDialogVisible = ref(false)
 const editingId = ref<number | null>(null)
@@ -343,6 +392,12 @@ const form = reactive({
   modelVersion: 'V1.0',
   agentCode: 'winter-supply',
   sceneCode: 'WINTER_SUPPLY',
+  timeGranularity: 'TENDAY',
+  minForecastHorizon: 1,
+  maxForecastHorizon: 18,
+  minimumTrainingRows: 18,
+  recommendedTrainingPeriods: 18,
+  trainingDataRequirement: '',
   description: ''
 })
 const configForm = reactive({
@@ -351,7 +406,15 @@ const configForm = reactive({
   modelVersion: '',
   agentName: '',
   sceneCode: '',
-  regionCodes: ['ALL'] as string[],
+  regionCodes: [] as string[],
+  industryCodes: [] as string[],
+  customerCodes: [] as string[],
+  timeGranularity: 'DAY',
+  minForecastHorizon: 1,
+  maxForecastHorizon: 30,
+  minimumTrainingRows: 140,
+  recommendedTrainingPeriods: 140,
+  trainingDataRequirement: '',
   featureRefs: [] as FeatureRefRow[]
 })
 
@@ -368,6 +431,9 @@ interface PlatformModel {
   description: string
   capabilities: string[]
   training_data_range?: {
+    frequency?: string
+    minimum?: number
+    recommended?: number
     description?: string
   }
 }
@@ -376,22 +442,28 @@ interface FeatureOption {
   id: number
   featureCode: string
   featureName: string
-  featureColumn: string
-  timeGranularity: string
 }
 
 interface FeatureRefRow extends FeatureOption {
   featureId: number
+  outputFeatureCode?: string
   requiredFlag: number
   featureOrder: number
 }
 
 const regionOptions = ref<SelectOption[]>([])
+const industryOptions = ref<SelectOption[]>([])
+const customerOptions = ref<(SelectOption & { regionCode?: string; industryCode?: string })[]>([])
 const featureOptions = ref<FeatureOption[]>([])
 const featureLoading = ref(false)
 const platformModels = ref<PlatformModel[]>([])
 const platformModelsLoading = ref(false)
 const regionScopeMode = ref<'ALL' | 'CUSTOM'>('ALL')
+const industryScopeMode = ref<'ALL' | 'CUSTOM'>('ALL')
+const customerScopeMode = ref<'ALL' | 'CUSTOM'>('ALL')
+const granularityOptions = [
+  { label: '日', value: 'DAY' }, { label: '旬', value: 'TENDAY' }, { label: '月', value: 'MONTH' }
+]
 
 const formRules: FormRules = {
   configCode: [{ required: true, message: '请选择模型', trigger: 'change' }],
@@ -412,18 +484,28 @@ const configDialogTitle = computed(() => `${configForm.configName || '模型'}�
 const selectedAgent = computed(() => modelAgentOptions.find((item) => item.value === form.agentCode))
 const selectedFeatureCount = computed(() => configForm.featureRefs.length)
 const filteredPlatformModels = computed(() => platformModels.value.filter((item) => item.agent_code === form.agentCode))
+const filteredCustomerOptions = computed(() => customerOptions.value.filter((item) =>
+  (!configForm.regionCodes.length || !item.regionCode || configForm.regionCodes.includes(item.regionCode)) &&
+  (!configForm.industryCodes.length || !item.industryCode || configForm.industryCodes.includes(item.industryCode))))
+const granularityUnit = (value: string) => ({ DAY: '天', TENDAY: '旬', MONTH: '月' } as Record<string, string>)[value] || '期'
+const capabilityDefaults = (agentCode: string) => agentCode === 'monthly-sales'
+  ? { timeGranularity: 'MONTH', maxForecastHorizon: 24, minimumTrainingRows: 24, recommendedTrainingPeriods: 36 }
+  : agentCode === 'winter-supply'
+    ? { timeGranularity: 'TENDAY', maxForecastHorizon: 18, minimumTrainingRows: 18, recommendedTrainingPeriods: 108 }
+    : { timeGranularity: 'DAY', maxForecastHorizon: 90, minimumTrainingRows: 140, recommendedTrainingPeriods: 730 }
 const syncSceneCode = () => {
   form.sceneCode = selectedAgent.value?.sceneCode || ''
 }
 
 const handleAgentChange = () => {
   syncSceneCode()
+  Object.assign(form, capabilityDefaults(form.agentCode))
   if (!filteredPlatformModels.value.some((item) => item.model_code === form.configCode)) {
     form.configCode = ''
   }
 }
 
-const loadPlatformModels = async () => {
+const _loadPlatformModels = async () => {
   platformModelsLoading.value = true
   try {
     const response = await getJson<PlatformModel[]>('/model-platform/models')
@@ -443,16 +525,30 @@ const handlePlatformModelChange = (modelCode: string) => {
   form.modelVersion = model.model_version
   form.agentCode = model.agent_code
   form.description = model.description
+  const range = model.training_data_range
+  if (range?.frequency) form.timeGranularity = String(range.frequency).toUpperCase()
+  if (range?.minimum) {
+    form.minimumTrainingRows = range.minimum
+    form.recommendedTrainingPeriods = range.minimum
+  }
+  if (range?.description) form.trainingDataRequirement = range.description
   syncSceneCode()
 }
 
-const resetForm = (row?: Record<string, any>) => {
+const _resetForm = (row?: Record<string, any>) => {
   editingId.value = row?.id ?? null
   form.configCode = row?.configCode || ''
   form.configName = row?.configName || ''
   form.modelVersion = row?.modelVersion || 'V1.0'
   form.agentCode = row?.agentCode || 'winter-supply'
   form.sceneCode = row?.sceneCode || selectedAgent.value?.sceneCode || 'WINTER_SUPPLY'
+  const defaults = capabilityDefaults(form.agentCode)
+  form.timeGranularity = row?.timeGranularity || defaults.timeGranularity
+  form.minForecastHorizon = row?.minForecastHorizon || 1
+  form.maxForecastHorizon = row?.maxForecastHorizon || defaults.maxForecastHorizon
+  form.minimumTrainingRows = row?.minimumTrainingRows || defaults.minimumTrainingRows
+  form.recommendedTrainingPeriods = row?.recommendedTrainingPeriods || defaults.recommendedTrainingPeriods
+  form.trainingDataRequirement = row?.trainingDataRequirement || ''
   form.description = row?.description || ''
   syncSceneCode()
 }
@@ -464,37 +560,46 @@ const resetConfigForm = (row: Record<string, any>) => {
   configForm.modelVersion = row.modelVersion || 'V1.0'
   configForm.agentName = row.agentName || ''
   configForm.sceneCode = row.sceneCode || ''
-  configForm.regionCodes = row.regionCodes?.length ? [...row.regionCodes] : ['ALL']
-  regionScopeMode.value = configForm.regionCodes.length && !configForm.regionCodes.includes('ALL') ? 'CUSTOM' : 'ALL'
+  configForm.regionCodes = row.regionCodes?.length ? [...row.regionCodes] : []
+  configForm.industryCodes = row.industryCodes?.length ? [...row.industryCodes] : []
+  configForm.customerCodes = row.customerCodes?.length ? [...row.customerCodes] : []
+  regionScopeMode.value = configForm.regionCodes.length ? 'CUSTOM' : 'ALL'
+  industryScopeMode.value = configForm.industryCodes.length ? 'CUSTOM' : 'ALL'
+  customerScopeMode.value = configForm.customerCodes.length ? 'CUSTOM' : 'ALL'
+  configForm.timeGranularity = row.timeGranularity || 'DAY'
+  configForm.minForecastHorizon = row.minForecastHorizon || 1
+  configForm.maxForecastHorizon = row.maxForecastHorizon || 30
+  configForm.minimumTrainingRows = row.minimumTrainingRows || 140
+  configForm.recommendedTrainingPeriods = row.recommendedTrainingPeriods || configForm.minimumTrainingRows
+  configForm.trainingDataRequirement = row.trainingDataRequirement || ''
   configForm.featureRefs = (row.featureRefs || [])
     .map((item: Record<string, any>, index: number) => ({
       id: item.featureId,
       featureId: item.featureId,
       featureCode: item.featureCode,
       featureName: item.featureName,
-      featureColumn: item.featureColumn,
-      timeGranularity: item.timeGranularity,
+      outputFeatureCode: item.outputFeatureCode || item.featureCode,
       requiredFlag: item.requiredFlag ?? 0,
       featureOrder: item.featureOrder ?? index + 1
     }))
-    .sort(compareFeatureByColumn)
+    .sort(compareFeature)
   normalizeFeatureOrder()
-  if (!configForm.regionCodes.length) {
-    configForm.regionCodes = ['ALL']
-  }
 }
 
 const loadScopeOptions = async () => {
-  const regions = await listPage('/base-region', { page: 1, size: 1000 })
+  const [regions, industries, customers] = await Promise.all([
+    listPage('/base-region', { page: 1, size: 1000 }),
+    listPage('/base-industry', { page: 1, size: 1000 }),
+    listPage('/base-customer', { page: 1, size: 1000 })
+  ])
   regionOptions.value = regions.records
     .map((item: Record<string, any>) => ({
       label: item.regionName || item.regionCode,
       value: item.regionCode
     }))
     .filter((item: SelectOption) => item.value)
-  if (regionScopeMode.value === 'ALL') {
-    configForm.regionCodes = regionOptions.value.map((item) => item.value)
-  }
+  industryOptions.value = industries.records.map((item: Record<string, any>) => ({ label: item.industryName || item.industryCode, value: item.industryCode })).filter((item: SelectOption) => item.value)
+  customerOptions.value = customers.records.map((item: Record<string, any>) => ({ label: `${item.customerName || item.customerCode}${item.regionName ? `（${item.regionName}）` : ''}`, value: item.customerCode, regionCode: item.regionCode, industryCode: item.industryCode })).filter((item: SelectOption) => item.value)
 }
 
 const loadFeatureOptions = async () => {
@@ -506,11 +611,9 @@ const loadFeatureOptions = async () => {
       .map((item: Record<string, any>) => ({
         id: item.id,
         featureCode: item.featureCode,
-        featureName: item.featureName,
-        featureColumn: item.featureColumn,
-        timeGranularity: item.timeGranularity
+        featureName: item.featureName
       }))
-      .sort(compareFeatureByColumn)
+      .sort(compareFeature)
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '特征列表加载失败')
   } finally {
@@ -518,26 +621,24 @@ const loadFeatureOptions = async () => {
   }
 }
 
-const openCreate = async () => {
-  resetForm()
-  dialogVisible.value = true
-  if (!platformModels.value.length) await loadPlatformModels()
-}
-
-const openEdit = async (row: Record<string, any>) => {
-  resetForm(row)
-  dialogVisible.value = true
-  if (!platformModels.value.length) await loadPlatformModels()
+const syncModels = async (silent: boolean) => {
+  syncing.value = true
+  try {
+    const response = await postJson<{ data?: number }>(`${endpoint}/sync`, {})
+    if (!silent) ElMessage.success(`已同步 ${response.data ?? 0} 个模型`)
+  } catch (error) {
+    if (!silent) ElMessage.error(error instanceof Error ? error.message : '模型同步失败')
+  } finally {
+    syncing.value = false
+    await loadData()
+  }
 }
 
 const openConfig = async (row: Record<string, any>) => {
   resetConfigForm(row)
   configDialogVisible.value = true
-  if (!regionOptions.value.length) {
+  if (!regionOptions.value.length || !industryOptions.value.length || !customerOptions.value.length) {
     await loadScopeOptions()
-  }
-  if (regionScopeMode.value === 'ALL') {
-    configForm.regionCodes = regionOptions.value.map((item) => item.value)
   }
   if (!featureOptions.value.length) {
     await loadFeatureOptions()
@@ -547,6 +648,10 @@ const openConfig = async (row: Record<string, any>) => {
 const saveData = async () => {
   const valid = await formRef.value?.validate().catch(() => false)
   if (valid === false) return
+  if (form.minForecastHorizon > form.maxForecastHorizon) {
+    ElMessage.warning('最小预测周期不能大于最大预测周期')
+    return
+  }
   saving.value = true
   try {
     const payload = buildPayload()
@@ -572,17 +677,27 @@ const buildPayload = () => {
     modelVersion: form.modelVersion,
     agentCode: form.agentCode,
     sceneCode: form.sceneCode,
+    timeGranularity: form.timeGranularity,
+    minForecastHorizon: form.minForecastHorizon,
+    maxForecastHorizon: form.maxForecastHorizon,
+    minimumTrainingRows: form.minimumTrainingRows,
+    recommendedTrainingPeriods: form.recommendedTrainingPeriods,
+    trainingDataRequirement: form.trainingDataRequirement,
     description: form.description
   }
 }
 
 const handleRegionScopeModeChange = () => {
-  configForm.regionCodes = regionScopeMode.value === 'ALL' ? regionOptions.value.map((item) => item.value) : []
+  configForm.regionCodes = []
+  handleScopeCodesChange()
 }
 
-const handleRegionCodesChange = () => {
-  regionScopeMode.value = configForm.regionCodes.length === regionOptions.value.length ? 'ALL' : 'CUSTOM'
+const handleScopeCodesChange = () => {
+  configForm.customerCodes = configForm.customerCodes.filter((code) => filteredCustomerOptions.value.some((item) => item.value === code))
 }
+
+const handleIndustryScopeModeChange = () => { configForm.industryCodes = []; handleScopeCodesChange() }
+const handleCustomerScopeModeChange = () => { configForm.customerCodes = [] }
 
 const isFeatureSelected = (row: FeatureOption) => {
   return configForm.featureRefs.some((item) => item.featureId === row.id)
@@ -597,6 +712,7 @@ const toggleFeatureSelection = (feature: FeatureOption) => {
   configForm.featureRefs.push({
     ...feature,
     featureId: feature.id,
+    outputFeatureCode: feature.featureCode,
     requiredFlag: 0,
     featureOrder: configForm.featureRefs.length + 1
   })
@@ -612,20 +728,14 @@ const clearSelectedFeatures = () => {
 }
 
 const normalizeFeatureOrder = () => {
-  configForm.featureRefs.sort(compareFeatureByColumn)
+  configForm.featureRefs.sort(compareFeature)
   configForm.featureRefs.forEach((item, index) => {
     item.featureOrder = index + 1
   })
 }
 
-const compareFeatureByColumn = (left: { featureColumn?: string }, right: { featureColumn?: string }) => {
-  return featureColumnOrder(left.featureColumn) - featureColumnOrder(right.featureColumn)
-}
-
-const featureColumnOrder = (value?: string) => {
-  const matched = value?.match(/^feature_(\d+)$/)
-  return matched ? Number(matched[1]) : Number.MAX_SAFE_INTEGER
-}
+const compareFeature = (left: { featureCode?: string }, right: { featureCode?: string }) =>
+  (left.featureCode || '').localeCompare(right.featureCode || '', 'zh-CN')
 
 const timeGranularityText = (value: string) => {
   return ({ DAY: '日', TENDAY: '旬', MONTH: '月', YEAR: '年' } as Record<string, string>)[value] || value || '-'
@@ -635,10 +745,11 @@ const buildConfigPayload = () => {
   return {
     id: configuringId.value,
     regionCodes: configForm.regionCodes,
-    industryCodes: [],
-    customerCodes: [],
+    industryCodes: configForm.industryCodes,
+    customerCodes: configForm.customerCodes,
     featureRefs: configForm.featureRefs.map((item, index) => ({
       featureId: item.featureId,
+      outputFeatureCode: item.outputFeatureCode || item.featureCode,
       requiredFlag: item.requiredFlag,
       featureOrder: index + 1
     }))
@@ -651,6 +762,8 @@ const saveConfig = async () => {
     ElMessage.warning('请至少选择一个地区')
     return
   }
+  if (industryScopeMode.value === 'CUSTOM' && !configForm.industryCodes.length) { ElMessage.warning('请至少选择一个行业'); return }
+  if (customerScopeMode.value === 'CUSTOM' && !configForm.customerCodes.length) { ElMessage.warning('请至少选择一个客户'); return }
   configSaving.value = true
   try {
     await postJson(`${endpoint}/updateScope`, buildConfigPayload())
@@ -664,19 +777,8 @@ const saveConfig = async () => {
   }
 }
 
-const removeRow = async (row: Record<string, any>) => {
-  await ElMessageBox.confirm('删除模型后，对应作用范围配置也会同步删除，确认继续？', '删除确认', { type: 'warning' })
-  try {
-    await deleteRow(endpoint, row.id)
-    ElMessage.success('删除成功')
-    await loadData()
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '删除失败')
-  }
-}
-
 onMounted(() => {
-  void loadData()
+  void syncModels(true)
 })
 </script>
 
@@ -751,6 +853,31 @@ onMounted(() => {
 .form-control {
   width: 100%;
 }
+
+.number-control { width: 100%; }
+.number-range { width: 100%; display: flex; align-items: center; gap: 8px; }
+.number-range :deep(.el-input-number) { width: 132px; }
+.number-range > span { flex: none; color: #667085; }
+.capability-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 18px; }
+.capability-readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.capability-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 78px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.capability-item span { color: #667085; font-size: 13px; }
+.capability-item strong { color: #101828; font-size: 17px; font-weight: 650; }
+.capability-item p { margin: 0; color: #344054; font-size: 14px; line-height: 1.65; }
+.capability-item-wide { grid-column: 1 / -1; min-height: auto; }
 
 .platform-model-option {
   display: flex;
@@ -1087,6 +1214,9 @@ onMounted(() => {
   .editor-grid {
     grid-template-columns: 1fr;
   }
+
+  .capability-grid,
+  .capability-readonly-grid { grid-template-columns: 1fr; }
 
   .config-overview,
   .scope-grid,

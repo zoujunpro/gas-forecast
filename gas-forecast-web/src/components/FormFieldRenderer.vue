@@ -5,6 +5,7 @@
     class="form-control"
     clearable
     filterable
+    :disabled="field.disabled"
     :placeholder="field.placeholder || `请选择${field.label}`"
     :multiple="field.multiple"
     @change="handleSelectChange"

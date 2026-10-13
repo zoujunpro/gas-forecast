@@ -45,6 +45,28 @@ public class ModelTrainRecordTb {
 
     private String status;
 
+    /** 活动批次防重键，进入终态后置空。 */
+    private String activeDedupKey;
+
+    /** MANUAL/AI/SCHEDULE/DATA_EVENT。 */
+    private String triggerSource;
+
+    private Integer priority;
+
+    private Integer retryCount;
+
+    private Integer maxRetryCount;
+
+    private Date nextRetryTime;
+
+    private String claimedBy;
+
+    private Date claimedAt;
+
+    private Date startedAt;
+
+    private Date finishedAt;
+
     private String bestModel;
 
     private BigDecimal mape;

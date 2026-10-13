@@ -41,17 +41,17 @@ def test_model_list_uses_unified_response() -> None:
 
 
 def test_model_list_can_filter_by_model_code() -> None:
-    response = list_models("MODEL_JIANGSHU_DIANLI_V1.0")
+    response = list_models("MODEL_POWER_GENERATION_V1.0")
 
     payload = response.model_dump()
     assert len(payload["data"]) == 1
-    assert payload["data"][0]["model_code"] == "MODEL_JIANGSHU_DIANLI_V1.0"
+    assert payload["data"][0]["model_code"] == "MODEL_POWER_GENERATION_V1.0"
 
 
 def test_training_data_validation_uses_model_specific_rules() -> None:
     response = validate_training_data(
         TrainingDataValidationRequest(
-            model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+            model_code="MODEL_POWER_GENERATION_V1.0",
             dataset=[{"date": "2026-01-01", "gas_sales": 100.0}],
         )
     )

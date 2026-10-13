@@ -49,6 +49,12 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
             query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword).or().like(BaseCustomerTb::getCustomerName, keyword).or().like(BaseCustomerTb::getRegionName, keyword).or()
                     .like(BaseCustomerTb::getIndustryName, keyword));
         }
+        if (TextUtils.hasText(reqDTO.getRegionCode())) {
+            query.eq(BaseCustomerTb::getRegionCode, reqDTO.getRegionCode().trim());
+        }
+        if (TextUtils.hasText(reqDTO.getIndustryCode())) {
+            query.eq(BaseCustomerTb::getIndustryCode, reqDTO.getIndustryCode().trim());
+        }
         query.orderByDesc(BaseCustomerTb::getUpdatedAt).orderByDesc(BaseCustomerTb::getId);
 
         IPage<BaseCustomerTb> result = baseCustomerTbMapper.selectPage(PageUtils.pageRequest(reqDTO.getPage(), reqDTO.getSize()), query);

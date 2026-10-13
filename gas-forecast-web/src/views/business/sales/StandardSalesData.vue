@@ -85,6 +85,8 @@
         <el-table-column prop="industryName" label="行业名称" min-width="130" />
         <el-table-column prop="customerName" label="客户名称" min-width="180" />
         <el-table-column prop="gasSales" label="销量" min-width="120" align="right" />
+        <el-table-column v-if="route.path === '/data/daily-sales'" prop="statMonth" label="所属月份" min-width="105" />
+        <el-table-column v-if="route.path === '/data/daily-sales'" prop="statTenday" label="所属旬" min-width="110" />
         <el-table-column prop="fileId" label="来源文件" min-width="150" />
         <el-table-column prop="createdAt" label="创建时间" min-width="170">
           <template #default="{ row }">{{ formatValue(row.createdAt) }}</template>

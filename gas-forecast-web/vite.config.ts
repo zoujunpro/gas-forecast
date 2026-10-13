@@ -50,17 +50,27 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
-      '^/(data-file-info|data-daily-sales|data-monthly-sales)/.*': {
+      '^/(data-file-info|data-daily-sales|data-monthly-sales|data-daily-weather)/.*': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
-      '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution)/.*':
+      '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution|agent-strategy-config)/.*':
         {
           target: 'http://localhost:8080',
           changeOrigin: true,
           rewrite: (path) => `/gas-forecast${path}`
         },
+      '^/auto-train/.*': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => `/gas-forecast${path}`
+      },
+      '^/ai/.*': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => `/gas-forecast${path}`
+      },
       '^/model-platform/.*': {
         target: 'http://localhost:8080',
         changeOrigin: true,

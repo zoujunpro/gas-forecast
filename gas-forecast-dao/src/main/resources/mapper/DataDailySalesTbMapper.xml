@@ -7,6 +7,8 @@
     <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.DataDailySalesTb">
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="statDate" column="stat_date" jdbcType="VARCHAR"/>
+            <result property="statMonth" column="stat_month" jdbcType="VARCHAR"/>
+            <result property="statTenday" column="stat_tenday" jdbcType="VARCHAR"/>
             <result property="regionName" column="region_name" jdbcType="VARCHAR"/>
             <result property="industryName" column="industry_name" jdbcType="VARCHAR"/>
             <result property="customerName" column="customer_name" jdbcType="VARCHAR"/>
@@ -19,7 +21,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,stat_date,region_name,industry_name,customer_name,customer_code,
+        id,stat_date,stat_month,stat_tenday,region_name,industry_name,customer_name,customer_code,
         gas_sales,file_id,created_at,region_code,
         industry_code
     </sql>

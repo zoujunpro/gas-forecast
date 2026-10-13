@@ -10,6 +10,12 @@
             <result property="modelName" column="model_name" jdbcType="VARCHAR"/>
             <result property="modelVersion" column="model_version" jdbcType="VARCHAR"/>
             <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
+            <result property="timeGranularity" column="time_granularity" jdbcType="VARCHAR"/>
+            <result property="minForecastHorizon" column="min_forecast_horizon" jdbcType="INTEGER"/>
+            <result property="maxForecastHorizon" column="max_forecast_horizon" jdbcType="INTEGER"/>
+            <result property="minimumTrainingRows" column="minimum_training_rows" jdbcType="INTEGER"/>
+            <result property="recommendedTrainingPeriods" column="recommended_training_periods" jdbcType="INTEGER"/>
+            <result property="trainingDataRequirement" column="training_data_requirement" jdbcType="VARCHAR"/>
             <result property="description" column="description" jdbcType="VARCHAR"/>
             <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
             <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
@@ -18,7 +24,8 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,model_code,model_name,model_version,agent_code,description,created_by,
+        id,model_code,model_name,model_version,agent_code,time_granularity,min_forecast_horizon,
+        max_forecast_horizon,minimum_training_rows,recommended_training_periods,training_data_requirement,description,created_by,
         created_at,updated_at,created_by_name
     </sql>
 </mapper>

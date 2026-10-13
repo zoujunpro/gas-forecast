@@ -20,9 +20,15 @@ from gas_model_platform.schemas.modeling import (
 )
 from gas_model_platform.schemas.response import ApiResponse
 from gas_model_platform.services.runtime import ModelRuntime
+from gas_model_platform.services.training_registry import (
+    TrainingCapacityExceeded,
+    TrainingRegistry,
+)
+from gas_model_platform.core.config import settings
 
 router = APIRouter(tags=["models"])
 runtime = ModelRuntime(registry)
+training_registry = TrainingRegistry(settings.training_max_concurrency)
 logger = logging.getLogger(__name__)
 ResultT = TypeVar("ResultT")
 
@@ -71,9 +77,38 @@ def validate_training_data(
 def train(request: TrainRequest) -> ApiResponse[TrainResult]:
     """按 model_code 找到模型处理器并执行训练。"""
     logger.info("model train started model_code=%s region=%s", request.model_code, request.region_code or request.region_name)
-    result = _execute(lambda: runtime.train(request))
+    if not request.train_batch_no:
+        raise HTTPException(status_code=422, detail="train_batch_no 不能为空")
+    try:
+        with training_registry.running(request.train_batch_no, request.model_code):
+            result = _execute(lambda: runtime.train(request))
+    except TrainingCapacityExceeded as exc:
+        raise HTTPException(
+            status_code=429,
+            detail=str(exc),
+            headers={"Retry-After": "5"},
+        ) from exc
     logger.info("model train completed model_code=%s batch_no=%s", result.model_code, result.train_batch_no)
     return ApiResponse.success(result)
+
+
+@router.get("/training/capacity", response_model=ApiResponse[dict[str, int]])
+def training_capacity() -> ApiResponse[dict[str, int]]:
+    """返回本进程训练并发上限和剩余槽位。"""
+    return ApiResponse.success(training_registry.capacity())
+
+
+@router.get("/training/tasks", response_model=ApiResponse[list[dict[str, str]]])
+def active_training_tasks() -> ApiResponse[list[dict[str, str]]]:
+    """列出当前进程正在执行的训练批次；进程重启后列表自然为空。"""
+    return ApiResponse.success(training_registry.tasks())
+
+
+@router.get("/training/tasks/{batch_no}", response_model=ApiResponse[dict[str, object]])
+def training_task(batch_no: str) -> ApiResponse[dict[str, object]]:
+    return ApiResponse.success(
+        {"train_batch_no": batch_no, "running": training_registry.contains(batch_no)}
+    )
 
 
 @router.post("/backtest", response_model=ApiResponse[BacktestResult])

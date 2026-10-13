@@ -1,5 +1,6 @@
 package com.gas.forecast.business.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,16 +10,20 @@ import com.gas.forecast.business.enums.ModelForecastStatus;
 import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.component.ForecastAnalysisLlmClient;
 import com.gas.forecast.business.service.XqycForecastPersistenceService;
+import com.gas.forecast.dao.domain.DataDailySalesTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
+import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -69,6 +74,7 @@ public class XqycAgentController {
     private final ModelTrainBacktestTbMapper trainBacktestMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper forecastResultMapper;
+    private final DataDailySalesTbMapper dailySalesMapper;
     private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
     /**
@@ -192,8 +198,14 @@ public class XqycAgentController {
      */
     @GetMapping("/short-term-results/customer-detail")
     public ResponseEntity<JsonNode> getShortTermCustomerResult(@RequestParam String province, @RequestParam String industry, @RequestParam String customer) {
+        // 短期模型按客户独立训练，训练与预测的地区、行业、客户必须完全一致。
         ModelTrainRecordTb record = latestShortTermRecord(province, industry, customer);
-        return record == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(toShortTermResult(record, true));
+        if (record == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ObjectNode result = toShortTermResult(record, true, false);
+        appendLatestForecast(result, record, customer);
+        return ResponseEntity.ok(result);
     }
 
     private ModelTrainRecordTb latestShortTermRecord(String province, String industry, String customer) {
@@ -208,6 +220,10 @@ public class XqycAgentController {
     }
 
     private ObjectNode toShortTermResult(ModelTrainRecordTb record, boolean includeBacktest) {
+        return toShortTermResult(record, includeBacktest, true);
+    }
+
+    private ObjectNode toShortTermResult(ModelTrainRecordTb record, boolean includeBacktest, boolean includeForecast) {
         ObjectNode item = objectMapper.createObjectNode();
         item.put("province", displayScope(record.getRegionName(), "全部区域"));
         item.put("industry", displayScope(record.getIndustryName(), "全部行业"));
@@ -242,13 +258,18 @@ public class XqycAgentController {
             item.set("predicted", predicted);
             item.set("history_dates", dates.deepCopy());
             item.set("history_values", actual.deepCopy());
-            appendLatestForecast(item, record);
+            if (includeForecast) {
+                appendLatestForecast(item, record, null);
+            }
         }
         return item;
     }
 
-    private void appendLatestForecast(ObjectNode item, ModelTrainRecordTb trainRecord) {
-        var query = Wrappers.<ModelForecastRecordTb>lambdaQuery().eq(ModelForecastRecordTb::getAgentCode, "short-term").eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode());
+    private void appendLatestForecast(ObjectNode item, ModelTrainRecordTb trainRecord, String forecastCustomer) {
+        var query = Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .select(ModelForecastRecordTb::getId, ModelForecastRecordTb::getForecastBatchNo, ModelForecastRecordTb::getRegionCode, ModelForecastRecordTb::getIndustryCode,
+                        ModelForecastRecordTb::getCustomerCode, ModelForecastRecordTb::getCustomerName, ModelForecastRecordTb::getForecastEndTime, ModelForecastRecordTb::getRequestParam)
+                .eq(ModelForecastRecordTb::getAgentCode, "short-term").eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode());
         if (!isAllScope(trainRecord.getRegionCode())) {
             query.eq(ModelForecastRecordTb::getRegionCode, trainRecord.getRegionCode());
         }
@@ -257,12 +278,17 @@ public class XqycAgentController {
         } else {
             query.eq(ModelForecastRecordTb::getIndustryCode, trainRecord.getIndustryCode());
         }
-        if (isAllScope(trainRecord.getCustomerName())) {
+        if (forecastCustomer != null && !forecastCustomer.isBlank()) {
+            query.eq(ModelForecastRecordTb::getCustomerName, forecastCustomer);
+        } else if (isAllScope(trainRecord.getCustomerName())) {
             query.and(q -> q.isNull(ModelForecastRecordTb::getCustomerCode).or().eq(ModelForecastRecordTb::getCustomerCode, "").or().eq(ModelForecastRecordTb::getCustomerCode, "ALL"));
         } else {
             query.eq(ModelForecastRecordTb::getCustomerCode, trainRecord.getCustomerCode());
         }
-        ModelForecastRecordTb forecastRecord = forecastRecordMapper.selectOne(query.orderByDesc(ModelForecastRecordTb::getForecastEndTime).orderByDesc(ModelForecastRecordTb::getId).last("limit 1"));
+        List<ModelForecastRecordTb> forecastRecords = forecastRecordMapper
+                .selectList(query.orderByDesc(ModelForecastRecordTb::getForecastEndTime).orderByDesc(ModelForecastRecordTb::getId).last("limit 50"));
+        ModelForecastRecordTb forecastRecord = forecastRecords.stream().filter(candidate -> trainRecord.getBatchNo().equals(requestTrainBatchNo(candidate))).findFirst()
+                .orElseGet(() -> forecastRecords.stream().filter(candidate -> !org.springframework.util.StringUtils.hasText(requestTrainBatchNo(candidate))).findFirst().orElse(null));
         if (forecastRecord == null)
             return;
 
@@ -276,9 +302,67 @@ public class XqycAgentController {
             futureDates.add(point.getForecastDate());
             futurePredicted.add(point.getForecastValue());
         }
+        Map<String, BigDecimal> lastYearActuals = loadLastYearActuals(forecastRecord, points.stream().map(ModelForecastResultTb::getForecastDate).toList());
+        ArrayNode lastYearValues = objectMapper.createArrayNode();
+        for (ModelForecastResultTb point : points) {
+            BigDecimal value = lastYearActuals.get(point.getForecastDate());
+            if (value == null)
+                lastYearValues.addNull();
+            else
+                lastYearValues.add(value);
+        }
         item.put("forecast_batch_no", forecastRecord.getForecastBatchNo());
         item.set("future_dates", futureDates);
         item.set("future_predicted", futurePredicted);
+        item.set("last_year_values", lastYearValues);
+    }
+
+    private Map<String, BigDecimal> loadLastYearActuals(ModelForecastRecordTb record, List<String> forecastDates) {
+        Map<String, String> sourceToDisplay = new LinkedHashMap<>();
+        for (String date : forecastDates) {
+            if (date == null || date.isBlank())
+                continue;
+            sourceToDisplay.putIfAbsent(LocalDate.parse(date).minusYears(1).toString(), date);
+        }
+        if (sourceToDisplay.isEmpty())
+            return Map.of();
+        QueryWrapper<DataDailySalesTb> query = Wrappers.<DataDailySalesTb>query().select("stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales").in("stat_date", sourceToDisplay.keySet())
+                .isNotNull("gas_sales");
+        if (!isAllScope(record.getRegionCode()))
+            query.eq("region_code", record.getRegionCode());
+        if (!isAllScope(record.getIndustryCode()))
+            query.eq("industry_code", record.getIndustryCode());
+        if (!isAllScope(record.getCustomerCode()))
+            query.eq("customer_code", record.getCustomerCode());
+        query.groupBy("stat_date");
+        Map<String, BigDecimal> result = new LinkedHashMap<>();
+        for (Map<String, Object> row : dailySalesMapper.selectMaps(query)) {
+            String sourceDate = String.valueOf(mapValue(row, "stat_date"));
+            Object value = mapValue(row, "gas_sales");
+            if (value != null && sourceToDisplay.containsKey(sourceDate))
+                result.put(sourceToDisplay.get(sourceDate), new BigDecimal(value.toString()));
+        }
+        return result;
+    }
+
+    private Object mapValue(Map<String, Object> row, String key) {
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (key.equalsIgnoreCase(entry.getKey()))
+                return entry.getValue();
+        }
+        return null;
+    }
+
+    private String requestTrainBatchNo(ModelForecastRecordTb record) {
+        if (record.getRequestParam() == null || record.getRequestParam().length == 0)
+            return null;
+        try {
+            JsonNode request = objectMapper.readTree(new String(record.getRequestParam(), StandardCharsets.UTF_8));
+            String batchNo = request.path("train_batch_no").asText(null);
+            return batchNo == null || batchNo.isBlank() ? null : batchNo;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private void putDecimal(ObjectNode target, String field, java.math.BigDecimal value) {

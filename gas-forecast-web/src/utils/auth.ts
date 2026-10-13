@@ -6,8 +6,8 @@ export interface AuthMenu {
   id: number
   parentId?: number
   name: string
-  path?: string
-  component?: string
+  path?: string | null
+  component?: string | null
   icon?: string
   sortNo?: number
   hidden?: number
@@ -57,13 +57,27 @@ export const getProfile = (): AuthProfile => {
     return {}
   }
   try {
-    return JSON.parse(raw) as AuthProfile
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      localStorage.removeItem(PROFILE_KEY)
+      return {}
+    }
+    const profile = parsed as AuthProfile
+    if (profile.menus !== undefined && !Array.isArray(profile.menus)) {
+      localStorage.removeItem(PROFILE_KEY)
+      return {}
+    }
+    return profile
   } catch {
+    localStorage.removeItem(PROFILE_KEY)
     return {}
   }
 }
 
-export const hasProfile = () => Boolean(localStorage.getItem(PROFILE_KEY))
+export const hasProfile = () => {
+  const profile = getProfile()
+  return Boolean(profile.user || profile.menus)
+}
 
 export const refreshProfile = async (): Promise<AuthProfile> => {
   try {
@@ -100,6 +114,38 @@ export const collectMenuPaths = (menus: AuthMenu[] = []): string[] => {
     })
   }
   visit(menus)
+  return paths
+}
+
+const isAiCenterPath = (path?: string | null) => {
+  const normalizedPath = path || ''
+  return normalizedPath === '/ai-assistant' || normalizedPath === '/agent' || normalizedPath.startsWith('/agent/')
+}
+
+const isAiCenterMenu = (menu: AuthMenu): boolean =>
+  isAiCenterPath(menu.path) || menu.name === '智能体中心' || Boolean(menu.children?.some(isAiCenterMenu))
+
+export const filterMenusByWorkspace = (menus: AuthMenu[] = [], workspace: 'ai' | 'management'): AuthMenu[] =>
+  menus.filter((menu) => {
+    if (menu.path === '/') {
+      return true
+    }
+    return workspace === 'ai' ? isAiCenterMenu(menu) : !isAiCenterMenu(menu)
+  })
+
+export const collectManagementMenuPaths = (menus: AuthMenu[] = []) => {
+  const paths: string[] = []
+  const visit = (items: AuthMenu[]) => {
+    items.forEach((item) => {
+      if (!item.hidden && item.path && item.path !== '/' && item.component) {
+        paths.push(item.path)
+      }
+      if (item.children?.length) {
+        visit(item.children)
+      }
+    })
+  }
+  visit(filterMenusByWorkspace(menus, 'management'))
   return paths
 }
 

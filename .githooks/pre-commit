@@ -9,12 +9,15 @@ if [ -n "$blocked_files" ]; then
 fi
 
 staged_diff=$(git diff --cached --unified=0 --no-color --diff-filter=ACMR -- . ':(exclude)*.example')
-if printf '%s\n' "$staged_diff" | grep -E '^\+[^+].*(LLM_API_KEY|OPENAI_API_KEY|DASHSCOPE_API_KEY|DEEPSEEK_API_KEY)[[:space:]]*[:=][[:space:]]*[^$[:space:]][^[:space:]]+' >/dev/null; then
+# 环境变量占位符（包括嵌套默认值）不是密钥。先从新增内容中移除占位符，
+# 再检查是否存在真正的明文值，避免把 ${LLM_QWEN_API_KEY:${LLM_API_KEY:}} 误判。
+secret_scan_diff=$(printf '%s\n' "$staged_diff" | sed -E 's/\$\{[^}]*\}//g')
+if printf '%s\n' "$secret_scan_diff" | grep -E '^\+[^+].*(LLM_API_KEY|OPENAI_API_KEY|DASHSCOPE_API_KEY|DEEPSEEK_API_KEY)[[:space:]]*[:=][[:space:]]*[^$[:space:]][^[:space:]]+' >/dev/null; then
   printf '%s\n' '提交已阻止：检测到疑似硬编码的大模型 API Key。请改用环境变量，并将真实值放入 .env。' >&2
   exit 1
 fi
 
-if printf '%s\n' "$staged_diff" | grep -E '^\+[^+].*(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}' >/dev/null; then
+if printf '%s\n' "$secret_scan_diff" | grep -E '^\+[^+].*(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}' >/dev/null; then
   printf '%s\n' '提交已阻止：检测到疑似 sk-* 密钥。' >&2
   exit 1
 fi

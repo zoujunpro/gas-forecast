@@ -55,7 +55,7 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         if (item == null) {
             return null;
         }
-        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(),
-                item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
+        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getStatMonth(), item.getStatTenday(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(),
+                item.getIndustryName(), item.getCustomerCode(), item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
     }
 }

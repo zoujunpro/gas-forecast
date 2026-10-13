@@ -127,15 +127,15 @@ Java调用说明见 [docs/java-api-reference.md](docs/java-api-reference.md)。
 也可以通过可选查询参数只查询一个模型；无论是否过滤，`data` 始终为数组：
 
 ```http
-GET /api/v1/models?model_code=MODEL_JIANGSHU_DIANLI_V1.0
+GET /api/v1/models?model_code=MODEL_POWER_GENERATION_V1.0
 ```
 
 ```json
 {
   "agent_code": "short-term",
-  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "model_code": "MODEL_POWER_GENERATION_V1.0",
   "model_version": "1.0.0",
-  "model_name": "江苏电力日级预测模型 V1",
+  "model_name": "发电日级预测模型 V1",
   "description": "Prophet 与 LightGBM 残差融合，使用 Walk-Forward 回测选择参数。",
   "capabilities": ["train", "backtest", "predict"],
   "training_data_range": {
@@ -157,7 +157,7 @@ Handler 的 `validate_training_data`，返回统一的校验结果；正式训�
 
 ```json
 {
-  "model_code": "MODEL_JIANGSHU_DIANLI_V1.0",
+  "model_code": "MODEL_POWER_GENERATION_V1.0",
   "params": {},
   "dataset": [
     {"date": "2024-01-01", "gas_sales": 100.0}
@@ -226,7 +226,7 @@ class ModelHandler(Protocol):
 除冬季保供智能体外，模型统一采用“业务模型名 + 版本号”命名，并保持一个
 模型对应一个 Python 实现文件，例如：
 
-- `MODEL_JIANGSHU_DIANLI_V1.0` → `short_agent/model_jiangshu_dianli_v1.py`
+- `MODEL_POWER_GENERATION_V1.0` → `short_agent/model_power_generation_v1.py`
 
 冬季保供智能体算法较多，继续保留独立目录和多文件结构。
 
@@ -256,10 +256,10 @@ Java 侧传 `model_code` 和对应业务参数。注册中心以 `model_code` �
 `selection_reason`、`metrics`、`selected_model_params` 和
 `candidate_evaluations` 可直接用于 Java 侧记录最佳模型及选择依据。
 
-短期日级预测使用 `model_code=MODEL_JIANGSHU_DIANLI_V1.0`，迁移自江苏发电预测智能体，
-采用 Prophet 基线与 LightGBM 残差融合模型。训练数据必须保留原始江苏发电
-数据中的全部字段：日级日期使用 `date`，对外目标值统一使用 `gas_sales`；
-江苏模型适配层会将其转换为原算法使用的 `y`，不改变算法业务逻辑。其余任意名称的
+发电日级预测使用 `model_code=MODEL_POWER_GENERATION_V1.0`，算法迁移自江苏发电预测模型，
+但模型身份不绑定地区或客户，可用于任意地区和任意发电客户。模型采用 Prophet
+基线与 LightGBM 残差融合。日级日期使用 `date`，对外目标值统一使用 `gas_sales`；
+适配层会将其转换为原算法使用的 `y`，不改变算法业务逻辑。其余任意名称的
 数值字段都会自动作为 LightGBM 外部特征。模型产物会记录本批次实际使用的
 外部字段；预测时必须传入从训练结束日期次日起连续的未来日期，以及该批次
 训练时使用的全部未来外部特征，并使用
@@ -268,6 +268,11 @@ Java 侧传 `model_code` 和对应业务参数。注册中心以 `model_code` �
 模型选参及最后120天留出集评估继续保持原脚本逻辑；评估完成后，平台使用
 最优参数和全部可建模历史数据重新拟合生产模型并保存，训练响应中的指标仍
 来自留出集，不会被全量重训结果覆盖。
+
+城市燃气日级预测使用 `model_code=MODEL_CITY_GAS_V1.0`，支持任意地区和任意
+城市燃气客户。平台完整保留 `predict_jiangsu_城燃_v3.py` 的 Prophet、LightGBM、
+AR 备用、节假日、天气特征、预测区间和滚动回测算法；平台适配层仅负责将
+`date/gas_sales` 映射为原算法的 `ds/y`、保存训练批次及转换接口响应。
 
 当前迁移内容：
 

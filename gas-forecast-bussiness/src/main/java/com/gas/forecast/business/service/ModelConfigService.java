@@ -11,6 +11,8 @@ public interface ModelConfigService {
 
     PageInfoDTO<ModelConfigResponse> listPage(ModelConfigPageRequest reqDTO);
 
+    int syncFromPlatform();
+
     ModelConfigResponse create(ModelConfigCreateRequest reqDTO);
 
     ModelConfigResponse update(ModelConfigUpdateRequest reqDTO);

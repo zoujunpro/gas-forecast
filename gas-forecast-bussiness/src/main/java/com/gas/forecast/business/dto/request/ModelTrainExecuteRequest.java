@@ -18,4 +18,8 @@ public class ModelTrainExecuteRequest {
 
     @Size(max = 64, message = "训练批次号长度不能超过64个字符")
     private String retryBatchNo;
+
+    /** 新批次复用数据和动态特征时所参考的历史批次号。 */
+    @Size(max = 64, message = "来源批次号长度不能超过64个字符")
+    private String sourceBatchNo;
 }

@@ -23,6 +23,12 @@ public class DataSalesResponse {
      */
     private String statDate;
 
+    /** 所属月份，格式YYYY-MM。 */
+    private String statMonth;
+
+    /** 所属旬，格式YYYY-MM-1/2/3。 */
+    private String statTenday;
+
     /**
      * 区域编码。
      */

@@ -18,6 +18,16 @@
         <result property="trainStartDate" column="train_start_date" jdbcType="VARCHAR"/>
         <result property="trainEndDate" column="train_end_date" jdbcType="VARCHAR"/>
         <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="activeDedupKey" column="active_dedup_key" jdbcType="VARCHAR"/>
+        <result property="triggerSource" column="trigger_source" jdbcType="VARCHAR"/>
+        <result property="priority" column="priority" jdbcType="INTEGER"/>
+        <result property="retryCount" column="retry_count" jdbcType="INTEGER"/>
+        <result property="maxRetryCount" column="max_retry_count" jdbcType="INTEGER"/>
+        <result property="nextRetryTime" column="next_retry_time" jdbcType="TIMESTAMP"/>
+        <result property="claimedBy" column="claimed_by" jdbcType="VARCHAR"/>
+        <result property="claimedAt" column="claimed_at" jdbcType="TIMESTAMP"/>
+        <result property="startedAt" column="started_at" jdbcType="TIMESTAMP"/>
+        <result property="finishedAt" column="finished_at" jdbcType="TIMESTAMP"/>
         <result property="bestModel" column="best_model" jdbcType="VARCHAR"/>
         <result property="mape" column="mape" jdbcType="DECIMAL"/>
         <result property="wmape" column="wmape" jdbcType="DECIMAL"/>
@@ -39,7 +49,8 @@
     <sql id="Base_Column_List">
         id,train_config_id,batch_no,agent_code,region_code,region_name,customer_code,
         customer_name,industry_code,industry_name,train_start_date,train_end_date,
-        status,best_model,mape,wmape,smape,rmse,mae,r2,train_duration_seconds,result_json,
+        status,active_dedup_key,trigger_source,priority,retry_count,max_retry_count,next_retry_time,
+        claimed_by,claimed_at,started_at,finished_at,best_model,mape,wmape,smape,rmse,mae,r2,train_duration_seconds,result_json,
         error_message,created_by,created_by_name,created_at,updated_at,model_version,request_param
     </sql>
 </mapper>

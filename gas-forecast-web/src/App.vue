@@ -1,6 +1,6 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <router-view v-if="isLoginPage" />
+    <router-view v-if="isLoginPage || isStandalonePage" />
     <div v-else class="app-shell">
       <aside :class="['sidebar', { collapsed: isSidebarCollapsed }]">
         <div class="brand" @click="goHome">
@@ -79,13 +79,13 @@
           </div>
         </header>
 
-        <PageTabs />
+        <PageTabs v-if="!isImmersivePage" />
 
-        <main class="content">
+        <main :class="['content', { immersive: isImmersivePage }]">
           <router-view />
         </main>
 
-        <footer class="footerbar">
+        <footer v-if="!isImmersivePage" class="footerbar">
           <span>天然气市场需求智能预测平台</span>
           <span>本地开发环境</span>
         </footer>
@@ -102,7 +102,14 @@ import { Expand, Fold, Bell, QuestionFilled, Search, Setting, SwitchButton, User
 import PageTabs from '@/components/PageTabs.vue'
 import SidebarMenu from '@/components/SidebarMenu.vue'
 import logoUrl from '@/assets/logo.png'
-import { clearToken, getProfile, getToken, PROFILE_UPDATED_EVENT, refreshProfile } from '@/utils/auth'
+import {
+  clearToken,
+  filterMenusByWorkspace,
+  getProfile,
+  getToken,
+  PROFILE_UPDATED_EVENT,
+  refreshProfile
+} from '@/utils/auth'
 import type { AuthProfile } from '@/utils/auth'
 
 const route = useRoute()
@@ -112,8 +119,15 @@ const profile = ref<AuthProfile>(getProfile())
 
 const activeMenu = computed(() => route.path)
 const isLoginPage = computed(() => route.path === '/login')
-const menus = computed(() => profile.value.menus || [])
-const welcomeName = computed(() => profile.value.user?.realName || '管理员')
+const isStandalonePage = computed(() => Boolean(route.meta.standalone))
+const isImmersivePage = computed(() => Boolean(route.meta.immersive))
+const isAiCenterPage = computed(
+  () => route.path === '/ai-assistant' || route.path === '/agent' || route.path.startsWith('/agent/')
+)
+const menus = computed(() =>
+  filterMenusByWorkspace(profile.value?.menus || [], isAiCenterPage.value ? 'ai' : 'management')
+)
+const welcomeName = computed(() => profile.value?.user?.realName || '管理员')
 
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
@@ -263,14 +277,18 @@ select {
 <style scoped>
 .app-shell {
   display: flex;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--app-bg);
   color: var(--app-text);
 }
 
 .sidebar {
   width: 248px;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--app-surface);
   border-right: 1px solid var(--app-border);
   display: flex;
@@ -388,7 +406,9 @@ select {
 
 .main-area {
   min-width: 0;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -507,6 +527,14 @@ select {
   flex: 1;
   overflow: auto;
   padding: 14px;
+}
+
+.content.immersive {
+  height: 0;
+  min-height: 0;
+  flex: 1 1 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .footerbar {

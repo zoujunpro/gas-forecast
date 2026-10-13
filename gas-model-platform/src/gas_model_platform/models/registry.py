@@ -1,6 +1,12 @@
 from gas_model_platform.models.base import ModelHandler
 from gas_model_platform.models.contract import validate_model_handler
-from gas_model_platform.models.short_agent import ModelJiangshuDianliV1Handler
+from gas_model_platform.models.short_agent import (
+    ModelChemicalGasV1Handler,
+    ModelCityGasV1Handler,
+    ModelCngV1Handler,
+    ModelIndustrialFuelV1Handler,
+    ModelPowerGenerationV1Handler,
+)
 from gas_model_platform.models.winter_agent import WinterAgentV1Handler
 from gas_model_platform.schemas.modeling import ModelInfo
 
@@ -36,7 +42,11 @@ class ModelRegistry:
 
 MODEL_REGISTRY: dict[str, ModelHandler] = {
     "WINTER_MODEL_V1.0": WinterAgentV1Handler(),
-    "MODEL_JIANGSHU_DIANLI_V1.0": ModelJiangshuDianliV1Handler(),
+    "MODEL_POWER_GENERATION_V1.0": ModelPowerGenerationV1Handler(),
+    "MODEL_CITY_GAS_V1.0": ModelCityGasV1Handler(),
+    "MODEL_CNG_V1.0": ModelCngV1Handler(),
+    "MODEL_CHEMICAL_GAS_V1.0": ModelChemicalGasV1Handler(),
+    "MODEL_INDUSTRIAL_FUEL_V1.0": ModelIndustrialFuelV1Handler(),
 }
 
 registry = ModelRegistry(MODEL_REGISTRY)

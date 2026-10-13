@@ -37,12 +37,9 @@ class ForecastAnalysisBackfillTest {
     @Test
     @EnabledIfSystemProperty(named = "gas.analysis.backfill.enabled", matches = "true")
     void backfillSuccessfulForecastsWithoutAnalysis() throws Exception {
-        List<String> successfulBatches = forecastRecordMapper
-                .selectList(Wrappers.<ModelForecastRecordTb>lambdaQuery()
-                        .select(ModelForecastRecordTb::getForecastBatchNo)
-                        .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode())
-                        .orderByAsc(ModelForecastRecordTb::getId))
-                .stream().map(ModelForecastRecordTb::getForecastBatchNo).filter(TextUtils::hasText).toList();
+        List<String> successfulBatches = forecastRecordMapper.selectList(Wrappers.<ModelForecastRecordTb>lambdaQuery().select(ModelForecastRecordTb::getForecastBatchNo)
+                .eq(ModelForecastRecordTb::getStatus, ModelForecastStatus.SUCCESS.getCode()).orderByAsc(ModelForecastRecordTb::getId)).stream().map(ModelForecastRecordTb::getForecastBatchNo)
+                .filter(TextUtils::hasText).toList();
 
         List<String> pendingBatches = successfulBatches.stream().filter(batchNo -> {
             ModelForecastAnalysisResponse analysis = forecastAnalysisService.get(batchNo);
@@ -67,8 +64,7 @@ class ForecastAnalysisBackfillTest {
             Thread.sleep(1000);
         }
 
-        Map<String, String> failures = latest.entrySet().stream()
-                .filter(entry -> entry.getValue() == null || !SUCCESS.equals(entry.getValue().analysisStatus()))
+        Map<String, String> failures = latest.entrySet().stream().filter(entry -> entry.getValue() == null || !SUCCESS.equals(entry.getValue().analysisStatus()))
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> describe(entry.getValue()), (left, right) -> left, LinkedHashMap::new));
         if (!failures.isEmpty())
             fail("历史预测分析回填未全部成功：" + failures);

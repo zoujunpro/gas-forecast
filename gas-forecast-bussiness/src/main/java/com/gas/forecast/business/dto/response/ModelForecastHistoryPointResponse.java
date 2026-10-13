@@ -22,4 +22,7 @@ public class ModelForecastHistoryPointResponse {
      * 预测值。
      */
     private BigDecimal predictedValue;
+
+    /** 当前日期对应的去年同期实际值。 */
+    private BigDecimal lastYearValue;
 }

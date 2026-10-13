@@ -20,11 +20,30 @@ public class ModelFeatureDefinitionCreateRequest {
     @NotBlank(message = "特征名称不能为空")
     private @Size(max = 128, message = "特征名称长度不能超过128个字符") String featureName;
 
-    @Size(max = 64, message = "宽表字段长度不能超过64个字符")
-    private String featureColumn;
+    @NotBlank(message = "数据来源不能为空")
+    private @Size(max = 20, message = "数据来源长度不能超过20个字符") String sourceType;
 
-    @NotBlank(message = "时间粒度不能为空")
-    private @Size(max = 16, message = "时间粒度长度不能超过16个字符") String timeGranularity;
+    @NotBlank(message = "取值来源不能为空")
+    private @Size(max = 32, message = "取值来源长度不能超过32个字符") String valueSource;
+
+    @Size(max = 64, message = "来源字段长度不能超过64个字符")
+    private String sourceField;
+
+    @Size(max = 32, message = "计算类型长度不能超过32个字符")
+    private String calculationType;
+
+    @Size(max = 1000, message = "计算参数长度不能超过1000个字符")
+    private String calculationParams;
+
+    @Size(max = 16, message = "聚合方式长度不能超过16个字符")
+    private String aggregationMethod;
+
+    @NotBlank(message = "缺失值策略不能为空")
+    @Size(max = 16, message = "缺失值策略长度不能超过16个字符")
+    private String missingValueStrategy;
+
+    @NotBlank(message = "特征状态不能为空")
+    private @Size(max = 20, message = "特征状态长度不能超过20个字符") String status;
 
     @NotNull(message = "启用状态不能为空")
     private Integer enabled;
@@ -40,12 +59,31 @@ public class ModelFeatureDefinitionCreateRequest {
         return featureName;
     }
 
-    public String featureColumn() {
-        return featureColumn;
+    public String sourceType() {
+        return sourceType;
     }
 
-    public String timeGranularity() {
-        return timeGranularity;
+    public String valueSource() {
+        return valueSource;
+    }
+    public String sourceField() {
+        return sourceField;
+    }
+    public String calculationType() {
+        return calculationType;
+    }
+    public String calculationParams() {
+        return calculationParams;
+    }
+    public String aggregationMethod() {
+        return aggregationMethod;
+    }
+    public String missingValueStrategy() {
+        return missingValueStrategy;
+    }
+
+    public String status() {
+        return status;
     }
 
     public Integer enabled() {

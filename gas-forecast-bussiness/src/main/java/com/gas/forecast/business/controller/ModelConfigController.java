@@ -44,6 +44,14 @@ public class ModelConfigController {
         return ResponseResult.success(result);
     }
 
+    /** 从 Python 模型平台同步已注册模型，用户无需手工创建。 */
+    @PostMapping("sync")
+    @WebLog("同步模型平台模型")
+    @RequirePermission("model:config:list")
+    public ResponseResult<Integer> sync() {
+        return ResponseResult.success(modelConfigService.syncFromPlatform());
+    }
+
     /**
      * 新增模型配置。
      *

@@ -30,6 +30,9 @@ public class ModelFeatureRef {
      */
     private Long featureId;
 
+    /** 模型接口使用的特征键；为空时使用标准特征编码。 */
+    private String outputFeatureCode;
+
     /**
      * 是否必选特征
      */
@@ -39,6 +42,15 @@ public class ModelFeatureRef {
      * 特征顺序
      */
     private Integer featureOrder;
+
+    /** 模型使用该特征时覆盖默认聚合方式。 */
+    private String aggregationMethod;
+
+    /** 模型使用该特征时覆盖默认缺失值策略。 */
+    private String missingValueStrategy;
+
+    /** 模型特有计算参数JSON。 */
+    private String calculationParams;
 
     /**
      * 创建时间

@@ -16,8 +16,14 @@ const staticRoutes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Home',
-    meta: { title: '工作台首页' },
+    meta: { title: '工作入口', standalone: true },
     component: componentLoaders['views/dashboard/Home.vue']
+  },
+  {
+    path: '/ai-assistant',
+    name: 'AiAssistant',
+    meta: { title: 'AI智能问答', immersive: true },
+    component: componentLoaders['views/ai/AiAssistant.vue']
   }
 ]
 
@@ -26,11 +32,16 @@ const router = createRouter({
   routes: staticRoutes
 })
 
-const registeredDynamicPaths = new Set<string>()
+// Static routes must never be registered again from the permission menu. A duplicate
+// '/' route can replace the standalone portal match after login and leave router-view blank.
+const registeredDynamicPaths = new Set<string>(['/', '/login', '/ai-assistant'])
 
 const routeName = (menu: AuthMenu, componentName: string) => `menu-${componentName}-${menu.id}`
 
 const routeMeta = (path: string) => {
+  if (path === '/ai-assistant') {
+    return { immersive: true }
+  }
   const agentMatch = path.match(/^\/agent\/([^/]+)$/)
   if (agentMatch) {
     return { agentId: agentMatch[1] }
@@ -93,7 +104,7 @@ router.beforeEach(async (to) => {
     installDynamicRoutes(profile)
   }
 
-  if (to.path !== '/login' && to.path !== '/') {
+  if (to.path !== '/login' && to.path !== '/' && to.path !== '/ai-assistant') {
     let allowedPaths = collectMenuPaths(profile.menus)
     if (!allowedPaths.includes(to.path)) {
       profile = await refreshProfile()

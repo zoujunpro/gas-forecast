@@ -70,6 +70,27 @@ public class ForecastAnalysisLlmClient {
         }
     }
 
+    /** 使用调用方提供的系统提示执行一次非流式结构化任务。 */
+    public String complete(String systemPrompt, String userPrompt, double temperature) {
+        validateConfig();
+        try {
+            ObjectNode body = objectMapper.createObjectNode();
+            body.put("model", model());
+            body.put("temperature", temperature);
+            ArrayNode messages = body.putArray("messages");
+            messages.addObject().put("role", "system").put("content", systemPrompt);
+            messages.addObject().put("role", "user").put("content", userPrompt);
+            return execute(body);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("大模型结构化任务已中断", exception);
+        } catch (Exception exception) {
+            if (exception instanceof IllegalStateException stateException)
+                throw stateException;
+            throw new IllegalStateException("大模型结构化任务失败：" + exception.getMessage(), exception);
+        }
+    }
+
     public String chat(String agentCode, String message, JsonNode context, JsonNode conversationHistory) {
         if (!TextUtils.hasText(message))
             throw new IllegalArgumentException("对话内容不能为空");

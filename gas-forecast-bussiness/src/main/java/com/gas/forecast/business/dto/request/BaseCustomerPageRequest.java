@@ -21,4 +21,16 @@ public class BaseCustomerPageRequest extends BasePageRequest {
      */
     @Size(max = 128, message = "搜索关键字长度不能超过128个字符")
     private String keyword;
+
+    /**
+     * 所属区域编码，精确匹配。
+     */
+    @Size(max = 64, message = "区域编码长度不能超过64个字符")
+    private String regionCode;
+
+    /**
+     * 所属行业编码，精确匹配。
+     */
+    @Size(max = 64, message = "行业编码长度不能超过64个字符")
+    private String industryCode;
 }

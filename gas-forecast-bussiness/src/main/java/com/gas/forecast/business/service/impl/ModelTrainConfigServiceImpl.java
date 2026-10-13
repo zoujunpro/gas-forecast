@@ -18,12 +18,14 @@ import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelConfigTb;
+import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.ModelForecastConfigTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
+import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
@@ -41,6 +43,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
 
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelConfigTbMapper modelConfigTbMapper;
+    private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final ModelTrainRecordTbMapper modelTrainRecordTbMapper;
     private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
     private final ModelForecastConfigTbMapper modelForecastConfigTbMapper;
@@ -76,6 +79,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         ensureTrainCodeUnique(trainCode, null);
         ModelConfigTb modelConfig = requireModel(reqDTO.getModelId());
         ModelTrainConfigTb entity = toEntity(reqDTO, trainCode, modelConfig);
+        ensureBusinessScopeUnique(entity, null);
         Date now = new Date();
         entity.setId(null);
         entity.setCreatedAt(now);
@@ -96,6 +100,7 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         ensureTrainCodeUnique(reqDTO.getTrainCode(), reqDTO.getId());
         ModelConfigTb modelConfig = requireModel(reqDTO.getModelId());
         ModelTrainConfigTb entity = toEntity(reqDTO, modelConfig);
+        ensureBusinessScopeUnique(entity, reqDTO.getId());
         entity.setId(reqDTO.getId());
         entity.setCreatedAt(exists.getCreatedAt());
         entity.setCreatedBy(exists.getCreatedBy());
@@ -154,6 +159,25 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         return entity;
     }
 
+    private void ensureBusinessScopeUnique(ModelTrainConfigTb entity, Long excludeId) {
+        LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, entity.getAgentCode())
+                .eq(ModelTrainConfigTb::getModelId, entity.getModelId()).eq(ModelTrainConfigTb::getTimeGranularity, entity.getTimeGranularity());
+        eqOrNull(query, ModelTrainConfigTb::getRegionCode, entity.getRegionCode());
+        eqOrNull(query, ModelTrainConfigTb::getIndustryCode, entity.getIndustryCode());
+        eqOrNull(query, ModelTrainConfigTb::getCustomerCode, entity.getCustomerCode());
+        if (excludeId != null)
+            query.ne(ModelTrainConfigTb::getId, excludeId);
+        if (modelTrainConfigTbMapper.selectCount(query) > 0)
+            throw new BusinessException("相同智能体、模型、地区、行业、客户和时间粒度的训练配置已存在，请修改原配置");
+    }
+
+    private void eqOrNull(LambdaQueryWrapper<ModelTrainConfigTb> query, com.baomidou.mybatisplus.core.toolkit.support.SFunction<ModelTrainConfigTb, String> column, String value) {
+        if (TextUtils.hasText(value))
+            query.eq(column, value);
+        else
+            query.isNull(column);
+    }
+
     private ModelTrainConfigTb toEntity(ModelTrainConfigUpdateRequest reqDTO, ModelConfigTb modelConfig) {
         ModelTrainConfigTb entity = new ModelTrainConfigTb();
         fillEntity(entity, reqDTO.getTrainCode(), reqDTO.getTrainName(), reqDTO.getAgentCode(), modelConfig, reqDTO.getRegionCode(), reqDTO.getRegionName(), reqDTO.getIndustryCode(),
@@ -171,6 +195,17 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         entity.setModelId(modelConfig.getId());
         entity.setModelCode(modelConfig.getModelCode());
         entity.setModelName(modelConfig.getModelName());
+        if (TextUtils.hasText(customerCode)) {
+            BaseCustomerTb customer = baseCustomerTbMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getCustomerCode, customerCode).last("limit 1"));
+            if (customer == null) {
+                throw new BusinessException("训练客户不存在");
+            }
+            customerName = customer.getCustomerName();
+            regionCode = customer.getRegionCode();
+            regionName = customer.getRegionName();
+            industryCode = customer.getIndustryCode();
+            industryName = customer.getIndustryName();
+        }
         entity.setRegionCode(regionCode);
         entity.setRegionName(regionName);
         entity.setIndustryCode(industryCode);
@@ -188,7 +223,8 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         entity.setTrainEndDate(normalizedTrainMode == ModelTrainMode.RANGE ? trainEndDate : null);
         ModelTrainTimeGranularity normalizedTimeGranularity;
         try {
-            normalizedTimeGranularity = TextUtils.hasText(timeGranularity) ? ModelTrainTimeGranularity.fromCode(timeGranularity) : ModelTrainTimeGranularity.MONTH;
+            String modelGranularity = TextUtils.hasText(modelConfig.getTimeGranularity()) ? modelConfig.getTimeGranularity() : timeGranularity;
+            normalizedTimeGranularity = TextUtils.hasText(modelGranularity) ? ModelTrainTimeGranularity.fromCode(modelGranularity) : ModelTrainTimeGranularity.MONTH;
         } catch (IllegalArgumentException exception) {
             throw new BusinessException(exception.getMessage());
         }

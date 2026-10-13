@@ -94,7 +94,7 @@ def test_contract_rejects_trainable_model_without_training_data_range() -> None:
 
 
 def test_contract_rejects_trainable_model_without_validator() -> None:
-    source = MODEL_REGISTRY["MODEL_JIANGSHU_DIANLI_V1.0"].info
+    source = MODEL_REGISTRY["MODEL_POWER_GENERATION_V1.0"].info
     handler = SimpleNamespace(
         info=source,
         train=lambda context: None,

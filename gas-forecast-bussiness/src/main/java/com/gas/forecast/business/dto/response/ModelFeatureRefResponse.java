@@ -31,15 +31,8 @@ public class ModelFeatureRefResponse {
      */
     private String featureName;
 
-    /**
-     * 特征字段。
-     */
-    private String featureColumn;
-
-    /**
-     * 时间粒度。
-     */
-    private String timeGranularity;
+    /** 模型接口实际接收的特征编码。 */
+    private String outputFeatureCode;
 
     /**
      * 是否必填。

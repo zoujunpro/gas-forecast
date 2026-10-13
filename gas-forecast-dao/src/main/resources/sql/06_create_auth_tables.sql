@@ -137,6 +137,7 @@ where p.org_code = 'GAS-MARKET' and not exists (select 1 from sys_department_tb 
 insert ignore into sys_permission_tb (id, parent_id, permission_name, path, component, permission_type, perms, icon, sort_no, hidden, status) values
     (1, null, '工作台首页', '/', 'views/dashboard/Home.vue', 'MENU', null, 'House', 1, 0, 1),
     (10, null, '智能体中心', '/agent', null, 'MENU', null, 'Cpu', 10, 0, 1),
+    (14, null, 'AI智能问答', '/ai-assistant', 'views/ai/AiAssistant.vue', 'MENU', 'ai:assistant:use', 'MagicStick', 10, 1, 1),
     (11, 10, '冬季保供预测', '/agent/winter-supply', 'views/agent/AgentDetail.vue', 'MENU', null, null, 11, 0, 1),
     (12, 10, '月度销量预测', '/agent/monthly-sales', 'views/agent/AgentDetail.vue', 'MENU', null, null, 12, 0, 1),
     (13, 10, '短期客户预测', '/agent/short-term', 'views/agent/AgentDetail.vue', 'MENU', null, null, 13, 0, 1),

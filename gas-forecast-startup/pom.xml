@@ -20,6 +20,11 @@
 
         <dependency>
             <groupId>bio.drqi</groupId>
+            <artifactId>gas-forecast-ai</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>bio.drqi</groupId>
             <artifactId>gas-forecast-system</artifactId>
         </dependency>
 

@@ -35,6 +35,8 @@ build/
 ### Frontend ###
 **/node_modules/
 **/dist/
+/.jenkins-work/
+/.jenkins-work@tmp/
 
 ### Python ###
 __pycache__/
@@ -45,6 +47,10 @@ __pycache__/
 
 ### Mac OS ###
 .DS_Store
+
+### Runtime logs ###
+/logs/
+*.log
 
 # Local secrets
 .env

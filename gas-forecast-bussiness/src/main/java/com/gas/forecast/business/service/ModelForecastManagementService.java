@@ -1,6 +1,7 @@
 package com.gas.forecast.business.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -29,15 +30,16 @@ import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
-import com.gas.forecast.dao.domain.ModelFeatureRef;
 import com.gas.forecast.dao.domain.ModelForecastConfigTb;
+import com.gas.forecast.dao.domain.DataRegionWeatherDailyTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainFeatureDataTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
+import com.gas.forecast.dao.domain.DataDailySalesTb;
+import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
 import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
@@ -45,8 +47,10 @@ import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainFeatureDataTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
+import com.gas.forecast.dao.mapper.DataRegionWeatherDailyTbMapper;
+import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
+import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -58,11 +62,15 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -75,12 +83,15 @@ public class ModelForecastManagementService {
     private final ModelTrainConfigTbMapper trainConfigMapper;
     private final ModelTrainBacktestTbMapper trainBacktestMapper;
     private final ModelTrainRecordTbMapper trainDetailMapper;
+    private final DataRegionWeatherDailyTbMapper weatherMapper;
     private final ModelFeatureRefMapper featureRefMapper;
     private final ModelFeatureDefinitionTbMapper featureDefinitionMapper;
-    private final ModelTrainFeatureDataTbMapper featureDataMapper;
+    private final DataDailySalesTbMapper dailySalesMapper;
+    private final BaseCustomerTbMapper customerMapper;
     private final ObjectMapper objectMapper;
     private final ModelPlatformClient modelPlatformClient;
     private final ForecastAnalysisService forecastAnalysisService;
+    private final @Qualifier("modelForecastTaskExecutor") Executor modelForecastTaskExecutor;
 
     public PageInfoDTO<ModelForecastConfigTb> listConfigs(ModelForecastConfigPageRequest request) {
         var query = Wrappers.<ModelForecastConfigTb>lambdaQuery();
@@ -94,14 +105,20 @@ public class ModelForecastManagementService {
         query.orderByDesc(ModelForecastConfigTb::getUpdatedAt).orderByDesc(ModelForecastConfigTb::getId);
         int page = positive(request.getPage(), 1);
         int size = positive(request.getSize(), 20);
-        IPage<ModelForecastConfigTb> result = configMapper.selectPage(PageUtils.pageRequest(page, size), query);
-        return PageUtils.toPage(result, result.getRecords());
+        Map<String, ModelForecastConfigTb> deduplicated = new LinkedHashMap<>();
+        for (ModelForecastConfigTb config : configMapper.selectList(query)) {
+            deduplicated.putIfAbsent(forecastScopeKey(config), config);
+        }
+        List<ModelForecastConfigTb> all = new ArrayList<>(deduplicated.values());
+        int fromIndex = Math.min((page - 1) * size, all.size());
+        int toIndex = Math.min(fromIndex + size, all.size());
+        return PageInfoDTO.of(all.subList(fromIndex, toIndex), all.size(), page, size);
     }
 
     @Transactional
     public ModelForecastConfigTb saveConfig(ModelForecastConfigSaveRequest request) {
         Long id = request.getId();
-        ModelForecastConfigTb entity = id == null ? new ModelForecastConfigTb() : configMapper.selectById(id);
+        ModelForecastConfigTb entity = id == null ? null : configMapper.selectById(id);
         if (id != null && entity == null)
             throw new BusinessException("预测配置不存在");
         String name = request.getForecastName();
@@ -117,21 +134,47 @@ public class ModelForecastManagementService {
         }
         ModelTrainConfigTb trainConfig = requireTrainConfig(null, request.getTrainConfigCode());
         String agentCode = trainConfig.getAgentCode();
-        Date now = new Date();
+        if ("short-term".equals(agentCode) && !TextUtils.hasText(request.getCustomerCode())) {
+            throw new BusinessException("短期预测必须选择具体客户");
+        }
+        BaseCustomerTb forecastCustomer = null;
+        if (TextUtils.hasText(request.getCustomerCode())) {
+            forecastCustomer = customerMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery().eq(BaseCustomerTb::getCustomerCode, request.getCustomerCode()).last("limit 1"));
+            if (forecastCustomer == null)
+                throw new BusinessException("预测客户不存在：" + request.getCustomerCode());
+            if (!sameScopeValue(trainConfig.getRegionCode(), forecastCustomer.getRegionCode())
+                    || !sameScopeValue(trainConfig.getIndustryCode(), forecastCustomer.getIndustryCode())
+                    || !sameScopeValue(trainConfig.getCustomerCode(), forecastCustomer.getCustomerCode()))
+                throw new BusinessException("预测与训练的地区、行业、客户必须完全一致");
+        }
+        String scopeType = forecastCustomer == null ? resolveScopeType(trainConfig) : "CUSTOMER";
+        String regionCode = forecastCustomer == null ? trainConfig.getRegionCode() : forecastCustomer.getRegionCode();
+        String regionName = forecastCustomer == null ? trainConfig.getRegionName() : forecastCustomer.getRegionName();
+        String industryCode = forecastCustomer == null ? trainConfig.getIndustryCode() : forecastCustomer.getIndustryCode();
+        String industryName = forecastCustomer == null ? trainConfig.getIndustryName() : forecastCustomer.getIndustryName();
+        String customerCode = forecastCustomer == null ? trainConfig.getCustomerCode() : forecastCustomer.getCustomerCode();
+        String customerName = forecastCustomer == null ? trainConfig.getCustomerName() : forecastCustomer.getCustomerName();
+        ModelForecastConfigTb existing = findSameForecastScope(agentCode, regionCode, industryCode, customerCode);
         if (id == null) {
+            entity = existing == null ? new ModelForecastConfigTb() : existing;
+        } else if (existing != null && !existing.getId().equals(id)) {
+            throw new BusinessException("同一智能体、地区、行业、客户只能保留一个预测配置");
+        }
+        Date now = new Date();
+        if (entity.getId() == null) {
             entity.setCreatedAt(now);
             entity.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
             entity.setCreatedByName(SecurityContextHolder.getUserName());
         }
         entity.setForecastName(name);
         entity.setAgentCode(agentCode);
-        entity.setScopeType(resolveScopeType(trainConfig));
-        entity.setRegionCode(trainConfig.getRegionCode());
-        entity.setRegionName(trainConfig.getRegionName());
-        entity.setIndustryCode(trainConfig.getIndustryCode());
-        entity.setIndustryName(trainConfig.getIndustryName());
-        entity.setCustomerCode(trainConfig.getCustomerCode());
-        entity.setCustomerName(trainConfig.getCustomerName());
+        entity.setScopeType(scopeType);
+        entity.setRegionCode(regionCode);
+        entity.setRegionName(regionName);
+        entity.setIndustryCode(industryCode);
+        entity.setIndustryName(industryName);
+        entity.setCustomerCode(customerCode);
+        entity.setCustomerName(customerName);
         entity.setForecastStartDate(forecastStartDate);
         entity.setForecastHorizon(positive(request.getForecastHorizon(), 12));
         entity.setForecastFrequency(defaultText(request.getForecastFrequency(), "MANUAL"));
@@ -141,11 +184,27 @@ public class ModelForecastManagementService {
         entity.setEnabled(request.getEnabled() == null ? 1 : request.getEnabled());
         entity.setRemark(request.getRemark());
         entity.setUpdatedAt(now);
-        if (id == null)
+        if (entity.getId() == null)
             configMapper.insert(entity);
         else
             configMapper.updateById(entity);
         return configMapper.selectById(entity.getId());
+    }
+
+    private ModelForecastConfigTb findSameForecastScope(String agentCode, String regionCode, String industryCode, String customerCode) {
+        var query = Wrappers.<ModelForecastConfigTb>lambdaQuery().eq(ModelForecastConfigTb::getAgentCode, agentCode);
+        scopeEq(query, ModelForecastConfigTb::getRegionCode, regionCode);
+        scopeEq(query, ModelForecastConfigTb::getIndustryCode, industryCode);
+        scopeEq(query, ModelForecastConfigTb::getCustomerCode, customerCode);
+        return configMapper.selectOne(query.orderByDesc(ModelForecastConfigTb::getUpdatedAt).orderByDesc(ModelForecastConfigTb::getId).last("limit 1"));
+    }
+
+    private String forecastScopeKey(ModelForecastConfigTb config) {
+        return scopeKey(config.getAgentCode()) + "\t" + scopeKey(config.getRegionCode()) + "\t" + scopeKey(config.getIndustryCode()) + "\t" + scopeKey(config.getCustomerCode());
+    }
+
+    private String scopeKey(String value) {
+        return !TextUtils.hasText(value) || "ALL".equalsIgnoreCase(value) ? "ALL" : value.trim();
     }
 
     @Transactional
@@ -194,13 +253,39 @@ public class ModelForecastManagementService {
     }
 
     public ModelForecastExecuteResponse execute(ModelForecastExecuteRequest request) {
+        PreparedForecast prepared = prepare(request);
+        return executePrepared(prepared);
+    }
+
+    /** 创建预测批次后立即返回，模型平台调用在线程池中执行。 */
+    public ModelForecastExecuteResponse submit(ModelForecastExecuteRequest request) {
+        PreparedForecast prepared = prepare(request);
+        try {
+            modelForecastTaskExecutor.execute(() -> {
+                try {
+                    executePrepared(prepared);
+                } catch (RuntimeException exception) {
+                    log.error("异步预测失败, forecastBatchNo={}", prepared.record().getForecastBatchNo(), exception);
+                }
+            });
+        } catch (RuntimeException exception) {
+            markForecastFailed(prepared.record(), "预测任务提交失败：" + safeMessage(exception));
+            throw new BusinessException("预测任务繁忙，暂时无法提交，请稍后重试");
+        }
+        return new ModelForecastExecuteResponse(prepared.config().getId(), prepared.record().getForecastBatchNo(), 0);
+    }
+
+    private PreparedForecast prepare(ModelForecastExecuteRequest request) {
         Long forecastId = request.getForecastId();
         ModelForecastConfigTb config = configMapper.selectById(forecastId);
         if (config == null)
             throw new BusinessException("预测配置不存在");
         if (config.getEnabled() != null && config.getEnabled() == 0)
             throw new BusinessException("预测配置已停用");
-        JsonNode dataset = objectMapper.valueToTree(request.getDataset());
+        applyExecutionParams(config, request);
+        ModelTrainConfigTb trainConfig = requireTrainConfig(config.getTrainConfigId(), config.getTrainConfigCode());
+        validateMatchingScope(config, trainConfig);
+        JsonNode dataset = request.getDataset() == null || request.getDataset().isEmpty() ? buildFutureDataset(config, trainConfig) : enrichDatasetWithWeather(config, trainConfig, objectMapper.valueToTree(request.getDataset()));
         for (JsonNode item : dataset) {
             if (!item.isObject() || !TextUtils.hasText(item.path("date").asText())) {
                 throw new BusinessException("每条特征数据都必须是对象并包含 date 字段");
@@ -211,19 +296,56 @@ public class ModelForecastManagementService {
                 throw new BusinessException("特征数据 date 字段格式必须为 yyyy-MM-dd");
             }
         }
-        ModelTrainConfigTb trainConfig = requireTrainConfig(config.getTrainConfigId(), config.getTrainConfigCode());
         String trainBatchNo = latestSuccessfulBatch(trainConfig);
         if (!TextUtils.hasText(trainBatchNo))
             throw new BusinessException("当前训练配置没有成功的模型训练批次");
         ModelForecastRecordTb record = prepareForecastRecord(config, request.getRetryBatchNo());
+        ModelPredictApiRequest payload = buildPredictPayload(config, trainConfig, trainBatchNo, record.getForecastBatchNo(), dataset);
+        record.setFeatureSnapshot(payload.getDataset().toString().getBytes(StandardCharsets.UTF_8));
+        record.setRequestParam(objectMapper.valueToTree(payload).toString().getBytes(StandardCharsets.UTF_8));
+        record.setUpdatedAt(new Date());
+        recordMapper.updateById(record);
+        return new PreparedForecast(config, record, payload);
+    }
+
+    private void validateMatchingScope(ModelForecastConfigTb forecastConfig, ModelTrainConfigTb trainConfig) {
+        if (!sameScopeValue(forecastConfig.getRegionCode(), trainConfig.getRegionCode())
+                || !sameScopeValue(forecastConfig.getIndustryCode(), trainConfig.getIndustryCode())
+                || !sameScopeValue(forecastConfig.getCustomerCode(), trainConfig.getCustomerCode()))
+            throw new BusinessException("预测与训练的地区、行业、客户必须完全一致");
+    }
+
+    private boolean sameScopeValue(String left, String right) {
+        return Objects.equals(normalizeScopeValue(left), normalizeScopeValue(right));
+    }
+
+    private String normalizeScopeValue(String value) {
+        return TextUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private void applyExecutionParams(ModelForecastConfigTb config, ModelForecastExecuteRequest request) {
+        if (TextUtils.hasText(request.getForecastStartDate())) {
+            try {
+                LocalDate.parse(request.getForecastStartDate());
+            } catch (java.time.format.DateTimeParseException exception) {
+                throw new BusinessException("预测开始日期格式必须为 yyyy-MM-dd");
+            }
+            config.setForecastStartDate(request.getForecastStartDate());
+        }
+        if (request.getForecastHorizon() != null) {
+            config.setForecastHorizon(Math.max(1, Math.min(request.getForecastHorizon(), 366)));
+        }
+        if (TextUtils.hasText(request.getForecastFrequency())) {
+            config.setForecastFrequency(request.getForecastFrequency());
+        }
+    }
+
+    private ModelForecastExecuteResponse executePrepared(PreparedForecast prepared) {
+        ModelForecastConfigTb config = prepared.config();
+        ModelForecastRecordTb record = prepared.record();
         String forecastBatchNo = record.getForecastBatchNo();
         try {
-            ModelPredictApiRequest payload = buildPredictPayload(config, trainConfig, trainBatchNo, forecastBatchNo, dataset);
-            record.setFeatureSnapshot(payload.getDataset().toString().getBytes(StandardCharsets.UTF_8));
-            record.setRequestParam(objectMapper.valueToTree(payload).toString().getBytes(StandardCharsets.UTF_8));
-            record.setUpdatedAt(new Date());
-            recordMapper.updateById(record);
-            ModelPredictApiResponse response = modelPlatformClient.predict(payload);
+            ModelPredictApiResponse response = modelPlatformClient.predict(prepared.payload());
             if (response.getPoints() == null || !response.getPoints().isArray())
                 throw new BusinessException("模型平台预测响应缺少 points");
             saveForecastResults(forecastBatchNo, response.getPoints());
@@ -238,15 +360,26 @@ public class ModelForecastManagementService {
                 // 分析属于预测后的附加能力，提交失败不能把已成功的预测改成失败。
                 log.error("预测批次 {} 的大模型分析任务提交失败", forecastBatchNo, analysisException);
             }
-            return new ModelForecastExecuteResponse(forecastId, forecastBatchNo, response.getPoints().size());
+            return new ModelForecastExecuteResponse(config.getId(), forecastBatchNo, response.getPoints().size());
         } catch (RuntimeException exception) {
-            record.setStatus(ModelForecastStatus.FAILED.getCode());
-            record.setResponseParam(exception.getMessage() == null ? null : exception.getMessage().getBytes(StandardCharsets.UTF_8));
-            record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-            record.setUpdatedAt(new Date());
-            recordMapper.updateById(record);
+            markForecastFailed(record, safeMessage(exception));
             throw exception;
         }
+    }
+
+    private void markForecastFailed(ModelForecastRecordTb record, String message) {
+        record.setStatus(ModelForecastStatus.FAILED.getCode());
+        record.setResponseParam(TextUtils.hasText(message) ? message.getBytes(StandardCharsets.UTF_8) : null);
+        record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        record.setUpdatedAt(new Date());
+        recordMapper.updateById(record);
+    }
+
+    private String safeMessage(RuntimeException exception) {
+        return TextUtils.hasText(exception.getMessage()) ? exception.getMessage() : "模型平台预测失败";
+    }
+
+    private record PreparedForecast(ModelForecastConfigTb config, ModelForecastRecordTb record, ModelPredictApiRequest payload) {
     }
 
     private ModelForecastRecordTb prepareForecastRecord(ModelForecastConfigTb config, String retryBatchNo) {
@@ -317,34 +450,153 @@ public class ModelForecastManagementService {
     }
 
     private ArrayNode buildFutureDataset(ModelForecastConfigTb config, ModelTrainConfigTb trainConfig) {
-        var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery().eq(ModelTrainFeatureDataTb::getTimeGranularity, frequencyToGranularity(config.getForecastFrequency()))
-                .ge(ModelTrainFeatureDataTb::getStatDate, config.getForecastStartDate());
-        eqText(query, ModelTrainFeatureDataTb::getRegionCode, trainConfig.getRegionCode());
-        eqText(query, ModelTrainFeatureDataTb::getIndustryCode, trainConfig.getIndustryCode());
-        eqText(query, ModelTrainFeatureDataTb::getCustomerCode, trainConfig.getCustomerCode());
-        query.orderByAsc(ModelTrainFeatureDataTb::getStatDate).orderByAsc(ModelTrainFeatureDataTb::getId).last("limit " + config.getForecastHorizon());
-        List<ModelTrainFeatureDataTb> rows = featureDataMapper.selectList(query);
-        if (rows.size() < config.getForecastHorizon()) {
-            throw new BusinessException("预测开始日期之后的特征数据不足，需要 " + config.getForecastHorizon() + " 条，实际 " + rows.size() + " 条");
-        }
-        List<ModelFeatureRef> refs = featureRefMapper
-                .selectList(Wrappers.<ModelFeatureRef>lambdaQuery().eq(ModelFeatureRef::getModelId, trainConfig.getModelId()).orderByAsc(ModelFeatureRef::getFeatureOrder));
-        Map<Long, ModelFeatureDefinitionTb> definitions = featureDefinitionMapper.selectBatchIds(refs.stream().map(ModelFeatureRef::getFeatureId).distinct().toList()).stream()
-                .collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity()));
+        return enrichDatasetWithWeather(config, trainConfig, buildDateOnlyFutureDataset(config));
+    }
+
+    private ArrayNode buildDateOnlyFutureDataset(ModelForecastConfigTb config) {
         ArrayNode dataset = objectMapper.createArrayNode();
-        for (ModelTrainFeatureDataTb row : rows) {
-            ObjectNode item = objectMapper.createObjectNode().put("date", row.getStatDate());
-            for (ModelFeatureRef ref : refs) {
-                ModelFeatureDefinitionTb definition = definitions.get(ref.getFeatureId());
-                if (definition == null || !TextUtils.hasText(definition.getFeatureColumn()))
-                    continue;
-                Double value = readFeatureValue(row, definition.getFeatureColumn());
-                if (value != null)
-                    item.put(normalizeFeatureKey(definition.getFeatureCode()), value);
-            }
-            dataset.add(item);
+        LocalDate current = LocalDate.parse(config.getForecastStartDate());
+        int horizon = positive(config.getForecastHorizon(), 12);
+        String frequency = defaultText(config.getForecastFrequency(), "DAILY");
+        for (int index = 0; index < horizon; index++) {
+            dataset.addObject().put("date", current.toString());
+            current = switch (frequency) {
+                case "MONTHLY" -> current.plusMonths(1);
+                case "TENDAY" -> nextTenday(current);
+                default -> current.plusDays(1);
+            };
         }
+        log.info("自动生成预测日期数据集: forecastId={}, startDate={}, frequency={}, horizon={}", config.getId(), config.getForecastStartDate(), frequency, horizon);
         return dataset;
+    }
+
+    private ArrayNode enrichDatasetWithWeather(ModelForecastConfigTb config, ModelTrainConfigTb trainConfig, JsonNode sourceDataset) {
+        ArrayNode dataset = objectMapper.createArrayNode();
+        if (sourceDataset == null || !sourceDataset.isArray())
+            throw new BusinessException("预测特征数据必须是数组");
+        List<LocalDate> dates = new ArrayList<>();
+        for (JsonNode item : sourceDataset) {
+            if (TextUtils.hasText(item.path("date").asText()))
+                dates.add(LocalDate.parse(item.path("date").asText()));
+        }
+        if (dates.isEmpty())
+            return dataset;
+        String regionCode = defaultText(config.getRegionCode(), trainConfig.getRegionCode());
+        if (!TextUtils.hasText(regionCode)) {
+            sourceDataset.forEach(item -> dataset.add(item.deepCopy()));
+            return dataset;
+        }
+        String frequency = defaultText(config.getForecastFrequency(), "DAILY");
+        LocalDate min = dates.stream().min(LocalDate::compareTo).orElseThrow();
+        LocalDate max = dates.stream().map(date -> periodEnd(date, frequency)).max(LocalDate::compareTo).orElseThrow();
+        Map<LocalDate, DataRegionWeatherDailyTb> weatherByDate = loadWeather(regionCode, min, max);
+        for (JsonNode item : sourceDataset) {
+            ObjectNode row = item.isObject() ? ((ObjectNode) item).deepCopy() : objectMapper.createObjectNode();
+            LocalDate date = LocalDate.parse(row.path("date").asText());
+            WeatherAggregate weather = aggregateWeather(weatherByDate, date, periodEnd(date, frequency));
+            if (weather.hasValues()) {
+                fillWeather(row, weather);
+            }
+            dataset.add(row);
+        }
+        log.info("预测数据集天气特征补充完成: forecastId={}, regionCode={}, rows={}", config.getId(), regionCode, dataset.size());
+        return dataset;
+    }
+
+    private Map<LocalDate, DataRegionWeatherDailyTb> loadWeather(String regionCode, LocalDate start, LocalDate end) {
+        List<DataRegionWeatherDailyTb> rows = weatherMapper.selectList(Wrappers.<DataRegionWeatherDailyTb>lambdaQuery().eq(DataRegionWeatherDailyTb::getRegionCode, regionCode)
+                .in(DataRegionWeatherDailyTb::getWeatherType, Set.of("ACTUAL", "FORECAST")).ge(DataRegionWeatherDailyTb::getStatDate, start).le(DataRegionWeatherDailyTb::getStatDate, end)
+                .orderByAsc(DataRegionWeatherDailyTb::getStatDate).orderByAsc(DataRegionWeatherDailyTb::getWeatherType).orderByAsc(DataRegionWeatherDailyTb::getForecastIssueTime)
+                .orderByAsc(DataRegionWeatherDailyTb::getId));
+        Map<LocalDate, DataRegionWeatherDailyTb> result = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now();
+        for (DataRegionWeatherDailyTb row : rows) {
+            LocalDate date = new java.sql.Date(row.getStatDate().getTime()).toLocalDate();
+            DataRegionWeatherDailyTb existing = result.get(date);
+            if (existing == null || preferWeather(row, existing, date, today)) {
+                result.put(date, row);
+            }
+        }
+        return result;
+    }
+
+    /** 历史日期使用实况天气，未来日期使用预报天气；首选类型缺失时允许另一类型兜底。 */
+    static boolean preferWeather(DataRegionWeatherDailyTb candidate, DataRegionWeatherDailyTb existing, LocalDate weatherDate, LocalDate today) {
+        String preferredType = weatherDate.isAfter(today) ? "FORECAST" : "ACTUAL";
+        boolean candidatePreferred = preferredType.equalsIgnoreCase(candidate.getWeatherType());
+        boolean existingPreferred = preferredType.equalsIgnoreCase(existing.getWeatherType());
+        if (candidatePreferred != existingPreferred)
+            return candidatePreferred;
+        Date candidateIssue = candidate.getForecastIssueTime();
+        Date existingIssue = existing.getForecastIssueTime();
+        if (candidateIssue != null && existingIssue != null && !candidateIssue.equals(existingIssue))
+            return candidateIssue.after(existingIssue);
+        if (candidateIssue != null && existingIssue == null)
+            return true;
+        if (candidateIssue == null && existingIssue != null)
+            return false;
+        return candidate.getId() != null && existing.getId() != null && candidate.getId() > existing.getId();
+    }
+
+    private WeatherAggregate aggregateWeather(Map<LocalDate, DataRegionWeatherDailyTb> weatherByDate, LocalDate start, LocalDate end) {
+        WeatherAggregate aggregate = new WeatherAggregate();
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            DataRegionWeatherDailyTb weather = weatherByDate.get(date);
+            if (weather != null)
+                aggregate.add(weather);
+        }
+        return aggregate;
+    }
+
+    private LocalDate periodEnd(LocalDate date, String frequency) {
+        return switch (defaultText(frequency, "DAILY")) {
+            case "MONTHLY" -> date.withDayOfMonth(date.lengthOfMonth());
+            case "TENDAY" -> date.getDayOfMonth() <= 10 ? date.withDayOfMonth(10) : date.getDayOfMonth() <= 20 ? date.withDayOfMonth(20) : date.withDayOfMonth(date.lengthOfMonth());
+            default -> date;
+        };
+    }
+
+    private void fillWeather(ObjectNode row, WeatherAggregate weather) {
+        putDouble(row, "temp", weather.avg("tempAvg"));
+        putDouble(row, "temp_avg", weather.avg("tempAvg"));
+        putDouble(row, "tempmax", weather.max("tempMax"));
+        putDouble(row, "temp_max", weather.max("tempMax"));
+        putDouble(row, "tempmin", weather.min("tempMin"));
+        putDouble(row, "temp_min", weather.min("tempMin"));
+        putDouble(row, "hdd", weather.sum("hdd"));
+        Double tempAvg = weather.avg("tempAvg");
+        putDouble(row, "cdd", tempAvg == null ? null : Math.max(tempAvg - 26D, 0D));
+        Double tempMax = weather.max("tempMax");
+        Double tempMin = weather.min("tempMin");
+        putDouble(row, "temp_range", tempMax == null || tempMin == null ? null : tempMax - tempMin);
+        putDouble(row, "humidity", weather.avg("humidity"));
+        putDouble(row, "precip", weather.sum("precipitation"));
+        putDouble(row, "precipitation", weather.sum("precipitation"));
+        putDouble(row, "windgust", weather.max("windGust"));
+        putDouble(row, "wind_gust", weather.max("windGust"));
+        putDouble(row, "windspeed", weather.avg("windSpeed"));
+        putDouble(row, "wind_speed", weather.avg("windSpeed"));
+        putDouble(row, "cloudcover", weather.avg("cloudCover"));
+        putDouble(row, "cloud_cover", weather.avg("cloudCover"));
+        putDouble(row, "sealevelpressure", weather.avg("seaLevelPressure"));
+        putDouble(row, "sea_level_pressure", weather.avg("seaLevelPressure"));
+        putDouble(row, "visibility", weather.avg("visibility"));
+        putDouble(row, "uvindex", weather.max("uvIndex"));
+        putDouble(row, "uv_index", weather.max("uvIndex"));
+        row.put("weather_source", weather.source());
+    }
+
+    private void putDouble(ObjectNode row, String field, Double value) {
+        if (value != null && !row.hasNonNull(field))
+            row.put(field, value);
+    }
+
+    private LocalDate nextTenday(LocalDate date) {
+        if (date.getDayOfMonth() <= 10)
+            return date.withDayOfMonth(11);
+        if (date.getDayOfMonth() <= 20)
+            return date.withDayOfMonth(21);
+        return date.plusMonths(1).withDayOfMonth(1);
     }
 
     private void saveForecastResults(String batchNo, JsonNode points) {
@@ -421,22 +673,83 @@ public class ModelForecastManagementService {
         };
         int historyPredictionSize = historyPredictionSize(record.getForecastFrequency(), record.getForecastHorizon());
         int historyActualSize = historyActualSize(record.getForecastFrequency());
-        var query = Wrappers.<ModelTrainFeatureDataTb>lambdaQuery().eq(ModelTrainFeatureDataTb::getTimeGranularity, granularity)
-                .lt(TextUtils.hasText(record.getForecastStartDate()), ModelTrainFeatureDataTb::getStatDate, record.getForecastStartDate()).isNotNull(ModelTrainFeatureDataTb::getGasSales);
-        eqText(query, ModelTrainFeatureDataTb::getRegionCode, record.getRegionCode());
-        eqText(query, ModelTrainFeatureDataTb::getIndustryCode, record.getIndustryCode());
-        eqText(query, ModelTrainFeatureDataTb::getCustomerCode, record.getCustomerCode());
-        query.orderByDesc(ModelTrainFeatureDataTb::getStatDate).orderByDesc(ModelTrainFeatureDataTb::getId).last("limit " + historyActualSize);
+        // 历史实际值必须与预测作用范围保持同一统计口径。客户为空时，一天会命中该行业下的多个客户，
+        // 因此先按日期汇总销量，再截取最近 N 个周期；否则 LIMIT 会截取客户明细而不是日期。
+        String periodExpression = switch (granularity) {
+            case "MONTH" -> "concat(stat_month, '-01')";
+            case "TENDAY" -> "concat(left(stat_tenday, 7), '-', case right(stat_tenday, 1) when '1' then '01' when '2' then '11' else '21' end)";
+            default -> "stat_date";
+        };
+        QueryWrapper<DataDailySalesTb> query = Wrappers.<DataDailySalesTb>query().select(periodExpression + " AS stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales")
+                .lt(TextUtils.hasText(record.getForecastStartDate()), "stat_date", record.getForecastStartDate()).isNotNull("gas_sales");
+        if (TextUtils.hasText(record.getRegionCode()))
+            query.eq("region_code", record.getRegionCode());
+        if (TextUtils.hasText(record.getIndustryCode()))
+            query.eq("industry_code", record.getIndustryCode());
+        if (TextUtils.hasText(record.getCustomerCode()))
+            query.eq("customer_code", record.getCustomerCode());
+        query.groupBy(periodExpression).orderByDesc(periodExpression).last("limit " + historyActualSize);
 
-        List<ModelTrainFeatureDataTb> rows = new ArrayList<>(featureDataMapper.selectList(query));
+        // 聚合字段使用 Map 接收，避免 MyBatis 将 SUM(gas_sales) 映射为实体时丢失实际销量。
+        List<Map<String, Object>> rows = new ArrayList<>(dailySalesMapper.selectMaps(query));
         Collections.reverse(rows);
         String trainBatchNo = trainBatchNoForRecord(record);
         Map<String, BigDecimal> rollingPredictions = loadRollingPredictions(trainBatchNo, record.getForecastStartDate(), historyPredictionSize);
         // 历史实际值与滚动预测值用于同区间对比：存在滚动预测时，两条线必须从同一天开始。
         String comparisonStartDate = rollingPredictions.keySet().stream().findFirst().orElse(null);
-        return rows.stream().filter(row -> comparisonStartDate == null || row.getStatDate().compareTo(comparisonStartDate) >= 0).map(row -> {
-            return new ModelForecastHistoryPointResponse(row.getStatDate(), row.getGasSales(), rollingPredictions.get(row.getStatDate()));
-        }).toList();
+        List<ModelForecastHistoryPointResponse> history = rows.stream().map(row -> {
+            String date = String.valueOf(mapValue(row, "stat_date"));
+            Object actual = mapValue(row, "gas_sales");
+            BigDecimal actualValue = actual == null ? null : new BigDecimal(actual.toString());
+            return new ModelForecastHistoryPointResponse(date, actualValue, rollingPredictions.get(date), null);
+        }).filter(row -> comparisonStartDate == null || row.getDate().compareTo(comparisonStartDate) >= 0).toList();
+        if (!ModelTrainTimeGranularity.DAY.name().equals(granularity))
+            return history;
+
+        List<String> timelineDates = new ArrayList<>(history.stream().map(ModelForecastHistoryPointResponse::getDate).toList());
+        resultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, batchNo).orderByAsc(ModelForecastResultTb::getForecastDate)).stream()
+                .map(ModelForecastResultTb::getForecastDate).filter(TextUtils::hasText).forEach(timelineDates::add);
+        Map<String, BigDecimal> lastYearValues = loadLastYearActuals(record, timelineDates);
+        List<ModelForecastHistoryPointResponse> result = new ArrayList<>();
+        history.forEach(point -> {
+            point.setLastYearValue(lastYearValues.get(point.getDate()));
+            result.add(point);
+        });
+        timelineDates.stream().filter(date -> history.stream().noneMatch(point -> date.equals(point.getDate()))).distinct()
+                .forEach(date -> result.add(new ModelForecastHistoryPointResponse(date, null, null, lastYearValues.get(date))));
+        return result;
+    }
+
+    private Map<String, BigDecimal> loadLastYearActuals(ModelForecastRecordTb record, List<String> timelineDates) {
+        Map<String, String> sourceToDisplay = timelineDates.stream().filter(TextUtils::hasText).distinct()
+                .collect(Collectors.toMap(date -> LocalDate.parse(date).minusYears(1).toString(), Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        if (sourceToDisplay.isEmpty())
+            return Collections.emptyMap();
+        QueryWrapper<DataDailySalesTb> query = Wrappers.<DataDailySalesTb>query().select("stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales").in("stat_date", sourceToDisplay.keySet())
+                .isNotNull("gas_sales");
+        if (TextUtils.hasText(record.getRegionCode()))
+            query.eq("region_code", record.getRegionCode());
+        if (TextUtils.hasText(record.getIndustryCode()))
+            query.eq("industry_code", record.getIndustryCode());
+        if (TextUtils.hasText(record.getCustomerCode()))
+            query.eq("customer_code", record.getCustomerCode());
+        query.groupBy("stat_date");
+        Map<String, BigDecimal> result = new LinkedHashMap<>();
+        dailySalesMapper.selectMaps(query).forEach(row -> {
+            String sourceDate = String.valueOf(mapValue(row, "stat_date"));
+            Object value = mapValue(row, "gas_sales");
+            if (value != null && sourceToDisplay.containsKey(sourceDate))
+                result.put(sourceToDisplay.get(sourceDate), new BigDecimal(value.toString()));
+        });
+        return result;
+    }
+
+    private Object mapValue(Map<String, Object> row, String key) {
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (key.equalsIgnoreCase(entry.getKey()))
+                return entry.getValue();
+        }
+        return null;
     }
 
     /** H = min(max(F, lower), upper), F 为未来预测步长，H 为历史滚动预测步长。 */
@@ -549,5 +862,76 @@ public class ModelForecastManagementService {
     private <T> void eqText(LambdaQueryWrapper<T> query, com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, ?> field, String value) {
         if (TextUtils.hasText(value))
             query.eq(field, value);
+    }
+
+    private <T> void scopeEq(LambdaQueryWrapper<T> query, com.baomidou.mybatisplus.core.toolkit.support.SFunction<T, ?> field, String value) {
+        if (!TextUtils.hasText(value) || "ALL".equalsIgnoreCase(value)) {
+            query.and(q -> q.isNull(field).or().eq(field, "").or().eq(field, "ALL"));
+        } else {
+            query.eq(field, value);
+        }
+    }
+
+    private static final class WeatherAggregate {
+        private final Map<String, List<Double>> values = new LinkedHashMap<>();
+        private final Set<String> sources = new java.util.LinkedHashSet<>();
+
+        private void add(DataRegionWeatherDailyTb weather) {
+            put("tempAvg", weather.getTempAvg());
+            put("tempMax", weather.getTempMax());
+            put("tempMin", weather.getTempMin());
+            put("hdd", weather.getHdd());
+            put("humidity", weather.getHumidity());
+            put("precipitation", weather.getPrecipitation());
+            put("windGust", weather.getWindGust());
+            put("windSpeed", weather.getWindSpeed());
+            put("cloudCover", weather.getCloudCover());
+            put("seaLevelPressure", weather.getSeaLevelPressure());
+            put("visibility", weather.getVisibility());
+            put("uvIndex", weather.getUvIndex());
+            String type = weather.getWeatherType();
+            String source = weather.getSourceCode();
+            if (TextUtils.hasText(type) || TextUtils.hasText(source))
+                sources.add(defaultSource(type, source));
+        }
+
+        private static String defaultSource(String type, String source) {
+            if (TextUtils.hasText(type) && TextUtils.hasText(source))
+                return type + ":" + source;
+            return TextUtils.hasText(type) ? type : source;
+        }
+
+        private void put(String key, BigDecimal value) {
+            if (value != null)
+                values.computeIfAbsent(key, ignored -> new ArrayList<>()).add(value.doubleValue());
+        }
+
+        private boolean hasValues() {
+            return !values.isEmpty();
+        }
+
+        private Double avg(String key) {
+            List<Double> numbers = values.get(key);
+            return numbers == null || numbers.isEmpty() ? null : numbers.stream().mapToDouble(Double::doubleValue).average().orElse(0D);
+        }
+
+        private Double sum(String key) {
+            List<Double> numbers = values.get(key);
+            return numbers == null || numbers.isEmpty() ? null : numbers.stream().mapToDouble(Double::doubleValue).sum();
+        }
+
+        private Double max(String key) {
+            List<Double> numbers = values.get(key);
+            return numbers == null || numbers.isEmpty() ? null : numbers.stream().mapToDouble(Double::doubleValue).max().orElse(0D);
+        }
+
+        private Double min(String key) {
+            List<Double> numbers = values.get(key);
+            return numbers == null || numbers.isEmpty() ? null : numbers.stream().mapToDouble(Double::doubleValue).min().orElse(0D);
+        }
+
+        private String source() {
+            return String.join(",", sources);
+        }
     }
 }

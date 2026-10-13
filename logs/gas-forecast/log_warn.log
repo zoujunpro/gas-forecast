@@ -1,1 +1,0 @@
-[2026-09-29 10:10:25.427] [gas-forecast] [] [] [o.s.s.c.ThreadPoolTaskExecutor] [SpringApplicationShutdownHook] [WARN] - Timed out while waiting for executor 'forecastAnalysisTaskExecutor' to terminate

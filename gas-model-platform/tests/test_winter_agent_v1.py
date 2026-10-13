@@ -78,7 +78,7 @@ def test_winter_training_data_validation_reports_complete_seasons() -> None:
 
 def test_train_dataset_row_has_fixed_fields_and_keeps_model_features() -> None:
     request = TrainRequest(
-        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+        model_code="MODEL_POWER_GENERATION_V1.0",
         train_batch_no="T00001",
         dataset=[
             {
@@ -97,7 +97,7 @@ def test_train_dataset_row_has_fixed_fields_and_keeps_model_features() -> None:
 
 def test_predict_dataset_row_has_fixed_date_and_keeps_model_features() -> None:
     request = PredictRequest(
-        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+        model_code="MODEL_POWER_GENERATION_V1.0",
         train_batch_no="T00001",
         forecast_batch_no="F00001",
         forecast_horizon=1,
@@ -135,7 +135,7 @@ def test_predict_request_requires_forecast_batch() -> None:
 def test_predict_result_does_not_include_metrics() -> None:
     result = PredictResult(
         agent_code="short-term",
-        model_code="MODEL_JIANGSHU_DIANLI_V1.0",
+        model_code="MODEL_POWER_GENERATION_V1.0",
         forecast_batch_no="JS-FC-001",
         points=[ForecastPoint(forecast_date="2026-05-26", prediction=100.0)],
     )

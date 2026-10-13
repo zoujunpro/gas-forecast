@@ -9,6 +9,9 @@ import lombok.Data;
 @Data
 public class ModelTrainResultRequest {
 
+    /** 训练配置主键；列表查询时用于隔离不同训练配置产生的批次。 */
+    private Long trainConfigId;
+
     @Size(max = 64, message = "训练批次号长度不能超过64个字符")
     private String batchNo;
 
