@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:18081}
 
 spring:
   config:
@@ -23,12 +23,12 @@ spring:
 
 gas:
   agent:
-    train-url: ${GAS_AGENT_TRAIN_URL:http://127.0.0.1:8090/api/v1/train}
-    predict-url: ${GAS_AGENT_PREDICT_URL:http://127.0.0.1:8090/api/v1/predict}
-    models-url: ${GAS_AGENT_MODELS_URL:http://127.0.0.1:8090/api/v1/models}
-    validate-training-url: ${GAS_AGENT_VALIDATE_TRAINING_URL:http://127.0.0.1:8090/api/v1/models/validate-training-data}
-    training-capacity-url: ${GAS_AGENT_TRAINING_CAPACITY_URL:http://127.0.0.1:8090/api/v1/training/capacity}
-    training-task-url: ${GAS_AGENT_TRAINING_TASK_URL:http://127.0.0.1:8090/api/v1/training/tasks}
+    train-url: ${GAS_AGENT_TRAIN_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/train}
+    predict-url: ${GAS_AGENT_PREDICT_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/predict}
+    models-url: ${GAS_AGENT_MODELS_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/models}
+    validate-training-url: ${GAS_AGENT_VALIDATE_TRAINING_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/models/validate-training-data}
+    training-capacity-url: ${GAS_AGENT_TRAINING_CAPACITY_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/training/capacity}
+    training-task-url: ${GAS_AGENT_TRAINING_TASK_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/training/tasks}
     connect-timeout-ms: ${GAS_AGENT_CONNECT_TIMEOUT_MS:5000}
     validation-timeout-ms: ${GAS_AGENT_VALIDATION_TIMEOUT_MS:30000}
     training-timeout-ms: ${GAS_AGENT_TRAINING_TIMEOUT_MS:1800000}

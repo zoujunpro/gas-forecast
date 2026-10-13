@@ -1,0 +1,91 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  config:
+    import: optional:file:.env[.properties]
+    activate:
+      on-profile: local
+  mvc:
+    async:
+      request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:180s}
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:mysql2026}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis2026}
+      database: ${REDIS_DATABASE:0}
+
+gas:
+  agent:
+    train-url: ${GAS_AGENT_TRAIN_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/train}
+    predict-url: ${GAS_AGENT_PREDICT_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/predict}
+    models-url: ${GAS_AGENT_MODELS_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/models}
+    validate-training-url: ${GAS_AGENT_VALIDATE_TRAINING_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/models/validate-training-data}
+    training-capacity-url: ${GAS_AGENT_TRAINING_CAPACITY_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/training/capacity}
+    training-task-url: ${GAS_AGENT_TRAINING_TASK_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/training/tasks}
+    connect-timeout-ms: ${GAS_AGENT_CONNECT_TIMEOUT_MS:5000}
+    validation-timeout-ms: ${GAS_AGENT_VALIDATION_TIMEOUT_MS:30000}
+    training-timeout-ms: ${GAS_AGENT_TRAINING_TIMEOUT_MS:1800000}
+    training-queue:
+      # 临时启用队列组件，只用于服务启动后领取现有任务；状态核对仍关闭。
+      scheduler-enabled: ${GAS_TRAINING_QUEUE_SCHEDULER_ENABLED:true}
+      max-concurrency: ${GAS_TRAINING_QUEUE_MAX_CONCURRENCY:4}
+      # 启动后立即执行一次，之后间隔 24 小时，避免排查期间循环刷日志。
+      # 仅负责领取已经进入 WAITING 的训练任务，不会自动创建训练任务。
+      dispatch-delay-ms: ${GAS_TRAINING_QUEUE_DISPATCH_DELAY_MS:2000}
+      # 当前排查阶段暂停状态核对和自动重试。
+      reconcile-enabled: ${GAS_TRAINING_QUEUE_RECONCILE_ENABLED:false}
+      reconcile-delay-ms: ${GAS_TRAINING_QUEUE_RECONCILE_DELAY_MS:3000}
+    short-term-auto-train:
+      # 当前先关闭自动创建任务，仅保留训练队列派发和状态核对。
+      enabled: ${GAS_SHORT_TERM_AUTO_TRAIN_ENABLED:false}
+      # 轻量检查策略表中的短期客户 Cron；该值不是实际训练周期。
+      check-delay-ms: ${GAS_SHORT_TERM_AUTO_TRAIN_CHECK_DELAY_MS:30000}
+  analysis:
+    mode: ${LLM_DEFAULT_MODE:api}
+    local-base-url: ${LLM_LOCAL_BASE_URL:http://192.168.0.105:9997/v1}
+    local-model: ${LLM_LOCAL_MODEL:qwen3.6-27b}
+    local-api-key: ${LLM_LOCAL_API_KEY:local}
+    api-base-url: ${LLM_API_BASE_URL:https://api.deepseek.com}
+    api-model: ${LLM_API_MODEL:deepseek-v4-pro}
+    api-key: ${LLM_QWEN_API_KEY:${LLM_API_KEY:}}
+    timeout-seconds: ${GAS_ANALYSIS_TIMEOUT_SECONDS:120}
+  mysteel:
+    analysis-url: ${MYSTEEL_ANALYSIS_URL:https://mcp.mysteel.com/mcp/info/chat-robot/rag/answer}
+    api-key: ${MYSTEEL_API_KEY:}
+    timeout-seconds: ${MYSTEEL_TIMEOUT_SECONDS:90}
+    index-search-url: ${MYSTEEL_INDEX_SEARCH_URL:https://client.mysteel.com/mysteelsearch/search/searchIndex2}
+    search-token: ${MYSTEEL_SEARCH_TOKEN:}
+    search-cookie: ${MYSTEEL_SEARCH_COOKIE:}
+    search-referer: ${MYSTEEL_SEARCH_REFERER:https://client.mysteel.com/search_ui/}
+    index-data-url: ${MYSTEEL_INDEX_DATA_URL:https://client.mysteel.com/pmp_api/pmp/web/unifyData/queryIndexDataList}
+    login-url: ${MYSTEEL_LOGIN_URL:https://client.mysteel.com/uniuser-api/v3/common/login}
+    access-token: ${MYSTEEL_ACCESS_TOKEN:}
+    account-name: ${MYSTEEL_ACCOUNT_NAME:}
+    password: ${MYSTEEL_PASSWORD:}
+    product-num: ${MYSTEEL_PRODUCT_NUM:PD_01}
+    device-id: ${MYSTEEL_DEVICE_ID:}
+    version: ${MYSTEEL_VERSION:2}
+    cookie: ${MYSTEEL_COOKIE:}
+    assembly-id: ${MYSTEEL_ASSEMBLY_ID:308}
+    index-timeout-seconds: ${MYSTEEL_INDEX_TIMEOUT_SECONDS:30}
+    dynamic-features-enabled: ${MYSTEEL_DYNAMIC_FEATURES_ENABLED:true}
+    dynamic-features-required: ${MYSTEEL_DYNAMIC_FEATURES_REQUIRED:false}
+    dynamic-max-features: ${MYSTEEL_DYNAMIC_MAX_FEATURES:10}
+    dynamic-min-coverage: ${MYSTEEL_DYNAMIC_MIN_COVERAGE:0.7}
+  cache:
+    redis-retry-interval: ${CACHE_REDIS_RETRY_INTERVAL:30s}
+    local-max-size: ${CACHE_LOCAL_MAX_SIZE:10000}
+
+log:
+  path: ${LOG_PATH:./logs/${spring.application.name}}
+  level: ${LOG_LEVEL:INFO}
+  max-history: ${LOG_MAX_HISTORY:30}
+  max-file-size: ${LOG_MAX_FILE_SIZE:100MB}
+  total-size-cap: ${LOG_TOTAL_SIZE_CAP:3GB}

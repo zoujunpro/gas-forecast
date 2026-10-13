@@ -9,6 +9,6 @@ fi
 if [ -f "$root/config/service.env" ]; then set -a; . "$root/config/service.env"; set +a; fi
 cd "$root"
 nohup java ${JAVA_OPTS:--Xms512m -Xmx2g} -jar "$root/current/gas-forecast.jar" \
-  --spring.profiles.active="${SPRING_PROFILES_ACTIVE:-dev}" >> "$root/logs/console.log" 2>&1 &
+  --spring.profiles.active=dev >> "$root/logs/console.log" 2>&1 &
 echo "$!" > "$pid_file"
 echo "Java 服务已启动，PID=$!"
