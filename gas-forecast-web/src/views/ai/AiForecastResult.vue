@@ -84,7 +84,16 @@ const renderChart = () => nextTick(() => {
         return [`<strong>${date}</strong>`, ...rows.map((item: any) => `${item.marker}${item.seriesName}：<strong>${formatNullable(item.value)}</strong>`) ].join('<br/>')
       }
     },
-    legend: { top: 2, left: 4, data: ['去年同期', '最新预测'], textStyle: { color: '#64748b', fontSize: 11 } },
+    legend: {
+      top: 4,
+      left: 4,
+      icon: 'roundRect',
+      itemWidth: 10,
+      itemHeight: 6,
+      itemGap: 24,
+      data: ['去年同期', '最新预测'],
+      textStyle: { color: '#64748b', fontSize: 11, padding: [0, 0, 0, 8] }
+    },
     grid: { top: 38, right: 18, bottom: 52, left: 48 },
     xAxis: { type: 'category', data: trendPoints.value.map((point) => point.date), axisLabel: { color: '#64748b', fontSize: 10, rotate: 35, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
     yAxis: { type: 'value', name: '用量', nameTextStyle: { color: '#94a3b8', fontSize: 10 }, axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f6' } } },
