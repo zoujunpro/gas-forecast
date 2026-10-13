@@ -100,14 +100,13 @@ const logout = () => {
 .portal-header {
   position: relative;
   z-index: 1;
-  height: 72px;
+  height: 59px;
   padding: 0 5vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(6, 27, 65, 0.9);
-  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--app-primary-dark);
+  background: var(--app-primary);
 }
 .portal-brand {
   display: flex;
@@ -130,12 +129,18 @@ const logout = () => {
   color: #d9e8ff;
 }
 .portal-user button {
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 7px;
-  padding: 7px 13px;
+  height: 59px;
+  border: none;
+  border-radius: 0;
+  padding: 0 14px;
   background: transparent;
   color: #fff;
   cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.portal-user button:hover {
+  background: rgba(255, 255, 255, 0.24);
 }
 .portal-content {
   position: relative;
