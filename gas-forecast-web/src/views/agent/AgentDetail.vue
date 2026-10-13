@@ -315,7 +315,7 @@
               <article class="short-term-summary-card" :class="`trend-${shortTermTrendTone}`">
                 <el-icon><TrendCharts /></el-icon>
                 <div>
-                  <span>预测趋势</span><strong>{{ shortTermTrendText }}</strong>
+                  <span>{{ shortTermTrendLabel }}</span><strong>{{ shortTermTrendText }}</strong>
                 </div>
               </article>
               <article class="short-term-summary-card">
@@ -986,17 +986,31 @@ const shortTermForecastTotal = computed(() => {
   const total = shortTermFutureValues.value.reduce((sum, value) => sum + Number(value || 0), 0)
   return total ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
 })
-const shortTermTrendText = computed(() => {
+const shortTermComparablePairs = computed(() => {
+  const references = currentResult.value?.last_year_values || []
+  return shortTermFutureValues.value.flatMap((value, index) => {
+    const reference = references[index]
+    return reference == null || !Number.isFinite(Number(reference)) ? [] : [{ forecast: Number(value), reference: Number(reference) }]
+  })
+})
+const shortTermTrendLabel = computed(() => shortTermComparablePairs.value.length ? '同比变化' : '预测趋势')
+const shortTermTrendRate = computed(() => {
+  if (shortTermComparablePairs.value.length) {
+    const forecastTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.forecast, 0)
+    const referenceTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
+    return referenceTotal === 0 ? 0 : ((forecastTotal - referenceTotal) / Math.abs(referenceTotal)) * 100
+  }
   const values = shortTermFutureValues.value
-  if (values.length < 2 || !Number(values[0])) return '平稳'
-  const rate = ((Number(values[values.length - 1]) - Number(values[0])) / Math.abs(Number(values[0]))) * 100
+  if (values.length < 2 || !Number(values[0])) return 0
+  return ((Number(values[values.length - 1]) - Number(values[0])) / Math.abs(Number(values[0]))) * 100
+})
+const shortTermTrendText = computed(() => {
+  const rate = shortTermTrendRate.value
   if (Math.abs(rate) < 1) return '基本平稳'
   return `${rate > 0 ? '上升' : '下降'} ${Math.abs(rate).toFixed(1)}%`
 })
 const shortTermTrendTone = computed(() => {
-  const values = shortTermFutureValues.value
-  if (values.length < 2 || !Number(values[0])) return 'flat'
-  const rate = ((Number(values[values.length - 1]) - Number(values[0])) / Math.abs(Number(values[0]))) * 100
+  const rate = shortTermTrendRate.value
   if (Math.abs(rate) < 1) return 'flat'
   return rate > 0 ? 'up' : 'down'
 })

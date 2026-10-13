@@ -4,7 +4,7 @@
     <div class="metrics">
       <div><small>客户</small><b>{{ result.customerName || '-' }}</b></div>
       <div><small>未来预测总量</small><b>{{ format(forecastTotal) }}</b></div>
-      <div><small>预测趋势</small><b :class="trendClass">{{ trendText }}</b></div>
+      <div><small>{{ trendLabel }}</small><b :class="trendClass">{{ trendText }}</b></div>
       <div><small>推荐模型</small><b>{{ result.training?.bestModel || '-' }}</b></div>
     </div>
     <section v-if="result.training" class="training-summary">
@@ -57,7 +57,18 @@ const formatPercent = (value?: number) => value == null || !Number.isFinite(Numb
 const forecastTotal = computed(() => props.result.points.reduce((sum, point) => sum + Number(point.value || 0), 0))
 const lastYearValueByDate = computed(() => new Map((props.result.lastYearPoints || []).map((point) => [point.date, point.value])))
 const lastYearValue = (date: string) => lastYearValueByDate.value.get(date)
+const comparablePoints = computed(() => props.result.points.flatMap((point) => {
+  const referenceValue = lastYearValue(point.date)
+  return referenceValue == null || !Number.isFinite(Number(referenceValue)) ? [] : [{ forecast: Number(point.value), reference: Number(referenceValue) }]
+}))
+const hasLastYearComparison = computed(() => comparablePoints.value.length > 0)
+const trendLabel = computed(() => hasLastYearComparison.value ? '同比变化' : '预测趋势')
 const trendPercent = computed(() => {
+  if (hasLastYearComparison.value) {
+    const forecastComparableTotal = comparablePoints.value.reduce((sum, point) => sum + point.forecast, 0)
+    const referenceTotal = comparablePoints.value.reduce((sum, point) => sum + point.reference, 0)
+    return referenceTotal === 0 ? 0 : ((forecastComparableTotal - referenceTotal) / Math.abs(referenceTotal)) * 100
+  }
   if (props.result.points.length < 2) return 0
   const first = Number(props.result.points[0].value)
   const last = Number(props.result.points[props.result.points.length - 1].value)
