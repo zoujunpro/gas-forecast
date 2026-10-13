@@ -80,22 +80,22 @@ const logout = () => {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #081a3b 0%, #123d78 48%, #1674a8 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f8fc 55%, #eef6fb 100%);
+  color: #17233d;
 }
 .portal-page:before {
   content: '';
   position: absolute;
   inset: 0;
   background: url('@/assets/home-hero-lng-v2.webp') center/cover no-repeat;
-  opacity: 0.19;
+  opacity: 0.055;
 }
 .portal-overlay {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 38%, rgba(91, 157, 255, 0.24), transparent 40%),
-    linear-gradient(180deg, rgba(4, 18, 49, 0.08), rgba(4, 18, 49, 0.56));
+    radial-gradient(circle at 50% 38%, rgba(58, 135, 238, 0.1), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(238, 246, 252, 0.5));
 }
 .portal-header {
   position: relative;
@@ -105,8 +105,8 @@ const logout = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(6, 27, 65, 0.34);
+  border-bottom: 1px solid #e5ebf3;
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
 }
 .portal-brand {
@@ -126,14 +126,14 @@ const logout = () => {
   align-items: center;
   gap: 18px;
   font-size: 13px;
-  color: #d9e8ff;
+  color: #66758c;
 }
 .portal-user button {
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid #d8e0eb;
   border-radius: 7px;
   padding: 7px 13px;
-  background: transparent;
-  color: #fff;
+  background: #fff;
+  color: #34445e;
   cursor: pointer;
 }
 .portal-content {
@@ -147,16 +147,17 @@ const logout = () => {
 .eyebrow {
   font-size: 12px;
   letter-spacing: 0.28em;
-  color: #8bc8ff;
+  color: #4285d4;
 }
 .portal-content h1 {
   margin: 14px 0 10px;
   font-size: clamp(34px, 4vw, 52px);
   font-weight: 600;
   letter-spacing: 0.04em;
+  color: #17233d;
 }
 .subtitle {
-  color: #c5daf4;
+  color: #6c7b91;
   font-size: 16px;
 }
 .entrance-grid {
@@ -171,12 +172,12 @@ const logout = () => {
   min-height: 390px;
   overflow: hidden;
   padding: 38px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid #dfe6ef;
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 24px 70px rgba(0, 12, 38, 0.25);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 45px rgba(30, 64, 112, 0.09);
   backdrop-filter: blur(15px);
-  color: #fff;
+  color: #17233d;
   text-align: left;
   cursor: pointer;
   transition: 0.25s;
@@ -184,8 +185,8 @@ const logout = () => {
 }
 .entrance-card:hover {
   transform: translateY(-7px);
-  border-color: rgba(255, 255, 255, 0.65);
-  box-shadow: 0 32px 80px rgba(0, 12, 38, 0.38);
+  border-color: #9fc2ee;
+  box-shadow: 0 24px 58px rgba(30, 94, 170, 0.16);
 }
 .card-glow {
   position: absolute;
@@ -197,10 +198,10 @@ const logout = () => {
   filter: blur(4px);
 }
 .ai-card .card-glow {
-  background: rgba(107, 92, 255, 0.35);
+  background: rgba(107, 92, 255, 0.12);
 }
 .admin-card .card-glow {
-  background: rgba(39, 196, 172, 0.3);
+  background: rgba(39, 196, 172, 0.12);
 }
 .entrance-icon {
   position: relative;
@@ -225,9 +226,9 @@ const logout = () => {
   margin-top: 25px;
   padding: 4px 10px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.13);
+  background: #eef4fb;
   font-size: 11px;
-  color: #cfe4ff;
+  color: #5c7190;
 }
 .entrance-copy h2 {
   margin: 12px 0 10px;
@@ -235,7 +236,7 @@ const logout = () => {
 }
 .entrance-copy p {
   min-height: 52px;
-  color: #c7d8ed;
+  color: #66758c;
   line-height: 1.7;
 }
 .entrance-copy ul {
@@ -244,7 +245,7 @@ const logout = () => {
   margin: 20px 0 27px;
   padding: 0;
   list-style: none;
-  color: #e0ecfa;
+  color: #44536a;
   font-size: 13px;
 }
 .entrance-copy li:before {
@@ -256,7 +257,7 @@ const logout = () => {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #fff;
+  color: #286bb8;
 }
 .portal-page footer {
   position: absolute;
@@ -264,7 +265,7 @@ const logout = () => {
   bottom: 20px;
   width: 100%;
   text-align: center;
-  color: rgba(220, 235, 255, 0.65);
+  color: #8b98aa;
   font-size: 12px;
 }
 @media (max-width: 760px) {
