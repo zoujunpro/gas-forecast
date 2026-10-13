@@ -22,27 +22,11 @@
     </section>
     <div class="chart-tools">
       <span>{{ result.customerName || '客户' }}：未来{{ result.points.length }}个周期预测</span>
-      <div><button type="button" title="缩小" :disabled="zoom <= 0.15" @click="changeZoom(-0.1)">−</button><b>{{ Math.round(zoom * 100) }}%</b><button type="button" title="放大" :disabled="zoom >= 3" @click="changeZoom(0.2)">＋</button><button type="button" @click="fitToView">全景</button></div>
+      <div class="chart-actions"><div class="chart-type-switch"><button type="button" :class="{ active: chartType === 'bar' }" title="柱状图" @click="chartType = 'bar'"><el-icon><Histogram /></el-icon>柱状图</button><button type="button" :class="{ active: chartType === 'line' }" title="折线图" @click="chartType = 'line'"><el-icon><TrendCharts /></el-icon>折线图</button></div><button type="button" class="download-button" title="下载预测图表 PNG 图片" @click="downloadChart"><el-icon><Download /></el-icon>下载图片</button><button type="button" title="缩小" :disabled="zoom <= 0.15" @click="changeZoom(-0.1)">−</button><b>{{ Math.round(zoom * 100) }}%</b><button type="button" title="放大" :disabled="zoom >= 3" @click="changeZoom(0.2)">＋</button><button type="button" @click="fitToView">全景</button></div>
     </div>
-    <div class="legend"><span class="last-year-key">去年同期</span><span class="forecast-key">最新预测</span></div>
     <div ref="trendScroll" class="chart-scroll" @wheel.prevent="onWheel">
       <div class="chart-inner" :style="{ width: `${chartWidth}px` }">
-        <svg class="chart bar-chart" :viewBox="`0 0 ${chartWidth} 210`" preserveAspectRatio="none" role="img" aria-label="未来用气预测柱状图">
-          <line v-for="tick in yTicks" :key="tick.value" x1="44" :y1="tick.y" :x2="chartWidth - 18" :y2="tick.y" class="grid" />
-          <text v-for="tick in yTicks" :key="`label-${tick.value}`" x="38" :y="tick.y + 4" class="axis-label" text-anchor="end">{{ tick.label }}</text>
-          <line x1="44" y1="176" :x2="chartWidth - 18" y2="176" class="axis-line" />
-          <g v-for="item in chartBars" :key="item.date">
-            <rect v-if="item.referenceHeight > 0" class="bar reference-bar" :x="item.referenceX" :y="item.referenceY" :width="barWidth" :height="item.referenceHeight">
-              <title>{{ item.date }} 去年同期：{{ formatNullable(item.referenceValue) }}</title>
-            </rect>
-            <rect class="bar forecast-bar" :x="item.forecastX" :y="item.forecastY" :width="barWidth" :height="item.forecastHeight">
-              <title>{{ item.date }} 最新预测：{{ format(item.forecastValue) }}</title>
-            </rect>
-          </g>
-        </svg>
-        <div class="date-axis" :style="{ gridTemplateColumns: `repeat(${trendPoints.length}, ${dateColumnWidth}px)` }">
-          <span v-for="(point, index) in trendPoints" :key="point.date">{{ shouldShowDate(index) ? point.date.slice(5) : '' }}</span>
-        </div>
+        <div ref="chartRef" class="chart" role="img" :aria-label="`未来用气预测${chartType === 'bar' ? '柱状' : '折线'}图`"></div>
       </div>
     </div>
     <details><summary>查看每日明细</summary><div class="values">
@@ -55,6 +39,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Download, Histogram, TrendCharts } from '@element-plus/icons-vue'
+import echarts from '@/utils/echarts'
 
 interface ForecastPoint { date: string; value: number }
 interface BacktestPoint { date: string; actualValue: number; predictedValue: number }
@@ -62,6 +48,9 @@ interface TrainingResult { batchNo: string; trainStartDate?: string; trainEndDat
 interface ForecastResult { batchNo: string; customerName?: string; average: number; minimum: number; maximum: number; training?: TrainingResult; points: ForecastPoint[]; historyPoints?: ForecastPoint[]; lastYearPoints?: ForecastPoint[]; backtestPoints?: BacktestPoint[] }
 const props = defineProps<{ result: ForecastResult }>()
 const trendScroll = ref<HTMLElement>()
+const chartRef = ref<HTMLElement>()
+const chartType = ref<'bar' | 'line'>('bar')
+let chart: echarts.ECharts | null = null
 const format = (value: number) => Number(value).toFixed(2)
 const formatNullable = (value?: number) => value == null || !Number.isFinite(Number(value)) ? '-' : format(Number(value))
 const formatPercent = (value?: number) => value == null || !Number.isFinite(Number(value)) ? '-' : `${format(Number(value))}%`
@@ -79,56 +68,48 @@ const trendClass = computed(() => trendPercent.value > 0.1 ? 'trend-up' : trendP
 const zoom = ref(1)
 const changeZoom = (delta: number) => { zoom.value = Math.min(3, Math.max(0.15, Number((zoom.value + delta).toFixed(2)))) }
 const onWheel = (event: WheelEvent) => changeZoom(event.deltaY < 0 ? 0.1 : -0.1)
-const dateColumnWidth = computed(() => 68 * zoom.value)
 const trendPoints = computed(() => props.result.points.map((item) => ({ ...item, series: 'forecast' })))
 const chartWidth = computed(() => Math.max(420, trendPoints.value.length * 68 * zoom.value))
-const chartValues = computed(() => [...trendPoints.value, ...(props.result.lastYearPoints || [])]
-  .map((item) => Number(item.value))
-  .filter(Number.isFinite))
-const chartMax = computed(() => Math.max(...chartValues.value, 1))
-const yTicks = computed(() => {
-  const max = chartMax.value
-  return [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-    const value = max * ratio
-    return {
-      value,
-      label: value >= 1000 ? `${Math.round(value / 100) / 10}k` : String(Math.round(value)),
-      y: 176 - ratio * 146
-    }
-  }).reverse()
+const renderChart = () => nextTick(() => {
+  if (!chartRef.value) return
+  chart = echarts.getInstanceByDom(chartRef.value) || echarts.init(chartRef.value)
+  const isLine = chartType.value === 'line'
+  chart.setOption({
+    animationDuration: 350,
+    tooltip: {
+      trigger: 'axis', axisPointer: { type: isLine ? 'line' : 'shadow' },
+      formatter: (params: any) => {
+        const rows = Array.isArray(params) ? params : [params]
+        const date = rows[0]?.axisValueLabel || rows[0]?.axisValue || '-'
+        return [`<strong>${date}</strong>`, ...rows.map((item: any) => `${item.marker}${item.seriesName}：<strong>${formatNullable(item.value)}</strong>`) ].join('<br/>')
+      }
+    },
+    legend: { top: 2, left: 4, data: ['去年同期', '最新预测'], textStyle: { color: '#64748b', fontSize: 11 } },
+    grid: { top: 38, right: 18, bottom: 52, left: 48 },
+    xAxis: { type: 'category', data: trendPoints.value.map((point) => point.date), axisLabel: { color: '#64748b', fontSize: 10, rotate: 35, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
+    yAxis: { type: 'value', name: '用量', nameTextStyle: { color: '#94a3b8', fontSize: 10 }, axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f6' } } },
+    series: [
+      { name: '去年同期', type: chartType.value, data: trendPoints.value.map((point) => lastYearValue(point.date) ?? null), barMaxWidth: 22, smooth: isLine, connectNulls: false, symbolSize: 6, lineStyle: { width: 2 }, itemStyle: { color: '#9ca3af' } },
+      { name: '最新预测', type: chartType.value, data: trendPoints.value.map((point) => Number(point.value)), barMaxWidth: 22, smooth: isLine, symbolSize: 6, lineStyle: { width: 2.5 }, itemStyle: { color: '#b91c1c' }, areaStyle: isLine ? { color: 'rgba(185, 28, 28, 0.08)' } : undefined }
+    ]
+  }, true)
+  chart.resize()
 })
-const barWidth = computed(() => Math.max(8, Math.min(22, dateColumnWidth.value * 0.22)))
-const panoramaLabelStep = computed(() => Math.max(1, Math.ceil(trendPoints.value.length / 12)))
-const shouldShowDate = (index: number) => index === 0 || index === trendPoints.value.length - 1 || index % panoramaLabelStep.value === 0
-const barGeometry = (value?: number) => {
-  const normalized = value == null || !Number.isFinite(Number(value)) ? 0 : Math.max(0, Number(value))
-  const height = chartMax.value <= 0 ? 0 : (normalized / chartMax.value) * 146
-  return { y: 176 - height, height }
+const downloadChart = () => {
+  if (!chart) return
+  const link = document.createElement('a')
+  const safeName = (props.result.customerName || '客户预测').replace(/[\\/:*?"<>|]/g, '-')
+  link.download = `${safeName}-${props.result.batchNo || '预测结果'}.png`
+  link.href = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' })
+  link.click()
 }
-const chartBars = computed(() => trendPoints.value.map((item, index) => {
-  const referenceValue = lastYearValue(item.date)
-  const reference = barGeometry(referenceValue)
-  const forecast = barGeometry(item.value)
-  const centerX = 44 + dateColumnWidth.value * index + dateColumnWidth.value / 2
-  const gap = Math.max(3, barWidth.value * 0.25)
-  return {
-    date: item.date,
-    referenceValue,
-    forecastValue: item.value,
-    referenceX: centerX - barWidth.value - gap / 2,
-    forecastX: centerX + gap / 2,
-    referenceY: reference.y,
-    referenceHeight: reference.height,
-    forecastY: forecast.y,
-    forecastHeight: forecast.height
-  }
-}))
 const fitToView = () => nextTick(() => {
   const container = trendScroll.value
   const count = Math.max(trendPoints.value.length, 1)
   if (!container) return
   zoom.value = Math.min(1, Math.max(0.15, Number(((container.clientWidth - 12) / (count * 68)).toFixed(2))))
   container.scrollLeft = 0
+  void renderChart()
 })
 let resizeObserver: ResizeObserver | undefined
 onMounted(() => {
@@ -138,8 +119,9 @@ onMounted(() => {
     resizeObserver.observe(trendScroll.value)
   }
 })
-onBeforeUnmount(() => resizeObserver?.disconnect())
+onBeforeUnmount(() => { resizeObserver?.disconnect(); chart?.dispose(); chart = null })
 watch(() => props.result.batchNo, fitToView)
+watch([chartType, chartWidth, () => props.result.points, () => props.result.lastYearPoints], renderChart, { deep: true })
 </script>
 
 <style scoped>
@@ -147,4 +129,5 @@ watch(() => props.result.batchNo, fitToView)
 .date-axis span{width:100%}
 .legend{display:flex;gap:16px;margin:0 0 4px;font-size:11px;color:#64748b}.legend span:before{content:'';display:inline-block;width:14px;height:8px;margin-right:5px;vertical-align:-1px;border-radius:1px}.history-key:before,.actual-key:before{background:#16a34a}.last-year-key:before{background:#9ca3af}.forecast-key:before{background:#b91c1c}.backtest-key:before{background:#f59e0b}.backtest-section{margin-top:18px;padding-top:14px;border-top:1px solid #edf1f6}.backtest-section .chart-tools small{color:#94a3b8}.chart-scroll{cursor:ew-resize}
 .metrics{grid-template-columns:repeat(4,1fr)}.trend-up{color:#ef4444!important}.trend-down{color:#16a34a!important}.training-summary{margin:4px 0 14px;padding:12px;border:1px solid #e8edf5;border-radius:10px;background:#fbfcff}.sub-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.sub-title span,.training-meta{font-size:11px;color:#94a3b8}.training-meta{display:flex;gap:18px;margin-top:6px}.training-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.training-metrics>div{padding:8px;background:#fff;border-radius:7px}.training-metrics small,.training-metrics b{display:block}.training-metrics small{color:#94a3b8}.training-metrics b{margin-top:3px;color:#334155}@media(max-width:760px){.metrics,.training-metrics{grid-template-columns:1fr 1fr}.training-meta{flex-direction:column;gap:3px}}
+.chart-actions,.chart-type-switch{display:flex;align-items:center;gap:5px}.chart-tools button{display:inline-flex;align-items:center;justify-content:center;gap:4px}.chart-tools button.active{border-color:#4776ef;color:#4776ef;background:#f3f7ff}.chart-type-switch{padding-right:6px;margin-right:2px;border-right:1px solid #e5eaf1}.download-button{color:#315ecc!important}.chart{height:270px}@media(max-width:760px){.chart-tools{align-items:flex-start;flex-direction:column}.chart-actions{width:100%;flex-wrap:wrap}}
 </style>
