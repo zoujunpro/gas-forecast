@@ -84,23 +84,18 @@ const renderChart = () => nextTick(() => {
         return [`<strong>${date}</strong>`, ...rows.map((item: any) => `${item.marker}${item.seriesName}：<strong>${formatNullable(item.value)}</strong>`) ].join('<br/>')
       }
     },
-    legend: { show: false },
-    graphic: [
-      {
-        type: 'group', left: 4, top: 6,
-        children: [
-          { type: 'rect', shape: { x: 0, y: 4, width: 10, height: 6, r: 2 }, style: { fill: '#9ca3af' } },
-          { type: 'text', x: 20, y: 0, style: { text: '去年同期', fill: '#64748b', font: '11px sans-serif', verticalAlign: 'top' } }
-        ]
-      },
-      {
-        type: 'group', left: 92, top: 6,
-        children: [
-          { type: 'rect', shape: { x: 0, y: 4, width: 10, height: 6, r: 2 }, style: { fill: '#b91c1c' } },
-          { type: 'text', x: 20, y: 0, style: { text: '最新预测', fill: '#64748b', font: '11px sans-serif', verticalAlign: 'top' } }
-        ]
-      }
-    ],
+    legend: {
+      show: true,
+      top: 4,
+      left: 'center',
+      icon: 'circle',
+      itemWidth: 7,
+      itemHeight: 7,
+      itemGap: 30,
+      selectedMode: false,
+      data: ['去年同期', '最新预测'],
+      textStyle: { color: '#64748b', fontSize: 11 }
+    },
     grid: { top: 38, right: 18, bottom: 52, left: 48 },
     xAxis: { type: 'category', data: trendPoints.value.map((point) => point.date), axisLabel: { color: '#64748b', fontSize: 10, rotate: 35, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
     yAxis: { type: 'value', name: '用量', nameTextStyle: { color: '#94a3b8', fontSize: 10 }, axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f6' } } },
