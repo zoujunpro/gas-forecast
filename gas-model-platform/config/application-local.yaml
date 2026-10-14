@@ -1,0 +1,11 @@
+server:
+  port: 8090
+  reload: true
+
+storage:
+  # 本地运行的模型产物保存在本地项目目录下。
+  artifact_root: artifacts
+
+logging:
+  directory: logs
+  level: INFO
