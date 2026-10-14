@@ -1172,7 +1172,7 @@ const pagedRequestDatasetRows = computed(() => {
 })
 const requestDatasetColumns = computed(() => {
   const keys = new Set<string>()
-  requestDatasetRows.value.slice(0, 20).forEach((row) => {
+  requestDatasetRows.value.forEach((row) => {
     Object.keys(row).forEach((key) => keys.add(key))
   })
   const columns = Array.from(keys)
@@ -1197,6 +1197,36 @@ const dynamicFeatureLabelMap = computed(() => {
   )
 })
 const requestDatasetColumnLabel = (column: string) => {
+  const baseLabels: Record<string, string> = {
+    date: '日期',
+    gas_sales: '天然气销量',
+    temp: '平均气温',
+    tempavg: '平均气温',
+    temp_avg: '平均气温',
+    tempmax: '最高气温',
+    temp_max: '最高气温',
+    tempmin: '最低气温',
+    temp_min: '最低气温',
+    extreme_cold_days: '极寒天数',
+    hdd: '采暖度日',
+    feelslike: '平均体感温度',
+    feelslikemax: '最高体感温度',
+    feelslikemin: '最低体感温度',
+    dew: '露点温度',
+    humidity: '湿度',
+    precip: '降水量',
+    precipitation: '降水量',
+    windgust: '阵风风速',
+    windspeed: '风速',
+    sealevelpressure: '海平面气压',
+    cloudcover: '云量',
+    visibility: '能见度',
+    solarradiation: '太阳辐射',
+    solarenergy: '太阳能量',
+    uvindex: '紫外线指数'
+  }
+  const baseLabel = baseLabels[column.toLowerCase()]
+  if (baseLabel) return `${baseLabel} (${column})`
   if (!/^dynamic_\d+$/i.test(column)) return column
   const name = dynamicFeatureLabelMap.value.get(column)
   return name ? `${name} (${column})` : `动态指标 (${column})`

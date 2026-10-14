@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.component.ModelPlatformClient;
 import com.gas.forecast.business.component.dto.ModelTrainApiRequest;
@@ -72,7 +71,6 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ModelTrainExecutionServiceImpl.class);
     private static final DateTimeFormatter BATCH_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final int RESULT_DATASET_PREVIEW_LIMIT = 100;
 
     private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelConfigTbMapper modelConfigTbMapper;
@@ -323,10 +321,10 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             item.setCreatedAt(detail.getCreatedAt());
             item.setUpdatedAt(detail.getUpdatedAt());
             if (loadDetail) {
-                // 5. 详情模式额外解析请求和结果 JSON，并限制请求数据集的预览数量。
+                // 5. 详情模式返回实际提交给模型的完整请求，训练数据页据此原样展示。
                 JsonNode requestJson = parseRequestPayload(detail.getRequestParam());
                 if (requestJson != null) {
-                    item.setRequestJson(objectMapper.convertValue(previewRequestPayload(requestJson), ModelTrainApiRequest.class));
+                    item.setRequestJson(objectMapper.convertValue(requestJson, ModelTrainApiRequest.class));
                 }
                 JsonNode node = parseJsonValue(detail.getResultJson());
                 if (node != null && TextUtils.hasText(node.path("train_batch_no").asText(null))) {
@@ -338,52 +336,6 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         // 6. 默认将查询结果的第一条作为当前选中批次。
         String selectedBatchNo = details.isEmpty() ? null : details.get(0).getBatchNo();
         return new ModelTrainResultResponse(resultDetails, selectedBatchNo);
-    }
-
-    private JsonNode previewRequestPayload(JsonNode requestJson) {
-        // 非对象或数据量未超限时直接返回原请求，不进行无意义复制。
-        if (!requestJson.isObject()) {
-            return requestJson;
-        }
-        JsonNode dataset = requestJson.get("dataset");
-        if (dataset == null || !dataset.isArray() || dataset.size() <= RESULT_DATASET_PREVIEW_LIMIT) {
-            return requestJson;
-        }
-        // 复制除 dataset 外的请求字段，保证预览仍包含完整配置上下文。
-        ObjectNode preview = objectMapper.createObjectNode();
-        requestJson.fields().forEachRemaining(entry -> {
-            if (!"dataset".equals(entry.getKey())) {
-                preview.set(entry.getKey(), entry.getValue());
-            }
-        });
-        // dataset 只保留前 N 条，并附带原始总数和截断标记。
-        ArrayNode rows = objectMapper.createArrayNode();
-        for (int index = 0; index < RESULT_DATASET_PREVIEW_LIMIT; index++) {
-            rows.add(dataset.get(index));
-        }
-        preview.set("dataset", rows);
-        preview.put("dataset_total", dataset.size());
-        preview.put("dataset_preview_limit", RESULT_DATASET_PREVIEW_LIMIT);
-        preview.put("dataset_truncated", true);
-        // 预览仅保留前100条，但详情页仍应展示完整训练集的真实日期范围。
-        String startDate = null;
-        String endDate = null;
-        for (JsonNode row : dataset) {
-            String date = row.path("date").asText(null);
-            if (!TextUtils.hasText(date))
-                date = row.path("stat_date").asText(null);
-            if (!TextUtils.hasText(date))
-                continue;
-            if (startDate == null || date.compareTo(startDate) < 0)
-                startDate = date;
-            if (endDate == null || date.compareTo(endDate) > 0)
-                endDate = date;
-        }
-        if (startDate != null)
-            preview.put("dataset_start_date", startDate);
-        if (endDate != null)
-            preview.put("dataset_end_date", endDate);
-        return preview;
     }
 
     private List<FeatureMapping> loadFeatureMappings(Long modelId) {

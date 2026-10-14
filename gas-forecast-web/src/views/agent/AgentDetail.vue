@@ -350,8 +350,8 @@
             </div>
             <div class="result-scope-bar">
               <span>评估范围</span>
-              <strong>{{ selectedStProvince }} / {{ selectedStIndustry }}</strong>
-              <em>行业共享训练模型</em>
+              <strong>{{ selectedStProvince }} / {{ selectedStIndustry }} / {{ selectedStCustomer || '-' }}</strong>
+              <em>客户独立训练模型</em>
             </div>
             <div class="short-term-evaluation">
               <section class="result-chart-panel compact-chart-panel">

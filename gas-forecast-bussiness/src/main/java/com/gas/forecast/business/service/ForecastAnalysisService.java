@@ -13,6 +13,7 @@ import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ModelForecastAnalysisTb;
+import com.gas.forecast.dao.domain.DataDailySalesTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
@@ -154,7 +155,7 @@ public class ForecastAnalysisService {
             throw new IllegalStateException("预测结果不存在：" + forecastBatchNo);
 
         ForecastAnalysisContext context = buildAnalysisContext(record, points);
-        String prompt = "请严格依据以下 JSON 简要分析天然气预测结果。只回答两项：1.同比去年同期是上升、下降还是基本持平，并写明同比百分比；" + "2.造成该同比变化的主要原因。全文控制在2至3句话、120个汉字以内，不罗列全部指标，不输出长篇风险和业务建议。"
+        String prompt = "请严格依据以下 JSON 简要分析天然气预测结果。只回答两项：1.同比去年同期是上升、下降还是基本持平，并严格使用 yearOverYearComparison.changePercent 中已经按1位小数计算的同比百分比；" + "2.造成该同比变化的主要原因。全文控制在2至3句话、120个汉字以内，不罗列全部指标，不输出长篇风险和业务建议。"
                 + "趋势判断必须优先且仅依据 yearOverYearComparison，即本次预测总量与去年相同日期实际总量的比较；不得用预测期第一天和最后一天比较来代替同比。若没有有效同比数据，明确说明无法判断同比，再补充预测期自身走势。原因只能引用 JSON 中已有的历史特征、未来特征、训练或回测数据。"
                 + "不得补充 JSON 中不存在的天气、供给、价格、库存或业务事实；证据不足时直接说明暂不能判断外部原因。\n\n" + objectMapper.writeValueAsString(context);
         return new PromptData(record.getAgentCode(), prompt);
@@ -191,7 +192,7 @@ public class ForecastAnalysisService {
         }
         if (byPreviousDate.isEmpty())
             return null;
-        var query = Wrappers.query().select("stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales").in("stat_date", byPreviousDate.keySet()).isNotNull("gas_sales");
+        var query = Wrappers.<DataDailySalesTb>query().select("stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales").in("stat_date", byPreviousDate.keySet()).isNotNull("gas_sales");
         if (TextUtils.hasText(record.getRegionCode())) query.eq("region_code", record.getRegionCode());
         if (TextUtils.hasText(record.getIndustryCode())) query.eq("industry_code", record.getIndustryCode());
         if (TextUtils.hasText(record.getCustomerCode())) query.eq("customer_code", record.getCustomerCode());
@@ -210,7 +211,8 @@ public class ForecastAnalysisService {
         }
         if (matched == 0 || lastYearTotal.signum() == 0)
             return null;
-        BigDecimal percent = forecastTotal.subtract(lastYearTotal).multiply(BigDecimal.valueOf(100)).divide(lastYearTotal.abs(), 2, RoundingMode.HALF_UP);
+        // 与页面统一保留 1 位小数，避免同一同比结果出现 7.6% 和 7.58% 两种展示。
+        BigDecimal percent = forecastTotal.subtract(lastYearTotal).multiply(BigDecimal.valueOf(100)).divide(lastYearTotal.abs(), 1, RoundingMode.HALF_UP);
         String direction = percent.abs().compareTo(BigDecimal.ONE) < 0 ? "基本持平" : percent.signum() > 0 ? "上升" : "下降";
         return new ForecastAnalysisContext.YearOverYearComparison(matched, forecastTotal, lastYearTotal, percent, direction);
     }
