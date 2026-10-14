@@ -4,33 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/80_add_all_history_train_mode.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/ai/service/AiIntentParserTrainingRangeTest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/all-history-1743-days-backtest.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/all-history-backtest.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/comparison.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/recent-1095-days-backtest.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/recent-1460-days-backtest.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/recent-365-days-backtest.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/outputs/suzhou-city-gas-history-window-comparison/recent-730-days-backtest.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/compare_city_gas_history_windows.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiIntent.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiIntent.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiIntentParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiIntentParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/AutoTrainRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/AutoTrainRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainFeatureDataPageRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ModelTrainFeatureDataPageRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/enums/ModelTrainMode.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/enums/ModelTrainMode.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/TrainingDatasetAssembler.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/TrainingDatasetAssembler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AutoTrainServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AutoTrainServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainFeatureDataServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainFeatureDataServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelTrainConfigTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/ModelTrainConfigTb.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/04_create_config_tables.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/04_create_config_tables.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/22_add_model_train_config_time_window.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/22_add_model_train_config_time_window.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/model/modelManagementConfigs.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/model/modelManagementConfigs.ts" afterDir="false" />
-    </list>
+    <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -639,7 +613,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791946671868</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1791950002688</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1791950002688</updated>
+    </task>
+    <option name="localTasksCounter" value="45" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

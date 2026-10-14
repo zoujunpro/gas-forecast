@@ -51,6 +51,10 @@ describe('workspace menu filtering', () => {
     expect(filterMenusByWorkspace(menus, 'management').map((menu) => menu.path)).toEqual(['/', '/model'])
     expect(collectManagementMenuPaths(menus)).toEqual(['/model/list'])
   })
+
+  it('returns no cached management path when profile menus are not restored yet', () => {
+    expect(collectManagementMenuPaths([])).toEqual([])
+  })
 })
 
 describe('cached profile validation', () => {

@@ -67,7 +67,9 @@ const router = useRouter()
 const userName = computed(() => getProfile().user?.realName || '管理员')
 const managementPath = computed(() => {
   const paths = collectManagementMenuPaths(getProfile().menus || [])
-  return paths.find((path) => path === '/model/list') || paths.find((path) => path.includes('/')) || '/'
+  // 权限资料可能在首页首次渲染时尚未恢复。此时也必须导航到一个真实后台地址，
+  // 让路由守卫刷新权限并安装动态路由；回退到当前首页会表现为“点击没反应”。
+  return paths.find((path) => path === '/model/list') || paths[0] || '/model/list'
 })
 const logout = () => {
   clearToken()
