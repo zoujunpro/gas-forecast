@@ -5,9 +5,41 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/package-lock.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/package.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/applications.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/dasheng-brochure-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/dasheng-brochure-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/dasheng-brochure-4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/hero-poster.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/research-classroom.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/research-lab.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/videos/hero-demo.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/src/App.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/src/main.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/src/style.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-vue-rework/vite.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-website-ui/assets/applications.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-website-ui/assets/classroom-robot.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-website-ui/assets/lab-robot.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-website-ui/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-website-ui/script.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/beijing-embodied-website-ui/styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/developer-platform.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/ecosystem-event.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/exhibition.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/industry-operation.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/research-robot.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/science-lab.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/simulation.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/src/App.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/src/main.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dasheng-site-stage/src/style.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dropdown-style.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/news-App.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/news-style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiForecastResult.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiForecastResult.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,7 +47,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="15549" />
+    <option name="cachedIndexableFilesCount" value="15581" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -601,7 +633,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791868950936</updated>
     </task>
-    <option name="localTasksCounter" value="42" />
+    <task id="LOCAL-00042" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1791869966395</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1791869966395</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
