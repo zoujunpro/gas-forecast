@@ -29,8 +29,11 @@ public class ModelTrainFeatureDataServiceImpl implements ModelTrainFeatureDataSe
         config.setRegionCode(request.regionCode());
         config.setIndustryCode(request.industryCode());
         config.setCustomerCode(request.customerCode());
+        boolean all = "ALL".equalsIgnoreCase(request.trainMode());
         boolean range = TextUtils.hasText(request.statDateStart()) || TextUtils.hasText(request.statDateEnd());
-        if (range) {
+        if (all) {
+            config.setTrainMode("ALL");
+        } else if (range) {
             if (!TextUtils.hasText(request.statDateStart()) || !TextUtils.hasText(request.statDateEnd()))
                 throw new BusinessException("必须同时填写开始和结束日期");
             config.setTrainMode("RANGE");

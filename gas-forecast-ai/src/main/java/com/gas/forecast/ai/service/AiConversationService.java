@@ -590,13 +590,13 @@ public class AiConversationService {
         request.setRegionCode(intent.getRegionCode());
         request.setIndustryCode(intent.getIndustryCode());
         request.setCustomerCode(intent.getCustomerCode());
-        request.setTrainStartDate(intent.getStartDate());
-        request.setTrainEndDate(intent.getEndDate());
+        applyTrainingRange(request, intent);
         request.setTriggerSource("AI");
         var result = autoTrainService.execute(request);
         conversation.setLastTrainBatchNo(result.getTrainBatchNo());
         conversation.setLastForecastBatchNo(null);
-        return new ExecutionResult("EXECUTING", "已为" + displayScope(intent) + "发起训练，训练批次：" + result.getTrainBatchNo() + "，当前状态：" + result.getStatus() + "。你可以继续问“这个训练到哪了”。");
+        return new ExecutionResult("EXECUTING", "已为" + displayScope(intent) + "发起训练（" + trainingRangeLabel(intent) + "），训练批次：" + result.getTrainBatchNo() + "，当前状态：" + result.getStatus()
+                + "。你可以继续问“这个训练到哪了”。");
     }
 
     private ExecutionResult queryTraining(AiConversationTb conversation, AiIntent intent) {
@@ -655,6 +655,14 @@ public class AiConversationService {
                 ? null
                 : trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, trainConfig.getId()).eq(ModelTrainRecordTb::getStatus, "SUCCESS")
                         .orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
+        boolean rangeMismatch = trained != null && !matchesRequestedTrainingRange(trainConfig, intent);
+        boolean staleTraining = trained != null && isTrainingStale(trained, trainConfig, intent);
+        if (rangeMismatch || staleTraining) {
+            ExecutionResult training = startTrainingForForecast(conversation, intent);
+            String reason = rangeMismatch ? "现有成功模型的训练数据范围不符合本次要求（" + trainingRangeLabel(intent) + "）" : "销量数据已更新，现有模型尚未训练到最新数据";
+            return new ExecutionResult("WAITING_TRAINING", reason + "，已自动重新训练。\n" + training.answer()
+                    + "\n训练成功后系统会自动继续预测，无需再次提交。");
+        }
         if (trainConfig == null) {
             try {
                 ExecutionResult training = startTrainingForForecast(conversation, intent);
@@ -767,7 +775,8 @@ public class AiConversationService {
         request.setRegionCode(intent.getRegionCode());
         request.setIndustryCode(intent.getIndustryCode());
         request.setCustomerCode(intent.getCustomerCode());
-        // 预测日期和预测天数不能作为训练区间；训练范围由模型推荐周期自动决定。
+        // 训练范围使用独立字段，不能把预测日期和预测天数当作训练区间。
+        applyTrainingRange(request, intent);
         request.setTriggerSource("AI");
         var result = autoTrainService.execute(request);
         conversation.setLastTrainBatchNo(result.getTrainBatchNo());
@@ -786,6 +795,48 @@ public class AiConversationService {
             forecastService.saveConfig(pending);
         }
         return new ExecutionResult("EXECUTING", "已为客户“" + intent.getCustomerName() + "”发起训练，训练批次：" + result.getTrainBatchNo() + "，当前状态：" + result.getStatus() + "。");
+    }
+
+    private void applyTrainingRange(AutoTrainRequest request, AiIntent intent) {
+        request.setTrainMode(intent.getTrainMode());
+        request.setRecentPeriods(intent.getTrainingPeriods());
+        request.setTrainStartDate(intent.getTrainingStartDate());
+        request.setTrainEndDate(intent.getTrainingEndDate());
+    }
+
+    /** 仅在用户明确指定训练窗口时检查；没有指定时沿用现有成功模型。 */
+    private boolean matchesRequestedTrainingRange(ModelTrainConfigTb config, AiIntent intent) {
+        if (!TextUtils.hasText(intent.getTrainMode()))
+            return true;
+        if (!intent.getTrainMode().equalsIgnoreCase(config.getTrainMode()))
+            return false;
+        if ("RECENT".equalsIgnoreCase(intent.getTrainMode()))
+            return java.util.Objects.equals(intent.getTrainingPeriods(), config.getRecentPeriods());
+        if ("RANGE".equalsIgnoreCase(intent.getTrainMode()))
+            return java.util.Objects.equals(intent.getTrainingStartDate(), config.getTrainStartDate())
+                    && java.util.Objects.equals(intent.getTrainingEndDate(), config.getTrainEndDate());
+        return true;
+    }
+
+    private boolean isTrainingStale(ModelTrainRecordTb trained, ModelTrainConfigTb config, AiIntent intent) {
+        // 固定日期区间是用户有意冻结的数据范围，不因区间外新增数据而重训。
+        if ("RANGE".equalsIgnoreCase(config.getTrainMode()) || "RANGE".equalsIgnoreCase(intent.getTrainMode()))
+            return false;
+        DataDailySalesTb latest = dailySalesMapper.selectOne(Wrappers.<DataDailySalesTb>lambdaQuery().select(DataDailySalesTb::getStatDate)
+                .eq(DataDailySalesTb::getCustomerCode, intent.getCustomerCode()).isNotNull(DataDailySalesTb::getGasSales)
+                .orderByDesc(DataDailySalesTb::getStatDate).last("limit 1"));
+        return latest != null && TextUtils.hasText(latest.getStatDate())
+                && (!TextUtils.hasText(trained.getTrainEndDate()) || latest.getStatDate().compareTo(trained.getTrainEndDate()) > 0);
+    }
+
+    private String trainingRangeLabel(AiIntent intent) {
+        if ("ALL".equalsIgnoreCase(intent.getTrainMode()))
+            return "全部历史数据";
+        if ("RECENT".equalsIgnoreCase(intent.getTrainMode()))
+            return "最近" + intent.getTrainingPeriods() + "个周期";
+        if ("RANGE".equalsIgnoreCase(intent.getTrainMode()))
+            return intent.getTrainingStartDate() + "至" + intent.getTrainingEndDate();
+        return "模型推荐范围";
     }
 
     private ExecutionResult unsupportedCustomer(AiIntent intent) {

@@ -25,6 +25,9 @@ public class ModelTrainFeatureDataPageRequest {
     @Size(max = 32, message = "时间跨度长度不能超过32个字符")
     private String timeGranularity;
 
+    @Size(max = 32, message = "训练方式长度不能超过32个字符")
+    private String trainMode;
+
     @Size(max = 32, message = "统计日期长度不能超过32个字符")
     private String statDate;
 
@@ -63,6 +66,10 @@ public class ModelTrainFeatureDataPageRequest {
 
     public String timeGranularity() {
         return timeGranularity;
+    }
+
+    public String trainMode() {
+        return trainMode;
     }
 
     public String statDate() {

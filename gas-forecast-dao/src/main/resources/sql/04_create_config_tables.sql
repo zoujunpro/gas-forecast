@@ -47,7 +47,7 @@ create table if not exists model_train_config_tb (
     customer_name varchar(128) default null comment '客户名称',
     train_start_date varchar(32) default null comment '训练数据开始日期',
     train_end_date varchar(32) default null comment '训练数据结束日期',
-    train_mode varchar(32) not null default 'RECENT' comment '训练方式：RECENT最近时间/RANGE指定时间范围',
+    train_mode varchar(32) not null default 'RECENT' comment '训练方式：ALL全部历史/RECENT最近时间/RANGE指定时间范围',
     time_granularity varchar(32) not null default 'MONTH' comment '时间格式：DAY日/TENDAY旬/MONTH月',
     recent_periods int default null comment '最近周期数',
     enabled tinyint not null default 1 comment '是否启用',

@@ -101,7 +101,7 @@ public class ModelTrainConfigTb {
     private String trainEndDate;
 
     /**
-     * 训练方式：RECENT/RANGE
+     * 训练方式：ALL/RECENT/RANGE
      */
     private String trainMode;
 

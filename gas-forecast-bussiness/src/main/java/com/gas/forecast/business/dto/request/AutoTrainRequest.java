@@ -63,6 +63,13 @@ public class AutoTrainRequest {
     @Size(max = 32, message = "训练结束日期长度不能超过32个字符")
     private String trainEndDate;
 
+    /** 训练方式：ALL、RECENT、RANGE；为空时使用模型推荐周期。 */
+    @Size(max = 16, message = "训练方式长度不能超过16个字符")
+    private String trainMode;
+
+    /** RECENT 模式的最近训练周期数。 */
+    private Integer recentPeriods;
+
     /** 触发来源：MANUAL、AI、SCHEDULE 或 DATA_EVENT，默认为 MANUAL。 */
     @Size(max = 32, message = "触发来源长度不能超过32个字符")
     private String triggerSource = "MANUAL";

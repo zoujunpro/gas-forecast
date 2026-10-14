@@ -261,7 +261,7 @@
       <div class="preview-summary">
         <span>训练配置编码：{{ executionConfig?.trainCode || '-' }}</span>
         <span>时间格式：{{ granularityText(executionConfig?.timeGranularity) }}</span>
-        <span>训练方式：{{ executionConfig?.trainMode === 'RANGE' ? '指定时间范围' : '最近时间' }}</span>
+        <span>训练方式：{{ trainModeText(executionConfig?.trainMode) }}</span>
         <span>数据量：{{ previewTotal }}</span>
       </div>
       <div class="preview-scope">
@@ -833,8 +833,16 @@ const previewTimeRange = computed(() => {
   if (executionConfig.value.trainMode === 'RECENT') {
     return `最近 ${executionConfig.value.recentPeriods} 个周期`
   }
+  if (executionConfig.value.trainMode === 'ALL') {
+    return '全部可用历史数据'
+  }
   return `${executionConfig.value.trainStartDate || '-'} 至 ${executionConfig.value.trainEndDate || '-'}`
 })
+const trainModeText = (mode?: string) => {
+  if (mode === 'ALL') return '全部历史数据'
+  if (mode === 'RANGE') return '指定时间范围'
+  return '最近时间'
+}
 const selectedTrainResult = computed(() => {
   return (
     trainResultBatches.value.find((item) => item.batchNo === selectedTrainBatchNo.value) ||
@@ -1806,6 +1814,7 @@ const previewPayload = computed<PageRequest>(() => {
     regionCode: item.regionCode || undefined,
     industryCode: item.industryCode || undefined,
     customerCode: item.customerCode || undefined,
+    trainMode: item.trainMode || undefined,
     sortField: 'statDate',
     sortOrder: item.trainMode === 'RECENT' ? 'desc' : 'asc'
   }
@@ -1824,7 +1833,7 @@ const loadPreviewData = async () => {
   try {
     const data = await listPage('/model-train-feature-data', previewPayload.value)
     previewRows.value = data.records
-    previewTotal.value = executionConfig.value.trainMode === 'RECENT' ? data.records.length : data.total
+    previewTotal.value = data.total
   } finally {
     previewLoading.value = false
   }

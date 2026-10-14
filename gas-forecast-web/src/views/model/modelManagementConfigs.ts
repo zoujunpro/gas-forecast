@@ -35,6 +35,7 @@ const timeGranularityOptions = [
 ]
 
 const trainModeOptions = [
+  { label: '全部历史数据', value: 'ALL' },
   { label: '最近时间', value: 'RECENT' },
   { label: '指定时间范围', value: 'RANGE' }
 ]
@@ -295,8 +296,8 @@ export const modelTrainConfigConfig: BaseDataPageConfig = {
       label: '训练方式',
       minWidth: 120,
       displayType: 'tag',
-      enumMap: { RECENT: '最近时间', RANGE: '指定时间范围' },
-      tagTypeMap: { RECENT: 'success', RANGE: 'primary' }
+      enumMap: { ALL: '全部历史数据', RECENT: '最近时间', RANGE: '指定时间范围' },
+      tagTypeMap: { ALL: 'warning', RECENT: 'success', RANGE: 'primary' }
     },
     {
       prop: 'timeGranularity',

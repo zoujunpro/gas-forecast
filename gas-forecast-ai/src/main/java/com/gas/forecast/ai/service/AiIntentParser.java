@@ -37,8 +37,9 @@ public class AiIntentParser {
             “是否需要训练”“训练过吗”“预测效果怎么样”属于QUESTION，不能触发训练或预测。
             对上一份结果的原因、趋势、日期、风险等追问使用GENERAL_CHAT和FOLLOW_UP。
             只有用户明确要求执行但语义仍有歧义时requiresConfirmation=true；普通询问为false。
-            提取 agentCode、regionName、industryName、customerCode、customerName、trainBatchNo、forecastBatchNo、startDate、endDate、forecastHorizon、timeGranularity、sortBy、sortDirection、limit。
+            提取 agentCode、regionName、industryName、customerCode、customerName、trainBatchNo、forecastBatchNo、startDate、endDate、forecastHorizon、trainMode、trainingPeriods、trainingStartDate、trainingEndDate、timeGranularity、sortBy、sortDirection、limit。
             agentCode取 short-term、monthly-sales、winter-supply；日期为yyyy-MM-dd；timeGranularity取DAY、TENDAY、MONTH。
+            训练数据范围必须与预测范围分开：“全部历史数据训练”取trainMode=ALL；“最近1740天训练”取trainMode=RECENT、trainingPeriods=1740；明确训练起止日期取trainMode=RANGE及trainingStartDate/trainingEndDate。预测未来多少天只放forecastHorizon。
             客户查询中，“数据量比较多、数据最多、按数据量排序”设置sortBy=DATA_COUNT、sortDirection=DESC；“数据量较少、最少”设置为ASC；“前N个/前N名”提取limit=N。
             省、市、区域都放regionName；企业、用户、客户名称放customerName。用户原文明确提供客户编号时放customerCode；不要编造任何编码。
             confidence为0到1。信息不足时仍识别意图，并在clarificationQuestion中给出一个简短追问。
@@ -66,6 +67,7 @@ public class AiIntentParser {
                 intent.setRequiresConfirmation(false);
             if (!TextUtils.hasText(intent.getAgentCode()))
                 intent.setAgentCode("short-term");
+            normalizeTrainingRange(intent, message);
             normalizeBusinessAliases(intent, message);
             toolRegistry.normalize(intent);
             List<String> validationErrors = argumentValidator.validate(intent);
@@ -75,6 +77,29 @@ public class AiIntentParser {
             return intent;
         } catch (Exception exception) {
             return fallback(message);
+        }
+    }
+
+    /** 确定性提取训练数据窗口，避免“最近1740天”被误识别成预测天数。 */
+    static void normalizeTrainingRange(AiIntent intent, String message) {
+        String text = message == null ? "" : message.replaceAll("\\s+", "");
+        if (text.matches(".*(全部|所有|完整)(历史)?数据.*(训练|重训|预测).*|.*(训练|重训|预测).*(全部|所有|完整)(历史)?数据.*")) {
+            intent.setTrainMode("ALL");
+            intent.setTrainingPeriods(null);
+            return;
+        }
+        java.util.regex.Matcher days = java.util.regex.Pattern.compile("(?:用|使用)?(?:最近|近)(\\d{1,5})(?:天|日)(?:的)?(?:数据)?(?:进行)?(?:训练|重训|预测)").matcher(text);
+        if (days.find()) {
+            intent.setTrainMode("RECENT");
+            intent.setTrainingPeriods(Integer.parseInt(days.group(1)));
+            return;
+        }
+        java.util.regex.Matcher years = java.util.regex.Pattern.compile("(?:用|使用)?(?:最近|近)(\\d{1,2})年(?:的)?(?:数据)?(?:进行)?(?:训练|重训|预测)").matcher(text);
+        if (years.find()) {
+            int value = Integer.parseInt(years.group(1));
+            String granularity = intent.getTimeGranularity();
+            intent.setTrainMode("RECENT");
+            intent.setTrainingPeriods("MONTH".equalsIgnoreCase(granularity) || "monthly-sales".equals(intent.getAgentCode()) ? value * 12 : value * 365);
         }
     }
 
@@ -93,6 +118,7 @@ public class AiIntentParser {
                 repaired.setRequiresConfirmation(false);
             if (!TextUtils.hasText(repaired.getAgentCode()))
                 repaired.setAgentCode("short-term");
+            normalizeTrainingRange(repaired, message);
             normalizeBusinessAliases(repaired, message);
             return repaired;
         } catch (Exception ignored) {
@@ -126,6 +152,7 @@ public class AiIntentParser {
             String prompt = "已有待补全意图：" + objectMapper.writeValueAsString(pending) + "\n用户最新回复：" + message + "\n判断最新回复是在补充待确认信息、确认执行、取消，还是一个全新问题。" + "若是补充或确认，保留已有业务动作和实体；若是新问题，按新问题完整解析。";
             String answer = llmClient.complete(SYSTEM_PROMPT, prompt, 0.1D);
             AiIntent result = objectMapper.readValue(cleanJson(answer), AiIntent.class);
+            normalizeTrainingRange(result, message);
             normalizeBusinessAliases(result, message);
             toolRegistry.normalize(result);
             return result;
@@ -157,6 +184,7 @@ public class AiIntentParser {
         intent.setConfidence(intent.getIntent() == AiIntentType.UNKNOWN ? 0D : 0.45D);
         intent.setClarificationQuestion("我没有完全理解。请说明客户名称，以及要训练、预测还是查询任务状态。");
         toolRegistry.normalize(intent);
+        normalizeTrainingRange(intent, message);
         normalizeBusinessAliases(intent, message);
         return intent;
     }
@@ -171,7 +199,7 @@ public class AiIntentParser {
             intent.setBulkScope(true);
         // 原文中的明确数值参数必须由 Java 确定性提取，不能依赖大模型是否稳定返回。
         // 支持“预测50天”“未来 50 日”“预测未来50天”等常见表达。
-        java.util.regex.Matcher horizonMatcher = java.util.regex.Pattern.compile("(?:预测(?:未来)?|未来)?\\s*(\\d{1,3})\\s*(?:天|日)").matcher(text);
+        java.util.regex.Matcher horizonMatcher = java.util.regex.Pattern.compile("(?:预测未来|未来|预测)\\s*(\\d{1,3})\\s*(?:天|日)").matcher(text);
         if (horizonMatcher.find()) {
             intent.setForecastHorizon(Integer.parseInt(horizonMatcher.group(1)));
         }

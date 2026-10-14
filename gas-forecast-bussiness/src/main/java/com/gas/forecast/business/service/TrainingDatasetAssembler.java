@@ -77,8 +77,15 @@ public class TrainingDatasetAssembler {
     }
 
     private LocalDate[] range(ModelTrainConfigTb config, String granularity, Scope scope) {
-        if (!"RECENT".equalsIgnoreCase(config.getTrainMode())) {
+        if ("RANGE".equalsIgnoreCase(config.getTrainMode())) {
             return new LocalDate[]{date(config.getTrainStartDate()), date(config.getTrainEndDate())};
+        }
+        if ("ALL".equalsIgnoreCase(config.getTrainMode())) {
+            DataDailySalesTb earliest = salesMapper.selectOne(salesQuery(scope).orderByAsc(DataDailySalesTb::getStatDate).orderByAsc(DataDailySalesTb::getId).last("limit 1"));
+            DataDailySalesTb latest = salesMapper.selectOne(salesQuery(scope).orderByDesc(DataDailySalesTb::getStatDate).orderByDesc(DataDailySalesTb::getId).last("limit 1"));
+            if (earliest == null || latest == null)
+                return new LocalDate[]{LocalDate.now(), LocalDate.now().minusDays(1)};
+            return new LocalDate[]{date(earliest.getStatDate()), date(latest.getStatDate())};
         }
         DataDailySalesTb latest = salesMapper.selectOne(salesQuery(scope).orderByDesc(DataDailySalesTb::getStatDate).orderByDesc(DataDailySalesTb::getId).last("limit 1"));
         if (latest == null)

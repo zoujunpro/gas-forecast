@@ -26,6 +26,13 @@ public class AiIntent {
     private String startDate;
     private String endDate;
     private Integer forecastHorizon;
+    /** 用户明确要求的训练方式：ALL、RECENT、RANGE。 */
+    private String trainMode;
+    /** RECENT 模式下使用的最近训练周期数。 */
+    private Integer trainingPeriods;
+    /** RANGE 模式下独立于预测日期的训练起止日期。 */
+    private String trainingStartDate;
+    private String trainingEndDate;
     private String timeGranularity;
     /** 查询结果排序字段，目前支持 DATA_COUNT、NAME。 */
     private String sortBy;

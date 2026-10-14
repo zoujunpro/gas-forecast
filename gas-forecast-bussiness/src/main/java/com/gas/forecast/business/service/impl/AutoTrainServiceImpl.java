@@ -82,7 +82,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         String trainScopeType = "short-term".equals(agentCode) ? "CUSTOMER" : strategy.getTrainScopeType();
         Target target = resolveTarget(request);
         validateRequiredScope(trainScopeType, target);
-        DateRange range = resolveDateRange(request);
+        TrainingRange range = resolveDateRange(request);
         ModelConfigTb model = resolveModel(agentCode, target);
         target = normalizeTrainingTarget(trainScopeType, target);
         int recentPeriods = resolveRecommendedPeriods(model, range);
@@ -98,7 +98,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
 
         ModelTrainRecordTb task = trainQueueService.enqueue(trainConfig, triggerSource, Boolean.TRUE.equals(request.getForceTrain()), null);
         return new AutoTrainResponse(agentCode, triggerSource, model.getId(), model.getModelCode(), trainConfig.getId(), target.regionCode(), target.industryCode(), target.customerCode(),
-                range.custom() ? ModelTrainMode.RANGE.name() : ModelTrainMode.RECENT.name(), range.startDate(), range.endDate(), range.custom() ? null : recentPeriods, task.getBatchNo(),
+                range.mode().name(), range.startDate(), range.endDate(), range.mode() == ModelTrainMode.RECENT ? recentPeriods : null, task.getBatchNo(),
                 task.getStatus());
     }
 
@@ -167,13 +167,29 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         };
     }
 
-    private DateRange resolveDateRange(AutoTrainRequest request) {
+    private TrainingRange resolveDateRange(AutoTrainRequest request) {
         String start = trim(request.getTrainStartDate());
         String end = trim(request.getTrainEndDate());
         if (TextUtils.hasText(start) != TextUtils.hasText(end))
             throw new BusinessException("自定义训练开始日期和结束日期必须同时填写");
+        ModelTrainMode mode;
+        try {
+            mode = TextUtils.hasText(request.getTrainMode()) ? ModelTrainMode.valueOf(request.getTrainMode().trim().toUpperCase()) : null;
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException("训练方式只支持 ALL、RECENT、RANGE");
+        }
+        if (TextUtils.hasText(start))
+            mode = ModelTrainMode.RANGE;
+        if (mode == null)
+            mode = ModelTrainMode.RECENT;
+        if (mode == ModelTrainMode.RANGE && !TextUtils.hasText(start))
+            throw new BusinessException("RANGE 训练方式必须填写训练开始日期和结束日期");
+        if (mode != ModelTrainMode.RANGE && TextUtils.hasText(start))
+            throw new BusinessException("只有 RANGE 训练方式可以填写训练开始日期和结束日期");
+        if (mode == ModelTrainMode.RECENT && request.getRecentPeriods() != null && request.getRecentPeriods() <= 0)
+            throw new BusinessException("最近训练周期数必须大于0");
         if (!TextUtils.hasText(start))
-            return new DateRange(false, null, null);
+            return new TrainingRange(mode, null, null, request.getRecentPeriods());
         try {
             LocalDate startDate = LocalDate.parse(start);
             LocalDate endDate = LocalDate.parse(end);
@@ -182,7 +198,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         } catch (DateTimeParseException exception) {
             throw new BusinessException("训练日期格式必须为 yyyy-MM-dd");
         }
-        return new DateRange(true, start, end);
+        return new TrainingRange(ModelTrainMode.RANGE, start, end, null);
     }
 
     private ModelConfigTb resolveModel(String agentCode, Target target) {
@@ -216,9 +232,11 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         return !TextUtils.hasText(configured) || configured.equals(actual);
     }
 
-    private int resolveRecommendedPeriods(ModelConfigTb model, DateRange range) {
-        if (range.custom())
+    private int resolveRecommendedPeriods(ModelConfigTb model, TrainingRange range) {
+        if (range.mode() != ModelTrainMode.RECENT)
             return 0;
+        if (range.recentPeriods() != null)
+            return range.recentPeriods();
         Integer periods = model.getRecommendedTrainingPeriods();
         if (periods == null || periods <= 0)
             periods = model.getMinimumTrainingRows();
@@ -227,7 +245,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         return periods;
     }
 
-    private ModelTrainConfigTb findOrCreateConfig(ForecastAgentEnum agent, ModelConfigTb model, Target target, DateRange range, int recentPeriods, String triggerSource) {
+    private ModelTrainConfigTb findOrCreateConfig(ForecastAgentEnum agent, ModelConfigTb model, Target target, TrainingRange range, int recentPeriods, String triggerSource) {
         LambdaQueryWrapper<ModelTrainConfigTb> query = Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, agent.getAgentCode())
                 .eq(ModelTrainConfigTb::getModelId, model.getId()).eq(ModelTrainConfigTb::getTimeGranularity, model.getTimeGranularity());
         eqOrNull(query, ModelTrainConfigTb::getRegionCode, target.regionCode());
@@ -235,10 +253,10 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         eqOrNull(query, ModelTrainConfigTb::getCustomerCode, target.customerCode());
         ModelTrainConfigTb existing = trainConfigMapper.selectOne(query.orderByDesc(ModelTrainConfigTb::getId).last("limit 1"));
         if (existing != null) {
-            existing.setTrainMode(range.custom() ? ModelTrainMode.RANGE.name() : ModelTrainMode.RECENT.name());
-            existing.setTrainStartDate(range.custom() ? range.startDate() : null);
-            existing.setTrainEndDate(range.custom() ? range.endDate() : null);
-            existing.setRecentPeriods(range.custom() ? null : recentPeriods);
+            existing.setTrainMode(range.mode().name());
+            existing.setTrainStartDate(range.mode() == ModelTrainMode.RANGE ? range.startDate() : null);
+            existing.setTrainEndDate(range.mode() == ModelTrainMode.RANGE ? range.endDate() : null);
+            existing.setRecentPeriods(range.mode() == ModelTrainMode.RECENT ? recentPeriods : null);
             existing.setEnabled(1);
             existing.setRemark("由统一训练入口更新，触发来源：" + triggerSource);
             existing.setUpdatedAt(new Date());
@@ -260,10 +278,10 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         config.setIndustryName(target.industryName());
         config.setCustomerCode(target.customerCode());
         config.setCustomerName(target.customerName());
-        config.setTrainMode(range.custom() ? ModelTrainMode.RANGE.name() : ModelTrainMode.RECENT.name());
+        config.setTrainMode(range.mode().name());
         config.setTrainStartDate(range.startDate());
         config.setTrainEndDate(range.endDate());
-        config.setRecentPeriods(range.custom() ? null : recentPeriods);
+        config.setRecentPeriods(range.mode() == ModelTrainMode.RECENT ? recentPeriods : null);
         config.setTimeGranularity(model.getTimeGranularity());
         config.setEnabled(1);
         config.setRemark("由统一训练入口自动生成，触发来源：" + triggerSource);
@@ -307,7 +325,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
 
     private record Target(String regionCode, String regionName, String industryCode, String industryName, String customerCode, String customerName) {
     }
-    private record DateRange(boolean custom, String startDate, String endDate) {
+    private record TrainingRange(ModelTrainMode mode, String startDate, String endDate, Integer recentPeriods) {
     }
     private record ModelMatch(ModelConfigTb model, int score) {
     }

@@ -4,6 +4,9 @@ import java.util.Arrays;
 
 /** 模型训练数据选取方式。 */
 public enum ModelTrainMode {
+    /** 使用当前训练范围内全部可用历史数据。 */
+    ALL,
+
     /** 使用最近指定期数的数据。 */
     RECENT,
 
