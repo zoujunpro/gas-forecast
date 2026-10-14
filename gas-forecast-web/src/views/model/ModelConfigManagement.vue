@@ -180,6 +180,16 @@
               <el-input-number v-model="form.recommendedTrainingPeriods" class="number-control" :min="1" :max="1000000" controls-position="right" />
               <div class="field-help">自动训练默认截取的最近周期数，单位跟随时间粒度。</div>
             </el-form-item>
+            <el-form-item class="form-wide" label="默认训练范围">
+              <el-radio-group v-model="form.defaultTrainingRangeMode">
+                <el-radio value="RECOMMENDED">推荐</el-radio>
+                <el-radio value="CUSTOM">自定义</el-radio>
+                <el-radio value="ALL">全部历史数据</el-radio>
+              </el-radio-group>
+              <el-input-number v-if="form.defaultTrainingRangeMode === 'CUSTOM'" v-model="form.defaultTrainingPeriods" class="number-control range-period-input" :min="1" :max="1000000" controls-position="right" />
+              <span v-if="form.defaultTrainingRangeMode === 'CUSTOM'" class="range-period-unit">{{ granularityUnit(form.timeGranularity) }}</span>
+              <div class="field-help">推荐使用模型平台建议周期；自定义使用填写的周期；全部使用当前范围内所有历史数据。</div>
+            </el-form-item>
             <el-form-item class="form-wide" label="训练数据要求说明">
               <el-input v-model="form.trainingDataRequirement" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="例如：至少140天连续日数据，销量不能为空；建议使用最近2年完整历史。" />
             </el-form-item>
@@ -296,6 +306,15 @@
             <div class="capability-item"><span>支持的预测范围</span><strong>{{ configForm.minForecastHorizon || '-' }} 至 {{ configForm.maxForecastHorizon || '-' }} {{ granularityUnit(configForm.timeGranularity) }}</strong></div>
             <div class="capability-item capability-item-wide"><span>训练数据要求</span><p>{{ configForm.trainingDataRequirement || '模型平台暂未提供说明' }}</p></div>
           </div>
+          <el-form-item class="training-range-setting" label="默认训练范围">
+            <el-radio-group v-model="configForm.defaultTrainingRangeMode">
+              <el-radio value="RECOMMENDED">推荐（{{ configForm.recommendedTrainingPeriods || '-' }} {{ granularityUnit(configForm.timeGranularity) }}）</el-radio>
+              <el-radio value="CUSTOM">自定义</el-radio>
+              <el-radio value="ALL">全部历史数据</el-radio>
+            </el-radio-group>
+            <el-input-number v-if="configForm.defaultTrainingRangeMode === 'CUSTOM'" v-model="configForm.defaultTrainingPeriods" :min="1" :max="1000000" controls-position="right" />
+            <span v-if="configForm.defaultTrainingRangeMode === 'CUSTOM'">{{ granularityUnit(configForm.timeGranularity) }}</span>
+          </el-form-item>
         </section>
 
         <section class="config-section">
@@ -397,6 +416,8 @@ const form = reactive({
   maxForecastHorizon: 18,
   minimumTrainingRows: 18,
   recommendedTrainingPeriods: 18,
+  defaultTrainingRangeMode: 'RECOMMENDED',
+  defaultTrainingPeriods: 730,
   trainingDataRequirement: '',
   description: ''
 })
@@ -414,6 +435,8 @@ const configForm = reactive({
   maxForecastHorizon: 30,
   minimumTrainingRows: 140,
   recommendedTrainingPeriods: 140,
+  defaultTrainingRangeMode: 'RECOMMENDED',
+  defaultTrainingPeriods: 730,
   trainingDataRequirement: '',
   featureRefs: [] as FeatureRefRow[]
 })
@@ -548,6 +571,8 @@ const _resetForm = (row?: Record<string, any>) => {
   form.maxForecastHorizon = row?.maxForecastHorizon || defaults.maxForecastHorizon
   form.minimumTrainingRows = row?.minimumTrainingRows || defaults.minimumTrainingRows
   form.recommendedTrainingPeriods = row?.recommendedTrainingPeriods || defaults.recommendedTrainingPeriods
+  form.defaultTrainingRangeMode = row?.defaultTrainingRangeMode || 'RECOMMENDED'
+  form.defaultTrainingPeriods = row?.defaultTrainingPeriods || form.recommendedTrainingPeriods
   form.trainingDataRequirement = row?.trainingDataRequirement || ''
   form.description = row?.description || ''
   syncSceneCode()
@@ -571,6 +596,8 @@ const resetConfigForm = (row: Record<string, any>) => {
   configForm.maxForecastHorizon = row.maxForecastHorizon || 30
   configForm.minimumTrainingRows = row.minimumTrainingRows || 140
   configForm.recommendedTrainingPeriods = row.recommendedTrainingPeriods || configForm.minimumTrainingRows
+  configForm.defaultTrainingRangeMode = row.defaultTrainingRangeMode || 'RECOMMENDED'
+  configForm.defaultTrainingPeriods = row.defaultTrainingPeriods || configForm.recommendedTrainingPeriods
   configForm.trainingDataRequirement = row.trainingDataRequirement || ''
   configForm.featureRefs = (row.featureRefs || [])
     .map((item: Record<string, any>, index: number) => ({
@@ -682,6 +709,8 @@ const buildPayload = () => {
     maxForecastHorizon: form.maxForecastHorizon,
     minimumTrainingRows: form.minimumTrainingRows,
     recommendedTrainingPeriods: form.recommendedTrainingPeriods,
+    defaultTrainingRangeMode: form.defaultTrainingRangeMode,
+    defaultTrainingPeriods: form.defaultTrainingPeriods,
     trainingDataRequirement: form.trainingDataRequirement,
     description: form.description
   }
@@ -747,6 +776,8 @@ const buildConfigPayload = () => {
     regionCodes: configForm.regionCodes,
     industryCodes: configForm.industryCodes,
     customerCodes: configForm.customerCodes,
+    defaultTrainingRangeMode: configForm.defaultTrainingRangeMode,
+    defaultTrainingPeriods: configForm.defaultTrainingPeriods,
     featureRefs: configForm.featureRefs.map((item, index) => ({
       featureId: item.featureId,
       outputFeatureCode: item.outputFeatureCode || item.featureCode,

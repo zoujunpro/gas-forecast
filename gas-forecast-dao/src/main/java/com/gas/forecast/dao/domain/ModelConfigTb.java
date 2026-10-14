@@ -56,6 +56,12 @@ public class ModelConfigTb {
     /** 自动训练时建议使用的最近周期数。 */
     private Integer recommendedTrainingPeriods;
 
+    /** 默认训练范围策略：RECOMMENDED/CUSTOM/ALL。 */
+    private String defaultTrainingRangeMode;
+
+    /** CUSTOM 策略下使用的训练周期数。 */
+    private Integer defaultTrainingPeriods;
+
     /** 训练数据要求的补充说明。 */
     private String trainingDataRequirement;
 

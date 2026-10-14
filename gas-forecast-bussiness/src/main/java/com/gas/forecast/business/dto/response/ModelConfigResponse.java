@@ -134,6 +134,11 @@ public class ModelConfigResponse {
     /** 自动训练推荐使用的历史周期数。 */
     private Integer recommendedTrainingPeriods;
 
+    /** 默认训练范围策略：推荐、自定义或全部历史。 */
+    private String defaultTrainingRangeMode;
+
+    private Integer defaultTrainingPeriods;
+
     /** 训练数据要求说明。 */
     private String trainingDataRequirement;
 

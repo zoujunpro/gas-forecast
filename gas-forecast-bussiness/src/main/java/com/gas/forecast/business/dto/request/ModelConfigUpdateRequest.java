@@ -64,6 +64,12 @@ public class ModelConfigUpdateRequest {
     @Min(value = 1, message = "推荐训练周期数必须大于0")
     private Integer recommendedTrainingPeriods;
 
+    @Size(max = 16, message = "默认训练范围策略长度不能超过16个字符")
+    private String defaultTrainingRangeMode;
+
+    @Min(value = 1, message = "自定义训练周期数必须大于0")
+    private Integer defaultTrainingPeriods;
+
     @Size(max = 500, message = "训练数据要求长度不能超过500个字符")
     private String trainingDataRequirement;
 

@@ -82,8 +82,8 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         String trainScopeType = "short-term".equals(agentCode) ? "CUSTOMER" : strategy.getTrainScopeType();
         Target target = resolveTarget(request);
         validateRequiredScope(trainScopeType, target);
-        TrainingRange range = resolveDateRange(request);
         ModelConfigTb model = resolveModel(agentCode, target);
+        TrainingRange range = resolveDateRange(request, model);
         target = normalizeTrainingTarget(trainScopeType, target);
         int recentPeriods = resolveRecommendedPeriods(model, range);
         ModelTrainConfigTb trainConfig = findOrCreateConfig(agent, model, target, range, recentPeriods, triggerSource);
@@ -167,7 +167,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         };
     }
 
-    private TrainingRange resolveDateRange(AutoTrainRequest request) {
+    private TrainingRange resolveDateRange(AutoTrainRequest request, ModelConfigTb model) {
         String start = trim(request.getTrainStartDate());
         String end = trim(request.getTrainEndDate());
         if (TextUtils.hasText(start) != TextUtils.hasText(end))
@@ -180,8 +180,12 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         }
         if (TextUtils.hasText(start))
             mode = ModelTrainMode.RANGE;
-        if (mode == null)
-            mode = ModelTrainMode.RECENT;
+        if (mode == null) {
+            String defaultMode = trim(model.getDefaultTrainingRangeMode());
+            mode = "ALL".equalsIgnoreCase(defaultMode) ? ModelTrainMode.ALL : ModelTrainMode.RECENT;
+            if ("CUSTOM".equalsIgnoreCase(defaultMode) && request.getRecentPeriods() == null)
+                request.setRecentPeriods(model.getDefaultTrainingPeriods() == null ? model.getRecommendedTrainingPeriods() : model.getDefaultTrainingPeriods());
+        }
         if (mode == ModelTrainMode.RANGE && !TextUtils.hasText(start))
             throw new BusinessException("RANGE 训练方式必须填写训练开始日期和结束日期");
         if (mode != ModelTrainMode.RANGE && TextUtils.hasText(start))

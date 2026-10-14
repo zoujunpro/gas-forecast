@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -103,6 +104,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                 entity.setCreatedByName(SecurityContextHolder.getUserName());
                 entity.setMinForecastHorizon(1);
                 entity.setMaxForecastHorizon(defaultMaxForecastHorizon(platformModel.getAgentCode()));
+                entity.setDefaultTrainingRangeMode("RECOMMENDED");
             }
             entity.setModelName(platformModel.getModelName());
             entity.setModelVersion(platformModel.getModelVersion());
@@ -146,6 +148,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     public ModelConfigResponse create(ModelConfigCreateRequest reqDTO) {
         ForecastAgentEnum agent = validateAgent(reqDTO.getAgentCode(), reqDTO.getSceneCode());
         validateCapability(reqDTO.getMinForecastHorizon(), reqDTO.getMaxForecastHorizon());
+        validateDefaultTrainingRange(reqDTO.getDefaultTrainingRangeMode(), reqDTO.getDefaultTrainingPeriods());
         ModelConfigTb modelConfig = toEntity(reqDTO);
         String modelCode = modelConfig.getModelCode().trim();
         ensureModelCodeUnique(modelCode, null);
@@ -165,6 +168,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     public ModelConfigResponse update(ModelConfigUpdateRequest reqDTO) {
         validateAgent(reqDTO.agentCode(), reqDTO.sceneCode());
         validateCapability(reqDTO.getMinForecastHorizon(), reqDTO.getMaxForecastHorizon());
+        validateDefaultTrainingRange(reqDTO.getDefaultTrainingRangeMode(), reqDTO.getDefaultTrainingPeriods());
         ModelConfigTb exists = modelConfigTbMapper.selectById(reqDTO.id());
         if (exists == null) {
             throw new BusinessException("模型配置不存在");
@@ -176,6 +180,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setMaxForecastHorizon(exists.getMaxForecastHorizon());
         modelConfig.setMinimumTrainingRows(exists.getMinimumTrainingRows());
         modelConfig.setRecommendedTrainingPeriods(exists.getRecommendedTrainingPeriods());
+        modelConfig.setDefaultTrainingRangeMode(normalizeTrainingRangeMode(reqDTO.getDefaultTrainingRangeMode(), exists.getDefaultTrainingRangeMode()));
+        modelConfig.setDefaultTrainingPeriods(reqDTO.getDefaultTrainingPeriods() == null ? exists.getDefaultTrainingPeriods() : reqDTO.getDefaultTrainingPeriods());
         modelConfig.setTrainingDataRequirement(exists.getTrainingDataRequirement());
         String modelCode = TextUtils.hasText(modelConfig.getModelCode()) ? modelConfig.getModelCode().trim() : exists.getModelCode();
         ensureModelCodeUnique(modelCode, reqDTO.id());
@@ -196,7 +202,13 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             throw new BusinessException("模型配置不存在");
         }
         ForecastAgentEnum agent = ForecastAgentEnum.ofAgentCode(exists.getAgentCode()).orElseThrow(() -> new BusinessException("智能体编码不合法"));
-        // 模型能力边界只能由模型平台同步，业务配置仅维护适用范围和输入特征。
+        // 模型能力边界由模型平台同步；默认训练范围属于业务策略，可在配置页维护。
+        exists.setDefaultTrainingRangeMode(normalizeTrainingRangeMode(reqDTO.getDefaultTrainingRangeMode(), exists.getDefaultTrainingRangeMode()));
+        if ("CUSTOM".equals(exists.getDefaultTrainingRangeMode())) {
+            if (reqDTO.getDefaultTrainingPeriods() == null || reqDTO.getDefaultTrainingPeriods() <= 0)
+                throw new BusinessException("自定义训练范围必须填写大于0的训练周期数");
+            exists.setDefaultTrainingPeriods(reqDTO.getDefaultTrainingPeriods());
+        }
         exists.setUpdatedAt(new Date());
         modelConfigTbMapper.updateById(exists);
         saveScopes(exists.getId(), exists.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(), reqDTO.regionCodes(), reqDTO.industryCodes(),
@@ -280,7 +292,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                 allCustomers ? "全部" : customer == null ? null : customer.getCustomerName(), regionCodes, allRegions ? List.of("全部") : regionNames, industryCodes,
                 allIndustries ? List.of("全部") : industryNames, customerCodes, allCustomers ? List.of("全部") : customerNames, featureRefs, modelConfig.getTimeGranularity(),
                 modelConfig.getMinForecastHorizon(), modelConfig.getMaxForecastHorizon(), modelConfig.getMinimumTrainingRows(),
-                modelConfig.getRecommendedTrainingPeriods(), modelConfig.getTrainingDataRequirement(), modelConfig.getDescription(), modelConfig.getCreatedAt(), modelConfig.getUpdatedAt());
+                modelConfig.getRecommendedTrainingPeriods(), normalizeTrainingRangeMode(modelConfig.getDefaultTrainingRangeMode(), "RECOMMENDED"), modelConfig.getDefaultTrainingPeriods(), modelConfig.getTrainingDataRequirement(),
+                modelConfig.getDescription(), modelConfig.getCreatedAt(), modelConfig.getUpdatedAt());
     }
 
     private ScopeContext loadScopeContext(List<ModelConfigTb> configs) {
@@ -517,6 +530,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setMaxForecastHorizon(reqDTO.getMaxForecastHorizon() == null ? 30 : reqDTO.getMaxForecastHorizon());
         modelConfig.setMinimumTrainingRows(reqDTO.getMinimumTrainingRows() == null ? 140 : reqDTO.getMinimumTrainingRows());
         modelConfig.setRecommendedTrainingPeriods(reqDTO.getRecommendedTrainingPeriods() == null ? modelConfig.getMinimumTrainingRows() : reqDTO.getRecommendedTrainingPeriods());
+        modelConfig.setDefaultTrainingRangeMode(normalizeTrainingRangeMode(reqDTO.getDefaultTrainingRangeMode(), "RECOMMENDED"));
+        modelConfig.setDefaultTrainingPeriods(reqDTO.getDefaultTrainingPeriods());
         modelConfig.setTrainingDataRequirement(reqDTO.getTrainingDataRequirement());
         modelConfig.setDescription(reqDTO.getDescription());
         return modelConfig;
@@ -534,6 +549,8 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setMaxForecastHorizon(reqDTO.getMaxForecastHorizon() == null ? 30 : reqDTO.getMaxForecastHorizon());
         modelConfig.setMinimumTrainingRows(reqDTO.getMinimumTrainingRows() == null ? 140 : reqDTO.getMinimumTrainingRows());
         modelConfig.setRecommendedTrainingPeriods(reqDTO.getRecommendedTrainingPeriods() == null ? modelConfig.getMinimumTrainingRows() : reqDTO.getRecommendedTrainingPeriods());
+        modelConfig.setDefaultTrainingRangeMode(normalizeTrainingRangeMode(reqDTO.getDefaultTrainingRangeMode(), "RECOMMENDED"));
+        modelConfig.setDefaultTrainingPeriods(reqDTO.getDefaultTrainingPeriods());
         modelConfig.setTrainingDataRequirement(reqDTO.getTrainingDataRequirement());
         modelConfig.setDescription(reqDTO.description());
         return modelConfig;
@@ -547,6 +564,19 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         if ("winter-supply".equals(agentCode))
             return "TENDAY";
         return "DAY";
+    }
+
+    private String normalizeTrainingRangeMode(String value, String fallback) {
+        String mode = TextUtils.hasText(value) ? value.trim().toUpperCase() : TextUtils.hasText(fallback) ? fallback.trim().toUpperCase() : "RECOMMENDED";
+        if (!Set.of("RECOMMENDED", "CUSTOM", "ALL").contains(mode))
+            throw new BusinessException("默认训练范围只支持推荐、自定义或全部历史数据");
+        return mode;
+    }
+
+    private void validateDefaultTrainingRange(String modeValue, Integer periods) {
+        String mode = normalizeTrainingRangeMode(modeValue, "RECOMMENDED");
+        if ("CUSTOM".equals(mode) && (periods == null || periods <= 0))
+            throw new BusinessException("自定义训练范围必须填写大于0的训练周期数");
     }
 
     private int defaultMaxForecastHorizon(String agentCode) {
