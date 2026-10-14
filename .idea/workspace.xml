@@ -4,14 +4,28 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化" />
+    <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/config/model.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/config/model.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/config/service.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/config/service.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiIntent.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiIntent.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiIntentParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiIntentParser.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelTrainApiRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/dto/ModelTrainApiRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-local.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-local.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/CrudManagementPage.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiAssistant.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiAssistant.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="15585" />
+    <option name="cachedIndexableFilesCount" value="15595" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -621,7 +635,23 @@
       <option name="project" value="LOCAL" />
       <updated>1791950002688</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1791950684196</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1791950684196</updated>
+    </task>
+    <task id="LOCAL-00046" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1791951391261</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1791951391261</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

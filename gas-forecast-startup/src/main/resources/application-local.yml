@@ -1,5 +1,6 @@
 server:
-  port: ${SERVER_PORT:8080}
+  # 本地 IDE/命令行开发端口；与部署在本机的 dev 服务 18081 分开。
+  port: ${SERVER_PORT:18083}
 
 spring:
   config:

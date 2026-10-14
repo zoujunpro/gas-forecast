@@ -36,4 +36,8 @@ public class ModelTrainApiRequest {
     private Boolean datasetTruncated;
     @JsonProperty("dataset_preview_limit")
     private Integer datasetPreviewLimit;
+    @JsonProperty("dataset_start_date")
+    private String datasetStartDate;
+    @JsonProperty("dataset_end_date")
+    private String datasetEndDate;
 }

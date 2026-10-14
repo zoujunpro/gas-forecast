@@ -140,7 +140,7 @@ public class AiIntentParser {
         return text.matches(".*(客户信息|客户名单|客户列表|有哪些客户|那些客户|客户有哪些|客户有那些|查找.*客户|查询.*客户|找.*客户).*") && !isCapabilityQuestion(text);
     }
 
-    private String extractRegionName(String message) {
+    static String extractRegionName(String message) {
         if (message == null)
             return null;
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(江苏|浙江|安徽|上海|山东|河南|河北|北京|天津|广东|福建|江西|湖北|湖南|四川|重庆|陕西|山西|辽宁|吉林|黑龙江|内蒙古|广西|云南|贵州|甘肃|青海|宁夏|新疆|西藏|海南)").matcher(message);
@@ -192,6 +192,14 @@ public class AiIntentParser {
     /** 业务别名由 Java 确定性归一，防止模型把 CNG 误拼成 CNC。 */
     private void normalizeBusinessAliases(AiIntent intent, String message) {
         String text = message == null ? "" : message;
+        normalizeCombinedTrainAndForecast(intent, text);
+        // 地区是执行范围的关键约束，不能只依赖大模型提取；否则模型漏掉“江苏”时
+        // “江苏的城燃客户”会被错误扩大为全国城燃客户。
+        String explicitRegionName = extractRegionName(text);
+        if (TextUtils.hasText(explicitRegionName)) {
+            intent.setRegionCode(null);
+            intent.setRegionName(explicitRegionName);
+        }
         String explicitCustomerCode = extractCustomerCode(text);
         if (TextUtils.hasText(explicitCustomerCode))
             intent.setCustomerCode(explicitCustomerCode);
@@ -228,6 +236,15 @@ public class AiIntentParser {
         if (text.contains("电力") || text.contains("发电")) {
             intent.setIndustryCode(null);
             intent.setIndustryName("电力");
+        }
+    }
+
+    /** “重新训练并预测”是一个连续动作：强制训练，成功后继续预测。 */
+    static void normalizeCombinedTrainAndForecast(AiIntent intent, String text) {
+        if (text != null && text.contains("训练") && text.contains("预测")) {
+            intent.setIntent(AiIntentType.START_FORECAST);
+            intent.setTool(AiToolName.START_FORECAST);
+            intent.setForceRetrain(true);
         }
     }
 

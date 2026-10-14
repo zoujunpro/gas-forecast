@@ -174,7 +174,7 @@ public class AiConversationService {
         }
         conversation.setUpdatedAt(new Date());
         conversationMapper.updateById(conversation);
-        return respond(conversation, execution.status(), execution.answer(), intent);
+        return respond(conversation, execution.status(), execution.answer(), intent, execution.bulkExecution());
     }
 
     private String explainToolFailure(AiIntent intent, String technicalReason) {
@@ -412,14 +412,18 @@ public class AiConversationService {
             ExecutionResult result = queryCapability(intent);
             return respond(conversation, result.status(), result.answer(), intent);
         }
-        String action = intent.getIntent() == AiIntentType.START_TRAINING ? "训练" : "预测";
+        String action = Boolean.TRUE.equals(intent.getForceRetrain()) ? "重新训练并在训练成功后预测" : intent.getIntent() == AiIntentType.START_TRAINING ? "训练" : "预测";
         return respond(conversation, "COMPLETED", "你当前是在询问“" + action + "”相关信息，并未明确要求执行，因此本次不会发起任何任务。若需要执行，请明确说“帮我" + action + "某客户”。", intent);
     }
 
     private String executionConfirmationMessage(AiIntent intent) {
         String action = intent.getIntent() == AiIntentType.START_TRAINING ? "训练" : "预测";
         if (Boolean.TRUE.equals(intent.getBulkScope())) {
-            String scope = TextUtils.hasText(intent.getIndustryName()) ? intent.getIndustryName() + "行业" : TextUtils.hasText(intent.getRegionName()) ? intent.getRegionName() : "当前范围";
+            String scope = TextUtils.hasText(intent.getRegionName()) ? intent.getRegionName() : "";
+            if (TextUtils.hasText(intent.getIndustryName()))
+                scope += (TextUtils.hasText(scope) ? " / " : "") + intent.getIndustryName() + "行业";
+            if (!TextUtils.hasText(scope))
+                scope = "当前范围";
             return "已识别为批量操作：准备对“" + scope + "”内的全部客户逐一执行" + action + "。这可能创建多个后台批次，请回复“确认执行”后继续，或回复“取消”。";
         }
         String target = TextUtils.hasText(intent.getCustomerName()) ? "客户“" + intent.getCustomerName() + "”" : "当前范围";
@@ -585,6 +589,8 @@ public class AiConversationService {
     }
 
     private ExecutionResult startTraining(AiConversationTb conversation, AiIntent intent) {
+        if (Boolean.TRUE.equals(intent.getBulkScope()) && !TextUtils.hasText(intent.getCustomerCode()))
+            return startBulkTraining(intent);
         AutoTrainRequest request = new AutoTrainRequest();
         request.setAgentCode(intent.getAgentCode());
         request.setRegionCode(intent.getRegionCode());
@@ -597,6 +603,40 @@ public class AiConversationService {
         conversation.setLastForecastBatchNo(null);
         return new ExecutionResult("EXECUTING", "已为" + displayScope(intent) + "发起训练（" + trainingRangeLabel(intent) + "），训练批次：" + result.getTrainBatchNo() + "，当前状态：" + result.getStatus()
                 + "。你可以继续问“这个训练到哪了”。");
+    }
+
+    private ExecutionResult startBulkTraining(AiIntent intent) {
+        var query = Wrappers.<BaseCustomerTb>lambdaQuery();
+        if (TextUtils.hasText(intent.getRegionCode()))
+            query.eq(BaseCustomerTb::getRegionCode, intent.getRegionCode());
+        if (TextUtils.hasText(intent.getIndustryCode()))
+            query.eq(BaseCustomerTb::getIndustryCode, intent.getIndustryCode());
+        List<BaseCustomerTb> customers = customerMapper.selectList(query.orderByAsc(BaseCustomerTb::getCustomerName));
+        if (customers.isEmpty())
+            return new ExecutionResult("COMPLETED", "当前范围内没有找到可训练客户，本次未创建任务。");
+        int submitted = 0;
+        int failed = 0;
+        List<String> failures = new java.util.ArrayList<>();
+        for (BaseCustomerTb customer : customers) {
+            AutoTrainRequest request = new AutoTrainRequest();
+            request.setAgentCode(intent.getAgentCode());
+            request.setCustomerCode(customer.getCustomerCode());
+            applyTrainingRange(request, intent);
+            request.setForceTrain(Boolean.TRUE.equals(intent.getForceRetrain()));
+            request.setTriggerSource("AI");
+            try {
+                autoTrainService.execute(request);
+                submitted++;
+            } catch (RuntimeException exception) {
+                failed++;
+                if (failures.size() < 5)
+                    failures.add(customer.getCustomerName() + "：" + exception.getMessage());
+            }
+        }
+        StringBuilder answer = new StringBuilder("批量训练任务已受理：范围内共 ").append(customers.size()).append(" 个客户，成功创建 ").append(submitted).append(" 个，创建失败 ").append(failed).append(" 个。");
+        if (!failures.isEmpty())
+            answer.append("\n部分失败原因：\n- ").append(String.join("\n- ", failures));
+        return new ExecutionResult(failed == customers.size() ? "FAILED" : "EXECUTING", answer.toString());
     }
 
     private ExecutionResult queryTraining(AiConversationTb conversation, AiIntent intent) {
@@ -655,6 +695,10 @@ public class AiConversationService {
                 ? null
                 : trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, trainConfig.getId()).eq(ModelTrainRecordTb::getStatus, "SUCCESS")
                         .orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
+        if (Boolean.TRUE.equals(intent.getForceRetrain())) {
+            ExecutionResult training = startTrainingForForecast(conversation, intent);
+            return new ExecutionResult("WAITING_TRAINING", "已按要求为该客户重新训练。\n" + training.answer() + "\n训练成功后系统会自动继续预测，无需再次提交。");
+        }
         boolean rangeMismatch = trained != null && !matchesRequestedTrainingRange(trainConfig, intent);
         boolean staleTraining = trained != null && isTrainingStale(trained, trainConfig, intent);
         if (rangeMismatch || staleTraining) {
@@ -723,6 +767,8 @@ public class AiConversationService {
         int failed = 0;
         List<String> failures = new java.util.ArrayList<>();
         List<String> taskSamples = new java.util.ArrayList<>();
+        List<BulkTask> bulkTasks = new java.util.ArrayList<>();
+        Date bulkStartedAt = new Date();
         for (BaseCustomerTb customer : customers) {
             AiIntent child = new AiIntent();
             child.setIntent(AiIntentType.START_FORECAST);
@@ -737,15 +783,22 @@ public class AiConversationService {
             child.setCustomerCode(customer.getCustomerCode());
             child.setCustomerName(customer.getCustomerName());
             child.setForecastHorizon(intent.getForecastHorizon());
+            child.setTrainMode(intent.getTrainMode());
+            child.setTrainingPeriods(intent.getTrainingPeriods());
+            child.setTrainingStartDate(intent.getTrainingStartDate());
+            child.setTrainingEndDate(intent.getTrainingEndDate());
+            child.setForceRetrain(intent.getForceRetrain());
             try {
                 ExecutionResult result = startForecast(conversation, child);
                 submitted++;
                 if ("WAITING_TRAINING".equals(result.status())) {
                     training++;
+                    bulkTasks.add(new BulkTask(customer.getCustomerCode(), customer.getCustomerName(), conversation.getLastTrainBatchNo(), null));
                     if (taskSamples.size() < 10)
                         taskSamples.add(customer.getCustomerName() + "：训练 " + conversation.getLastTrainBatchNo());
                 } else {
                     forecasting++;
+                    bulkTasks.add(new BulkTask(customer.getCustomerCode(), customer.getCustomerName(), null, conversation.getLastForecastBatchNo()));
                     if (taskSamples.size() < 10)
                         taskSamples.add(customer.getCustomerName() + "：预测 " + conversation.getLastForecastBatchNo());
                 }
@@ -766,7 +819,7 @@ public class AiConversationService {
             answer.append("\n- 其余 ").append(submitted - taskSamples.size()).append(" 个请在训练批次/预测记录页面查看。");
         if (!failures.isEmpty())
             answer.append("\n部分失败原因：\n- ").append(String.join("\n- ", failures));
-        return new ExecutionResult(failed == customers.size() ? "FAILED" : "EXECUTING", answer.toString());
+        return new ExecutionResult(failed == customers.size() ? "FAILED" : "EXECUTING", answer.toString(), new BulkExecution(bulkStartedAt, bulkTasks));
     }
 
     private ExecutionResult startTrainingForForecast(AiConversationTb conversation, AiIntent intent) {
@@ -777,6 +830,7 @@ public class AiConversationService {
         request.setCustomerCode(intent.getCustomerCode());
         // 训练范围使用独立字段，不能把预测日期和预测天数当作训练区间。
         applyTrainingRange(request, intent);
+        request.setForceTrain(Boolean.TRUE.equals(intent.getForceRetrain()));
         request.setTriggerSource("AI");
         var result = autoTrainService.execute(request);
         conversation.setLastTrainBatchNo(result.getTrainBatchNo());
@@ -822,11 +876,19 @@ public class AiConversationService {
         // 固定日期区间是用户有意冻结的数据范围，不因区间外新增数据而重训。
         if ("RANGE".equalsIgnoreCase(config.getTrainMode()) || "RANGE".equalsIgnoreCase(intent.getTrainMode()))
             return false;
-        DataDailySalesTb latest = dailySalesMapper.selectOne(Wrappers.<DataDailySalesTb>lambdaQuery().select(DataDailySalesTb::getStatDate)
+        DataDailySalesTb latest = dailySalesMapper.selectOne(Wrappers.<DataDailySalesTb>lambdaQuery().select(DataDailySalesTb::getStatDate, DataDailySalesTb::getCreatedAt)
                 .eq(DataDailySalesTb::getCustomerCode, intent.getCustomerCode()).isNotNull(DataDailySalesTb::getGasSales)
                 .orderByDesc(DataDailySalesTb::getStatDate).last("limit 1"));
-        return latest != null && TextUtils.hasText(latest.getStatDate())
-                && (!TextUtils.hasText(trained.getTrainEndDate()) || latest.getStatDate().compareTo(trained.getTrainEndDate()) > 0);
+        if (latest == null)
+            return false;
+        if (TextUtils.hasText(trained.getTrainEndDate()))
+            return TextUtils.hasText(latest.getStatDate()) && latest.getStatDate().compareTo(trained.getTrainEndDate()) > 0;
+        // RECENT/ALL 配置本身不保存固定结束日期。不能把空结束日期直接当成“模型过期”，
+        // 否则训练成功后的自动预测会再次触发训练，形成重复批次。
+        DataDailySalesTb latestImported = dailySalesMapper.selectOne(Wrappers.<DataDailySalesTb>lambdaQuery().select(DataDailySalesTb::getCreatedAt)
+                .eq(DataDailySalesTb::getCustomerCode, intent.getCustomerCode()).isNotNull(DataDailySalesTb::getGasSales)
+                .orderByDesc(DataDailySalesTb::getCreatedAt).last("limit 1"));
+        return latestImported != null && latestImported.getCreatedAt() != null && trained.getFinishedAt() != null && latestImported.getCreatedAt().after(trained.getFinishedAt());
     }
 
     private String trainingRangeLabel(AiIntent intent) {
@@ -903,10 +965,14 @@ public class AiConversationService {
     }
 
     private AiChatResponse respond(AiConversationTb conversation, String status, String answer, AiIntent intent) {
-        ExecutionProgress progress = buildProgress(status, intent, conversation);
+        return respond(conversation, status, answer, intent, null);
+    }
+
+    private AiChatResponse respond(AiConversationTb conversation, String status, String answer, AiIntent intent, BulkExecution bulkExecution) {
+        ExecutionProgress progress = bulkExecution == null ? buildProgress(status, intent, conversation) : buildBulkProgress(bulkExecution);
         ForecastResult forecastResult = buildForecastResult(status, intent, conversation);
         ForecastInsight insight = forecastResult == null ? ForecastInsight.empty() : generateForecastInsight(intent, forecastResult);
-        saveMessage(conversation.getId(), "assistant", answer, intent.getIntent().name(), new StoredMessagePayload(progress, forecastResult, insight.analysis(), insight.suggestedQuestions()));
+        saveMessage(conversation.getId(), "assistant", answer, intent.getIntent().name(), new StoredMessagePayload(progress, forecastResult, insight.analysis(), insight.suggestedQuestions(), bulkExecution));
         boolean bulk = Boolean.TRUE.equals(intent.getBulkScope());
         return new AiChatResponse(conversation.getConversationNo(), status, answer, intent, intent.getCandidates(), bulk ? null : conversation.getLastTrainBatchNo(),
                 bulk ? null : conversation.getLastForecastBatchNo(), progress, forecastResult, insight.analysis(), insight.suggestedQuestions());
@@ -919,7 +985,7 @@ public class AiConversationService {
             progress = withForecastFailure(progress, answer);
         ForecastResult forecastResult = buildForecastResult(status, intent, conversation);
         ForecastInsight insight = forecastResult == null ? ForecastInsight.empty() : generateForecastInsight(intent, forecastResult);
-        StoredMessagePayload payload = new StoredMessagePayload(progress, forecastResult, insight.analysis(), insight.suggestedQuestions());
+        StoredMessagePayload payload = new StoredMessagePayload(progress, forecastResult, insight.analysis(), insight.suggestedQuestions(), null);
         List<AiConversationMessageTb> candidates = messageMapper.selectList(Wrappers.<AiConversationMessageTb>lambdaQuery().eq(AiConversationMessageTb::getConversationId, conversation.getId())
                 .eq(AiConversationMessageTb::getRole, "assistant").orderByDesc(AiConversationMessageTb::getId).last("limit 20"));
         AiConversationMessageTb target = candidates.stream().filter(message -> {
@@ -1087,7 +1153,20 @@ public class AiConversationService {
                 && intent.getIntent() != AiIntentType.QUERY_FORECAST && intent.getIntent() != AiIntentType.QUERY_RESULT)
             return null;
         if (Boolean.TRUE.equals(intent.getBulkScope())) {
-            String scope = TextUtils.hasText(intent.getIndustryName()) ? intent.getIndustryName() + "行业全部客户" : displayScope(intent);
+            String scope = TextUtils.hasText(intent.getRegionName()) ? intent.getRegionName() : "";
+            if (TextUtils.hasText(intent.getIndustryName()))
+                scope += (TextUtils.hasText(scope) ? " / " : "") + intent.getIndustryName() + "行业";
+            scope = (TextUtils.hasText(scope) ? scope : displayScope(intent)) + "全部客户";
+            if ("FAILED".equals(status)) {
+                return new ExecutionProgress("批量智能预测", 2, 3,
+                        List.of(new Step(1, "识别批量范围", "SUCCESS", scope), new Step(2, "逐客户创建任务", "FAILED", "任务创建失败"),
+                                new Step(3, "后台执行训练与预测", "WAITING", "未开始执行")));
+            }
+            if ("COMPLETED".equals(status)) {
+                return new ExecutionProgress("批量智能预测", 3, 3,
+                        List.of(new Step(1, "识别批量范围", "SUCCESS", scope), new Step(2, "逐客户创建任务", "SUCCESS", "已完成任务分发"),
+                                new Step(3, "后台执行训练与预测", "SUCCESS", "已完成")));
+            }
             return new ExecutionProgress("批量智能预测", 3, 3,
                     List.of(new Step(1, "识别批量范围", "SUCCESS", scope), new Step(2, "逐客户创建任务", "SUCCESS", "已完成任务分发"), new Step(3, "后台执行训练与预测", "RUNNING", "多个批次并行或排队执行")));
         }
@@ -1168,16 +1247,111 @@ public class AiConversationService {
         ForecastResult fallbackResult = buildStoredForecastResult(item);
         List<AiConversationResponse.Message> messages = storedMessages.stream().map(message -> {
             StoredMessagePayload payload = readStructuredPayload(message.getStructuredJson());
+            ExecutionProgress progress = payload.bulkExecution() == null ? normalizeStoredProgress(payload.progress(), message.getContent()) : buildBulkProgress(payload.bulkExecution());
+            String content = payload.bulkExecution() == null ? message.getContent() : withBulkSummary(message.getContent(), payload.bulkExecution());
             ForecastResult forecastResult = payload.forecastResult();
             // 历史会话保存的旧结构没有训练摘要；打开会话时用数据库中的最新完整结构补齐。
             // 仅对“预测已经完成”的旧消息补齐结构。正在训练/等待预测的消息绝不能挂载会话上一次结果。
-            if ((forecastResult == null || forecastResult.training() == null) && message.getId().equals(fallbackMessageId) && isCompletedForecastProgress(payload.progress())) {
+            if ((forecastResult == null || forecastResult.training() == null) && message.getId().equals(fallbackMessageId) && isCompletedForecastProgress(progress)) {
                 forecastResult = fallbackResult;
             }
-            return new AiConversationResponse.Message(message.getId(), message.getRole(), message.getContent(), message.getCreatedAt(), payload.progress(), forecastResult, payload.analysis(),
+            return new AiConversationResponse.Message(message.getId(), message.getRole(), content, message.getCreatedAt(), progress, forecastResult, payload.analysis(),
                     payload.suggestedQuestions());
         }).toList();
         return new AiConversationResponse(item.getConversationNo(), item.getTitle(), item.getStatus(), item.getLastTrainBatchNo(), item.getLastForecastBatchNo(), item.getUpdatedAt(), messages);
+    }
+
+    /** 修正旧会话中已失败但被固定保存为 RUNNING 的批量进度。 */
+    private ExecutionProgress normalizeStoredProgress(ExecutionProgress progress, String content) {
+        if (progress == null || !"批量智能预测".equals(progress.title()) || !TextUtils.hasText(content)
+                || !isActualExecutionFailure(content))
+            return progress;
+        boolean stillRunning = progress.steps().stream().anyMatch(step -> "RUNNING".equals(step.status()));
+        if (!stillRunning)
+            return progress;
+        String scope = progress.steps().isEmpty() ? "已识别批量范围" : progress.steps().get(0).detail();
+        return new ExecutionProgress(progress.title(), 2, progress.totalSteps(),
+                List.of(new Step(1, "识别批量范围", "SUCCESS", scope), new Step(2, "逐客户创建任务", "FAILED", "任务创建失败"),
+                        new Step(3, "后台执行训练与预测", "WAITING", "未开始执行")));
+    }
+
+    private boolean isActualExecutionFailure(String content) {
+        return content.contains("执行到业务校验阶段失败") || content.contains("本次操作未成功") || content.contains("本次处理没有完成")
+                || content.matches("(?s).*(?:创建失败|失败)\\s*[1-9]\\d*\\s*个.*");
+    }
+
+    private ExecutionProgress buildBulkProgress(BulkExecution bulk) {
+        BulkSnapshot snapshot = bulkSnapshot(bulk);
+        String scopeDetail = "共 " + snapshot.total() + " 个客户";
+        String current = snapshot.currentCustomer() == null ? "" : "，当前：" + snapshot.currentCustomer() + "（" + snapshot.currentAction() + "）";
+        String detail = "已完成 " + snapshot.completed() + "/" + snapshot.total() + current + "；预测成功 " + snapshot.succeeded() + "，失败 " + snapshot.failed() + "，执行中 "
+                + snapshot.running() + "，等待 " + snapshot.waiting();
+        boolean finished = snapshot.completed() >= snapshot.total() && snapshot.total() > 0;
+        String status = finished ? snapshot.failed() > 0 ? "FAILED" : "SUCCESS" : "RUNNING";
+        return new ExecutionProgress("批量智能预测", 3, 3,
+                List.of(new Step(1, "识别批量范围", "SUCCESS", scopeDetail), new Step(2, "逐客户创建任务", "SUCCESS", "已完成任务分发"),
+                        new Step(3, "后台执行训练与预测", status, detail)));
+    }
+
+    private String withBulkSummary(String original, BulkExecution bulk) {
+        BulkSnapshot snapshot = bulkSnapshot(bulk);
+        String marker = "\n\n批量实时进度：";
+        int markerIndex = original == null ? -1 : original.indexOf(marker);
+        String base = markerIndex >= 0 ? original.substring(0, markerIndex) : original == null ? "" : original;
+        String current = snapshot.currentCustomer() == null ? "" : "；当前客户：" + snapshot.currentCustomer() + "（" + snapshot.currentAction() + "）";
+        StringBuilder summary = new StringBuilder(marker).append("已完成 ").append(snapshot.completed()).append("/").append(snapshot.total()).append("；预测成功 ")
+                .append(snapshot.succeeded()).append("；失败 ").append(snapshot.failed()).append("；执行中 ").append(snapshot.running()).append("；等待 ").append(snapshot.waiting()).append(current).append("。");
+        if (!snapshot.failures().isEmpty())
+            summary.append("\n失败客户：\n- ").append(String.join("\n- ", snapshot.failures()));
+        return base + summary;
+    }
+
+    private BulkSnapshot bulkSnapshot(BulkExecution bulk) {
+        if (bulk == null || bulk.tasks() == null || bulk.tasks().isEmpty())
+            return new BulkSnapshot(0, 0, 0, 0, 0, 0, null, null, List.of());
+        List<String> trainBatchNos = bulk.tasks().stream().map(BulkTask::trainBatchNo).filter(TextUtils::hasText).toList();
+        Map<String, ModelTrainRecordTb> trains = new LinkedHashMap<>();
+        if (!trainBatchNos.isEmpty())
+            trainRecordMapper.selectList(Wrappers.<ModelTrainRecordTb>lambdaQuery().in(ModelTrainRecordTb::getBatchNo, trainBatchNos)).forEach(item -> trains.put(item.getBatchNo(), item));
+        List<String> customerCodes = bulk.tasks().stream().map(BulkTask::customerCode).filter(TextUtils::hasText).distinct().toList();
+        Map<String, ModelForecastRecordTb> forecasts = new LinkedHashMap<>();
+        if (!customerCodes.isEmpty()) {
+            var query = Wrappers.<ModelForecastRecordTb>lambdaQuery().in(ModelForecastRecordTb::getCustomerCode, customerCodes).orderByDesc(ModelForecastRecordTb::getId);
+            if (bulk.startedAt() != null)
+                query.ge(ModelForecastRecordTb::getCreatedAt, bulk.startedAt());
+            forecastRecordMapper.selectList(query).forEach(item -> forecasts.putIfAbsent(item.getCustomerCode(), item));
+        }
+        int success = 0, failed = 0, running = 0, waiting = 0;
+        String currentCustomer = null, currentAction = null;
+        List<String> failures = new java.util.ArrayList<>();
+        for (BulkTask task : bulk.tasks()) {
+            ModelTrainRecordTb train = TextUtils.hasText(task.trainBatchNo()) ? trains.get(task.trainBatchNo()) : null;
+            ModelForecastRecordTb forecast = forecasts.get(task.customerCode());
+            if (forecast != null && Integer.valueOf(2).equals(forecast.getStatus())) {
+                success++;
+            } else if (forecast != null && Integer.valueOf(3).equals(forecast.getStatus())) {
+                failed++;
+                if (failures.size() < 20)
+                    failures.add(task.customerName() + "：预测失败");
+            } else if (forecast != null && Integer.valueOf(1).equals(forecast.getStatus())) {
+                running++;
+                if (currentCustomer == null) { currentCustomer = task.customerName(); currentAction = "预测中"; }
+            } else if (train != null && ("FAILED".equals(train.getStatus()) || "FAILED_FINAL".equals(train.getStatus()) || "PREPARE_FAILED".equals(train.getStatus()))) {
+                failed++;
+                if (failures.size() < 20)
+                    failures.add(task.customerName() + "：" + (TextUtils.hasText(train.getErrorMessage()) ? train.getErrorMessage() : "训练失败"));
+            } else if (train != null && "SUCCESS".equals(train.getStatus())) {
+                waiting++;
+                if (currentCustomer == null) { currentCustomer = task.customerName(); currentAction = "等待预测"; }
+            } else if (train != null && ("RUNNING".equals(train.getStatus()) || "PREPARING".equals(train.getStatus()) || "CLAIMED".equals(train.getStatus()))) {
+                running++;
+                if (currentCustomer == null) { currentCustomer = task.customerName(); currentAction = "训练中"; }
+            } else {
+                waiting++;
+                if (currentCustomer == null) { currentCustomer = task.customerName(); currentAction = "等待训练"; }
+            }
+        }
+        return new BulkSnapshot(bulk.tasks().size(), success + failed, success, failed, running, waiting, currentCustomer, currentAction, failures);
     }
 
     private ForecastResult buildStoredForecastResult(AiConversationTb conversation) {
@@ -1211,19 +1385,19 @@ public class AiConversationService {
 
     private StoredMessagePayload readStructuredPayload(String json) {
         if (!TextUtils.hasText(json))
-            return new StoredMessagePayload(null, null, null, List.of());
+            return new StoredMessagePayload(null, null, null, List.of(), null);
         try {
             var node = objectMapper.readTree(json);
             if (node.has("progress") || node.has("forecastResult"))
                 return objectMapper.treeToValue(node, StoredMessagePayload.class);
             // 兼容改造前直接保存 ExecutionProgress 的历史消息。
-            return new StoredMessagePayload(objectMapper.treeToValue(node, ExecutionProgress.class), null, null, List.of());
+            return new StoredMessagePayload(objectMapper.treeToValue(node, ExecutionProgress.class), null, null, List.of(), null);
         } catch (Exception exception) {
-            return new StoredMessagePayload(null, null, null, List.of());
+            return new StoredMessagePayload(null, null, null, List.of(), null);
         }
     }
 
-    private record StoredMessagePayload(ExecutionProgress progress, ForecastResult forecastResult, String analysis, List<String> suggestedQuestions) {
+    private record StoredMessagePayload(ExecutionProgress progress, ForecastResult forecastResult, String analysis, List<String> suggestedQuestions, BulkExecution bulkExecution) {
         private StoredMessagePayload {
             suggestedQuestions = suggestedQuestions == null ? List.of() : suggestedQuestions;
         }
@@ -1296,6 +1470,18 @@ public class AiConversationService {
         return "取消".equals(message.trim()) || "算了".equals(message.trim());
     }
 
-    private record ExecutionResult(String status, String answer) {
+    private record BulkTask(String customerCode, String customerName, String trainBatchNo, String forecastBatchNo) {
+    }
+
+    private record BulkExecution(Date startedAt, List<BulkTask> tasks) {
+    }
+
+    private record BulkSnapshot(int total, int completed, int succeeded, int failed, int running, int waiting, String currentCustomer, String currentAction, List<String> failures) {
+    }
+
+    private record ExecutionResult(String status, String answer, BulkExecution bulkExecution) {
+        private ExecutionResult(String status, String answer) {
+            this(status, answer, null);
+        }
     }
 }

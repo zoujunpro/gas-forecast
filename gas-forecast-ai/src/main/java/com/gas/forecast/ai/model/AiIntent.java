@@ -14,6 +14,8 @@ public class AiIntent {
     private Boolean requiresConfirmation = false;
     /** 是否要求对地区或行业范围内的全部客户批量执行。 */
     private Boolean bulkScope = false;
+    /** 用户是否明确要求重新训练，并在训练成功后继续预测。 */
+    private Boolean forceRetrain = false;
     private String agentCode = "short-term";
     private String regionCode;
     private String regionName;

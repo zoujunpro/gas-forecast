@@ -365,6 +365,24 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         preview.put("dataset_total", dataset.size());
         preview.put("dataset_preview_limit", RESULT_DATASET_PREVIEW_LIMIT);
         preview.put("dataset_truncated", true);
+        // 预览仅保留前100条，但详情页仍应展示完整训练集的真实日期范围。
+        String startDate = null;
+        String endDate = null;
+        for (JsonNode row : dataset) {
+            String date = row.path("date").asText(null);
+            if (!TextUtils.hasText(date))
+                date = row.path("stat_date").asText(null);
+            if (!TextUtils.hasText(date))
+                continue;
+            if (startDate == null || date.compareTo(startDate) < 0)
+                startDate = date;
+            if (endDate == null || date.compareTo(endDate) > 0)
+                endDate = date;
+        }
+        if (startDate != null)
+            preview.put("dataset_start_date", startDate);
+        if (endDate != null)
+            preview.put("dataset_end_date", endDate);
         return preview;
     }
 

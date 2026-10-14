@@ -969,6 +969,12 @@ const resultOverviewRows = computed(() => {
     .sort()
   const datasetTotal = Number(request.dataset_total ?? request.datasetTotal ?? dataset.length)
   const datasetTruncated = Boolean(request.dataset_truncated ?? request.datasetTruncated)
+  const datasetStartDate = textValue(request.dataset_start_date, request.datasetStartDate, datasetDates[0])
+  const datasetEndDate = textValue(
+    request.dataset_end_date,
+    request.datasetEndDate,
+    datasetTruncated ? undefined : datasetDates[datasetDates.length - 1]
+  )
   const rows = [
     { label: '训练批次号', value: textValue(result.batchNo, result.batch_no) },
     {
@@ -988,16 +994,15 @@ const resultOverviewRows = computed(() => {
     { label: '所属行业名字', value: textValue(result.industryName, result.industry_name, source.industryName) },
     {
       label: '训练数据开始日期',
-      value: textValue(datasetDates[0], result.trainStartDate, result.train_start_date, source.trainStartDate)
+      value: textValue(datasetStartDate, result.trainStartDate, result.train_start_date, source.trainStartDate)
     },
     {
       label: '训练数据截止日期',
       value: textValue(
-        datasetTruncated ? undefined : datasetDates[datasetDates.length - 1],
+        datasetEndDate,
         result.trainEndDate,
         result.train_end_date,
-        source.trainEndDate,
-        datasetDates[datasetDates.length - 1]
+        source.trainEndDate
       )
     },
     { label: '训练数据量', value: Number.isFinite(datasetTotal) && datasetTotal > 0 ? `${datasetTotal} 条` : '-' },

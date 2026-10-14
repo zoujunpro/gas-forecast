@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Delete as DeleteIcon, Edit, MagicStick, Plus, Promotion, VideoPause } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getJson, postJson } from '@/api/management'
@@ -465,6 +465,29 @@ const loadServerSessions = async (current?: Session) => {
   if (!sessions.value.length) createSession()
 }
 
+let bulkProgressTimer: number | undefined
+const refreshActiveBulkProgress = async () => {
+  const session = activeSession.value
+  if (!session?.conversationNo || streaming.value) return
+  const hasRunningBulk = session.messages.some((message) =>
+    message.progress?.title === '批量智能预测' && message.progress.steps.some((step) => step.status === 'RUNNING')
+  )
+  if (!hasRunningBulk) return
+  try {
+    const response = await getJson<any>(`/ai/conversations/detail?conversationNo=${encodeURIComponent(session.conversationNo)}`)
+    if (!response.data?.messages) return
+    session.messages = response.data.messages.map((item: any) => ({
+      id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+      progress: item.progress || undefined,
+      forecastResult: item.forecastResult || undefined,
+      analysis: item.analysis || undefined,
+      suggestedQuestions: item.suggestedQuestions || undefined
+    }))
+  } catch {
+    // 临时查询失败时保留现有进度，下一轮继续刷新。
+  }
+}
+
 onMounted(async () => {
   try {
     await loadServerSessions()
@@ -478,6 +501,10 @@ onMounted(async () => {
     activeSessionId.value = sessions.value[0].id
     await switchSession(sessions.value[0].id)
   }
+  bulkProgressTimer = window.setInterval(() => void refreshActiveBulkProgress(), 3000)
+})
+onBeforeUnmount(() => {
+  if (bulkProgressTimer) window.clearInterval(bulkProgressTimer)
 })
 </script>
 

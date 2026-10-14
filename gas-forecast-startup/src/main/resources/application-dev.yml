@@ -11,7 +11,8 @@ spring:
       request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:180s}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
+    # Jenkins 部署环境使用独立库，避免与本地 local 环境共同领取训练/预测任务。
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/gas_data_dev?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false}
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:mysql2026}
   data:

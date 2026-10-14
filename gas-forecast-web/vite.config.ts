@@ -5,6 +5,8 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
 
+const localApiTarget = 'http://localhost:18083'
+
 export default defineConfig({
   plugins: [
     vue(),
@@ -26,78 +28,78 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '^/auth/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/dashboard/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/system/options$': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/system/(users|roles|departments|permissions)/.+': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/base-(region|customer|industry)/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/(data-file-info|data-daily-sales|data-monthly-sales|data-daily-weather)/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution|agent-strategy-config)/.*':
         {
-          target: 'http://localhost:8080',
+        target: localApiTarget,
           changeOrigin: true,
           rewrite: (path) => `/gas-forecast${path}`
         },
       '^/auto-train/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/ai/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/model-platform/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/(model-forecast-config|model-forecast-execution|model-forecast-record|model-forecast-result|model-forecast-analysis)/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/(monthly-results|short-term-results|winter-supply-results)(/.*)?$': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/agents/config(\\?.*)?$': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/(predict|chat)$': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
       '^/forecast/.*': {
-        target: 'http://localhost:8080',
+        target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       }
