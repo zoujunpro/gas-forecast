@@ -1287,7 +1287,16 @@ public class AiConversationService {
         String detail = "已完成 " + snapshot.completed() + "/" + snapshot.total() + current + "；预测成功 " + snapshot.succeeded() + "，失败 " + snapshot.failed() + "，执行中 "
                 + snapshot.running() + "，等待 " + snapshot.waiting();
         boolean finished = snapshot.completed() >= snapshot.total() && snapshot.total() > 0;
-        String status = finished ? snapshot.failed() > 0 ? "FAILED" : "SUCCESS" : "RUNNING";
+        String status;
+        if (!finished) {
+            status = "RUNNING";
+        } else if (snapshot.failed() == 0) {
+            status = "SUCCESS";
+        } else if (snapshot.failed() >= snapshot.total()) {
+            status = "FAILED";
+        } else {
+            status = "PARTIAL_FAILED";
+        }
         return new ExecutionProgress("批量智能预测", 3, 3,
                 List.of(new Step(1, "识别批量范围", "SUCCESS", scopeDetail), new Step(2, "逐客户创建任务", "SUCCESS", "已完成任务分发"),
                         new Step(3, "后台执行训练与预测", status, detail)));

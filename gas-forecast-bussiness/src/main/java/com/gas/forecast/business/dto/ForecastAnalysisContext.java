@@ -6,7 +6,7 @@ import java.util.List;
 
 /** 发送给大模型的完整、可追溯预测分析上下文。 */
 public record ForecastAnalysisContext(ForecastInfo forecast, TrainingInfo training, DatasetSection historicalFeatureData, DatasetSection trainingData, DatasetSection futureFeatureData,
-        List<BacktestPoint> historicalBacktest, List<ForecastPoint> forecastResults) {
+        List<BacktestPoint> historicalBacktest, List<ForecastPoint> forecastResults, YearOverYearComparison yearOverYearComparison) {
 
     public record ForecastInfo(String forecastBatchNo, String agentCode, String scopeType, String regionCode, String regionName, String industryCode, String industryName, String customerCode,
             String customerName, String forecastStartDate, Integer forecastHorizon, String forecastFrequency) {
@@ -24,5 +24,9 @@ public record ForecastAnalysisContext(ForecastInfo forecast, TrainingInfo traini
     }
 
     public record ForecastPoint(String date, BigDecimal forecastValue) {
+    }
+
+    /** 同比必须以去年相同日期的实际销量为基准，不能用预测期首尾值替代。 */
+    public record YearOverYearComparison(int matchedDays, BigDecimal forecastTotal, BigDecimal lastYearActualTotal, BigDecimal changePercent, String direction) {
     }
 }

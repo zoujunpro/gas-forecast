@@ -397,6 +397,12 @@
               <strong>{{ selectedStProvince }} / {{ selectedStIndustry }} / {{ selectedStCustomer || '-' }}</strong>
               <em>客户级预测结果</em>
             </div>
+            <div v-if="shortTermComparablePairs.length" class="future-comparison-summary">
+              <div class="reference-total"><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }}</strong></div>
+              <div class="forecast-total"><span>本次预测总量</span><strong>{{ shortTermForecastTotal }}</strong></div>
+              <div :class="`trend-${shortTermTrendTone}`"><span>同比变化</span><strong>{{ shortTermTrendText }}</strong></div>
+              <small>同比 = 本次预测总量与去年相同日期总量比较</small>
+            </div>
             <div class="short-term-future-grid">
               <section class="result-chart-panel compact-chart-panel">
                 <div ref="chartRefBottom" class="chart" v-if="currentResult.future_dates?.length"></div>
@@ -992,6 +998,12 @@ const shortTermComparablePairs = computed(() => {
     const reference = references[index]
     return reference == null || !Number.isFinite(Number(reference)) ? [] : [{ forecast: Number(value), reference: Number(reference) }]
   })
+})
+const shortTermLastYearTotal = computed(() => {
+  const total = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
+  return shortTermComparablePairs.value.length
+    ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+    : '-'
 })
 const shortTermTrendLabel = computed(() => shortTermComparablePairs.value.length ? '同比变化' : '预测趋势')
 const shortTermTrendRate = computed(() => {
@@ -1768,11 +1780,11 @@ const initMonthlyChart = (data: any) => {
         textStyle: { color: '#0F172A', fontSize: 12 }
       },
       legend: {
-        bottom: 0,
+        top: 0,
         textStyle: { color: '#64748B', fontSize: 11 },
         data: ['去年同期', '最新预测']
       },
-      grid: { left: '2%', right: '4%', top: 34, bottom: 50, containLabel: true },
+      grid: { left: '2%', right: '4%', top: 40, bottom: 36, containLabel: true },
       xAxis: {
         type: 'category',
         boundaryGap: isFutureBar,
@@ -2792,6 +2804,34 @@ watch(futureChartType, () => {
   margin-left: auto;
   color: #2f6fed;
   font-style: normal;
+}
+.future-comparison-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 10px 38px;
+}
+.future-comparison-summary > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid #e8eef7;
+  border-radius: 8px;
+  background: #fff;
+}
+.future-comparison-summary span { color: #667085; font-size: 12px; }
+.future-comparison-summary strong { color: #344054; font-size: 14px; }
+.future-comparison-summary .reference-total { border-left: 3px solid #9ca3af; }
+.future-comparison-summary .forecast-total { border-left: 3px solid #b91c1c; }
+.future-comparison-summary .forecast-total strong { color: #b91c1c; }
+.future-comparison-summary .trend-up strong { color: #f04438; }
+.future-comparison-summary .trend-down strong { color: #12b76a; }
+.future-comparison-summary > small {
+  grid-column: 1 / -1;
+  color: #98a2b3;
+  font-size: 11px;
 }
 .short-term-evaluation,
 .short-term-future-grid {

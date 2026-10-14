@@ -22,12 +22,18 @@ import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
+import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +54,7 @@ public class ForecastAnalysisService {
     private final ModelForecastResultTbMapper resultMapper;
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final ModelTrainBacktestTbMapper trainBacktestMapper;
+    private final DataDailySalesTbMapper dailySalesMapper;
     private final ForecastAnalysisLlmClient llmClient;
     private final ObjectMapper objectMapper;
     /** 字段名与 Bean 名一致，Spring 在多个 Executor 中按名称选择。 */
@@ -147,7 +154,8 @@ public class ForecastAnalysisService {
             throw new IllegalStateException("预测结果不存在：" + forecastBatchNo);
 
         ForecastAnalysisContext context = buildAnalysisContext(record, points);
-        String prompt = "请严格依据以下 JSON 简要分析天然气预测结果。只回答两项：1.整体趋势是上升、下降还是基本平稳；" + "2.造成该走势的主要原因。全文控制在2至3句话、120个汉字以内，不罗列全部指标，不输出长篇风险和业务建议。" + "趋势需要依据预测序列及历史数据；原因只能引用 JSON 中已有的历史特征、未来特征、训练或回测数据。"
+        String prompt = "请严格依据以下 JSON 简要分析天然气预测结果。只回答两项：1.同比去年同期是上升、下降还是基本持平，并写明同比百分比；" + "2.造成该同比变化的主要原因。全文控制在2至3句话、120个汉字以内，不罗列全部指标，不输出长篇风险和业务建议。"
+                + "趋势判断必须优先且仅依据 yearOverYearComparison，即本次预测总量与去年相同日期实际总量的比较；不得用预测期第一天和最后一天比较来代替同比。若没有有效同比数据，明确说明无法判断同比，再补充预测期自身走势。原因只能引用 JSON 中已有的历史特征、未来特征、训练或回测数据。"
                 + "不得补充 JSON 中不存在的天气、供给、价格、库存或业务事实；证据不足时直接说明暂不能判断外部原因。\n\n" + objectMapper.writeValueAsString(context);
         return new PromptData(record.getAgentCode(), prompt);
     }
@@ -171,7 +179,44 @@ public class ForecastAnalysisService {
         var futureFeatures = datasetSection("model_forecast_record_tb.feature_snapshot", futureRows, 120);
         var backtests = loadBacktests(trainRecord);
         var forecastPoints = results.stream().map(point -> new ForecastAnalysisContext.ForecastPoint(point.getForecastDate(), point.getForecastValue())).toList();
-        return new ForecastAnalysisContext(forecastInfo, trainingInfo, historicalFeatures, trainingData, futureFeatures, backtests, forecastPoints);
+        var yearOverYear = yearOverYearComparison(record, results);
+        return new ForecastAnalysisContext(forecastInfo, trainingInfo, historicalFeatures, trainingData, futureFeatures, backtests, forecastPoints, yearOverYear);
+    }
+
+    private ForecastAnalysisContext.YearOverYearComparison yearOverYearComparison(ModelForecastRecordTb record, List<ModelForecastResultTb> results) {
+        Map<String, ModelForecastResultTb> byPreviousDate = new LinkedHashMap<>();
+        for (ModelForecastResultTb result : results) {
+            if (TextUtils.hasText(result.getForecastDate()) && result.getForecastValue() != null)
+                byPreviousDate.put(LocalDate.parse(result.getForecastDate()).minusYears(1).toString(), result);
+        }
+        if (byPreviousDate.isEmpty())
+            return null;
+        var query = Wrappers.query().select("stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales").in("stat_date", byPreviousDate.keySet()).isNotNull("gas_sales");
+        if (TextUtils.hasText(record.getRegionCode())) query.eq("region_code", record.getRegionCode());
+        if (TextUtils.hasText(record.getIndustryCode())) query.eq("industry_code", record.getIndustryCode());
+        if (TextUtils.hasText(record.getCustomerCode())) query.eq("customer_code", record.getCustomerCode());
+        query.groupBy("stat_date");
+        BigDecimal forecastTotal = BigDecimal.ZERO;
+        BigDecimal lastYearTotal = BigDecimal.ZERO;
+        int matched = 0;
+        for (Map<String, Object> row : dailySalesMapper.selectMaps(query)) {
+            Object dateValue = mapValue(row, "stat_date");
+            Object salesValue = mapValue(row, "gas_sales");
+            ModelForecastResultTb forecast = dateValue == null ? null : byPreviousDate.get(String.valueOf(dateValue));
+            if (forecast == null || salesValue == null) continue;
+            forecastTotal = forecastTotal.add(forecast.getForecastValue());
+            lastYearTotal = lastYearTotal.add(new BigDecimal(String.valueOf(salesValue)));
+            matched++;
+        }
+        if (matched == 0 || lastYearTotal.signum() == 0)
+            return null;
+        BigDecimal percent = forecastTotal.subtract(lastYearTotal).multiply(BigDecimal.valueOf(100)).divide(lastYearTotal.abs(), 2, RoundingMode.HALF_UP);
+        String direction = percent.abs().compareTo(BigDecimal.ONE) < 0 ? "基本持平" : percent.signum() > 0 ? "上升" : "下降";
+        return new ForecastAnalysisContext.YearOverYearComparison(matched, forecastTotal, lastYearTotal, percent, direction);
+    }
+
+    private Object mapValue(Map<String, Object> row, String key) {
+        return row.entrySet().stream().filter(entry -> key.equalsIgnoreCase(entry.getKey())).map(Map.Entry::getValue).findFirst().orElse(null);
     }
 
     private ForecastAnalysisContext.TrainingInfo trainingInfo(ModelTrainRecordTb record, JsonNode request, JsonNode result) {
