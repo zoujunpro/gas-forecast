@@ -52,6 +52,9 @@ __pycache__/
 /logs/
 *.log
 
+# Local generated reports and database exports
+/outputs/city_gas_backtest_report/
+
 # Local secrets
 .env
 .env.*
