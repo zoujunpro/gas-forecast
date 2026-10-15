@@ -52,6 +52,9 @@ __pycache__/
 /logs/
 *.log
 
+# Local generated reports and database exports
+/outputs/
+
 # Local secrets
 .env
 .env.*
