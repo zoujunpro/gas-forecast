@@ -57,6 +57,7 @@ import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,102 @@ public class AiConversationService {
     private final ModelForecastResultTbMapper forecastResultMapper;
     private final ForecastAnalysisLlmClient llmClient;
     private final ObjectMapper objectMapper;
+
+    /**
+     * 供受信任的业务适配层（例如 MCP）调用已经解析好的工具请求。这里仍复用现有
+     * 训练、预测编排，避免协议层复制业务逻辑。批量变更必须由调用方显式确认。
+     */
+    public AiChatResponse invokeTool(String conversationNo, AiIntent intent, boolean confirmed) {
+        AiConversationTb conversation = findOwned(conversationNo);
+        toolRegistry.normalize(intent);
+        if (intent.getTool() == null || intent.getTool() == AiToolName.NONE)
+            throw new BusinessException("没有指定可执行的业务工具");
+        if (Boolean.TRUE.equals(intent.getBulkScope()) && toolRegistry.mutating(intent.getTool()) && !confirmed)
+            throw new BusinessException("批量训练或预测必须先获得用户确认");
+        if (toolRegistry.mutating(intent.getTool())) {
+            intent.setSpeechAct(AiSpeechAct.COMMAND);
+            intent.setRequiresConfirmation(false);
+        } else {
+            intent.setSpeechAct(AiSpeechAct.QUESTION);
+        }
+        intent.setConfidence(1D);
+        if (intent.getIntent() != AiIntentType.GENERAL_CHAT) {
+            AiEntityTranslator.TranslationResult translation = entityTranslator.translate(intent);
+            if (!translation.resolved())
+                return respond(conversation, "NEED_INFORMATION", withCandidates(translation.message(), intent), intent);
+        }
+        List<String> argumentErrors = toolArgumentValidator.validate(intent);
+        if (!argumentErrors.isEmpty())
+            throw new BusinessException(String.join("；", argumentErrors));
+        String missing = requiredParameterQuestion(intent, conversation);
+        if (missing != null)
+            return respond(conversation, "NEED_INFORMATION", missing, intent);
+        ExecutionResult execution = execute(conversation, intent);
+        conversation.setUpdatedAt(new Date());
+        conversationMapper.updateById(conversation);
+        return respond(conversation, execution.status(), execution.answer(), intent, execution.bulkExecution());
+    }
+
+    /** 查询会话工作记忆，并补充最近训练、预测批次和待确认动作。 */
+    public Map<String, Object> getMemory(String conversationNo) {
+        AiConversationTb conversation = findOwned(conversationNo);
+        Map<String, Object> memory = readMemory(conversation.getMemoryJson());
+        memory.put("conversationNo", conversation.getConversationNo());
+        memory.put("agentCode", conversation.getAgentCode());
+        memory.put("status", conversation.getStatus());
+        memory.put("lastTrainBatchNo", conversation.getLastTrainBatchNo());
+        memory.put("lastForecastBatchNo", conversation.getLastForecastBatchNo());
+        if (TextUtils.hasText(conversation.getPendingIntentJson()))
+            memory.put("pendingAction", readJsonValue(conversation.getPendingIntentJson()));
+        return memory;
+    }
+
+    /** 更新当前用户拥有的会话记忆；支持UPSERT、DELETE和CLEAR。 */
+    public Map<String, Object> updateMemory(String conversationNo, String operation, Map<String, Object> values) {
+        AiConversationTb conversation = findOwned(conversationNo);
+        Map<String, Object> memory = readMemory(conversation.getMemoryJson());
+        String normalized = TextUtils.hasText(operation) ? operation.trim().toUpperCase() : "UPSERT";
+        if ("CLEAR".equals(normalized)) {
+            memory.clear();
+        } else if ("DELETE".equals(normalized)) {
+            if (values != null)
+                values.keySet().forEach(memory::remove);
+        } else if ("UPSERT".equals(normalized)) {
+            if (values != null)
+                memory.putAll(values);
+        } else {
+            throw new BusinessException("operation只支持UPSERT、DELETE或CLEAR");
+        }
+        try {
+            conversation.setMemoryJson(objectMapper.writeValueAsString(memory));
+        } catch (Exception exception) {
+            throw new BusinessException("记忆内容无法序列化");
+        }
+        conversation.setUpdatedAt(new Date());
+        conversationMapper.updateById(conversation);
+        return getMemory(conversationNo);
+    }
+
+    @SuppressWarnings("unchecked")
+    /** 兼容空值或历史损坏数据，将memory_json安全解析为Map。 */
+    private Map<String, Object> readMemory(String json) {
+        if (!TextUtils.hasText(json))
+            return new HashMap<>();
+        try {
+            return objectMapper.readValue(json, Map.class);
+        } catch (Exception exception) {
+            log.warn("会话记忆JSON损坏，按空记忆处理");
+            return new HashMap<>();
+        }
+    }
+
+    private Object readJsonValue(String json) {
+        try {
+            return objectMapper.readValue(json, Object.class);
+        } catch (Exception exception) {
+            return null;
+        }
+    }
 
     public AiChatResponse chat(AiChatRequest request) {
         AiConversationTb conversation = requireConversation(request.getConversationNo(), request.getMessage());

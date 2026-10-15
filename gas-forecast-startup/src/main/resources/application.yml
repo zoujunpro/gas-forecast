@@ -15,3 +15,9 @@ mybatis-plus:
   mapper-locations: classpath*:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
+
+gas:
+  forecast:
+    mcp:
+      enabled: ${MCP_ENABLED:true}
+      endpoint: ${MCP_ENDPOINT:/mcp}
