@@ -21,3 +21,4 @@ gas:
     mcp:
       enabled: ${MCP_ENABLED:true}
       endpoint: ${MCP_ENDPOINT:/mcp}
+      tool-catalog: ${MCP_TOOL_CATALOG:classpath:mcp-tools.yml}
