@@ -5,7 +5,8 @@ import com.gas.forecast.ai.dto.AiChatResponse.ForecastResult;
 import java.util.Date;
 import java.util.List;
 
-public record AiConversationResponse(String conversationNo, String title, String status, String lastTrainBatchNo, String lastForecastBatchNo, Date updatedAt, List<Message> messages) {
+public record AiConversationResponse(String conversationNo, String title, String status, String scene, String businessType, String businessNo,
+        String lastTrainBatchNo, String lastForecastBatchNo, Date updatedAt, List<Message> messages) {
     public record Message(Long id, String role, String content, Date createdAt, ExecutionProgress progress, ForecastResult forecastResult, String analysis, List<String> suggestedQuestions) {
     }
 }

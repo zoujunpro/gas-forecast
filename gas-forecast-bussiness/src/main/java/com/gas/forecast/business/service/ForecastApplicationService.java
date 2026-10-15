@@ -10,7 +10,7 @@ public interface ForecastApplicationService {
 
     Object result(String forecastBatchNo, boolean includePoints);
 
-    record ForecastCommand(String agentCode, List<String> customerCodes, String regionCode, String industryCode, boolean bulk, String forecastStartDate, String forecastEndDate,
+    record ForecastCommand(String conversationNo, String agentCode, List<String> customerCodes, String regionCode, String industryCode, boolean bulk, String forecastStartDate, String forecastEndDate,
             Integer forecastHorizon, String forecastFrequency, String trainMode, Integer trainingPeriods, String trainingStartDate, String trainingEndDate, boolean forceRetrain,
             boolean autoTrain, boolean confirmed, String idempotencyKey) {
     }

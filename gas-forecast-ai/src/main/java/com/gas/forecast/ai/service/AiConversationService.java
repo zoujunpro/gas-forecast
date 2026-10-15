@@ -25,6 +25,7 @@ import com.gas.forecast.business.dto.request.ModelForecastConfigSaveRequest;
 import com.gas.forecast.business.dto.request.ModelForecastExecuteRequest;
 import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.service.AutoTrainService;
+import com.gas.forecast.business.service.ForecastAnalysisService;
 import com.gas.forecast.business.service.ModelForecastManagementService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.common.core.BusinessException;
@@ -91,6 +92,7 @@ public class AiConversationService {
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper forecastResultMapper;
     private final ForecastAnalysisLlmClient llmClient;
+    private final ForecastAnalysisService forecastAnalysisService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -190,7 +192,7 @@ public class AiConversationService {
     }
 
     public AiChatResponse chat(AiChatRequest request) {
-        AiConversationTb conversation = requireConversation(request.getConversationNo(), request.getMessage());
+        AiConversationTb conversation = requireConversation(request);
         saveMessage(conversation.getId(), "user", request.getMessage(), null, null);
         AiIntent intent;
         if (Boolean.TRUE.equals(request.getContextualFollowUp())) {
@@ -325,12 +327,19 @@ public class AiConversationService {
 
     public List<AiConversationResponse> list() {
         String userId = String.valueOf(SecurityContextHolder.getUserId());
-        return conversationMapper.selectList(Wrappers.<AiConversationTb>lambdaQuery().eq(AiConversationTb::getCreatedBy, userId).orderByDesc(AiConversationTb::getUpdatedAt).last("limit 50")).stream()
+        return conversationMapper.selectList(Wrappers.<AiConversationTb>lambdaQuery().eq(AiConversationTb::getCreatedBy, userId)
+                .and(query -> query.eq(AiConversationTb::getScene, "GENERAL").or().isNull(AiConversationTb::getScene))
+                .orderByDesc(AiConversationTb::getUpdatedAt).last("limit 50")).stream()
                 .map(item -> toResponse(item, false)).toList();
     }
 
     public AiConversationResponse detail(String conversationNo) {
         return toResponse(findOwned(conversationNo), true);
+    }
+
+    /** 获取当前用户与预测批次唯一绑定的会话；首次打开预测详情时自动创建。 */
+    public AiConversationResponse forecastDetail(String forecastBatchNo) {
+        return toResponse(requireForecastConversation(forecastBatchNo, null), true);
     }
 
     public void rename(String conversationNo, String title) {
@@ -1292,14 +1301,66 @@ public class AiConversationService {
         return new Step(index, name, stepStatus, detail);
     }
 
-    private AiConversationTb requireConversation(String conversationNo, String firstMessage) {
-        if (TextUtils.hasText(conversationNo))
-            return findOwned(conversationNo);
+    private AiConversationTb requireConversation(AiChatRequest request) {
+        if (TextUtils.hasText(request.getForecastBatchNo()))
+            return requireForecastConversation(request.getForecastBatchNo(), request.getConversationNo());
+        if (TextUtils.hasText(request.getConversationNo()))
+            return findOwned(request.getConversationNo());
+        return createConversation(request.getMessage(), null);
+    }
+
+    /**
+     * forecastBatchNo是预测页面会话的业务主键。即使前端丢失conversationNo，刷新后也能找回同一会话；
+     * 若同时传入conversationNo，则校验它确实属于当前预测，避免不同预测之间串话。
+     */
+    private AiConversationTb requireForecastConversation(String forecastBatchNo, String conversationNo) {
+        if (!TextUtils.hasText(forecastBatchNo)) throw new BusinessException("预测批次号不能为空");
+        String userId = String.valueOf(SecurityContextHolder.getUserId());
+        if (TextUtils.hasText(conversationNo)) {
+            AiConversationTb supplied = findOwned(conversationNo);
+            if (!"FORECAST_ANALYSIS".equals(supplied.getScene()) || !forecastBatchNo.equals(supplied.getBusinessNo()))
+                throw new BusinessException("当前会话不属于该预测批次，请刷新预测页面后重试");
+            return supplied;
+        }
+        AiConversationTb existing = conversationMapper.selectOne(Wrappers.<AiConversationTb>lambdaQuery()
+                .eq(AiConversationTb::getCreatedBy, userId).eq(AiConversationTb::getScene, "FORECAST_ANALYSIS")
+                .eq(AiConversationTb::getBusinessType, "FORECAST").eq(AiConversationTb::getBusinessNo, forecastBatchNo).last("limit 1"));
+        if (existing != null) {
+            syncStoredAutomaticAnalysis(existing);
+            return existing;
+        }
+        ModelForecastRecordTb forecast = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                .eq(ModelForecastRecordTb::getForecastBatchNo, forecastBatchNo).last("limit 1"));
+        if (forecast == null) throw new BusinessException("预测批次不存在：" + forecastBatchNo);
+        AiConversationTb created = createConversation((TextUtils.hasText(forecast.getCustomerName()) ? forecast.getCustomerName() : "预测结果") + " AI分析", forecast);
+        created.setScene("FORECAST_ANALYSIS"); created.setBusinessType("FORECAST"); created.setBusinessNo(forecastBatchNo);
+        created.setLastForecastBatchNo(forecastBatchNo); created.setAgentCode(TextUtils.hasText(forecast.getAgentCode()) ? forecast.getAgentCode() : "short-term");
+        conversationMapper.updateById(created);
+        syncStoredAutomaticAnalysis(created);
+        return created;
+    }
+
+    /** 将历史预测已经生成但尚未归档到会话的自动分析补入一次，兼容迁移前的数据。 */
+    private void syncStoredAutomaticAnalysis(AiConversationTb conversation) {
+        long exists = messageMapper.selectCount(Wrappers.<AiConversationMessageTb>lambdaQuery()
+                .eq(AiConversationMessageTb::getConversationId, conversation.getId()).eq(AiConversationMessageTb::getIntentCode, "FORECAST_AUTO_ANALYSIS"));
+        if (exists > 0) return;
+        var analysis = forecastAnalysisService.get(conversation.getBusinessNo());
+        if (analysis == null || !"SUCCESS".equals(analysis.analysisStatus()) || !TextUtils.hasText(analysis.analysisContent())) return;
+        saveMessage(conversation.getId(), "assistant", analysis.analysisContent(), "FORECAST_AUTO_ANALYSIS", null);
+    }
+
+    private AiConversationTb createConversation(String firstMessage, ModelForecastRecordTb forecast) {
         Date now = new Date();
         AiConversationTb value = new AiConversationTb();
         value.setConversationNo("AICHAT-" + UUID.randomUUID().toString().replace("-", ""));
-        value.setTitle(firstMessage.length() > 30 ? firstMessage.substring(0, 30) : firstMessage);
-        value.setAgentCode("short-term");
+        String title = TextUtils.hasText(firstMessage) ? firstMessage : "新会话";
+        value.setTitle(title.length() > 30 ? title.substring(0, 30) : title);
+        value.setAgentCode(forecast != null && TextUtils.hasText(forecast.getAgentCode()) ? forecast.getAgentCode() : "short-term");
+        value.setScene(forecast == null ? "GENERAL" : "FORECAST_ANALYSIS");
+        value.setBusinessType(forecast == null ? null : "FORECAST");
+        value.setBusinessNo(forecast == null ? null : forecast.getForecastBatchNo());
+        value.setLastForecastBatchNo(forecast == null ? null : forecast.getForecastBatchNo());
         value.setStatus("ACTIVE");
         value.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
         value.setCreatedAt(now);
@@ -1337,7 +1398,8 @@ public class AiConversationService {
 
     private AiConversationResponse toResponse(AiConversationTb item, boolean includeMessages) {
         if (!includeMessages)
-            return new AiConversationResponse(item.getConversationNo(), item.getTitle(), item.getStatus(), item.getLastTrainBatchNo(), item.getLastForecastBatchNo(), item.getUpdatedAt(), List.of());
+            return new AiConversationResponse(item.getConversationNo(), item.getTitle(), item.getStatus(), item.getScene(), item.getBusinessType(), item.getBusinessNo(),
+                    item.getLastTrainBatchNo(), item.getLastForecastBatchNo(), item.getUpdatedAt(), List.of());
         List<AiConversationMessageTb> storedMessages = messages(item.getId());
         Long fallbackMessageId = storedMessages.stream().filter(message -> "assistant".equals(message.getRole()) && isForecastIntent(message.getIntentCode())).map(AiConversationMessageTb::getId)
                 .max(Long::compareTo).orElse(null);
@@ -1355,7 +1417,8 @@ public class AiConversationService {
             return new AiConversationResponse.Message(message.getId(), message.getRole(), content, message.getCreatedAt(), progress, forecastResult, payload.analysis(),
                     payload.suggestedQuestions());
         }).toList();
-        return new AiConversationResponse(item.getConversationNo(), item.getTitle(), item.getStatus(), item.getLastTrainBatchNo(), item.getLastForecastBatchNo(), item.getUpdatedAt(), messages);
+        return new AiConversationResponse(item.getConversationNo(), item.getTitle(), item.getStatus(), item.getScene(), item.getBusinessType(), item.getBusinessNo(),
+                item.getLastTrainBatchNo(), item.getLastForecastBatchNo(), item.getUpdatedAt(), messages);
     }
 
     /** 修正旧会话中已失败但被固定保存为 RUNNING 的批量进度。 */

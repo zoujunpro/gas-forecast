@@ -3,6 +3,7 @@ package com.gas.forecast.business.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.AutoTrainRequest;
 import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
+import com.gas.forecast.business.dto.response.ModelTrainResultResponse;
 import com.gas.forecast.business.service.AutoTrainService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.business.service.TrainingApplicationService;
@@ -68,8 +69,17 @@ public class TrainingApplicationServiceImpl implements TrainingApplicationServic
         request.setBatchNo(trainBatchNo);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("trainBatchNo", trainBatchNo);
-        result.put("result", trainExecutionService.getTrainResult(request));
+        ModelTrainResultResponse training = trainExecutionService.getTrainResult(request);
+        result.put("result", training);
         result.put("steps", trainExecutionService.getExecutionSteps(trainBatchNo));
+        String status = training.getBatches() == null || training.getBatches().isEmpty() ? "UNKNOWN" : training.getBatches().get(0).getStatus();
+        String normalized = normalizeStatus(status);
+        result.put("status", normalized);
+        result.put("currentStage", "TRAINING");
+        result.put("nextAction", "SUCCESS".equals(normalized) ? "START_FORECAST" : "FAILED".equals(normalized) ? "MODEL_DECISION" : "WAIT");
+        result.put("allowedActions", "SUCCESS".equals(normalized) ? List.of("START_FORECAST", "QUERY_RESULT")
+                : "FAILED".equals(normalized) ? List.of("QUERY_STEPS", "RETRY", "ASK_USER", "FAIL") : List.of("WAIT", "QUERY_STATUS"));
+        result.put("retryable", "FAILED".equals(normalized));
         return result;
     }
 
@@ -108,5 +118,13 @@ public class TrainingApplicationServiceImpl implements TrainingApplicationServic
 
     private String safeMessage(RuntimeException exception) {
         return TextUtils.hasText(exception.getMessage()) ? exception.getMessage() : "创建训练任务失败";
+    }
+
+    /** 将训练队列的细分状态收敛为智能体稳定状态。 */
+    private String normalizeStatus(String status) {
+        if ("SUCCESS".equalsIgnoreCase(status)) return "SUCCESS";
+        if (status != null && status.toUpperCase().startsWith("FAILED")) return "FAILED";
+        if (status == null || "UNKNOWN".equalsIgnoreCase(status)) return "UNKNOWN";
+        return "EXECUTING";
     }
 }

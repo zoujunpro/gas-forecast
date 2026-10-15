@@ -7,11 +7,11 @@ standardOutput: &standardOutput
     status:
       type: string
       description: 业务状态
-      enum: [COMPLETED, EXECUTING, WAITING_TRAINING, NEED_INFORMATION, FAILED]
+      enum: [COMPLETED, EXECUTING, WAITING_TRAINING, NEED_INFORMATION, SUCCESS, FAILED, UNKNOWN]
     errorCode: {type: [string, "null"], description: 失败时的稳定错误码，成功时为null}
     message: {type: string, description: 可展示给用户的结果或具体失败原因}
     retryable: {type: boolean, description: 是否允许调用方自动重试}
-    data: {type: object, description: 成功时为业务结果；失败时包含toolName、reason、nextAction和retryable, additionalProperties: true}
+    data: {type: object, description: 业务结果；状态和失败查询包含机器可读的nextAction、allowedActions、reason和retryable, additionalProperties: true}
 
 tools:
   - name: memory_get
@@ -78,6 +78,41 @@ tools:
       additionalProperties: false
       anyOf: [{required: [industryCode]}, {required: [industryName]}]
       properties: *entityProperties
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: region_list
+    title: 查询地区列表
+    description: 分页查询地区。keyword可按地区编码或名称模糊筛选；不传时返回全部地区的当前页。
+    inputSchema: &listInput
+      type: object
+      additionalProperties: false
+      properties:
+        keyword: {type: string, description: 可选编码或名称关键字}
+        pageNo: {type: integer, description: 页码，默认1, minimum: 1}
+        pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: industry_list
+    title: 查询行业列表
+    description: 分页查询行业。keyword可按行业编码或名称模糊筛选；不传时返回全部行业的当前页。
+    inputSchema: *listInput
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: customer_list
+    title: 查询客户列表
+    description: 按名称关键字、地区编码和行业编码分页查询客户；不传筛选条件时返回当前页客户。用于浏览客户，不用于唯一实体确认。
+    inputSchema:
+      type: object
+      additionalProperties: false
+      properties:
+        keyword: {type: string, description: 可选客户编码或名称关键字}
+        regionCode: {type: string, description: 可选标准地区编码}
+        industryCode: {type: string, description: 可选标准行业编码}
+        pageNo: {type: integer, description: 页码，默认1, minimum: 1}
+        pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
     outputSchema: *standardOutput
     annotations: *readOnly
 
@@ -156,6 +191,36 @@ tools:
     outputSchema: *standardOutput
     annotations: *readOnly
 
+  - name: training_latest_get
+    title: 查询客户最新训练
+    description: 按标准客户编码查询最新训练记录，可用agentCode限定短期、月度或冬季场景。
+    inputSchema: &customerRecordInput
+      type: object
+      required: [customerCode]
+      additionalProperties: false
+      properties:
+        customerCode: {type: string, description: 标准客户编码}
+        agentCode: {type: string, description: 可选业务场景编码, enum: [short-term, monthly-sales, winter-supply]}
+        includePoints: {type: boolean, description: 查询最新预测时是否包含预测点，默认true}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: training_history_get
+    title: 查询客户历史训练
+    description: 按客户和场景分页查询训练历史，可按训练状态筛选。
+    inputSchema:
+      type: object
+      required: [customerCode]
+      additionalProperties: false
+      properties:
+        customerCode: {type: string, description: 标准客户编码}
+        agentCode: {type: string, description: 可选业务场景编码, enum: [short-term, monthly-sales, winter-supply]}
+        status: {type: string, description: 可选训练状态}
+        pageNo: {type: integer, description: 页码，默认1, minimum: 1}
+        pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
   - name: forecast_start
     title: 发起燃气预测
     description: 单客户需bulk=false并提供客户；批量需bulk=true、范围及confirmed=true。短期客户智能体按日预测，默认30天；月度销量智能体按月预测，默认12个月；冬季保供智能体按旬预测，默认18旬。用户可传开始日期和周期，也可传开始、结束日期；用户时间优先于默认值，但不能超过模型配置的最大预测期数。autoTrain=true时无有效模型会返回WAITING_TRAINING和trainBatchNo。
@@ -200,3 +265,102 @@ tools:
         includePoints: {type: boolean, description: 是否返回逐期预测明细，默认true，数据量大时可设为false}
     outputSchema: *standardOutput
     annotations: *readOnly
+
+  - name: forecast_latest_get
+    title: 查询客户最新预测
+    description: 按标准客户编码查询最新预测记录，可按agentCode限定业务场景；includePoints控制是否返回逐期预测值。
+    inputSchema: *customerRecordInput
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: forecast_history_get
+    title: 查询客户历史预测
+    description: 按客户和场景分页查询预测历史，可按预测状态码筛选。
+    inputSchema:
+      type: object
+      required: [customerCode]
+      additionalProperties: false
+      properties:
+        customerCode: {type: string, description: 标准客户编码}
+        agentCode: {type: string, description: 可选业务场景编码, enum: [short-term, monthly-sales, winter-supply]}
+        status: {type: integer, description: 可选预测状态码，1执行中、2成功、3失败, enum: [1, 2, 3]}
+        pageNo: {type: integer, description: 页码，默认1, minimum: 1}
+        pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: task_status_get
+    title: 查询统一任务状态
+    description: 查询训练、预测或训练后预测任务的总体进度、成功失败数量、当前阶段和恢复建议。恢复或重试之前必须先调用本工具。
+    inputSchema:
+      type: object
+      required: [taskNo]
+      additionalProperties: false
+      properties:
+        taskNo: {type: string, description: 统一任务编号}
+        includeRecovery: {type: boolean, description: 是否分析恢复方式，默认true}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: task_steps_get
+    title: 查询任务执行步骤
+    description: 查询智能体可审计步骤；可同时返回训练批次的LOAD_DATA、DYNAMIC_FEATURE、MODEL_TRAIN等真实业务步骤。includeAttempts=true返回历史任务尝试。
+    inputSchema:
+      type: object
+      required: [taskNo]
+      additionalProperties: false
+      properties:
+        taskNo: {type: string, description: 统一任务编号}
+        includeBusinessSteps: {type: boolean, description: 是否包含真实训练业务步骤，默认true}
+        includeAttempts: {type: boolean, description: 是否包含历史任务尝试，默认false}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: task_step_record
+    title: 记录智能体执行步骤
+    description: 记录实体解析、参数收集、等待确认、工具调用或结果解释等可审计智能体步骤。不能写入或伪造模型训练、预测等业务步骤状态。
+    inputSchema:
+      type: object
+      required: [taskNo, stepCode, status]
+      additionalProperties: false
+      properties:
+        taskNo: {type: string, description: 统一任务编号}
+        stepCode: {type: string, description: 允许的智能体步骤编码, enum: [ENTITY_RESOLUTION, PARAMETER_COLLECTION, WAITING_USER_CONFIRMATION, TOOL_CALL, RESULT_EXPLANATION]}
+        stepName: {type: string, description: 用户可理解的步骤名称}
+        status: {type: string, description: 步骤状态, enum: [WAITING, RUNNING, SUCCESS, FAILED, SKIPPED, CANCELLED]}
+        stepOrder: {type: integer, description: 步骤显示顺序, minimum: 0}
+        inputSummary: {type: string, description: 输入摘要，不得保存大模型思维链或敏感凭证}
+        outputSummary: {type: string, description: 输出摘要}
+        checkpoint: {type: object, description: 恢复所需的结构化检查点, additionalProperties: true}
+        errorCode: {type: string, description: 失败错误码}
+        errorMessage: {type: string, description: 具体失败原因}
+    outputSchema: *standardOutput
+    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false}
+
+  - name: task_resume
+    title: 恢复中断的智能体任务
+    description: 恢复FAILED或INTERRUPTED任务。Java会重新核实已有训练和预测批次；仍在执行则返回WAIT，明确失败则要求使用task_retry，不会把恢复误当作重试并重复创建批次。
+    inputSchema:
+      type: object
+      required: [taskNo, confirmed]
+      additionalProperties: false
+      properties:
+        taskNo: {type: string, description: 统一任务编号}
+        resumeFromStep: {type: string, description: 可选恢复步骤；服务端会基于真实业务状态复核}
+        confirmed: {type: boolean, const: true, description: 用户是否确认恢复执行，必须为true}
+    outputSchema: *standardOutput
+    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
+
+  - name: task_retry
+    title: 重试失败任务
+    description: 为FAILED任务创建新的训练或预测批次，保留原失败批次用于审计。调用前必须先查询任务状态并取得用户明确确认。
+    inputSchema:
+      type: object
+      required: [taskNo, confirmed]
+      additionalProperties: false
+      properties:
+        taskNo: {type: string, description: 统一任务编号}
+        retryStage: {type: string, description: 可选重试阶段；未传时根据任务最新批次判断, enum: [TRAINING, FORECAST]}
+        confirmed: {type: boolean, const: true, description: 用户已确认创建新批次}
+    outputSchema: *standardOutput
+    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}

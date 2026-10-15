@@ -18,12 +18,16 @@ import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
+import com.gas.forecast.dao.domain.AiConversationMessageTb;
+import com.gas.forecast.dao.domain.AiConversationTb;
 import com.gas.forecast.dao.mapper.ModelForecastAnalysisTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
+import com.gas.forecast.dao.mapper.AiConversationMessageTbMapper;
+import com.gas.forecast.dao.mapper.AiConversationTbMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +40,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.UUID;
+import org.springframework.dao.DuplicateKeyException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -56,6 +62,8 @@ public class ForecastAnalysisService {
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final ModelTrainBacktestTbMapper trainBacktestMapper;
     private final DataDailySalesTbMapper dailySalesMapper;
+    private final AiConversationTbMapper conversationMapper;
+    private final AiConversationMessageTbMapper conversationMessageMapper;
     private final ForecastAnalysisLlmClient llmClient;
     private final ObjectMapper objectMapper;
     /** 字段名与 Bean 名一致，Spring 在多个 Executor 中按名称选择。 */
@@ -138,6 +146,54 @@ public class ForecastAnalysisService {
         }
         analysis.setUpdateTime(new Date());
         analysisMapper.updateById(analysis);
+        if (SUCCESS.equals(analysis.getAnalysisStatus()))
+            saveAutomaticAnalysisMessage(forecastBatchNo, new String(analysis.getAnalysisContent(), StandardCharsets.UTF_8));
+    }
+
+    /**
+     * 将每次成功预测的自动AI分析保存为预测绑定会话的首条助手消息。
+     * model_forecast_analysis_tb保存分析产物，ai_conversation_*保存用户后续围绕该结果的连续对话。
+     */
+    private void saveAutomaticAnalysisMessage(String forecastBatchNo, String content) {
+        try {
+            ModelForecastRecordTb forecast = recordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
+                    .eq(ModelForecastRecordTb::getForecastBatchNo, forecastBatchNo).last("limit 1"));
+            if (forecast == null || !TextUtils.hasText(forecast.getCreatedBy())) return;
+            AiConversationTb conversation = conversationMapper.selectOne(Wrappers.<AiConversationTb>lambdaQuery()
+                    .eq(AiConversationTb::getCreatedBy, forecast.getCreatedBy()).eq(AiConversationTb::getScene, "FORECAST_ANALYSIS")
+                    .eq(AiConversationTb::getBusinessType, "FORECAST").eq(AiConversationTb::getBusinessNo, forecastBatchNo).last("limit 1"));
+            if (conversation == null) conversation = createForecastConversation(forecast);
+            long exists = conversationMessageMapper.selectCount(Wrappers.<AiConversationMessageTb>lambdaQuery()
+                    .eq(AiConversationMessageTb::getConversationId, conversation.getId()).eq(AiConversationMessageTb::getIntentCode, "FORECAST_AUTO_ANALYSIS"));
+            if (exists > 0) return;
+            AiConversationMessageTb message = new AiConversationMessageTb();
+            message.setConversationId(conversation.getId()); message.setRole("assistant"); message.setContent(content);
+            message.setIntentCode("FORECAST_AUTO_ANALYSIS"); message.setCreatedAt(new Date());
+            conversationMessageMapper.insert(message);
+            conversation.setUpdatedAt(new Date()); conversationMapper.updateById(conversation);
+        } catch (RuntimeException exception) {
+            // 会话归档失败不改变已经成功的预测和AI分析状态，后续打开页面仍可再次同步。
+            log.error("预测批次 {} 的自动分析写入绑定会话失败", forecastBatchNo, exception);
+        }
+    }
+
+    private AiConversationTb createForecastConversation(ModelForecastRecordTb forecast) {
+        Date now = new Date();
+        AiConversationTb value = new AiConversationTb();
+        value.setConversationNo("AICHAT-" + UUID.randomUUID().toString().replace("-", ""));
+        value.setTitle((TextUtils.hasText(forecast.getCustomerName()) ? forecast.getCustomerName() : "预测结果") + " AI分析");
+        value.setAgentCode(TextUtils.hasText(forecast.getAgentCode()) ? forecast.getAgentCode() : "short-term");
+        value.setScene("FORECAST_ANALYSIS"); value.setBusinessType("FORECAST"); value.setBusinessNo(forecast.getForecastBatchNo());
+        value.setLastForecastBatchNo(forecast.getForecastBatchNo()); value.setStatus("ACTIVE"); value.setCreatedBy(forecast.getCreatedBy());
+        value.setCreatedAt(now); value.setUpdatedAt(now);
+        try {
+            conversationMapper.insert(value);
+            return value;
+        } catch (DuplicateKeyException duplicate) {
+            return conversationMapper.selectOne(Wrappers.<AiConversationTb>lambdaQuery()
+                    .eq(AiConversationTb::getCreatedBy, forecast.getCreatedBy()).eq(AiConversationTb::getScene, "FORECAST_ANALYSIS")
+                    .eq(AiConversationTb::getBusinessType, "FORECAST").eq(AiConversationTb::getBusinessNo, forecast.getForecastBatchNo()).last("limit 1"));
+        }
     }
 
     private PromptData buildPrompt(String forecastBatchNo) throws Exception {

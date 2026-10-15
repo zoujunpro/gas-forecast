@@ -806,6 +806,9 @@
           </div>
           <div>
             <div class="ai-title">智能分析助手</div>
+            <div v-if="currentResult?.forecast_batch_no" class="ai-context-batch">
+              当前预测：{{ currentResult.forecast_batch_no }}
+            </div>
             <div class="ai-status"><span class="status-dot"></span> 在线</div>
           </div>
         </div>
@@ -1995,6 +1998,33 @@ const stopStreaming = () => {
 }
 
 const chatMemory = new Map<string, ChatMessage[]>()
+/** 当前预测批次唯一绑定的服务端会话，刷新页面后通过forecastBatchNo重新取得。 */
+const forecastConversationNo = ref<string | null>(null)
+
+const loadForecastConversation = async (forecastBatchNo?: string) => {
+  forecastConversationNo.value = null
+  if (!forecastBatchNo) return
+  try {
+    const response = await getJson<any>(
+      `/ai/conversations/forecast-detail?forecastBatchNo=${encodeURIComponent(forecastBatchNo)}`
+    )
+    const detail = response.data
+    if (currentResult.value?.forecast_batch_no !== forecastBatchNo || !detail) return
+    forecastConversationNo.value = detail.conversationNo || null
+    if (Array.isArray(detail.messages) && detail.messages.length) {
+      messages.value = detail.messages.map((item: any) => ({
+        id: String(item.id),
+        role: item.role,
+        content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+        time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()
+      }))
+      saveChatToMemory(activeChatId.value)
+      scrollToBottom()
+    }
+  } catch (error) {
+    console.error('加载预测绑定会话失败:', error)
+  }
+}
 
 const updateMsgInMemory = (id: string, msgId: string, content: string) => {
   const msgs = chatMemory.get(id)
@@ -2066,6 +2096,30 @@ const sendMessage = async () => {
   let fullResponse = ''
 
   try {
+    const forecastBatchNo = currentResult.value?.forecast_batch_no
+    if (forecastBatchNo) {
+      const response = await postJson<any>(
+        '/ai/conversations/chat',
+        {
+          conversationNo: forecastConversationNo.value,
+          forecastBatchNo,
+          message: userMessage,
+          contextualFollowUp: true
+        },
+        controller.signal
+      )
+      const data = response.data || {}
+      forecastConversationNo.value = data.conversationNo || forecastConversationNo.value
+      fullResponse = data.answer || 'AI 未返回有效内容'
+      if (activeChatId.value === streamId) {
+        const msg = messages.value.find((m) => m.id === msgId)
+        if (msg) msg.content = renderMarkdown(fullResponse)
+        saveChatToMemory(streamId)
+      } else {
+        updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
+      }
+      return
+    }
     const context =
       isMonthlySales.value || isShortTerm.value || isWinterSupply.value ? currentResult.value : modelResult.value
     const response = await fetch('/chat', {
@@ -2312,6 +2366,14 @@ watch(futureChartType, () => {
     nextTick(() => initMonthlyChart(currentResult.value))
   }
 })
+
+// 预测结果切换时从服务端加载该批次唯一绑定的历史会话，不再依赖浏览器临时内存。
+watch(
+  () => currentResult.value?.forecast_batch_no,
+  (forecastBatchNo) => {
+    void loadForecastConversation(forecastBatchNo)
+  }
+)
 </script>
 
 <style scoped>
@@ -3507,6 +3569,14 @@ watch(futureChartType, () => {
   font-size: 14px;
   font-weight: 600;
   color: #0f172a;
+}
+.ai-context-batch {
+  max-width: 230px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ai-status {
   font-size: 13px;

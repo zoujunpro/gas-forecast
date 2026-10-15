@@ -9,7 +9,11 @@ import com.gas.forecast.business.service.AutoTrainService;
 import com.gas.forecast.business.service.ForecastApplicationService;
 import com.gas.forecast.business.service.ModelForecastManagementService;
 import com.gas.forecast.common.core.BusinessException;
+import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gas.forecast.dao.domain.AgentExecutionBatchTb;
+import com.gas.forecast.dao.domain.AgentExecutionTaskTb;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.DataDailySalesTb;
 import com.gas.forecast.dao.domain.ModelForecastConfigTb;
@@ -19,6 +23,8 @@ import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
+import com.gas.forecast.dao.mapper.AgentExecutionBatchTbMapper;
+import com.gas.forecast.dao.mapper.AgentExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
@@ -34,6 +40,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
+import java.util.UUID;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -51,23 +60,34 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     private final ModelForecastConfigTbMapper forecastConfigMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper forecastResultMapper;
+    private final AgentExecutionTaskTbMapper executionTaskMapper;
+    private final AgentExecutionBatchTbMapper executionBatchMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public Object start(ForecastCommand command) {
         validate(command);
+        AgentExecutionTaskTb existing = existingTask(command);
+        if (existing != null) return existingResult(existing);
         List<BaseCustomerTb> customers = customers(command);
         if (customers.isEmpty())
             throw new BusinessException("当前业务范围内没有找到可预测客户");
+        AgentExecutionTaskTb root = createRootTask(command, customers);
         List<Object> tasks = new ArrayList<>();
         List<Map<String, String>> failures = new ArrayList<>();
         for (BaseCustomerTb customer : customers) {
+            AgentExecutionTaskTb task = customers.size() == 1 ? root : createCustomerTask(command, customer, root.getTaskNo());
             try {
-                tasks.add(startOne(command, customer));
+                tasks.add(startOne(command, customer, task));
             } catch (RuntimeException exception) {
-                failures.add(Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "message", safeMessage(exception)));
+                String message = safeMessage(exception);
+                markFailed(task, message);
+                failures.add(Map.of("taskNo", task.getTaskNo(), "customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "message", message));
             }
         }
+        finishRootSubmission(root, customers.size(), tasks.size(), failures.size());
         Map<String, Object> result = new LinkedHashMap<>();
+        result.put("taskNo", root.getTaskNo());
         result.put("total", customers.size());
         result.put("submitted", tasks.size());
         result.put("failed", failures.size());
@@ -81,8 +101,20 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     public Object status(String forecastBatchNo) {
         ModelForecastRecordTb record = record(forecastBatchNo);
         long points = forecastResultMapper.selectCount(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo));
-        return Map.of("forecastBatchNo", forecastBatchNo, "status", statusName(record.getStatus()), "forecastStartDate", record.getForecastStartDate(), "forecastHorizon",
-                record.getForecastHorizon(), "completedPoints", points, "updatedAt", record.getUpdatedAt());
+        String status = statusName(record.getStatus());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("forecastBatchNo", forecastBatchNo);
+        result.put("status", "RUNNING".equals(status) ? "EXECUTING" : status);
+        result.put("currentStage", "FORECASTING");
+        result.put("forecastStartDate", record.getForecastStartDate());
+        result.put("forecastHorizon", record.getForecastHorizon());
+        result.put("completedPoints", points);
+        result.put("updatedAt", record.getUpdatedAt());
+        result.put("nextAction", "SUCCESS".equals(status) ? "QUERY_RESULT" : "FAILED".equals(status) ? "MODEL_DECISION" : "WAIT");
+        result.put("allowedActions", "SUCCESS".equals(status) ? List.of("QUERY_RESULT")
+                : "FAILED".equals(status) ? List.of("QUERY_STATUS", "RETRY", "ASK_USER", "FAIL") : List.of("WAIT", "QUERY_STATUS"));
+        result.put("retryable", "FAILED".equals(status));
+        return result;
     }
 
     @Override
@@ -96,7 +128,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         return result;
     }
 
-    private Object startOne(ForecastCommand command, BaseCustomerTb customer) {
+    private Object startOne(ForecastCommand command, BaseCustomerTb customer, AgentExecutionTaskTb task) {
         ModelTrainConfigTb config = trainConfigMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, command.agentCode())
                 .eq(ModelTrainConfigTb::getCustomerCode, customer.getCustomerCode()).eq(ModelTrainConfigTb::getEnabled, 1).orderByDesc(ModelTrainConfigTb::getUpdatedAt)
                 .orderByDesc(ModelTrainConfigTb::getId).last("limit 1"));
@@ -119,8 +151,9 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
             ModelTrainConfigTb pendingConfig = trainConfigMapper.selectById(response.getTrainConfigId());
             if (pendingConfig != null)
                 saveForecastConfig(command, customer, pendingConfig, "MCP等待训练后自动预测");
-            return Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "status", "WAITING_TRAINING", "trainBatchNo",
-                    response.getTrainBatchNo());
+            bindBatch(task, "TRAINING", "TRAIN", response.getTrainBatchNo());
+            updateTask(task, "EXECUTING", "TRAINING", "WAIT_TRAINING_RESULT", 20, response.getTrainBatchNo(), null);
+            return Map.of("taskNo", task.getTaskNo(), "customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "status", "WAITING_TRAINING", "trainBatchNo", response.getTrainBatchNo());
         }
         ModelForecastConfigTb forecastConfig = saveForecastConfig(command, customer, config, "MCP发起");
         ModelForecastExecuteRequest execute = new ModelForecastExecuteRequest();
@@ -129,9 +162,92 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         execute.setForecastHorizon(forecastConfig.getForecastHorizon());
         execute.setForecastFrequency(forecastConfig.getForecastFrequency());
         var response = forecastService.submit(execute);
-        return Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "status", "EXECUTING", "trainBatchNo", trained.getBatchNo(),
+        bindBatch(task, "FORECASTING", "FORECAST", response.getForecastBatchNo());
+        updateTask(task, "EXECUTING", "FORECASTING", "WAIT_FORECAST_RESULT", 70, trained.getBatchNo(), response.getForecastBatchNo());
+        return Map.of("taskNo", task.getTaskNo(), "customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "status", "EXECUTING", "trainBatchNo", trained.getBatchNo(),
                 "forecastBatchNo", response.getForecastBatchNo());
     }
+
+    /** 查找同一用户以相同幂等键发起的任务，防止模型或网络重试造成重复预测。 */
+    private AgentExecutionTaskTb existingTask(ForecastCommand command) {
+        if (!TextUtils.hasText(command.idempotencyKey())) return null;
+        return executionTaskMapper.selectOne(Wrappers.<AgentExecutionTaskTb>lambdaQuery()
+                .eq(AgentExecutionTaskTb::getCreatedBy, currentUserId()).eq(AgentExecutionTaskTb::getTriggerSource, "MCP")
+                .eq(AgentExecutionTaskTb::getIdempotencyKey, command.idempotencyKey()).last("limit 1"));
+    }
+
+    private Map<String, Object> existingResult(AgentExecutionTaskTb task) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("taskNo", task.getTaskNo()); result.put("status", task.getStatus()); result.put("currentStage", task.getCurrentStage());
+        result.put("currentStepCode", task.getCurrentStepCode()); result.put("progressPercent", task.getProgressPercent()); result.put("idempotentReplay", true);
+        return result;
+    }
+
+    /** 创建本次预测的根任务；单客户时根任务同时就是客户任务。 */
+    private AgentExecutionTaskTb createRootTask(ForecastCommand command, List<BaseCustomerTb> customers) {
+        BaseCustomerTb only = customers.size() == 1 ? customers.get(0) : null;
+        AgentExecutionTaskTb task = newTask(command, only, null);
+        task.setScopeType(only != null ? "CUSTOMER" : TextUtils.hasText(command.industryCode()) ? "REGION_INDUSTRY" : "REGION");
+        task.setIdempotencyKey(command.idempotencyKey());
+        executionTaskMapper.insert(task);
+        return task;
+    }
+
+    /** 批量预测为每个客户建立子任务，使成功数、失败数和失败原因能够按客户统计。 */
+    private AgentExecutionTaskTb createCustomerTask(ForecastCommand command, BaseCustomerTb customer, String parentTaskNo) {
+        AgentExecutionTaskTb task = newTask(command, customer, parentTaskNo);
+        task.setScopeType("CUSTOMER");
+        executionTaskMapper.insert(task);
+        return task;
+    }
+
+    private AgentExecutionTaskTb newTask(ForecastCommand command, BaseCustomerTb customer, String parentTaskNo) {
+        Date now = new Date();
+        AgentExecutionTaskTb task = new AgentExecutionTaskTb();
+        task.setTaskNo("TASK-" + UUID.randomUUID().toString().replace("-", "").toUpperCase());
+        task.setParentTaskNo(parentTaskNo); task.setConversationNo(command.conversationNo()); task.setTaskType("FORECAST"); task.setTriggerSource("MCP");
+        task.setAgentCode(command.agentCode()); task.setRegionCode(customer == null ? command.regionCode() : customer.getRegionCode());
+        task.setRegionName(customer == null ? null : customer.getRegionName()); task.setIndustryCode(customer == null ? command.industryCode() : customer.getIndustryCode());
+        task.setIndustryName(customer == null ? null : customer.getIndustryName()); task.setCustomerCode(customer == null ? null : customer.getCustomerCode());
+        task.setCustomerName(customer == null ? null : customer.getCustomerName()); task.setStatus("EXECUTING"); task.setCurrentStage("AGENT_PREPARE");
+        task.setCurrentStepCode("START_FORECAST"); task.setProgressPercent(BigDecimal.valueOf(5)); task.setTaskAttemptNo(1); task.setRetryable(1);
+        task.setCreatedBy(currentUserId()); task.setCreatedByName(SecurityContextHolder.getUserName()); task.setCreatedAt(now); task.setStartedAt(now); task.setUpdatedAt(now);
+        try { task.setRequestJson(objectMapper.writeValueAsString(command)); } catch (Exception exception) { throw new BusinessException("预测任务参数无法序列化"); }
+        return task;
+    }
+
+    /** 保存统一任务与真实训练/预测批次的关联。 */
+    private void bindBatch(AgentExecutionTaskTb task, String stage, String type, String batchNo) {
+        Date now = new Date();
+        AgentExecutionBatchTb relation = new AgentExecutionBatchTb();
+        relation.setTaskNo(task.getTaskNo()); relation.setTaskAttemptNo(1); relation.setStage(stage); relation.setBatchType(type); relation.setBatchNo(batchNo);
+        relation.setBatchAttemptNo(1); relation.setRetryMode("FIRST_RUN"); relation.setTriggerSource("FIRST_RUN"); relation.setStatus("RUNNING");
+        relation.setCreatedBy(currentUserId()); relation.setCreatedByName(SecurityContextHolder.getUserName()); relation.setCreatedAt(now); relation.setStartedAt(now); relation.setUpdatedAt(now);
+        executionBatchMapper.insert(relation);
+    }
+
+    private void updateTask(AgentExecutionTaskTb task, String status, String stage, String step, int progress, String trainBatch, String forecastBatch) {
+        task.setStatus(status); task.setCurrentStage(stage); task.setCurrentStepCode(step); task.setProgressPercent(BigDecimal.valueOf(progress));
+        if (TextUtils.hasText(trainBatch)) task.setLatestTrainBatchNo(trainBatch);
+        if (TextUtils.hasText(forecastBatch)) task.setLatestForecastBatchNo(forecastBatch);
+        task.setUpdatedAt(new Date()); executionTaskMapper.updateById(task);
+    }
+
+    private void markFailed(AgentExecutionTaskTb task, String message) {
+        task.setStatus("FAILED"); task.setCurrentStepCode("START_FORECAST"); task.setErrorCode("FORECAST_START_FAILED"); task.setErrorMessage(message);
+        task.setFinishedAt(new Date()); task.setUpdatedAt(new Date()); executionTaskMapper.updateById(task);
+    }
+
+    private void finishRootSubmission(AgentExecutionTaskTb root, int total, int submitted, int failed) {
+        if (total == 1) return;
+        root.setStatus(submitted == 0 ? "FAILED" : "EXECUTING");
+        root.setCurrentStage(submitted == 0 ? "COMPLETED" : "BATCH_EXECUTION"); root.setCurrentStepCode("WAIT_CHILD_TASKS");
+        root.setProgressPercent(BigDecimal.valueOf(submitted == 0 ? 100 : 10));
+        if (submitted == 0) root.setFinishedAt(new Date());
+        root.setUpdatedAt(new Date()); executionTaskMapper.updateById(root);
+    }
+
+    private String currentUserId() { return String.valueOf(SecurityContextHolder.getUserId()); }
 
     private ModelForecastConfigTb saveForecastConfig(ForecastCommand command, BaseCustomerTb customer, ModelTrainConfigTb trainConfig, String remark) {
         ModelConfigTb model = trainConfig.getModelId() == null ? null : modelConfigMapper.selectById(trainConfig.getModelId());

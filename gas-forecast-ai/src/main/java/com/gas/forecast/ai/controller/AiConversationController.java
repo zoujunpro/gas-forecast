@@ -45,6 +45,12 @@ public class AiConversationController {
         return ResponseResult.success(conversationService.detail(conversationNo));
     }
 
+    @GetMapping("/forecast-detail")
+    @RequirePermission("ai:assistant:use")
+    public ResponseResult<AiConversationResponse> forecastDetail(@RequestParam String forecastBatchNo) {
+        return ResponseResult.success(conversationService.forecastDetail(forecastBatchNo));
+    }
+
     @PostMapping("/rename")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<Void> rename(@Valid @RequestBody AiConversationRenameRequest request) {

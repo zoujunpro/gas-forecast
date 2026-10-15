@@ -2,6 +2,9 @@ package com.gas.forecast.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.business.service.AgentMemoryService;
+import com.gas.forecast.business.service.AgentBusinessQueryService;
+import com.gas.forecast.business.service.AgentExecutionTaskService;
+import com.gas.forecast.business.service.AgentExecutionTaskService.StepCommand;
 import com.gas.forecast.business.service.BusinessEntityResolutionService;
 import com.gas.forecast.business.service.BusinessEntityResolutionService.*;
 import com.gas.forecast.business.service.ForecastApplicationService;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class McpToolDispatcher {
     private final AgentMemoryService memoryService;
+    private final AgentBusinessQueryService queryService;
+    private final AgentExecutionTaskService taskService;
     private final BusinessEntityResolutionService entityService;
     private final TrainingApplicationService trainingService;
     private final ForecastApplicationService forecastService;
@@ -46,12 +51,31 @@ public class McpToolDispatcher {
                 case "customer_search" -> resolve(args, EntityType.CUSTOMER);
                 case "region_search" -> resolve(args, EntityType.REGION);
                 case "industry_search" -> resolve(args, EntityType.INDUSTRY);
+                case "region_list" -> success("地区列表查询成功", queryService.regions(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize")));
+                case "industry_list" -> success("行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize")));
+                case "customer_list" -> success("客户列表查询成功",
+                        queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize")));
                 case "training_start" -> success("训练任务已受理", trainingService.start(trainingCommand(args)));
                 case "training_status_get" -> success("训练进度查询成功", trainingService.status(batch(args, "trainBatchNo", "lastTrainBatchNo")));
                 case "training_result_get" -> success("训练结果查询成功", trainingService.result(batch(args, "trainBatchNo", "lastTrainBatchNo")));
+                case "training_latest_get" -> success("最新训练查询成功", queryService.latestTraining(requiredText(args, "customerCode"), text(args, "agentCode")));
+                case "training_history_get" -> success("训练历史查询成功", queryService.trainingHistory(requiredText(args, "customerCode"), text(args, "agentCode"), text(args, "status"),
+                        integer(args, "pageNo"), integer(args, "pageSize")));
                 case "forecast_start" -> success("预测任务已受理", forecastService.start(forecastCommand(args)));
                 case "forecast_status_get" -> success("预测进度查询成功", forecastService.status(batch(args, "forecastBatchNo", "lastForecastBatchNo")));
                 case "forecast_result_get" -> success("预测结果查询成功", forecastService.result(batch(args, "forecastBatchNo", "lastForecastBatchNo"), bool(args, "includePoints", true)));
+                case "forecast_latest_get" -> success("最新预测查询成功",
+                        queryService.latestForecast(requiredText(args, "customerCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
+                case "forecast_history_get" -> success("预测历史查询成功", queryService.forecastHistory(requiredText(args, "customerCode"), text(args, "agentCode"),
+                        integer(args, "status"), integer(args, "pageNo"), integer(args, "pageSize")));
+                case "task_status_get" -> success("任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
+                case "task_steps_get" -> success("任务步骤查询成功",
+                        taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));
+                case "task_step_record" -> success("智能体步骤记录成功", taskService.recordStep(requiredText(args, "taskNo"), stepCommand(args)));
+                case "task_resume" -> success("任务恢复指令已生成",
+                        taskService.resume(requiredText(args, "taskNo"), text(args, "resumeFromStep"), bool(args, "confirmed", false)));
+                case "task_retry" -> success("任务重试批次已创建",
+                        taskService.retry(requiredText(args, "taskNo"), text(args, "retryStage"), bool(args, "confirmed", false)));
                 default -> failure(toolName, "TOOL_NOT_FOUND", "未知工具：" + toolName, false);
             };
         } catch (BusinessException | IllegalArgumentException exception) {
@@ -104,7 +128,7 @@ public class McpToolDispatcher {
     /** 将MCP预测参数转换成Business Service预测命令。 */
     private ForecastCommand forecastCommand(Map<String, Object> args) {
         Scope scope = scope(args);
-        return new ForecastCommand(defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(), bool(args, "bulk", false),
+        return new ForecastCommand(text(args, "conversationNo"), defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(), bool(args, "bulk", false),
                 text(args, "forecastStartDate"), text(args, "forecastEndDate"), integer(args, "forecastHorizon"), text(args, "forecastFrequency"), text(args, "trainMode"), integer(args, "trainingPeriods"),
                 text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false), bool(args, "autoTrain", true), bool(args, "confirmed", false),
                 text(args, "idempotencyKey"));
@@ -143,6 +167,15 @@ public class McpToolDispatcher {
                 text(args, "industryName"), integer(args, "limit"));
     }
 
+    /** 将MCP参数转换为受限的智能体步骤记录命令。 */
+    @SuppressWarnings("unchecked")
+    private StepCommand stepCommand(Map<String, Object> args) {
+        Object raw = args.get("checkpoint");
+        Map<String, Object> checkpoint = raw instanceof Map<?, ?> ? objectMapper.convertValue(raw, Map.class) : Map.of();
+        return new StepCommand(requiredText(args, "stepCode"), text(args, "stepName"), requiredText(args, "status"), integer(args, "stepOrder"), text(args, "inputSummary"),
+                text(args, "outputSummary"), checkpoint, text(args, "errorCode"), text(args, "errorMessage"));
+    }
+
     /**
      * 获取训练或预测批次号。
      * <p>请求中没有显式批次号时，尝试从当前会话记忆中的最近批次号回退获取。</p>
@@ -160,7 +193,10 @@ public class McpToolDispatcher {
 
     /** 创建状态为COMPLETED的标准成功结果。 */
     private McpToolResult success(String message, Object data) {
-        return McpToolResult.success("COMPLETED", message, data);
+        String status = "COMPLETED";
+        if (data instanceof Map<?, ?> map && map.get("status") != null && TextUtils.hasText(String.valueOf(map.get("status"))))
+            status = String.valueOf(map.get("status"));
+        return McpToolResult.success(status, message, data);
     }
 
     /** 读取必填文本参数，缺失或空白时抛出业务参数异常。 */
@@ -218,7 +254,9 @@ public class McpToolDispatcher {
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("toolName", toolName);
         detail.put("reason", reason);
-        detail.put("nextAction", nextAction(errorCode, toolName));
+        String action = nextAction(errorCode, toolName);
+        detail.put("nextAction", action);
+        detail.put("allowedActions", allowedActions(action, retryable));
         detail.put("retryable", retryable);
         return McpToolResult.failure("FAILED", errorCode, reason, retryable, detail);
     }
@@ -226,15 +264,24 @@ public class McpToolDispatcher {
     /** 根据稳定错误码给大模型返回明确的后续处理建议。 */
     private String nextAction(String errorCode, String toolName) {
         return switch (errorCode) {
-            case "INVALID_ARGUMENT" -> "检查工具参数定义，补充或修正参数后重新调用";
-            case "CONFIRMATION_REQUIRED" -> "向用户说明批量操作范围和影响，取得明确确认后设置confirmed=true重新调用";
+            case "INVALID_ARGUMENT", "CONFIRMATION_REQUIRED" -> "ASK_USER";
             case "NOT_FOUND" -> toolName.endsWith("_search") || toolName.endsWith("_start")
-                    ? "检查实体名称或缩小查询范围，调用实体查询工具确认标准业务编码和数据是否存在"
-                    : "核对批次号；未提供批次号时先查询会话记忆中的最近批次";
-            case "TOOL_NOT_FOUND" -> "重新调用tools/list，并使用目录中公布的工具名称";
-            case "INTERNAL_ERROR" -> "不要直接断言任务失败；若已经返回过批次号，先查询任务状态，否则稍后重试一次";
-            default -> "根据reason修正业务条件；如果需要改变业务范围或强制重训，应先向用户确认";
+                    ? "ASK_USER" : "QUERY_STATUS";
+            case "TOOL_NOT_FOUND" -> "FAIL";
+            case "INTERNAL_ERROR" -> "QUERY_STATUS";
+            default -> "MODEL_DECISION";
         };
+    }
+
+    /** 限制智能体和大模型只能从服务端允许的动作中选择。 */
+    private List<String> allowedActions(String action, boolean retryable) {
+        List<String> actions = new java.util.ArrayList<>();
+        actions.add(action);
+        if (!actions.contains("QUERY_STATUS")) actions.add("QUERY_STATUS");
+        if (!actions.contains("ASK_USER")) actions.add("ASK_USER");
+        if (retryable) actions.add("RETRY");
+        if (!actions.contains("FAIL")) actions.add("FAIL");
+        return actions;
     }
 
     /** 提取异常链最底层的具体原因，避免只返回笼统的包装异常。 */

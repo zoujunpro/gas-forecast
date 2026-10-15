@@ -14,6 +14,12 @@ public class AiConversationTb {
     private String conversationNo;
     private String title;
     private String agentCode;
+    /** GENERAL为普通对话，FORECAST_ANALYSIS为预测详情页固定会话。 */
+    private String scene;
+    /** 绑定业务类型，当前预测分析使用FORECAST。 */
+    private String businessType;
+    /** 绑定业务编号，预测分析场景保存forecastBatchNo。 */
+    private String businessNo;
     private String status;
     private String pendingIntentJson;
     private String memoryJson;

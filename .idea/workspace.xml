@@ -5,43 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/applications.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/dasheng-brochure-1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/dasheng-brochure-3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/dasheng-brochure-4.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/hero-poster.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/research-classroom.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/images/research-lab.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/public/videos/hero-demo.mp4" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/src/App.vue" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/src/main.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/src/style.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-vue-rework/vite.config.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-website-ui/assets/applications.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-website-ui/assets/classroom-robot.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-website-ui/assets/lab-robot.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-website-ui/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-website-ui/script.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/beijing-embodied-website-ui/styles.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/developer-platform.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/ecosystem-event.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/exhibition.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/industry-operation.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/research-robot.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/science-lab.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/public/images/ppt/simulation.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/src/App.vue" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/src/main.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dasheng-site-stage/src/style.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/controller/AiConversationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/controller/AiConversationController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiChatRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiChatRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiConversationResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiConversationResponse.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastAnalysisService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastAnalysisService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastApplicationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastApplicationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ForecastApplicationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ForecastApplicationServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/TrainingApplicationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/TrainingApplicationServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AiConversationTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AiConversationTb.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolCatalog.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolCatalog.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolDispatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolDispatcher.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/resources/mcp-tools.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/resources/mcp-tools.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/test/java/com/gas/forecast/mcp/McpToolCatalogTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/test/java/com/gas/forecast/mcp/McpToolCatalogTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,7 +28,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="15548" />
+    <option name="cachedIndexableFilesCount" value="20509" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -336,22 +315,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00003" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1789700591381</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1789700591381</updated>
-    </task>
-    <task id="LOCAL-00004" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1790035745791</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1790035745791</updated>
     </task>
     <task id="LOCAL-00005" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -729,7 +692,23 @@
       <option name="project" value="LOCAL" />
       <updated>1792025497666</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1792032947472</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1792032947472</updated>
+    </task>
+    <task id="LOCAL-00053" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1792033958160</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1792033958160</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
