@@ -88,6 +88,7 @@ public class ModelForecastManagementService {
     private final ModelFeatureDefinitionTbMapper featureDefinitionMapper;
     private final DataDailySalesTbMapper dailySalesMapper;
     private final BaseCustomerTbMapper customerMapper;
+    private final TaskForecastCompletionService taskForecastCompletionService;
     private final ObjectMapper objectMapper;
     private final ModelPlatformClient modelPlatformClient;
     private final ForecastAnalysisService forecastAnalysisService;
@@ -354,6 +355,7 @@ public class ModelForecastManagementService {
             record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
+            taskForecastCompletionService.markSuccess(forecastBatchNo);
             try {
                 forecastAnalysisService.submit(forecastBatchNo);
             } catch (RuntimeException analysisException) {
@@ -363,6 +365,7 @@ public class ModelForecastManagementService {
             return new ModelForecastExecuteResponse(config.getId(), forecastBatchNo, response.getPoints().size());
         } catch (RuntimeException exception) {
             markForecastFailed(record, safeMessage(exception));
+            taskForecastCompletionService.markFailed(forecastBatchNo, safeMessage(exception));
             throw exception;
         }
     }

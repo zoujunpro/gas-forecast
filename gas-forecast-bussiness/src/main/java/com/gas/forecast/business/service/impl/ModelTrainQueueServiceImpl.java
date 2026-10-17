@@ -105,6 +105,7 @@ public class ModelTrainQueueServiceImpl implements ModelTrainQueueService {
         return switch (source) {
             case "MANUAL" -> 100;
             case "AI" -> 90;
+            case "MCP" -> 90;
             case "DATA_EVENT" -> 70;
             default -> 50;
         };

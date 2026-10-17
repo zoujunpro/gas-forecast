@@ -22,7 +22,12 @@ import org.springframework.stereotype.Component;
 public class ForecastAnalysisLlmClient {
     private final ObjectMapper objectMapper;
     private final ForecastPromptProvider promptProvider;
-    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+    // Python Agent 由 Uvicorn 提供 HTTP/1.1 服务。JDK HttpClient 默认会在明文连接上
+    // 尝试 h2c 升级，Uvicorn 会把该请求判定为无效 HTTP 请求，因此这里显式固定协议版本。
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
 
     @Value("${gas.analysis.mode:api}")
     private String mode;
@@ -40,6 +45,8 @@ public class ForecastAnalysisLlmClient {
     private String remoteApiKey;
     @Value("${gas.analysis.timeout-seconds:120}")
     private long timeoutSeconds;
+    @Value("${gas.agent.llm-chat-url:http://127.0.0.1:8091/api/v1/llm/chat-completions}")
+    private String agentChatUrl;
 
     public ForecastAnalysisLlmClient(ObjectMapper objectMapper, ForecastPromptProvider promptProvider) {
         this.objectMapper = objectMapper;
@@ -159,40 +166,16 @@ public class ForecastAnalysisLlmClient {
     }
 
     private String executeStream(ObjectNode body, StreamConsumer consumer) throws Exception {
-        HttpResponse<InputStream> response = httpClient.send(request(body), HttpResponse.BodyHandlers.ofInputStream());
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            try (InputStream input = response.body()) {
-                String error = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-                throw new IllegalStateException("大模型接口返回 HTTP " + response.statusCode() + "：" + abbreviate(error, 300));
-            }
-        }
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!line.startsWith("data:"))
-                    continue;
-                String data = line.substring(5).trim();
-                if (data.isEmpty() || "[DONE]".equals(data))
-                    continue;
-                JsonNode event = objectMapper.readTree(data);
-                String chunk = event.path("choices").path(0).path("delta").path("content").asText("");
-                if (!chunk.isEmpty()) {
-                    content.append(chunk);
-                    consumer.accept(chunk);
-                }
-            }
-        }
-        if (content.isEmpty())
-            throw new IllegalStateException("大模型接口未返回内容");
-        return content.toString();
+        // Python Agent统一持有模型连接；当前以完整回答回调一次，外层SSE协议保持不变。
+        body.remove("stream");
+        String content = execute(body);
+        consumer.accept(content);
+        return content;
     }
 
     private HttpRequest request(ObjectNode body) throws Exception {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(chatCompletionsUrl())).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)));
-        if (TextUtils.hasText(apiKey()))
-            request.header("Authorization", "Bearer " + apiKey());
         return request.build();
     }
 
@@ -202,10 +185,8 @@ public class ForecastAnalysisLlmClient {
     }
 
     private void validateConfig() {
-        if (!TextUtils.hasText(baseUrl()))
-            throw new IllegalStateException("未配置大模型 Base URL");
-        if (!TextUtils.hasText(model()))
-            throw new IllegalStateException("未配置大模型名称");
+        if (!TextUtils.hasText(agentChatUrl))
+            throw new IllegalStateException("未配置Python Agent模型网关地址");
     }
 
     private boolean localMode() {
@@ -222,8 +203,7 @@ public class ForecastAnalysisLlmClient {
     }
 
     private String chatCompletionsUrl() {
-        String value = baseUrl().replaceAll("/+$", "");
-        return value.endsWith("/chat/completions") ? value : value + "/chat/completions";
+        return agentChatUrl;
     }
 
     private String abbreviate(String text, int maxLength) {

@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 端点沿用系统现有认证拦截器，并要求ai:assistant:use权限。
  */
 public class McpServerController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(McpServerController.class);
     /** 当前服务声明支持的MCP协议版本。 */
     private static final String PROTOCOL_VERSION = "2025-03-26";
     private final McpToolCatalog catalog;
@@ -50,22 +54,37 @@ public class McpServerController {
      *            客户端声明的MCP协议版本
      */
     @PostMapping(path = "${gas.forecast.mcp.endpoint:/mcp}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<JsonRpcResponse<?>> handle(@Valid @RequestBody JsonRpcRequest request, @RequestHeader(value = "MCP-Protocol-Version", required = false) String protocolVersion) {
+    public ResponseEntity<JsonRpcResponse<?>> handle(
+            @Valid @RequestBody JsonRpcRequest request,
+            @RequestHeader(value = "MCP-Protocol-Version", required = false) String protocolVersion,
+            @RequestHeader(value = "x-user", required = false) String userId,
+            @RequestHeader(value = "x-traceId", required = false) String traceId) {
         JsonNode id = request.id();
         String method = request.method();
+        String effectiveTraceId = TextUtils.hasText(traceId) ? traceId : MDC.get("x-traceId");
+        LOGGER.info("event=mcp_request_started user_id={} trace_id={} method={} request_id={}",
+                TextUtils.hasText(userId) ? userId : "-", TextUtils.hasText(effectiveTraceId) ? effectiveTraceId : "-", method, id);
         if (!"2.0".equals(request.jsonrpc()))
             return jsonRpcError(id, -32600, "INVALID_REQUEST", "JSON-RPC版本必须为2.0");
         if (method.startsWith("notifications/"))
             return ResponseEntity.accepted().body(null);
         if (!"initialize".equals(method) && protocolVersion != null && !PROTOCOL_VERSION.equals(protocolVersion))
             return jsonRpcError(id, -32602, "UNSUPPORTED_PROTOCOL_VERSION", "不支持的MCP协议版本：" + protocolVersion);
-        return switch (method) {
+        ResponseEntity<JsonRpcResponse<?>> response = switch (method) {
             case "initialize" -> initialize(id);
             case "ping" -> jsonRpcResult(id, Map.of());
             case "tools/list" -> jsonRpcResult(id, Map.of("tools", catalog.list()));
             case "tools/call" -> callTool(id, request.params());
             default -> jsonRpcError(id, -32601, "METHOD_NOT_FOUND", "不支持的方法：" + method);
         };
+        LOGGER.info("event=mcp_request_completed user_id={} trace_id={} method={} request_id={} status={}",
+                TextUtils.hasText(userId) ? userId : "-", TextUtils.hasText(effectiveTraceId) ? effectiveTraceId : "-", method, id, response.getStatusCode().value());
+        return response;
+    }
+
+    /** 保留协议单元测试和内部调用使用的简化入口。 */
+    ResponseEntity<JsonRpcResponse<?>> handle(JsonRpcRequest request, String protocolVersion) {
+        return handle(request, protocolVersion, null, null);
     }
 
     /** 完成MCP能力协商，并为客户端生成会话标识。 */

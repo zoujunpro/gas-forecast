@@ -46,35 +46,37 @@ public class McpToolDispatcher {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
         try {
             return switch (toolName) {
-                case "memory_get" -> success("记忆查询成功", memoryService.get(requiredText(args, "conversationNo")));
+                case "memory_get" -> success(toolName, "记忆查询成功", memoryService.get(requiredText(args, "conversationNo")));
                 case "memory_update" -> memoryUpdate(args);
                 case "customer_search" -> resolve(args, EntityType.CUSTOMER);
                 case "region_search" -> resolve(args, EntityType.REGION);
                 case "industry_search" -> resolve(args, EntityType.INDUSTRY);
-                case "region_list" -> success("地区列表查询成功", queryService.regions(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize")));
-                case "industry_list" -> success("行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize")));
-                case "customer_list" -> success("客户列表查询成功",
-                        queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize")));
-                case "training_start" -> success("训练任务已受理", trainingService.start(trainingCommand(args)));
-                case "training_status_get" -> success("训练进度查询成功", trainingService.status(batch(args, "trainBatchNo", "lastTrainBatchNo")));
-                case "training_result_get" -> success("训练结果查询成功", trainingService.result(batch(args, "trainBatchNo", "lastTrainBatchNo")));
-                case "training_latest_get" -> success("最新训练查询成功", queryService.latestTraining(requiredText(args, "customerCode"), text(args, "agentCode")));
-                case "training_history_get" -> success("训练历史查询成功", queryService.trainingHistory(requiredText(args, "customerCode"), text(args, "agentCode"), text(args, "status"),
+                case "region_list" -> success(toolName, "地区列表查询成功", queryService.regions(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
+                case "industry_list" -> success(toolName, "行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
+                case "customer_list" -> success(toolName, "客户列表查询成功",
+                        queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
+                case "business_reference_resolve" -> success(toolName, "业务编号校验完成",
+                        queryService.resolveBusinessReference(requiredText(args, "reference")));
+                case "training_start" -> success(toolName, "训练任务已受理", trainingService.start(trainingCommand(args)));
+                case "training_status_get" -> success(toolName, "训练进度查询成功", trainingService.status(batch(args, "trainBatchNo", "lastTrainBatchNo")));
+                case "training_result_get" -> success(toolName, "训练结果查询成功", trainingService.result(batch(args, "trainBatchNo", "lastTrainBatchNo")));
+                case "training_latest_get" -> success(toolName, "最新训练查询成功", queryService.latestTraining(requiredText(args, "customerCode"), text(args, "agentCode")));
+                case "training_history_get" -> success(toolName, "训练历史查询成功", queryService.trainingHistory(requiredText(args, "customerCode"), text(args, "agentCode"), text(args, "status"),
                         integer(args, "pageNo"), integer(args, "pageSize")));
-                case "forecast_start" -> success("预测任务已受理", forecastService.start(forecastCommand(args)));
-                case "forecast_status_get" -> success("预测进度查询成功", forecastService.status(batch(args, "forecastBatchNo", "lastForecastBatchNo")));
-                case "forecast_result_get" -> success("预测结果查询成功", forecastService.result(batch(args, "forecastBatchNo", "lastForecastBatchNo"), bool(args, "includePoints", true)));
-                case "forecast_latest_get" -> success("最新预测查询成功",
+                case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args)));
+                case "forecast_status_get" -> success(toolName, "预测进度查询成功", forecastService.status(batch(args, "forecastBatchNo", "lastForecastBatchNo")));
+                case "forecast_result_get" -> success(toolName, "预测结果查询成功", forecastService.result(batch(args, "forecastBatchNo", "lastForecastBatchNo"), bool(args, "includePoints", true)));
+                case "forecast_latest_get" -> success(toolName, "最新预测查询成功",
                         queryService.latestForecast(requiredText(args, "customerCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
-                case "forecast_history_get" -> success("预测历史查询成功", queryService.forecastHistory(requiredText(args, "customerCode"), text(args, "agentCode"),
+                case "forecast_history_get" -> success(toolName, "预测历史查询成功", queryService.forecastHistory(requiredText(args, "customerCode"), text(args, "agentCode"),
                         integer(args, "status"), integer(args, "pageNo"), integer(args, "pageSize")));
-                case "task_status_get" -> success("任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
-                case "task_steps_get" -> success("任务步骤查询成功",
+                case "task_status_get" -> success(toolName, "任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
+                case "task_steps_get" -> success(toolName, "任务步骤查询成功",
                         taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));
-                case "task_step_record" -> success("智能体步骤记录成功", taskService.recordStep(requiredText(args, "taskNo"), stepCommand(args)));
-                case "task_resume" -> success("任务恢复指令已生成",
+                case "task_step_record" -> success(toolName, "智能体步骤记录成功", taskService.recordStep(requiredText(args, "taskNo"), stepCommand(args)));
+                case "task_resume" -> success(toolName, "任务恢复指令已生成",
                         taskService.resume(requiredText(args, "taskNo"), text(args, "resumeFromStep"), bool(args, "confirmed", false)));
-                case "task_retry" -> success("任务重试批次已创建",
+                case "task_retry" -> success(toolName, "任务重试批次已创建",
                         taskService.retry(requiredText(args, "taskNo"), text(args, "retryStage"), bool(args, "confirmed", false)));
                 default -> failure(toolName, "TOOL_NOT_FOUND", "未知工具：" + toolName, false);
             };
@@ -97,7 +99,7 @@ public class McpToolDispatcher {
     private McpToolResult memoryUpdate(Map<String, Object> args) {
         Object raw = args.get("values");
         Map<String, Object> values = raw instanceof Map<?, ?> ? objectMapper.convertValue(raw, Map.class) : Map.of();
-        return success("记忆更新成功", memoryService.update(requiredText(args, "conversationNo"), text(args, "operation"), values));
+        return success("memory_update", "记忆更新成功", memoryService.update(requiredText(args, "conversationNo"), text(args, "operation"), values));
     }
 
     /**
@@ -114,7 +116,8 @@ public class McpToolDispatcher {
             case REGION -> entityService.resolveRegion(query);
             case INDUSTRY -> entityService.resolveIndustry(query);
         };
-        return McpToolResult.success("UNIQUE".equals(result.status()) ? "COMPLETED" : "NEED_INFORMATION", result.message(), result);
+        String status = "UNIQUE".equals(result.status()) ? "COMPLETED" : "MULTIPLE".equals(result.status()) ? "NEED_SELECTION" : "NOT_FOUND";
+        return McpToolResult.success(status, "ENTITY", result.message(), result);
     }
 
     /** 将MCP训练参数转换成Business Service训练命令。 */
@@ -130,7 +133,8 @@ public class McpToolDispatcher {
         Scope scope = scope(args);
         return new ForecastCommand(text(args, "conversationNo"), defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(), bool(args, "bulk", false),
                 text(args, "forecastStartDate"), text(args, "forecastEndDate"), integer(args, "forecastHorizon"), text(args, "forecastFrequency"), text(args, "trainMode"), integer(args, "trainingPeriods"),
-                text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false), bool(args, "autoTrain", true), bool(args, "confirmed", false),
+                text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false), bool(args, "autoTrain", false),
+                defaultText(text(args, "trainingPreference"), "UNSPECIFIED"), bool(args, "confirmed", false),
                 text(args, "idempotencyKey"));
     }
 
@@ -192,11 +196,23 @@ public class McpToolDispatcher {
     }
 
     /** 创建状态为COMPLETED的标准成功结果。 */
-    private McpToolResult success(String message, Object data) {
+    private McpToolResult success(String toolName, String message, Object data) {
         String status = "COMPLETED";
         if (data instanceof Map<?, ?> map && map.get("status") != null && TextUtils.hasText(String.valueOf(map.get("status"))))
             status = String.valueOf(map.get("status"));
-        return McpToolResult.success(status, message, data);
+        return McpToolResult.success(status, resultType(toolName), message, data);
+    }
+
+    private String resultType(String toolName) {
+        if (toolName.equals("memory_get") || toolName.equals("memory_update")) return "MEMORY";
+        if (toolName.endsWith("_list") || toolName.endsWith("_history_get") || toolName.equals("task_steps_get")) return "PAGE";
+        if (toolName.endsWith("_search")) return "ENTITY";
+        if (toolName.equals("business_reference_resolve")) return "OBJECT";
+        if (toolName.endsWith("_start")) return "TASK";
+        if (toolName.endsWith("_status_get")) return "PROGRESS";
+        if (toolName.endsWith("_result_get") || toolName.endsWith("_latest_get")) return "RESULT";
+        if (toolName.equals("task_resume") || toolName.equals("task_retry") || toolName.equals("task_step_record")) return "COMMAND";
+        return "OBJECT";
     }
 
     /** 读取必填文本参数，缺失或空白时抛出业务参数异常。 */

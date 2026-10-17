@@ -24,6 +24,7 @@ import com.gas.forecast.business.service.DynamicTrainingFeatureService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.business.service.ModelTrainStepRecorder;
 import com.gas.forecast.business.service.TrainingDatasetAssembler;
+import com.gas.forecast.business.service.TaskForecastContinuationService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.enums.ForecastAgentEnum;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
@@ -87,6 +88,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private final DynamicTrainingFeatureService dynamicTrainingFeatureService;
     private final ModelTrainStepRecorder trainStepRecorder;
     private final TrainingDatasetAssembler trainingDatasetAssembler;
+    private final TaskForecastContinuationService taskForecastContinuationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -242,6 +244,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         updateTrainDetail(trainResult, batchNo, status, null);
         replaceBacktestDetails(batchNo, trainResult);
         markTrainBatchSuccess(batchNo);
+        // 事务提交后只续跑引用该训练批次的用户预测任务，不做全局自动预测扫描。
+        submitAfterCommit(() -> taskForecastContinuationService.continueAfterTraining(batchNo));
 
         // 4. 从保存的请求快照恢复模型和数据量信息，组装接口响应。
         JsonNode requestPayload = parseRequestPayload(detail.getRequestParam());

@@ -13,7 +13,7 @@ class McpToolCatalogTest {
     void exposesStableBusinessAndTaskTools() {
         Set<String> names = catalog.list().stream().map(McpToolCatalog.ToolDefinition::name).collect(Collectors.toSet());
 
-        assertThat(names).containsExactlyInAnyOrder("memory_get", "memory_update", "customer_search", "region_search", "industry_search", "region_list", "industry_list", "customer_list",
+        assertThat(names).containsExactlyInAnyOrder("memory_get", "memory_update", "customer_search", "region_search", "industry_search", "region_list", "industry_list", "customer_list", "business_reference_resolve",
                 "training_start", "training_status_get", "training_result_get", "training_latest_get", "training_history_get", "forecast_start", "forecast_status_get", "forecast_result_get",
                 "forecast_latest_get", "forecast_history_get", "task_status_get", "task_steps_get", "task_step_record", "task_resume", "task_retry");
         assertThat(catalog.list()).allSatisfy(tool -> {

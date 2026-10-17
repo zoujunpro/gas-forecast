@@ -18,12 +18,13 @@ export interface ResponseData<T = any> {
   message?: string
 }
 
-export const postJson = async <T = any>(url: string, data: Record<string, any> = {}, signal?: AbortSignal) => {
+export const postJson = async <T = any>(url: string, data: Record<string, any> = {}, signal?: AbortSignal, timeoutMs?: number) => {
   const response = await apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-    signal
+    signal,
+    timeoutMs
   })
   return readResponseResult<T>(response)
 }

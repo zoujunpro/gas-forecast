@@ -1,0 +1,41 @@
+schemaVersion: 1
+scenario: MONTHLY_SALES
+scenarioName: 月度销量预测
+description: 月粒度训练预测能力；业务对象和汇总口径尚需确认。
+capabilities:
+  - code: MONTHLY_SALES_TRAINING_START
+    name: 发起月度销量训练
+    description: 发起月粒度模型训练。
+    status: NEEDS_CONFIRMATION
+    read_only: false
+    workflow: training
+    intent: {domain: TRAINING, action: START, resource: SALES_MODEL, scenario: MONTHLY_SALES}
+    scopes: [CUSTOMER, REGION, INDUSTRY]
+    required_parameters: [conversationNo]
+    defaults: {agentCode: monthly-sales}
+    tools: [training_start, training_status_get, training_result_get]
+    notes: [需要确认月度训练对象、最低历史月份和汇总口径。]
+
+  - code: MONTHLY_SALES_FORECAST_START
+    name: 发起月度销量预测
+    description: 发起月度销量预测，当前工具默认12个月。
+    status: NEEDS_CONFIRMATION
+    read_only: false
+    workflow: forecasting
+    intent: {domain: FORECAST, action: START, resource: SALES_FORECAST, scenario: MONTHLY_SALES}
+    scopes: [CUSTOMER, REGION, INDUSTRY]
+    required_parameters: [conversationNo]
+    optional_parameters: [trainingPreference]
+    defaults: {agentCode: monthly-sales, forecastFrequency: MONTHLY, forecastHorizon: 12, trainingPreference: UNSPECIFIED, autoTrain: false}
+    tools: [forecast_start, training_status_get, forecast_status_get, forecast_result_get]
+    notes: [需要确认客户、地区和行业预测是否都由同一模型实现。]
+
+  - code: MONTHLY_SALES_HISTORY
+    name: 查询月度训练预测历史
+    description: 按业务对象查询月度训练及预测历史。
+    status: PLANNED
+    read_only: true
+    workflow: query
+    intent: {domain: FORECAST, action: HISTORY, resource: SALES_FORECAST, scenario: MONTHLY_SALES}
+    scopes: [CUSTOMER, REGION, INDUSTRY]
+    missing_tools: [training_history_get, forecast_history_get]

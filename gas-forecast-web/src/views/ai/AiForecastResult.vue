@@ -46,10 +46,10 @@ interface ForecastPoint { date: string; value: number }
 interface BacktestPoint { date: string; actualValue: number; predictedValue: number }
 interface TrainingResult { batchNo: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number }
 interface ForecastResult { batchNo: string; customerName?: string; average: number; minimum: number; maximum: number; training?: TrainingResult; points: ForecastPoint[]; historyPoints?: ForecastPoint[]; lastYearPoints?: ForecastPoint[]; backtestPoints?: BacktestPoint[] }
-const props = defineProps<{ result: ForecastResult }>()
+const props = defineProps<{ result: ForecastResult; presentation?: { chartType?: 'LINE' | 'BAR'; title?: string } }>()
 const trendScroll = ref<HTMLElement>()
 const chartRef = ref<HTMLElement>()
-const chartType = ref<'bar' | 'line'>('bar')
+const chartType = ref<'bar' | 'line'>(props.presentation?.chartType === 'LINE' ? 'line' : 'bar')
 let chart: echarts.ECharts | null = null
 const format = (value: number) => Number(value).toFixed(2)
 const formatNullable = (value?: number) => value == null || !Number.isFinite(Number(value)) ? '-' : format(Number(value))

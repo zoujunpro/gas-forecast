@@ -1,13 +1,17 @@
 standardOutput: &standardOutput
   type: object
-  required: [success, status, message, retryable]
+  required: [success, status, resultType, message, retryable]
   additionalProperties: false
   properties:
     success: {type: boolean, description: 本次调用是否成功}
     status:
       type: string
       description: 业务状态
-      enum: [COMPLETED, EXECUTING, WAITING_TRAINING, NEED_INFORMATION, SUCCESS, FAILED, UNKNOWN]
+      enum: [COMPLETED, EMPTY_RESULT, EXECUTING, WAITING_TRAINING, NEED_INFORMATION, NEED_SELECTION, NEED_CONFIRMATION, NOT_FOUND, CANCELLED, SUCCESS, FAILED, UNKNOWN]
+    resultType:
+      type: string
+      description: 通用结果形态，供Agent统一解释，不依赖具体工具
+      enum: [PAGE, ENTITY, TASK, PROGRESS, RESULT, COMMAND, MEMORY, OBJECT, ERROR]
     errorCode: {type: [string, "null"], description: 失败时的稳定错误码，成功时为null}
     message: {type: string, description: 可展示给用户的结果或具体失败原因}
     retryable: {type: boolean, description: 是否允许调用方自动重试}
@@ -91,6 +95,7 @@ tools:
         keyword: {type: string, description: 可选编码或名称关键字}
         pageNo: {type: integer, description: 页码，默认1, minimum: 1}
         pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+        fetchAll: {type: boolean, description: 是否一次返回全部符合条件的数据，最多5000条；明确要求全部时使用}
     outputSchema: *standardOutput
     annotations: *readOnly
 
@@ -113,6 +118,20 @@ tools:
         industryCode: {type: string, description: 可选标准行业编码}
         pageNo: {type: integer, description: 页码，默认1, minimum: 1}
         pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+        fetchAll: {type: boolean, description: 是否一次返回全部符合条件的客户，最多5000条；明确要求全部时使用}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
+  - name: business_reference_resolve
+    title: 校验业务编号
+    description: 根据业务表校验训练批次号、预测批次号或智能体任务号的真实类型。用于Agent在查询状态或结果前纠正意图和参数，不创建或修改业务数据。
+    inputSchema:
+      type: object
+      required: [reference]
+      additionalProperties: false
+      properties:
+        reference: {type: string, description: 用户明确提供或从当前会话指代解析得到的批次号或任务号}
+        expectedType: {type: string, description: Agent初步识别的类型，仅用于冲突诊断, enum: [TRAINING_BATCH, FORECAST_BATCH, TASK, UNKNOWN]}
     outputSchema: *standardOutput
     annotations: *readOnly
 
@@ -223,7 +242,7 @@ tools:
 
   - name: forecast_start
     title: 发起燃气预测
-    description: 单客户需bulk=false并提供客户；批量需bulk=true、范围及confirmed=true。短期客户智能体按日预测，默认30天；月度销量智能体按月预测，默认12个月；冬季保供智能体按旬预测，默认18旬。用户可传开始日期和周期，也可传开始、结束日期；用户时间优先于默认值，但不能超过模型配置的最大预测期数。autoTrain=true时无有效模型会返回WAITING_TRAINING和trainBatchNo。
+    description: 单客户需bulk=false并提供客户；批量需bulk=true、范围及confirmed=true。短期客户智能体按日预测，默认30天；月度销量智能体按月预测，默认12个月；冬季保供智能体按旬预测，默认18旬。没有匹配模型时必须先返回原因并获得用户训练确认，不能默认自动训练。
     inputSchema:
       type: object
       required: [conversationNo]
@@ -235,7 +254,8 @@ tools:
         forecastEndDate: {type: string, format: date, description: 用户指定的预测结束日期；提供后按开始和结束日期计算周期，并优先于forecastHorizon}
         forecastHorizon: {type: integer, description: 用户指定的预测周期；默认值和最大值由智能体及模型配置决定, minimum: 1, maximum: 366}
         forecastFrequency: {type: string, description: 预测时间粒度；short-term只能DAILY，monthly-sales只能MONTHLY，winter-supply只能TENDAY, enum: [DAILY, TENDAY, MONTHLY]}
-        autoTrain: {type: boolean, description: 没有有效模型时是否自动训练，默认true}
+        trainingPreference: {type: string, description: 用户训练偏好；UNSPECIFIED不授权训练，AUTO仅在用户确认缺少模型后使用, enum: [FORCE_RETRAIN, USE_EXISTING_ONLY, UNSPECIFIED, AUTO]}
+        autoTrain: {type: boolean, description: 是否已获得用户授权在缺少模型时训练，默认false}
     outputSchema: *standardOutput
     annotations: *mutating
 

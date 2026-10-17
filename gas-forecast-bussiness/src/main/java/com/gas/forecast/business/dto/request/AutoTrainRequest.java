@@ -70,7 +70,7 @@ public class AutoTrainRequest {
     /** RECENT 模式的最近训练周期数。 */
     private Integer recentPeriods;
 
-    /** 触发来源：MANUAL、AI、SCHEDULE 或 DATA_EVENT，默认为 MANUAL。 */
+    /** 触发来源：MANUAL、AI、MCP、SCHEDULE 或 DATA_EVENT，默认为 MANUAL。 */
     @Size(max = 32, message = "触发来源长度不能超过32个字符")
     private String triggerSource = "MANUAL";
 

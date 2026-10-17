@@ -12,7 +12,6 @@
         <module>gas-forecast-common</module>
         <module>gas-forecast-system</module>
         <module>gas-forecast-bussiness</module>
-        <module>gas-forecast-ai</module>
         <module>gas-forecast-mcp</module>
         <module>gas-forecast-gateway</module>
         <module>gas-forecast-dao</module>
@@ -69,11 +68,6 @@
             <dependency>
                 <groupId>bio.drqi</groupId>
                 <artifactId>gas-forecast-bussiness</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>bio.drqi</groupId>
-                <artifactId>gas-forecast-ai</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

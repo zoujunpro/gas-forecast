@@ -68,7 +68,8 @@
                 <em>{{ stepStatusText(step.status) }}</em>
               </div>
             </details>
-            <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" />
+            <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
+            <AiTrainingResult v-if="message.presentation?.type === 'TRAINING_BACKTEST' && message.presentation.trainingResult" :result="message.presentation.trainingResult" />
             <section v-if="message.analysis" class="ai-analysis">
               <div class="analysis-title"><el-icon><MagicStick /></el-icon><strong>AI 智能分析</strong></div>
               <div v-html="sanitizeHtml(renderMarkdown(message.analysis))"></div>
@@ -110,13 +111,17 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getJson, postJson } from '@/api/management'
 import { renderMarkdown, sanitizeHtml } from '@/utils/markdown'
 import AiForecastResult from './AiForecastResult.vue'
+import AiTrainingResult from './AiTrainingResult.vue'
 
 type Role = 'user' | 'assistant'
 interface ProgressStep { index: number; name: string; status: 'SUCCESS' | 'RUNNING' | 'WAITING' | 'PARTIAL_FAILED' | 'FAILED'; detail?: string }
 interface ExecutionProgress { title: string; currentStep: number; totalSteps: number; steps: ProgressStep[] }
 interface ForecastPoint { date: string; value: number }
 interface ForecastResult { batchNo: string; average: number; minimum: number; maximum: number; points: ForecastPoint[]; training?: { batchNo: string } }
-interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; analysis?: string; suggestedQuestions?: string[] }
+interface TrainingBacktestPoint { date: string; actualValue?: number; predictedValue?: number; absoluteError?: number; errorRate?: number }
+interface TrainingResult { batchNo: string; status?: string; customerName?: string; regionName?: string; industryName?: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; modelVersion?: string; trainDurationSeconds?: number; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number; backtestPoints?: TrainingBacktestPoint[] }
+interface Presentation { type: 'TEXT' | 'LIST' | 'PROGRESS' | 'FORECAST_CHART' | 'TRAINING_BACKTEST'; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
+interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; presentation?: Presentation; analysis?: string; suggestedQuestions?: string[] }
 interface Session { id: string; conversationNo?: string; title: string; updatedAt: string; messages: Message[] }
 
 const welcomeMessage = (): Message => ({
@@ -212,6 +217,7 @@ const switchSession = async (id: string) => {
         id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
         progress: item.progress || undefined,
         forecastResult: item.forecastResult || undefined,
+        presentation: item.presentation || undefined,
         analysis: item.analysis || undefined,
         suggestedQuestions: item.suggestedQuestions || undefined
       }))
@@ -248,7 +254,7 @@ const send = async (contextualFollowUp = false) => {
       conversationNo: session.conversationNo || null,
       message: text,
       contextualFollowUp: isContextualFollowUp
-    }, controller.signal)
+    }, controller.signal, 60_000)
     const data = response.data || {}
     if (data.conversationNo) {
       session.conversationNo = data.conversationNo
@@ -258,6 +264,7 @@ const send = async (contextualFollowUp = false) => {
     answer.content = renderMarkdown(data.answer || 'AI 未返回有效内容')
     answer.progress = data.progress || undefined
     answer.forecastResult = data.forecastResult || undefined
+    answer.presentation = data.presentation || undefined
     answer.analysis = data.analysis || undefined
     answer.suggestedQuestions = data.suggestedQuestions || undefined
     if (data.trainBatchNo && data.status === 'WAITING_TRAINING') {
@@ -285,7 +292,12 @@ const watchTraining = async (batchNo: string, message: Message) => {
       const batch = response.data
       if (!batch) continue
       if (applyTrainingStatus(message, batchNo, batch, true)) {
-        if (String(batch.status) === 'SUCCESS') await continueForecastAfterTraining(batchNo, message)
+        if (String(batch.status) === 'SUCCESS' && batch.continuationExpected) {
+          if (!batch.forecastBatchNo) continue
+          const predictStep = message.progress?.steps.find((item) => item.index === 3)
+          if (predictStep) { predictStep.status = 'RUNNING'; predictStep.detail = batch.forecastBatchNo }
+          void watchForecast(batch.forecastBatchNo, message)
+        }
         return
       }
     } catch {
@@ -301,58 +313,24 @@ const watchTraining = async (batchNo: string, message: Message) => {
   }
 }
 
-const continuingBatches = new Set<string>()
-const continueForecastAfterTraining = async (batchNo: string, sourceMessage?: Message) => {
-  const session = activeSession.value
-  if (!session?.conversationNo || continuingBatches.has(batchNo)) return
-  if (session.messages.some((item) => item.forecastResult?.training?.batchNo === batchNo)) return
-  const attemptKey = `ai-auto-forecast:${session.conversationNo}:${batchNo}`
-  const lastAttemptAt = Number(window.sessionStorage.getItem(attemptKey) || 0)
-  // 页面恢复、路由重挂载可能同时触发多次核对，短时间内只允许一次自动续跑。
-  if (Date.now() - lastAttemptAt < 30_000) return
-  window.sessionStorage.setItem(attemptKey, String(Date.now()))
-  continuingBatches.add(batchNo)
-  try {
-    const response = await postJson<any>('/ai/conversations/continue-forecast', {
-      conversationNo: session.conversationNo,
-      trainBatchNo: batchNo
-    })
-    const data = response.data || {}
-    if (sourceMessage) {
-      const answer = data.answer || '预测已完成'
-      if (!sourceMessage.content.includes(answer)) sourceMessage.content += renderMarkdown(`\n\n${answer}`)
-      sourceMessage.progress = data.progress || sourceMessage.progress
-      sourceMessage.forecastResult = data.forecastResult || undefined
-      sourceMessage.analysis = data.analysis || undefined
-      sourceMessage.suggestedQuestions = data.suggestedQuestions || undefined
-    } else {
-      session.messages.push({
-        id: crypto.randomUUID(), role: 'assistant', content: renderMarkdown(data.answer || '预测已完成'),
-        progress: data.progress || undefined, forecastResult: data.forecastResult || undefined,
-        analysis: data.analysis || undefined, suggestedQuestions: data.suggestedQuestions || undefined
-      })
+const watchingForecasts = new Set<string>()
+const waitForecastAnalysis = async (batchNo: string, message: Message) => {
+  for (let count = 0; count < 40; count += 1) {
+    try {
+      const response = await postJson<any>('/model-forecast-analysis/get', { forecastBatchNo: batchNo })
+      const analysis = response.data
+      if (analysis?.analysisStatus === 'SUCCESS' && analysis.analysisContent) {
+        message.analysis = analysis.analysisContent
+        return
+      }
+      if (analysis?.analysisStatus === 'FAILED') return
+    } catch {
+      // 自动分析异步执行，暂时查询失败时继续等待。
     }
-    if (data.forecastBatchNo && data.status === 'EXECUTING') {
-      void watchForecast(data.forecastBatchNo, sourceMessage || session.messages[session.messages.length - 1])
-    }
-    window.sessionStorage.removeItem(attemptKey)
-    await loadServerSessions(session)
-    scrollBottom()
-  } catch (error: any) {
-    const failureText = `训练已完成，但自动预测失败：${error?.message || '请稍后重试'}`
-    // 失败信息归并到原执行流程，不再为一次失败反复创建多个助手气泡。
-    if (sourceMessage && !sourceMessage.content.includes(failureText)) {
-      sourceMessage.content += renderMarkdown(`\n\n⚠️ ${failureText}`)
-      const predictStep = sourceMessage.progress?.steps.find((item) => item.index === 3)
-      if (predictStep) { predictStep.status = 'FAILED'; predictStep.detail = error?.message || '自动预测请求失败' }
-    }
-    scrollBottom()
-  } finally {
-    continuingBatches.delete(batchNo)
+    await new Promise((resolve) => window.setTimeout(resolve, 1500))
   }
 }
 
-const watchingForecasts = new Set<string>()
 const watchForecast = async (batchNo: string, message: Message) => {
   const session = activeSession.value
   if (!session?.conversationNo || watchingForecasts.has(batchNo)) return
@@ -370,6 +348,7 @@ const watchForecast = async (batchNo: string, message: Message) => {
         message.forecastResult = data.forecastResult || undefined
         message.analysis = data.analysis || undefined
         message.suggestedQuestions = data.suggestedQuestions || undefined
+        if (data.status !== 'FAILED' && !message.analysis) await waitForecastAnalysis(batchNo, message)
         await loadServerSessions(session)
         scrollBottom()
         return
@@ -413,13 +392,16 @@ const applyTrainingStatus = (message: Message, batchNo: string, batch: any, appe
       const saveStep = progress.steps.find((item) => item.index === 3)
       if (saveStep) { saveStep.status = 'SUCCESS'; saveStep.detail = '已完成' }
     } else if (progress) {
-      // 预测流程尚未真正发起下一步时，训练已完成，但预测仍保持等待状态。
-      progress.currentStep = 2
+      // 用户已明确发起预测任务，训练完成后同一任务正在衔接预测阶段。
+      progress.currentStep = 3
       const predictStep = progress.steps.find((item) => item.index === 3)
-      if (predictStep) predictStep.status = 'WAITING'
+      if (predictStep) {
+        predictStep.status = 'RUNNING'
+        predictStep.detail = '正在创建预测批次'
+      }
     }
-    if (appendNotice && !message.content.includes('训练已经完成'))
-      message.content += renderMarkdown('\n\n训练已经完成，可以继续执行预测。')
+    const completionNotice = batch.continuationExpected ? '训练已经完成，正在继续执行预测。' : '训练已经完成。'
+    if (!message.content.includes(completionNotice)) message.content += renderMarkdown(`\n\n${completionNotice}`)
     scrollBottom()
     return true
   }
@@ -441,7 +423,13 @@ const reconcileTrainingMessages = async (items: Message[]) => {
       const response = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(batchNo)}`)
       const terminal = response.data ? applyTrainingStatus(message, batchNo, response.data, false) : false
       if (!terminal) void watchTraining(batchNo, message)
-      else if (String(response.data?.status) === 'SUCCESS') void continueForecastAfterTraining(batchNo, message)
+      else if (String(response.data?.status) === 'SUCCESS' && response.data?.continuationExpected) {
+        if (response.data?.forecastBatchNo) {
+          const predictStep = message.progress?.steps.find((item) => item.index === 3)
+          if (predictStep) { predictStep.status = 'RUNNING'; predictStep.detail = response.data.forecastBatchNo }
+          void watchForecast(response.data.forecastBatchNo, message)
+        } else void watchTraining(batchNo, message)
+      }
     } catch {
       // 会话仍可正常展示，后续轮询会继续核对状态。
       void watchTraining(batchNo, message)
@@ -480,6 +468,7 @@ const refreshActiveBulkProgress = async () => {
       id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
       progress: item.progress || undefined,
       forecastResult: item.forecastResult || undefined,
+      presentation: item.presentation || undefined,
       analysis: item.analysis || undefined,
       suggestedQuestions: item.suggestedQuestions || undefined
     }))

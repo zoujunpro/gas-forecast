@@ -22,6 +22,7 @@ import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
+import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.AgentExecutionBatchTbMapper;
 import com.gas.forecast.dao.mapper.AgentExecutionTaskTbMapper;
@@ -32,6 +33,7 @@ import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
+import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -57,6 +59,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     private final ModelTrainConfigTbMapper trainConfigMapper;
     private final ModelConfigTbMapper modelConfigMapper;
     private final ModelTrainRecordTbMapper trainRecordMapper;
+    private final ModelTrainBacktestTbMapper trainBacktestMapper;
     private final ModelForecastConfigTbMapper forecastConfigMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper forecastResultMapper;
@@ -72,6 +75,8 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         List<BaseCustomerTb> customers = customers(command);
         if (customers.isEmpty())
             throw new BusinessException("当前业务范围内没有找到可预测客户");
+        Map<String, Object> blocked = validateAvailableModels(command, customers);
+        if (blocked != null) return blocked;
         AgentExecutionTaskTb root = createRootTask(command, customers);
         List<Object> tasks = new ArrayList<>();
         List<Map<String, String>> failures = new ArrayList<>();
@@ -93,8 +98,53 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         result.put("failed", failures.size());
         result.put("tasks", tasks);
         result.put("failures", failures);
-        result.put("status", tasks.isEmpty() ? "FAILED" : "EXECUTING");
+        result.put("status", aggregateSubmissionStatus(tasks));
         return result;
+    }
+
+    /** 创建任务前校验真实模型状态；没有用户授权时只返回原因，不创建失败任务或擅自训练。 */
+    private Map<String, Object> validateAvailableModels(ForecastCommand command, List<BaseCustomerTb> customers) {
+        if (command.forceRetrain() || command.autoTrain()) return null;
+        List<Map<String, String>> unavailable = new ArrayList<>();
+        List<Map<String, String>> incompatible = new ArrayList<>();
+        for (BaseCustomerTb customer : customers) {
+            ModelTrainConfigTb config = trainConfigMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, command.agentCode())
+                    .eq(ModelTrainConfigTb::getCustomerCode, customer.getCustomerCode()).eq(ModelTrainConfigTb::getEnabled, 1).orderByDesc(ModelTrainConfigTb::getUpdatedAt)
+                    .orderByDesc(ModelTrainConfigTb::getId).last("limit 1"));
+            ModelTrainRecordTb trained = config == null ? null
+                    : trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId())
+                            .eq(ModelTrainRecordTb::getStatus, "SUCCESS").orderByDesc(ModelTrainRecordTb::getUpdatedAt).last("limit 1"));
+            if (trained == null) {
+                unavailable.add(Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "reason", "没有可用的成功训练模型"));
+                continue;
+            }
+            try {
+                forecastFrequency(command.forecastFrequency(), config.getTimeGranularity(), command.agentCode());
+            } catch (BusinessException exception) {
+                incompatible.add(Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "reason", safeMessage(exception)));
+            }
+        }
+        if (unavailable.isEmpty() && incompatible.isEmpty()) return null;
+        boolean existingOnly = "USE_EXISTING_ONLY".equalsIgnoreCase(command.trainingPreference());
+        Map<String, Object> result = new LinkedHashMap<>();
+        boolean hasMismatch = !incompatible.isEmpty();
+        result.put("status", hasMismatch ? "NEED_CLARIFICATION" : "NEED_CONFIRMATION");
+        result.put("errorCode", hasMismatch ? "MODEL_GRANULARITY_MISMATCH" : existingOnly ? "NO_COMPATIBLE_TRAINED_MODEL" : "TRAINING_REQUIRED");
+        result.put("reason", hasMismatch ? "现有模型的时间粒度与用户要求不匹配，需要用户调整预测要求或模型配置"
+                : existingOnly ? "用户要求只使用现有模型，但部分业务对象没有匹配的成功模型" : "部分业务对象没有匹配的成功模型，需要先训练");
+        result.put("unavailable", unavailable);
+        result.put("incompatible", incompatible);
+        result.put("affectedCount", unavailable.size() + incompatible.size());
+        result.put("nextAction", "ASK_USER");
+        result.put("allowedActions", List.of("ASK_USER", "FAIL"));
+        if (!hasMismatch) result.put("proposedParameters", Map.of("trainingPreference", "AUTO", "autoTrain", true));
+        return result;
+    }
+
+    private String aggregateSubmissionStatus(List<Object> tasks) {
+        if (tasks.isEmpty()) return "FAILED";
+        boolean allWaitingTraining = tasks.stream().allMatch(item -> item instanceof Map<?, ?> map && "WAITING_TRAINING".equals(String.valueOf(map.get("status"))));
+        return allWaitingTraining ? "WAITING_TRAINING" : "EXECUTING";
     }
 
     @Override
@@ -122,10 +172,50 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         ModelForecastRecordTb record = record(forecastBatchNo);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("record", record);
+        ModelTrainRecordTb training = resolveTraining(record);
+        if (training != null) {
+            result.put("training", trainingSummary(training));
+            result.put("backtestPoints", trainBacktestMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
+                    .eq(ModelTrainBacktestTb::getTrainBatchNo, training.getBatchNo()).orderByAsc(ModelTrainBacktestTb::getTrainDate)).stream()
+                    .map(this::backtestPoint).toList());
+        }
         if (includePoints)
             result.put("points", forecastResultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo)
                     .orderByAsc(ModelForecastResultTb::getForecastDate)));
         return result;
+    }
+
+    /** 优先使用统一任务保存的真实训练批次，旧数据再按预测配置和发生时间回退匹配。 */
+    private ModelTrainRecordTb resolveTraining(ModelForecastRecordTb forecast) {
+        AgentExecutionTaskTb task = executionTaskMapper.selectOne(Wrappers.<AgentExecutionTaskTb>lambdaQuery()
+                .eq(AgentExecutionTaskTb::getLatestForecastBatchNo, forecast.getForecastBatchNo()).orderByDesc(AgentExecutionTaskTb::getUpdatedAt).last("limit 1"));
+        if (task != null && TextUtils.hasText(task.getLatestTrainBatchNo())) {
+            ModelTrainRecordTb exact = trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
+                    .eq(ModelTrainRecordTb::getBatchNo, task.getLatestTrainBatchNo()).last("limit 1"));
+            if (exact != null) return exact;
+        }
+        ModelForecastConfigTb config = forecastConfigMapper.selectById(forecast.getForecastId());
+        if (config == null || config.getTrainConfigId() == null) return null;
+        var query = Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getTrainConfigId())
+                .eq(ModelTrainRecordTb::getStatus, "SUCCESS");
+        if (forecast.getCreatedAt() != null) query.le(ModelTrainRecordTb::getCreatedAt, forecast.getCreatedAt());
+        return trainRecordMapper.selectOne(query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
+    }
+
+    private Map<String, Object> trainingSummary(ModelTrainRecordTb training) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("batchNo", training.getBatchNo());
+        summary.put("status", training.getStatus());
+        summary.put("trainStartDate", training.getTrainStartDate()); summary.put("trainEndDate", training.getTrainEndDate());
+        summary.put("bestModel", training.getBestModel()); summary.put("mape", training.getMape()); summary.put("wmape", training.getWmape());
+        summary.put("smape", training.getSmape()); summary.put("mae", training.getMae()); summary.put("rmse", training.getRmse()); summary.put("r2", training.getR2());
+        return summary;
+    }
+
+    private Map<String, Object> backtestPoint(ModelTrainBacktestTb item) {
+        Map<String, Object> point = new LinkedHashMap<>();
+        point.put("date", item.getTrainDate()); point.put("actualValue", item.getActualValue()); point.put("predictedValue", item.getPredictedValue());
+        return point;
     }
 
     private Object startOne(ForecastCommand command, BaseCustomerTb customer, AgentExecutionTaskTb task) {
@@ -150,10 +240,11 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
             var response = autoTrainService.execute(train);
             ModelTrainConfigTb pendingConfig = trainConfigMapper.selectById(response.getTrainConfigId());
             if (pendingConfig != null)
-                saveForecastConfig(command, customer, pendingConfig, "MCP等待训练后自动预测");
+                saveForecastConfig(command, customer, pendingConfig, "用户已发起预测任务；训练成功后继续执行同一任务的预测阶段");
             bindBatch(task, "TRAINING", "TRAIN", response.getTrainBatchNo());
             updateTask(task, "EXECUTING", "TRAINING", "WAIT_TRAINING_RESULT", 20, response.getTrainBatchNo(), null);
-            return Map.of("taskNo", task.getTaskNo(), "customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "status", "WAITING_TRAINING", "trainBatchNo", response.getTrainBatchNo());
+            return Map.of("taskNo", task.getTaskNo(), "customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "status", "WAITING_TRAINING",
+                    "trainBatchNo", response.getTrainBatchNo(), "autoContinue", true, "nextAction", "WAIT");
         }
         ModelForecastConfigTb forecastConfig = saveForecastConfig(command, customer, config, "MCP发起");
         ModelForecastExecuteRequest execute = new ModelForecastExecuteRequest();

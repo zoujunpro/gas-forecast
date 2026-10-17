@@ -1,0 +1,5 @@
+package com.gas.forecast.business.ai.model;
+
+public enum AiIntentType {
+    START_TRAINING, QUERY_TRAINING, START_FORECAST, QUERY_FORECAST, QUERY_RESULT, QUERY_DATA, QUERY_CAPABILITY, GENERAL_CHAT, UNKNOWN
+}

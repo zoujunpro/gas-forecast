@@ -269,6 +269,31 @@ def _future_frame(
 ) -> pd.DataFrame:
     result = future.copy()
     result["ds"] = pd.to_datetime(result["ds"], errors="coerce")
+    # 天气预报表可能尚未覆盖整个预测区间。行业模型仍应能够使用训练期温度基准
+    # 完成预测，但仅兜底可从温度确定性推导的字段；未知业务特征继续严格报错。
+    history_temp = pd.to_numeric(history.get("temp"), errors="coerce")
+    baseline_temp = (
+        float(history_temp.dropna().median())
+        if history_temp is not None and not history_temp.dropna().empty
+        else None
+    )
+    if baseline_temp is not None:
+        if "temp" in regressors and "temp" not in result:
+            result["temp"] = baseline_temp
+        effective_temp = pd.to_numeric(
+            result.get("temp", pd.Series(baseline_temp, index=result.index)),
+            errors="coerce",
+        ).fillna(baseline_temp)
+        weather_fallbacks = {
+            "tempmax": effective_temp,
+            "tempmin": effective_temp,
+            "hdd": (18.0 - effective_temp).clip(lower=0),
+            "cdd": (effective_temp - 26.0).clip(lower=0),
+            "temp_range": pd.Series(0.0, index=result.index),
+        }
+        for name, values in weather_fallbacks.items():
+            if name in regressors and name not in result:
+                result[name] = values
     missing = [name for name in regressors if name not in result]
     if missing:
         raise ValueError(f"行业模型预测数据缺少未来特征: {missing}")

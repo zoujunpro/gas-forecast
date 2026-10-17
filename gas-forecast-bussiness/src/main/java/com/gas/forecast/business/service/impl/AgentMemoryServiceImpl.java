@@ -30,7 +30,8 @@ public class AgentMemoryServiceImpl implements AgentMemoryService {
         memory.put("status", conversation.getStatus());
         memory.put("lastTrainBatchNo", conversation.getLastTrainBatchNo());
         memory.put("lastForecastBatchNo", conversation.getLastForecastBatchNo());
-        if (TextUtils.hasText(conversation.getPendingIntentJson()))
+        // Python Agent维护的pendingAction优先；pendingIntentJson仅供旧Java流程兼容，不能反向覆盖新状态。
+        if (!memory.containsKey("pendingAction") && TextUtils.hasText(conversation.getPendingIntentJson()))
             memory.put("pendingAction", parseValue(conversation.getPendingIntentJson()));
         return memory;
     }

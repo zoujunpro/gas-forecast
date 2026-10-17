@@ -1,0 +1,127 @@
+schemaVersion: 1
+scenario: COMMON
+scenarioName: 公共查询与任务管理
+description: 不依赖具体预测场景的基础资料、会话和统一任务能力。
+capabilities:
+  - code: GREETING
+    name: 普通问候
+    description: 处理你好、在吗、谢谢等不包含业务动作的日常表达。
+    status: AVAILABLE
+    read_only: true
+    workflow: conversation
+    context_policy: NONE
+    response_mode: LLM
+    intent: {domain: CONVERSATION, action: RESPOND, resource: GREETING}
+    tools: []
+    notes: [不加载预测、训练、客户或任务上下文，不调用MCP业务工具，回答应简短自然。]
+
+  - code: GENERAL_CHAT
+    name: 通用对话
+    description: 处理未匹配到查询、训练、预测或任务操作的普通问题。
+    status: AVAILABLE
+    read_only: true
+    workflow: conversation
+    context_policy: NONE
+    response_mode: LLM
+    intent: {domain: CONVERSATION, action: RESPOND, resource: GENERAL}
+    tools: []
+    notes: [作为业务能力未命中时的最终兜底，不调用MCP业务工具，不得伪造业务数据或执行结果。]
+
+  - code: REGION_LIST
+    name: 查询地区列表
+    description: 分页查询当前用户有权查看的地区。
+    status: AVAILABLE
+    read_only: true
+    workflow: query
+    intent: {domain: MASTER_DATA, action: LIST, resource: REGION}
+    optional_parameters: [regionName, pageNo, pageSize]
+    tools: [region_list]
+
+  - code: INDUSTRY_LIST
+    name: 查询行业列表
+    description: 分页查询行业及业务别名。
+    status: AVAILABLE
+    read_only: true
+    workflow: query
+    intent: {domain: MASTER_DATA, action: LIST, resource: INDUSTRY}
+    optional_parameters: [industryName, pageNo, pageSize]
+    tools: [industry_list]
+
+  - code: CUSTOMER_LIST
+    name: 查询客户列表
+    description: 按地区、行业和名称分页查询当前用户有权查看的客户。
+    status: AVAILABLE
+    read_only: true
+    workflow: query
+    intent: {domain: MASTER_DATA, action: LIST, resource: CUSTOMER}
+    scopes: [ALL, REGION, INDUSTRY, REGION_INDUSTRY]
+    optional_parameters: [customerName, regionCode, industryCode, enabled, pageNo, pageSize]
+    tools: [region_search, industry_search, customer_list]
+    notes: [必须执行Java数据权限过滤，所有客户表示当前用户有权查看的客户。]
+
+  - code: CUSTOMER_DETAIL
+    name: 查询客户详情
+    description: 按客户名称或编码解析并返回客户、地区和行业信息。
+    status: AVAILABLE
+    read_only: true
+    workflow: query
+    intent: {domain: MASTER_DATA, action: DETAIL, resource: CUSTOMER}
+    scopes: [CUSTOMER]
+    optional_parameters: [customerCode, customerName, regionCode, industryCode]
+    tools: [customer_search]
+    notes: [存在多个候选时必须让用户选择。]
+
+  - code: TASK_STATUS
+    name: 查询统一任务状态
+    description: 查询任务总体进度、成功失败数量和恢复建议。
+    status: AVAILABLE
+    read_only: true
+    workflow: query
+    intent: {domain: TASK, action: STATUS, resource: TASK}
+    scopes: [TASK]
+    required_parameters: [taskNo]
+    optional_parameters: [includeRecovery]
+    defaults: {includeRecovery: true}
+    tools: [task_status_get]
+
+  - code: TASK_STEPS
+    name: 查询任务步骤
+    description: 查询智能体步骤和真实训练业务步骤。
+    status: AVAILABLE
+    read_only: true
+    workflow: query
+    intent: {domain: TASK, action: STEPS, resource: TASK}
+    scopes: [TASK]
+    required_parameters: [taskNo]
+    optional_parameters: [includeBusinessSteps, includeAttempts]
+    defaults: {includeBusinessSteps: true, includeAttempts: false}
+    tools: [task_steps_get]
+
+  - code: TASK_RESUME
+    name: 恢复中断任务
+    description: 根据Java真实业务状态恢复FAILED或INTERRUPTED任务。
+    status: AVAILABLE
+    read_only: false
+    workflow: recovery
+    intent: {domain: TASK, action: RESUME, resource: TASK}
+    scopes: [TASK]
+    required_parameters: [taskNo]
+    optional_parameters: [resumeFromStep]
+    confirmations:
+      - condition: always
+        message: 将从服务端建议的步骤恢复任务，是否继续？
+    tools: [task_status_get, task_steps_get, task_resume]
+
+  - code: TASK_RETRY
+    name: 重试失败任务
+    description: 为明确失败的业务任务创建新的训练或预测批次并保留历史批次。
+    status: AVAILABLE
+    read_only: false
+    workflow: recovery
+    intent: {domain: TASK, action: RETRY, resource: TASK}
+    scopes: [TASK]
+    required_parameters: [taskNo]
+    confirmations:
+      - condition: always
+        message: 重试会创建新的业务批次并保留原失败批次，是否继续？
+    tools: [task_status_get, task_steps_get, task_retry]

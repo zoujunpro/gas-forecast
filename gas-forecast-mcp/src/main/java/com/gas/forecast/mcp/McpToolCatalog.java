@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class McpToolCatalog {
     private static final Set<String> DISPATCHED_TOOLS = Set.of("memory_get", "memory_update", "customer_search", "region_search", "industry_search", "region_list", "industry_list",
-            "customer_list", "training_start", "training_status_get", "training_result_get", "training_latest_get", "training_history_get", "forecast_start", "forecast_status_get",
+            "customer_list", "business_reference_resolve", "training_start", "training_status_get", "training_result_get", "training_latest_get", "training_history_get", "forecast_start", "forecast_status_get",
             "forecast_result_get", "forecast_latest_get", "forecast_history_get", "task_status_get", "task_steps_get", "task_step_record", "task_resume", "task_retry");
     private final Map<String, ToolDefinition> tools;
 

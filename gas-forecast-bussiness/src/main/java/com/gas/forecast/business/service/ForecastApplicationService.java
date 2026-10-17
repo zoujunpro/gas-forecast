@@ -12,6 +12,6 @@ public interface ForecastApplicationService {
 
     record ForecastCommand(String conversationNo, String agentCode, List<String> customerCodes, String regionCode, String industryCode, boolean bulk, String forecastStartDate, String forecastEndDate,
             Integer forecastHorizon, String forecastFrequency, String trainMode, Integer trainingPeriods, String trainingStartDate, String trainingEndDate, boolean forceRetrain,
-            boolean autoTrain, boolean confirmed, String idempotencyKey) {
+            boolean autoTrain, String trainingPreference, boolean confirmed, String idempotencyKey) {
     }
 }

@@ -5,7 +5,8 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
 
-const localApiTarget = 'http://localhost:18083'
+// 固定使用IPv4，避免Node在localhost的::1/127.0.0.1多地址连接中出现ECONNREFUSED。
+const localApiTarget = 'http://127.0.0.1:18083'
 
 export default defineConfig({
   plugins: [

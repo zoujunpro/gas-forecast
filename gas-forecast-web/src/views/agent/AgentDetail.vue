@@ -853,14 +853,15 @@
           v-model="inputMessage"
           type="textarea"
           :rows="2"
-          placeholder="输入问题，获取智能分析..."
+          :placeholder="chatInputPlaceholder"
+          :disabled="!chatAvailable"
           @keydown.enter.exact.prevent="sendMessage"
           resize="none"
         />
         <button v-if="isStreaming" class="send-btn stop-btn" @click="stopStreaming">
           <svg viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="5" width="10" height="10" rx="2" /></svg>
         </button>
-        <button v-else class="send-btn" :disabled="!inputMessage.trim()" @click="sendMessage">
+        <button v-else class="send-btn" :disabled="!chatAvailable || !inputMessage.trim()" @click="sendMessage">
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10L18 2L10 18L8 11L2 10Z" /></svg>
         </button>
       </div>
@@ -1232,6 +1233,17 @@ const shortTermForecastConversationNo = ref<string | null>(null)
 const shortTermConversationMemory = new Map<string, string>()
 let stResultRequestSeq = 0
 
+const isForecastAnalysisPage = computed(() => isMonthlySales.value || isShortTerm.value || isWinterSupply.value)
+const chatAvailable = computed(() => {
+  if (isShortTerm.value && !selectedStCustomer.value) return false
+  return !isForecastAnalysisPage.value || Boolean(currentResult.value?.forecast_batch_no)
+})
+const chatInputPlaceholder = computed(() => {
+  if (chatAvailable.value) return '输入问题，分析当前预测结果...'
+  if (isShortTerm.value && !selectedStCustomer.value) return '请先在左侧选择客户'
+  return '请先完成预测后再进行智能分析'
+})
+
 const shortTermChatId = () => {
   const customer = stCustomerRecords.value.find(
     (item) => item.customerName === selectedStCustomer.value
@@ -1358,8 +1370,22 @@ const loadStResult = async () => {
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms))
 
-const shortTermForecastPrompt = () =>
-  `帮我预测${selectedStProvince.value}${selectedStIndustry.value}客户${selectedStCustomer.value}未来30天销量`
+const shortTermForecastContext = (forecastHorizon?: number) => {
+  const customer = stCustomerRecords.value.find(
+    (item) => item.customerName === selectedStCustomer.value
+      && item.regionName === selectedStProvince.value
+      && item.industryName === selectedStIndustry.value
+  )
+  return {
+    regionCode: customer?.regionCode,
+    regionName: selectedStProvince.value,
+    industryCode: customer?.industryCode,
+    industryName: selectedStIndustry.value,
+    customerCode: customer?.customerCode,
+    customerName: selectedStCustomer.value,
+    ...(forecastHorizon ? { forecastHorizon } : {})
+  }
+}
 
 const setShortTermForecastMessage = (messageId: string, text: string, chatId = activeChatId.value) => {
   const targetMessages = chatId === activeChatId.value ? messages.value : chatMemory.get(chatId)
@@ -1371,34 +1397,6 @@ const setShortTermForecastMessage = (messageId: string, text: string, chatId = a
       scrollToBottom()
     }
   }
-}
-
-const appendShortTermForecastMessage = (messageId: string, text: string, chatId = activeChatId.value) => {
-  const targetMessages = chatId === activeChatId.value ? messages.value : chatMemory.get(chatId)
-  const message = targetMessages?.find((item) => item.id === messageId)
-  if (!message) return
-  const plain = toPlainText(message.content)
-  if (!plain.includes(text)) {
-    message.content = renderMarkdown(`${plain}\n\n${text}`)
-    if (chatId === activeChatId.value) {
-      saveChatToMemory(chatId)
-      scrollToBottom()
-    }
-  }
-}
-
-const sendShortTermForecastCommand = async (message: string, chatId: string) => {
-  const response = await postJson<any>('/ai/conversations/chat', {
-    conversationNo: shortTermConversationMemory.get(chatId) || null,
-    message,
-    contextualFollowUp: false
-  })
-  const data = response.data || {}
-  if (data.conversationNo) {
-    shortTermConversationMemory.set(chatId, data.conversationNo)
-    if (activeChatId.value === chatId) shortTermForecastConversationNo.value = data.conversationNo
-  }
-  return data
 }
 
 const refreshShortTermForecastResult = async () => {
@@ -1439,7 +1437,7 @@ const continueShortTermForecastAfterTraining = async (
   const response = await postJson<any>('/ai/conversations/continue-forecast', {
     conversationNo,
     trainBatchNo
-  })
+  }, undefined, 60_000)
   const data = response.data || {}
   if (data.answer) setShortTermForecastMessage(messageId, data.answer, chatId)
   if (data.forecastBatchNo && data.status === 'EXECUTING') {
@@ -1482,45 +1480,48 @@ const runShortTermForecast = async () => {
     return
   }
   runningForecast.value = true
-  const prompt = shortTermForecastPrompt()
-  const streamId = activeChatId.value
-  const userMessageId = `forecast-user-${Date.now()}`
-  const assistantMessageId = `forecast-assistant-${Date.now()}`
-  messages.value.push({ id: userMessageId, role: 'user', content: prompt, time: new Date().toLocaleTimeString() })
-  messages.value.push({
-    id: assistantMessageId,
-    role: 'assistant',
-    content: renderMarkdown('正在发起预测...'),
-    time: new Date().toLocaleTimeString()
-  })
-  saveChatToMemory(streamId)
-  scrollToBottom()
   try {
-    let data = await sendShortTermForecastCommand(prompt, streamId)
-    if (data.status === 'NEED_CONFIRMATION') {
-      data = await sendShortTermForecastCommand('确认执行', streamId)
-    }
-    setShortTermForecastMessage(assistantMessageId, data.answer || '预测任务已提交', streamId)
-    const conversationNo = data.conversationNo || shortTermConversationMemory.get(streamId)
-    if (data.trainBatchNo && data.status === 'WAITING_TRAINING' && conversationNo) {
+    const customer = shortTermForecastContext(30)
+    const response = await postJson<any>('/model-forecast-execution/start', {
+      agentCode: 'short-term',
+      customerCode: customer.customerCode,
+      regionCode: customer.regionCode,
+      industryCode: customer.industryCode,
+      forecastHorizon: 30,
+      forecastFrequency: 'DAILY',
+      idempotencyKey: crypto.randomUUID()
+    })
+    const data = response.data || {}
+    const task = Array.isArray(data.tasks) ? data.tasks[0] || {} : data
+    if (task.trainBatchNo && task.status === 'WAITING_TRAINING') {
       ElMessage.info('当前范围暂无成功训练结果，已先发起训练')
-      await pollShortTermTraining(conversationNo, data.trainBatchNo, assistantMessageId, streamId)
-      ElMessage.success('训练完成，预测已发起')
-      return
+      let forecastBatchNo = ''
+      for (let count = 0; count < 120; count += 1) {
+        await wait(3000)
+        const progress = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(task.trainBatchNo)}`)
+        const batch = progress.data || {}
+        if (['FAILED', 'FAILED_FINAL', 'PREPARE_FAILED'].includes(String(batch.status || '')))
+          throw new Error(batch.message || '训练未能完成')
+        forecastBatchNo = String(batch.forecastBatchNo || '')
+        if (forecastBatchNo) break
+      }
+      if (!forecastBatchNo) throw new Error('训练已提交，但等待自动预测超时')
+      task.forecastBatchNo = forecastBatchNo
     }
-    if (data.forecastBatchNo && data.status === 'EXECUTING' && conversationNo) {
-      await pollShortTermForecast(conversationNo, data.forecastBatchNo, assistantMessageId, streamId)
+    if (!task.forecastBatchNo) throw new Error(data.reason || task.message || '预测任务未返回预测批次')
+    for (let count = 0; count < 240; count += 1) {
+      await wait(2000)
+      const progress = await postJson<any>('/model-forecast-execution/status', { forecastBatchNo: task.forecastBatchNo })
+      const status = String(progress.data?.status || '')
+      if (status === 'EXECUTING' || status === 'RUNNING') continue
+      if (status === 'FAILED') throw new Error('预测执行失败')
+      await refreshShortTermForecastResult()
       ElMessage.success('预测已完成')
       return
     }
-    if (data.status === 'FAILED' || data.status === 'UNSUPPORTED') {
-      throw new Error(data.answer || '预测失败')
-    }
-    await refreshShortTermForecastResult()
-    ElMessage.success('预测已完成')
+    throw new Error('页面等待预测结果超时，预测可能仍在后台执行')
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '预测失败'
-    appendShortTermForecastMessage(assistantMessageId, `⚠️ ${errorMessage}`, streamId)
     ElMessage.error(errorMessage)
   } finally {
     runningForecast.value = false
@@ -2075,6 +2076,10 @@ const loadForecastAnalysis = async (forecastBatchNo?: string, attempt = 0) => {
 }
 
 const sendMessage = async () => {
+  if (!chatAvailable.value) {
+    ElMessage.warning('请先选择客户后再开始对话')
+    return
+  }
   if (!inputMessage.value.trim() || isStreaming.value) return
   const userMessage = inputMessage.value
   inputMessage.value = ''
@@ -2104,9 +2109,12 @@ const sendMessage = async () => {
           conversationNo: forecastConversationNo.value,
           forecastBatchNo,
           message: userMessage,
-          contextualFollowUp: true
+          contextualFollowUp: false,
+          agentType: agentId.value,
+          metadata: isShortTerm.value ? shortTermForecastContext() : {}
         },
-        controller.signal
+        controller.signal,
+        60_000
       )
       const data = response.data || {}
       forecastConversationNo.value = data.conversationNo || forecastConversationNo.value
@@ -2117,6 +2125,34 @@ const sendMessage = async () => {
         saveChatToMemory(streamId)
       } else {
         updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
+      }
+      return
+    }
+    if (isShortTerm.value) {
+      const response = await postJson<any>(
+        '/ai/conversations/chat',
+        {
+          conversationNo: shortTermConversationMemory.get(streamId) || null,
+          message: userMessage,
+          contextualFollowUp: false,
+          agentType: 'short-term',
+          metadata: shortTermForecastContext()
+        },
+        controller.signal,
+        60_000
+      )
+      const data = response.data || {}
+      if (data.conversationNo) {
+        shortTermConversationMemory.set(streamId, data.conversationNo)
+        shortTermForecastConversationNo.value = data.conversationNo
+      }
+      fullResponse = data.answer || 'AI 未返回有效内容'
+      setShortTermForecastMessage(msgId, fullResponse, streamId)
+      const conversationNo = data.conversationNo || shortTermConversationMemory.get(streamId)
+      if (data.trainBatchNo && data.status === 'WAITING_TRAINING' && conversationNo) {
+        await pollShortTermTraining(conversationNo, data.trainBatchNo, msgId, streamId)
+      } else if (data.forecastBatchNo && data.status === 'EXECUTING' && conversationNo) {
+        await pollShortTermForecast(conversationNo, data.forecastBatchNo, msgId, streamId)
       }
       return
     }
@@ -2239,16 +2275,32 @@ const sendAnalysisMessage = async (analysisText: string) => {
   }
 }
 
-const clearChat = () => {
-  messages.value = [
-    {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: renderMarkdown('对话已清空，请随时提问！'),
-      time: new Date().toLocaleTimeString()
+const clearChat = async () => {
+  const forecastBatchNo = currentResult.value?.forecast_batch_no
+  try {
+    if (forecastConversationNo.value) {
+      await getJson(`/ai/conversations/delete?conversationNo=${encodeURIComponent(forecastConversationNo.value)}`)
+      forecastConversationNo.value = null
     }
-  ]
-  saveChatToMemory(activeChatId.value)
+    messages.value = []
+    saveChatToMemory(activeChatId.value)
+    // 自动解析属于预测公共数据，不属于任何用户会话；清空后仍从分析表重新展示。
+    if (forecastBatchNo) {
+      await loadForecastAnalysis(forecastBatchNo)
+    } else {
+      messages.value = [{
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: renderMarkdown('对话已清空，请随时提问！'),
+        time: new Date().toLocaleTimeString()
+      }]
+      saveChatToMemory(activeChatId.value)
+    }
+    ElMessage.success('会话已清空')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '清空会话失败'
+    ElMessage.error(message)
+  }
 }
 
 const saveChatToMemory = (id: string) => {

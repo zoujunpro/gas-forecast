@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AutoTrainServiceImpl implements AutoTrainService {
-    private static final Set<String> TRIGGER_SOURCES = Set.of("MANUAL", "AI", "SCHEDULE", "DATA_EVENT");
+    private static final Set<String> TRIGGER_SOURCES = Set.of("MANUAL", "AI", "MCP", "SCHEDULE", "DATA_EVENT");
 
     private final AgentStrategyConfigTbMapper strategyMapper;
     private final BaseCustomerTbMapper customerMapper;
@@ -181,10 +181,9 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         if (TextUtils.hasText(start))
             mode = ModelTrainMode.RANGE;
         if (mode == null) {
-            String defaultMode = trim(model.getDefaultTrainingRangeMode());
-            mode = "ALL".equalsIgnoreCase(defaultMode) ? ModelTrainMode.ALL : ModelTrainMode.RECENT;
-            if ("CUSTOM".equalsIgnoreCase(defaultMode) && request.getRecentPeriods() == null)
-                request.setRecentPeriods(model.getDefaultTrainingPeriods() == null ? model.getRecommendedTrainingPeriods() : model.getDefaultTrainingPeriods());
+            // 用户未明确训练时间范围时，统一使用该客户的全部可用历史数据。
+            // 模型配置中的默认周期仅保留给显式 RECENT 请求，不再隐式截断训练数据。
+            mode = ModelTrainMode.ALL;
         }
         if (mode == ModelTrainMode.RANGE && !TextUtils.hasText(start))
             throw new BusinessException("RANGE 训练方式必须填写训练开始日期和结束日期");

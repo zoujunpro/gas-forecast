@@ -67,6 +67,28 @@ def test_sector_model_reports_missing_dates() -> None:
     assert {error.code for error in result.errors} == {"NON_CONTINUOUS_DATES"}
 
 
+def test_sector_future_uses_training_temperature_when_weather_is_missing() -> None:
+    history = pd.DataFrame({
+        "ds": pd.date_range("2025-01-01", periods=3, freq="D"),
+        "y": [100.0, 101.0, 102.0],
+        "temp": [10.0, 12.0, 14.0],
+    })
+    future = pd.DataFrame({"ds": pd.date_range("2025-01-04", periods=2, freq="D")})
+
+    result = module._future_frame(
+        future,
+        ["temp", "tempmax", "tempmin", "hdd", "cdd", "temp_range"],
+        history,
+    )
+
+    assert result["temp"].tolist() == [12.0, 12.0]
+    assert result["tempmax"].tolist() == [12.0, 12.0]
+    assert result["tempmin"].tolist() == [12.0, 12.0]
+    assert result["hdd"].tolist() == [6.0, 6.0]
+    assert result["cdd"].tolist() == [0.0, 0.0]
+    assert result["temp_range"].tolist() == [0.0, 0.0]
+
+
 def test_sector_training_returns_standard_result(monkeypatch, tmp_path) -> None:
     handler = ModelChemicalGasV1Handler()
     artifact = module.SectorGasXgbArtifact(
