@@ -148,7 +148,7 @@ def test_unverifiable_force_retrain_evidence_is_not_executed(monkeypatch) -> Non
 
     assert result.customer_code is None
     assert result.training_policy == TrainingPolicy.UNSPECIFIED
-    assert result.needs_clarification is True
+    assert result.needs_clarification is False
 
 
 def test_string_evidence_from_compatible_model_is_normalized(monkeypatch) -> None:

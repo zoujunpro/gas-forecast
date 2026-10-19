@@ -638,6 +638,26 @@ def test_forecast_page_question_reads_bound_result_in_rule_mode() -> None:
     assert decision["name"] == "forecast_result_get"
 
 
+def test_forecast_customer_name_is_resolved_before_model_planning(monkeypatch) -> None:
+    agent = SkillAgent(model_settings())
+
+    def unexpected_model_client(settings):
+        raise AssertionError("客户主数据解析前不应调用规划模型")
+
+    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", unexpected_model_client)
+    decision = asyncio.run(agent._decide(
+        SimpleNamespace(name="customer-gas-forecast", model_instructions=lambda: ""),
+        "帮我预测下扬州中燃未来50天的燃气销量",
+        [],
+        {"customerName": "扬州中燃", "forecastHorizon": 50},
+        [],
+        [{"name": "customer_search", "inputSchema": {"type": "object", "properties": {}}}],
+    ))
+
+    assert decision["type"] == "tool"
+    assert decision["name"] == "customer_search"
+
+
 def test_confirmation_and_idempotency_do_not_leak_to_next_request() -> None:
     remembered = {"currentParameters": {"confirmed": True, "idempotencyKey": "old-key"}}
     values = SkillAgent._initial_parameters("发起新的预测", remembered, {}, "C-4", "customer-gas-forecast")

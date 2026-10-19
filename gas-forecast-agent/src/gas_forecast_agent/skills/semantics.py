@@ -158,21 +158,23 @@ class RequestSemanticExtractor:
             # 编码属于强标识，只能来自用户本轮原文，不能接受模型推测。
             if extracted.customer_code and extracted.customer_code.lower() not in message.lower():
                 updates["customer_code"] = None
-            # 会触发新训练的高风险语义必须能指回本轮原文；证据无效时转为追问。
+            # 会触发新训练的高风险语义必须能指回本轮原文，而且证据本身必须
+            # 明确谈到训练或模型。仅把“预测”等普通词放进 evidence 不能证明
+            # 用户要求了新的训练策略。
             if extracted.training_policy == TrainingPolicy.FORCE_RETRAIN:
                 evidence = extracted.evidence.get("training_policy", "").strip()
-                if not evidence or evidence not in message:
+                if not self._valid_training_policy_evidence(evidence, message):
                     updates.update(
                         training_policy=TrainingPolicy.UNSPECIFIED,
-                        needs_clarification=True,
-                        clarification_question="请确认：是否要忽略已有模型并创建一个全新的训练批次？",
+                        needs_clarification=False,
+                        clarification_question=None,
                     )
             # 参数是否缺失由工具 Schema 和实体解析结果确定，不能接受模型生成的
             # 泛化追问。当前语义层唯一需要主动澄清的是会改变训练行为的策略冲突，
             # 且必须提供能在用户原话中定位到的证据。
             if extracted.needs_clarification:
                 policy_evidence = extracted.evidence.get("training_policy", "").strip()
-                if not policy_evidence or policy_evidence not in message:
+                if not self._valid_training_policy_evidence(policy_evidence, message):
                     updates.update(needs_clarification=False, clarification_question=None)
             normalized = extracted.model_copy(update=updates) if updates else extracted
             logger.info(
@@ -188,3 +190,10 @@ class RequestSemanticExtractor:
         except Exception:
             logger.exception("event=request_semantics_extract_failed skill=%s", skill_name)
             return RequestSemantics()
+
+    @staticmethod
+    def _valid_training_policy_evidence(evidence: str, message: str) -> bool:
+        """验证证据确实来自原话并描述训练策略，而不是模型随意挑出的普通词。"""
+        if not evidence or evidence not in message:
+            return False
+        return bool(re.search(r"训练|模型|建模|重训|学习|复用|沿用", evidence))

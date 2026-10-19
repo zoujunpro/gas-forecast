@@ -327,6 +327,14 @@ class SkillAgent:
         deterministic_query = self._explicit_read_query(skill.name, message, parameters)
         if deterministic_query:
             return deterministic_query
+        # 客户名称必须先通过主数据工具解析成唯一编码。这是工具依赖关系，
+        # 不交给规划模型决定，避免模型在参数已经齐全时仍用文本追问拦截流程。
+        if (
+            skill.name in {"customer-gas-forecast", "model-training-management"}
+            and parameters.get("customerName")
+            and not parameters.get("customerCode")
+        ):
+            return {"type": "tool", "name": "customer_search", "arguments": parameters}
         if self._settings.skill_routing_mode == "rules" or not self._settings.llm_api_key or not self._settings.llm_model:
             return self._rule_decision(skill.name, message, parameters)
         openai_tools = [
