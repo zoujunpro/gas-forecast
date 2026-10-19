@@ -819,8 +819,8 @@ class ModelPowerGenerationV1Handler:
             frequency="day",
             minimum=880,
             recommended=1060,
-            continuous=True,
-            description="至少需要880天连续日数据，建议提供1060天以上。",
+            continuous=False,
+            description="至少需要880条日数据，建议提供1060条以上；日期不连续时提示警告，但不阻断训练。",
         ),
     )
 
@@ -862,10 +862,10 @@ class ModelPowerGenerationV1Handler:
                 )
             )
         if len(missing_dates):
-            errors.append(
+            warnings.append(
                 TrainingDataValidationIssue(
                     code="NON_CONTINUOUS_DATES",
-                    message=f"训练数据缺少{len(missing_dates)}个日期，日级数据必须连续",
+                    message=f"训练数据缺少{len(missing_dates)}个日期，将继续训练，但可能影响预测精度",
                     expected=0,
                     actual=len(missing_dates),
                 )

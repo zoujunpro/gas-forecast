@@ -22,10 +22,12 @@ create table if not exists ai_conversation_message_tb (
     id bigint unsigned not null auto_increment,
     conversation_id bigint unsigned not null,
     role varchar(16) not null,
+    turn_id varchar(64) default null,
     content text not null,
-    intent_code varchar(64) default null,
+    message_type varchar(64) default null,
     structured_json json default null,
     created_at datetime not null,
     primary key (id),
-    key idx_ai_message_conversation (conversation_id, id)
+    key idx_ai_message_conversation (conversation_id, id),
+    unique key uk_ai_message_turn_role (conversation_id, turn_id, role)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_unicode_ci comment='AI对话消息';

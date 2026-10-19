@@ -63,8 +63,9 @@ def test_sector_model_reports_missing_dates() -> None:
         ModelContext(model_code=handler.info.model_code, dataset=rows)
     )
 
-    assert result.valid is False
-    assert {error.code for error in result.errors} == {"NON_CONTINUOUS_DATES"}
+    assert result.valid is True
+    assert result.errors == []
+    assert {warning.code for warning in result.warnings} == {"NON_CONTINUOUS_DATES"}
 
 
 def test_sector_future_uses_training_temperature_when_weather_is_missing() -> None:

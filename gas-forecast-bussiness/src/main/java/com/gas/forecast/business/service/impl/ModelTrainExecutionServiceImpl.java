@@ -24,6 +24,7 @@ import com.gas.forecast.business.service.DynamicTrainingFeatureService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.business.service.ModelTrainStepRecorder;
 import com.gas.forecast.business.service.TrainingDatasetAssembler;
+import com.gas.forecast.business.service.TrainingDataQualityValidator;
 import com.gas.forecast.business.service.TaskForecastContinuationService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.enums.ForecastAgentEnum;
@@ -88,6 +89,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private final DynamicTrainingFeatureService dynamicTrainingFeatureService;
     private final ModelTrainStepRecorder trainStepRecorder;
     private final TrainingDatasetAssembler trainingDatasetAssembler;
+    private final TrainingDataQualityValidator trainingDataQualityValidator;
     private final TaskForecastContinuationService taskForecastContinuationService;
 
     @Override
@@ -170,9 +172,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         // 3. 使用与正式训练完全相同的特征和范围规则准备数据。
         List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
         List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig);
-        if (trainData.isEmpty()) {
-            throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
-        }
+        trainingDataQualityValidator.validate(trainData);
         // 4. 只调用平台预校验，不创建批次和训练记录。
         DynamicFeatureResult dynamicFeatures = dynamicTrainingFeatureService.prepare(trainConfig, trainData);
         ModelTrainApiRequest validationRequest = buildTrainRequest(trainConfig, modelConfig, null, trainData, features, dynamicFeatures);
@@ -448,9 +448,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             currentStep = startStep(batchNo, attemptNo, "LOAD_DATA", "加载训练数据", 1, "trainConfigId=" + trainConfig.getId());
             List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
             List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig);
-            if (trainData.isEmpty()) {
-                throw new BusinessException("训练时间范围和模型作用范围内没有可用训练数据");
-            }
+            trainingDataQualityValidator.validate(trainData);
             trainStepRecorder.success(currentStep, "基础特征=" + features.size() + "，训练数据=" + trainData.size(), trainData.size());
             currentStep = null;
 
@@ -476,8 +474,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private void validateAndTrain(String batchNo, ModelTrainConfigTb trainConfig, ModelTrainApiRequest trainRequest, int attemptNo) {
         Long validationStep = startStep(batchNo, attemptNo, "VALIDATE_DATA", "校验训练数据", 4, "dataset=" + (trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size()));
         try {
-            modelPlatformClient.validateTrainingData(trainRequest);
-            trainStepRecorder.success(validationStep, "模型平台校验通过", trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size());
+            trainingDataQualityValidator.validatePayload(trainRequest.getDataset());
+            ModelTrainingValidationApiResponse validation = modelPlatformClient.validateTrainingData(trainRequest);
+            trainStepRecorder.success(validationStep, validationSuccessDetail(validation), trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size());
             validationStep = null;
             ModelTrainStatus status = modelPlatformClient.isTrainingEnabled() ? ModelTrainStatus.RUNNING : ModelTrainStatus.PENDING;
             // 批次号使用数据库序列生成，生成器要求必须处于事务中。因此批次分配、
@@ -510,8 +509,9 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         Long validationStep = startStep(batchNo, attemptNo, "VALIDATE_DATA", "校验训练数据", 4, "复用请求快照，dataset=" + (trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size()));
         try {
             // 数据和动态指标准备完成后再进行平台校验，并保存可供失败重试复用的完整请求快照。
-            modelPlatformClient.validateTrainingData(trainRequest);
-            trainStepRecorder.success(validationStep, "模型平台校验通过", trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size());
+            trainingDataQualityValidator.validatePayload(trainRequest.getDataset());
+            ModelTrainingValidationApiResponse validation = modelPlatformClient.validateTrainingData(trainRequest);
+            trainStepRecorder.success(validationStep, validationSuccessDetail(validation), trainRequest.getDataset() == null ? 0 : trainRequest.getDataset().size());
             validationStep = null;
             JsonNode requestPayload = objectMapper.valueToTree(trainRequest);
             ModelTrainStatus status = modelPlatformClient.isTrainingEnabled() ? ModelTrainStatus.RUNNING : ModelTrainStatus.PENDING;
@@ -525,6 +525,17 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             trainStepRecorder.fail(validationStep, exception);
             markPreparationFailed(batchNo, exception);
         }
+    }
+
+    private String validationSuccessDetail(ModelTrainingValidationApiResponse validation) {
+        if (validation == null || validation.getWarnings() == null || validation.getWarnings().isEmpty()) {
+            return "模型平台校验通过";
+        }
+        String warnings = validation.getWarnings().stream()
+                .map(ModelTrainingValidationApiResponse.ValidationIssueApiResponse::getMessage)
+                .filter(TextUtils::hasText)
+                .collect(Collectors.joining("；"));
+        return TextUtils.hasText(warnings) ? "模型平台校验通过，提示：" + warnings : "模型平台校验通过";
     }
 
     private void markPreparationFailed(String batchNo, RuntimeException exception) {

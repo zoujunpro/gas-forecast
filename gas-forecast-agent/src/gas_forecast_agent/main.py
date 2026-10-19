@@ -1,7 +1,9 @@
 """FastAPI 应用入口。"""
 
+import asyncio
 import logging
 import sys
+import uuid
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -15,41 +17,31 @@ if __name__ == "__main__" and not __package__:
     sys.path.insert(0, str(package_dir.parent))
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import JSONResponse
 
-from gas_forecast_agent.capabilities import CapabilityRegistry
-from gas_forecast_agent.conversation import ConversationResponder
+from gas_forecast_agent.skills import SkillAgent, SkillRegistry, SkillRouter
 from gas_forecast_agent.analysis import ForecastAnalysisRequest, ForecastAnalysisResponse, ForecastResultAnalyzer
-from gas_forecast_agent.checkpoint import build_checkpoint_saver
 from gas_forecast_agent.config import Settings, get_settings
-from gas_forecast_agent.entities import EntityResolver
-from gas_forecast_agent.execution import ExceptionDecider, QwenExceptionDecider
-from gas_forecast_agent.graph import AgentMainFlow, MainFlowError
-from gas_forecast_agent.intent import IntentRecognizer, build_intent_recognizer
 from gas_forecast_agent.llm import build_llm_client
 from gas_forecast_agent.mcp import McpClientError, StreamableHttpMcpClient
-from gas_forecast_agent.router import AgentRouter
+from gas_forecast_agent.presentation import PresentationPlanner
 from gas_forecast_agent.schemas import AgentType, ChatRequest, ChatResponse
 
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Gas Forecast Agent", version="0.1.0")
-router = AgentRouter()
-capability_registry = CapabilityRegistry()
-main_flow = AgentMainFlow()
-entity_resolver = EntityResolver()
+skill_registry = SkillRegistry()
 
 
 def get_mcp_client(
     settings: Annotated[Settings, Depends(get_settings)],
     authorization: Annotated[str | None, Header()] = None,
-    user_id: Annotated[str | None, Header(alias="x-user")] = None,
+    access_token: Annotated[str | None, Header(alias="X-Access-Token")] = None,
     trace_id: Annotated[str | None, Header(alias="x-traceId")] = None,
 ) -> StreamableHttpMcpClient:
-    """按请求创建 MCP 客户端；优先透传当前登录用户身份。"""
-    headers = settings.mcp_headers(authorization)
-    if user_id:
-        headers["x-user"] = user_id
+    """按请求创建 MCP 客户端；原样透传用户凭证，由 Java 独立鉴权。"""
+    headers = settings.mcp_headers(authorization, access_token)
     if trace_id:
         headers["x-traceId"] = trace_id
     return StreamableHttpMcpClient(
@@ -59,19 +51,12 @@ def get_mcp_client(
     )
 
 
-def get_intent_recognizer(settings: Annotated[Settings, Depends(get_settings)]) -> IntentRecognizer:
-    """根据配置选择结构化大模型识别或本地规则兜底。"""
-    return build_intent_recognizer(settings, capability_registry)
-
-
-def get_exception_decider(settings: Annotated[Settings, Depends(get_settings)]) -> ExceptionDecider | None:
-    """复用项目千问配置；未配置模型时异常流程安全降级为人工确认。"""
-    return QwenExceptionDecider(settings) if settings.llm_api_key and settings.llm_model else None
-
-
-def get_checkpointer(settings: Annotated[Settings, Depends(get_settings)]):
-    """返回只操作agent_graph_checkpoint_tb的LangGraph Checkpointer。"""
-    return build_checkpoint_saver(settings)
+def _tool_data(raw: dict[str, Any]) -> dict[str, Any]:
+    structured = raw.get("structuredContent") or raw.get("structured_content") or {}
+    if not structured.get("success", False):
+        raise McpClientError(str(structured.get("message") or "Java工具调用失败"))
+    data = structured.get("data")
+    return data if isinstance(data, dict) else {}
 
 
 @app.get("/health")
@@ -133,91 +118,210 @@ async def list_mcp_tools(client: Annotated[StreamableHttpMcpClient, Depends(get_
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@app.get("/api/v1/capabilities")
-async def list_capabilities(include_unavailable: bool = True) -> dict[str, Any]:
-    """返回业务能力目录，供管理页面、意图路由和缺口检查使用。"""
-    if include_unavailable:
-        return capability_registry.summary()
-    capabilities = [item.model_dump(mode="json", by_alias=True) for item in capability_registry.list(False)]
-    return {"total": len(capabilities), "capabilities": capabilities}
+@app.get("/api/v1/skills")
+async def list_skills() -> dict[str, Any]:
+    """返回可发现的 Skill 及其工具白名单。"""
+    return skill_registry.summary()
 
 
-@app.post("/api/v1/conversations/{conversation_no}/messages", response_model=ChatResponse)
-async def chat(
-    conversation_no: str,
+@app.post("/api/v1/chat")
+async def browser_chat(
     request: ChatRequest,
     client: Annotated[StreamableHttpMcpClient, Depends(get_mcp_client)],
-    recognizer: Annotated[IntentRecognizer, Depends(get_intent_recognizer)],
-    exception_decider: Annotated[ExceptionDecider | None, Depends(get_exception_decider)],
-    checkpointer: Annotated[Any, Depends(get_checkpointer)],
     settings: Annotated[Settings, Depends(get_settings)],
-    user_id: Annotated[str | None, Header(alias="x-user")] = None,
     trace_id: Annotated[str | None, Header(alias="x-traceId")] = None,
-) -> ChatResponse:
-    """统一会话入口：读取记忆、识别意图、匹配能力并保存当前上下文。"""
+) -> Any:
+    """浏览器对话入口；Python 管理对话轮次，Java 负责鉴权和持久化。"""
+    turn_id = request.turn_id or uuid.uuid4().hex
     try:
-        state = await main_flow.invoke(
-            {
-                "conversation_no": conversation_no,
-                "message": request.message,
-                "history": request.history[-12:],
-                "requested_agent": request.agent_type,
-                "bound_context": request.metadata,
-            },
+        prepared = _tool_data(await client.call_tool("conversation_prepare", {
+            "conversationNo": request.conversation_no,
+            "forecastBatchNo": request.forecast_batch_no,
+            "turnId": turn_id,
+            "message": request.message,
+            "agentType": request.agent_type.value if request.agent_type else None,
+            "metadata": request.metadata,
+        }))
+    except McpClientError as exc:
+        status = exc.http_status if exc.http_status in {401, 403} else 503
+        message = "登录已过期，请重新登录" if status == 401 else "无权使用智能助手" if status == 403 else "业务服务暂时不可用，请稍后重试"
+        return JSONResponse(status_code=status, content={"code": str(status), "message": message, "data": None})
+    conversation_no = str(prepared["conversationNo"])
+    agent_request = request.model_copy(update={
+        "conversation_no": conversation_no,
+        "history": prepared.get("history") or [],
+        "metadata": prepared.get("metadata") or {},
+    })
+    try:
+        reply = await _run_agent(conversation_no, agent_request, client, settings, trace_id)
+    except Exception as exc:
+        logger.exception("event=browser_chat_failed trace_id=%s conversation_no=%s", trace_id or "-", conversation_no)
+        answer = "本轮智能体处理发生系统异常，未确认创建新的业务任务；已经创建的训练或预测任务不受影响。请稍后重试，如仍失败请提供当前会话时间排查。"
+        await _append_reply_safely(client, conversation_no, turn_id, "FAILED", answer, None, {}, {})
+        return {"code": "0000", "message": "成功", "data": {
+            "conversationNo": conversation_no, "status": "FAILED", "answer": answer,
+        }}
+
+    execution = reply.execution_result or {}
+    payload = {
+        "progress": reply.progress,
+        "forecastResult": reply.forecast_result,
+        "executionResult": execution,
+        "analysis": None,
+        "suggestedQuestions": [],
+        "presentation": reply.presentation,
+    }
+    persisted = await _append_reply_safely(
+        client, conversation_no, turn_id, reply.status, reply.message, reply.skill_name, execution, payload
+    )
+    return {"code": "0000", "message": "成功", "data": {
+        "conversationNo": conversation_no,
+        "status": reply.status,
+        "answer": reply.message,
+        "trainBatchNo": persisted.get("lastTrainBatchNo") or _find_text(execution, "trainBatchNo"),
+        "forecastBatchNo": persisted.get("lastForecastBatchNo") or _find_text(execution, "forecastBatchNo"),
+        "progress": reply.progress,
+        "forecastResult": reply.forecast_result,
+        "executionResult": execution,
+        "presentation": reply.presentation,
+        "analysis": None,
+        "suggestedQuestions": [],
+        "skillName": reply.skill_name,
+        "skillSelection": reply.skill_selection,
+        "parameters": reply.parameters,
+        "executedTool": reply.executed_tool,
+        "availableTools": reply.available_tools,
+    }}
+
+
+async def _run_agent(
+    conversation_no: str,
+    request: ChatRequest,
+    client: StreamableHttpMcpClient,
+    settings: Settings,
+    trace_id: str | None = None,
+) -> ChatResponse:
+    """选择 Skill，让模型在工具白名单内逐步处理请求。"""
+    try:
+        memory = await _read_memory(client, conversation_no)
+        selection = await SkillRouter(settings, skill_registry).select(request.message, memory, request.metadata)
+        skill = skill_registry.get(selection.skill_name)
+        result = await SkillAgent(settings).run(
+            conversation_no=conversation_no,
+            skill=skill,
+            message=request.message,
+            history=request.history[-12:],
+            memory=memory,
+            metadata=request.metadata,
             mcp=client,
-            recognizer=recognizer,
-            capabilities=capability_registry,
-            entity_resolver=entity_resolver,
-            exception_decider=exception_decider,
-            checkpointer=checkpointer,
-            conversation_responder=ConversationResponder(settings),
         )
-    except MainFlowError as exc:
-        logger.exception(
-            "event=agent_flow_failed user_id=%s trace_id=%s conversation_no=%s message_length=%s",
-            user_id or "-",
-            trace_id or "-",
-            conversation_no,
-            len(request.message),
-        )
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        try:
+            await _write_memory(client, conversation_no, skill.name, result)
+        except Exception:
+            # 业务工具可能已经成功，记忆失败不能把整次请求伪装成业务失败并诱发重复提交。
+            logger.exception("event=agent_memory_write_failed conversation_no=%s", conversation_no)
     except Exception as exc:
         logger.exception(
-            "event=agent_flow_error user_id=%s trace_id=%s conversation_no=%s message_length=%s",
-            user_id or "-",
+            "event=agent_flow_error trace_id=%s conversation_no=%s message_length=%s",
             trace_id or "-",
             conversation_no,
             len(request.message),
         )
         raise HTTPException(status_code=503, detail=f"智能体主流程执行失败：{exc}") from exc
 
-    scenario = (state.get("intent") or {}).get("scenario")
-    agent_type = request.agent_type or {
-        "MONTHLY_SALES": AgentType.MONTHLY_SALES,
-        "WINTER_SUPPLY": AgentType.WINTER_SUPPLY,
-        "SHORT_TERM": AgentType.SHORT_TERM,
-    }.get(scenario)
+    agent_type = request.agent_type
+    if agent_type is None and skill.name == "customer-gas-forecast":
+        agent_type = AgentType.WINTER_SUPPLY if "冬季" in request.message or "保供" in request.message else \
+            AgentType.MONTHLY_SALES if "月度" in request.message or "销量" in request.message else AgentType.SHORT_TERM
+    presentation = PresentationPlanner.plan(result.executed_tool, result.execution_result or {})
     return ChatResponse(
         conversation_no=conversation_no,
         agent_type=agent_type,
-        status=state["status"],
-        message=state["response_message"],
-        capability_code=state.get("capability_code"),
-        intent=state.get("intent"),
-        parameters=state.get("parameters", {}),
-        entity_resolution=state.get("entity_resolution"),
-        missing_parameters=state.get("missing_parameters", []),
+        status=result.status,
+        message=result.message,
+        skill_name=skill.name,
+        skill_selection={"skill_name": skill.name, "confidence": selection.confidence, "reason": selection.reason},
+        parameters=result.parameters,
         memory_loaded=True,
-        available_tools=state.get("available_tools", []),
-        executed_tool=state.get("executed_tool"),
-        execution_result=state.get("execution_result"),
-        presentation=state.get("presentation"),
-        progress=state.get("progress"),
-        forecast_result=state.get("forecast_result"),
-        next_action=state.get("next_action"),
-        next_check_seconds=state.get("next_check_seconds"),
-        decision_reason=state.get("decision_reason"),
+        available_tools=result.available_tools,
+        executed_tool=result.executed_tool,
+        execution_result=result.execution_result,
+        presentation=presentation.get("presentation"),
+        progress=presentation.get("progress"),
+        forecast_result=presentation.get("forecast_result"),
+        decision_reason=selection.reason,
     )
+
+
+async def _read_memory(client: StreamableHttpMcpClient, conversation_no: str) -> dict[str, Any]:
+    raw = await client.call_tool("memory_get", {"conversationNo": conversation_no})
+    structured = raw.get("structuredContent") or raw.get("structured_content") or {}
+    data = structured.get("data")
+    return data if isinstance(data, dict) else {}
+
+
+async def _write_memory(client: StreamableHttpMcpClient, conversation_no: str, skill_name: str, result: Any) -> None:
+    values = {
+        "currentSkill": skill_name,
+        "currentParameters": result.parameters,
+        "lastTool": result.executed_tool,
+        "lastExecution": result.execution_result,
+        "pendingAction": {"tool": result.pending_tool, "parameters": result.parameters}
+        if result.pending_tool else None,
+    }
+    await client.call_tool(
+        "memory_update",
+        {"conversationNo": conversation_no, "operation": "UPSERT", "values": values},
+    )
+
+
+async def _append_reply_safely(
+    client: StreamableHttpMcpClient,
+    conversation_no: str,
+    turn_id: str,
+    status: str,
+    answer: str,
+    skill_name: str | None,
+    execution_result: dict[str, Any],
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    for attempt in range(3):
+        try:
+            return _tool_data(await client.call_tool("conversation_reply_append", {
+                "conversationNo": conversation_no,
+                "turnId": turn_id,
+                "status": status,
+                "answer": answer,
+                "skillName": skill_name,
+                "executionResult": execution_result,
+                "payload": payload,
+            }))
+        except Exception:
+            logger.exception(
+                "event=conversation_reply_append_failed conversation_no=%s turn_id=%s attempt=%s",
+                conversation_no, turn_id, attempt + 1,
+            )
+            if attempt < 2:
+                await asyncio.sleep(0.2 * (attempt + 1))
+    # turnId 唯一键使重试安全；最终失败也不能把已成功的业务工具改写为失败。
+    return {}
+
+
+def _find_text(value: Any, name: str) -> str | None:
+    if isinstance(value, dict):
+        direct = value.get(name)
+        if direct is not None and str(direct).strip():
+            return str(direct)
+        for child in value.values():
+            found = _find_text(child, name)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _find_text(child, name)
+            if found:
+                return found
+    return None
 
 
 def run() -> None:

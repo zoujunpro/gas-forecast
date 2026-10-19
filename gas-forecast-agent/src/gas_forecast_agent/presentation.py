@@ -140,7 +140,8 @@ class PresentationPlanner:
         waiting_training = status == "WAITING_TRAINING"
         steps = [
             {"index": 1, "name": "确认客户与预测范围", "status": "SUCCESS", "detail": "已完成"},
-            {"index": 2, "name": "准备可用训练模型", "status": "RUNNING" if waiting_training else "SUCCESS", "detail": train_batch or "已使用可用模型"},
+            {"index": 2, "name": "训练客户预测模型" if waiting_training else "复用已有训练结果", "status": "RUNNING" if waiting_training else "SUCCESS",
+             "detail": train_batch if waiting_training else (f"已复用训练批次：{train_batch}" if train_batch else "已找到匹配的成功训练模型")},
             {"index": 3, "name": "执行用气预测", "status": "WAITING" if waiting_training else ("FAILED" if failed else "RUNNING"), "detail": forecast_batch or "等待训练完成"},
             {"index": 4, "name": "保存并展示预测结果", "status": "WAITING", "detail": "等待预测完成"},
         ]

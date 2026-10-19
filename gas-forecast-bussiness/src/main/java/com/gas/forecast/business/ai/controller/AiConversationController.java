@@ -1,12 +1,12 @@
 package com.gas.forecast.business.ai.controller;
 
-import com.gas.forecast.business.ai.dto.AiChatRequest;
 import com.gas.forecast.business.ai.dto.AiChatResponse;
 import com.gas.forecast.business.ai.dto.AiConversationResponse;
 import com.gas.forecast.business.ai.dto.AiConversationRenameRequest;
 import com.gas.forecast.business.ai.dto.AiContinueForecastRequest;
 import com.gas.forecast.business.ai.dto.AiTrainingProgressResponse;
 import com.gas.forecast.business.ai.service.AiConversationService;
+import com.gas.forecast.business.service.AgentTaskProgressService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
@@ -25,13 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AiConversationController {
     private final AiConversationService conversationService;
-
-    @PostMapping("/chat")
-    @WebLog("AI预测智能体对话")
-    @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
-        return ResponseResult.success(conversationService.chat(request));
-    }
+    private final AgentTaskProgressService taskProgressService;
 
     @GetMapping
     @RequirePermission("ai:assistant:use")
@@ -68,19 +62,19 @@ public class AiConversationController {
     @GetMapping("/training-progress")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<AiTrainingProgressResponse> trainingProgress(@RequestParam String batchNo) {
-        return ResponseResult.success(conversationService.trainingProgress(batchNo));
+        return ResponseResult.success(taskProgressService.trainingProgress(batchNo));
     }
 
     @GetMapping("/forecast-progress")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<AiChatResponse> forecastProgress(@RequestParam String conversationNo, @RequestParam String batchNo) {
-        return ResponseResult.success(conversationService.forecastProgress(conversationNo, batchNo));
+        return ResponseResult.success(taskProgressService.forecastProgress(conversationNo, batchNo));
     }
 
     @PostMapping("/continue-forecast")
     @WebLog("训练完成后自动继续预测")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<AiChatResponse> continueForecast(@Valid @RequestBody AiContinueForecastRequest request) {
-        return ResponseResult.success(conversationService.continueForecast(request.conversationNo(), request.trainBatchNo()));
+        return ResponseResult.success(taskProgressService.continueForecast(request.conversationNo(), request.trainBatchNo()));
     }
 }

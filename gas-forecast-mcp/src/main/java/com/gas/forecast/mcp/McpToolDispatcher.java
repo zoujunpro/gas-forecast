@@ -2,6 +2,7 @@ package com.gas.forecast.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.business.service.AgentMemoryService;
+import com.gas.forecast.business.ai.service.AiConversationService;
 import com.gas.forecast.business.service.AgentBusinessQueryService;
 import com.gas.forecast.business.service.AgentExecutionTaskService;
 import com.gas.forecast.business.service.AgentExecutionTaskService.StepCommand;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class McpToolDispatcher {
     private final AgentMemoryService memoryService;
+    private final AiConversationService conversationService;
     private final AgentBusinessQueryService queryService;
     private final AgentExecutionTaskService taskService;
     private final BusinessEntityResolutionService entityService;
@@ -46,6 +48,12 @@ public class McpToolDispatcher {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
         try {
             return switch (toolName) {
+                case "conversation_prepare" -> success(toolName, "会话轮次准备完成", conversationService.prepareTurn(
+                        text(args, "conversationNo"), text(args, "forecastBatchNo"), requiredText(args, "turnId"), requiredText(args, "message"),
+                        text(args, "agentType"), map(args, "metadata")));
+                case "conversation_reply_append" -> success(toolName, "Agent回复已归档", conversationService.completeTurn(
+                        requiredText(args, "conversationNo"), requiredText(args, "turnId"), requiredText(args, "status"), requiredText(args, "answer"),
+                        text(args, "skillName"), map(args, "executionResult"), map(args, "payload")));
                 case "memory_get" -> success(toolName, "记忆查询成功", memoryService.get(requiredText(args, "conversationNo")));
                 case "memory_update" -> memoryUpdate(args);
                 case "customer_search" -> resolve(args, EntityType.CUSTOMER);
@@ -87,6 +95,12 @@ public class McpToolDispatcher {
             String reason = rootCauseMessage(exception);
             return failure(toolName, "INTERNAL_ERROR", "工具执行失败：" + reason, true);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> map(Map<String, Object> args, String name) {
+        Object value = args.get(name);
+        return value instanceof Map<?, ?> ? objectMapper.convertValue(value, Map.class) : Map.of();
     }
 
     /**
@@ -198,8 +212,16 @@ public class McpToolDispatcher {
     /** 创建状态为COMPLETED的标准成功结果。 */
     private McpToolResult success(String toolName, String message, Object data) {
         String status = "COMPLETED";
-        if (data instanceof Map<?, ?> map && map.get("status") != null && TextUtils.hasText(String.valueOf(map.get("status"))))
-            status = String.valueOf(map.get("status"));
+        if (data instanceof Map<?, ?> map) {
+            if (map.get("status") != null && TextUtils.hasText(String.valueOf(map.get("status"))))
+                status = String.valueOf(map.get("status"));
+            // 业务服务比工具默认文案更了解真实结果，尤其是待确认和参数冲突场景。
+            Object businessMessage = map.get("message");
+            if (businessMessage == null && (status.startsWith("NEED_") || "FAILED".equals(status)))
+                businessMessage = map.get("reason");
+            if (businessMessage != null && TextUtils.hasText(String.valueOf(businessMessage)))
+                message = String.valueOf(businessMessage);
+        }
         return McpToolResult.success(status, resultType(toolName), message, data);
     }
 
@@ -256,7 +278,9 @@ public class McpToolDispatcher {
 
     /** 根据业务异常文本映射为供智能体判断的稳定错误码。 */
     private String classify(String message) {
+        if (message != null && (message.contains("全部为0") || message.contains("全部为空"))) return "TRAINING_DATA_QUALITY_FAILED";
         if (message != null && message.contains("确认")) return "CONFIRMATION_REQUIRED";
+        if (message != null && (message.contains("冲突") || message.contains("不匹配") || message.contains("超出") || message.contains("超过"))) return "PARAMETER_CONFLICT";
         if (message != null && (message.contains("缺少") || message.contains("不能为空") || message.contains("必须"))) return "INVALID_ARGUMENT";
         if (message != null && (message.contains("不存在") || message.contains("没有找到"))) return "NOT_FOUND";
         return "BUSINESS_ERROR";
@@ -274,13 +298,20 @@ public class McpToolDispatcher {
         detail.put("nextAction", action);
         detail.put("allowedActions", allowedActions(action, retryable));
         detail.put("retryable", retryable);
-        return McpToolResult.failure("FAILED", errorCode, reason, retryable, detail);
+        String status = switch (errorCode) {
+            case "NOT_FOUND" -> "NOT_FOUND";
+            case "INVALID_ARGUMENT" -> "NEED_INFORMATION";
+            case "CONFIRMATION_REQUIRED" -> "NEED_CONFIRMATION";
+            case "PARAMETER_CONFLICT" -> "NEED_CLARIFICATION";
+            default -> "FAILED";
+        };
+        return McpToolResult.failure(status, errorCode, reason, retryable, detail);
     }
 
     /** 根据稳定错误码给大模型返回明确的后续处理建议。 */
     private String nextAction(String errorCode, String toolName) {
         return switch (errorCode) {
-            case "INVALID_ARGUMENT", "CONFIRMATION_REQUIRED" -> "ASK_USER";
+            case "INVALID_ARGUMENT", "CONFIRMATION_REQUIRED", "PARAMETER_CONFLICT", "TRAINING_DATA_QUALITY_FAILED" -> "ASK_USER";
             case "NOT_FOUND" -> toolName.endsWith("_search") || toolName.endsWith("_start")
                     ? "ASK_USER" : "QUERY_STATUS";
             case "TOOL_NOT_FOUND" -> "FAIL";

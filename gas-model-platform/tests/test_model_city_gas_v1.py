@@ -48,6 +48,18 @@ def test_city_gas_model_accepts_any_region_and_customer() -> None:
     assert result.model_code == "MODEL_CITY_GAS_V1.0"
 
 
+def test_city_gas_model_warns_but_accepts_missing_dates() -> None:
+    context = _context()
+    del context.dataset[100]
+
+    result = ModelCityGasV1Handler().validate_training_data(context)
+
+    assert result.valid is True
+    assert result.errors == []
+    assert result.summary["missing_date_count"] == 1
+    assert {warning.code for warning in result.warnings} == {"NON_CONTINUOUS_DATES"}
+
+
 def test_city_gas_model_builds_weather_features() -> None:
     frame, regressors = ModelCityGasV1Handler._prepare(_context().dataset)
 

@@ -434,10 +434,10 @@ class SectorGasXgbV1Handler:
                 frequency="day",
                 minimum=spec.minimum_history,
                 recommended=spec.recommended_history,
-                continuous=True,
+                continuous=False,
                 description=(
-                    f"{spec.industry_name}模型至少需要{spec.minimum_history}天连续日数据，"
-                    f"建议提供{spec.recommended_history}天以上。"
+                    f"{spec.industry_name}模型至少需要{spec.minimum_history}条日数据，"
+                    f"建议提供{spec.recommended_history}条以上；日期不连续时提示警告，但不阻断训练。"
                 ),
             ),
         )
@@ -448,6 +448,7 @@ class SectorGasXgbV1Handler:
         duplicate_count = int(dates.duplicated().sum())
         missing = pd.date_range(dates.min(), dates.max(), freq="D").difference(dates)
         errors: list[TrainingDataValidationIssue] = []
+        warnings: list[TrainingDataValidationIssue] = []
         if len(frame) < self.spec.minimum_history:
             errors.append(TrainingDataValidationIssue(
                 code="INSUFFICIENT_HISTORY",
@@ -461,8 +462,8 @@ class SectorGasXgbV1Handler:
                 expected=0, actual=duplicate_count,
             ))
         if len(missing):
-            errors.append(TrainingDataValidationIssue(
-                code="NON_CONTINUOUS_DATES", message=f"训练数据缺少{len(missing)}个日期",
+            warnings.append(TrainingDataValidationIssue(
+                code="NON_CONTINUOUS_DATES", message=f"训练数据缺少{len(missing)}个日期，将继续训练，但可能影响预测精度",
                 expected=0, actual=len(missing),
             ))
         return TrainingDataValidationResult(
@@ -472,6 +473,7 @@ class SectorGasXgbV1Handler:
                      "end_date": str(dates.max().date()), "missing_date_count": len(missing),
                      "duplicate_date_count": duplicate_count},
             errors=errors,
+            warnings=warnings,
         )
 
     def train(self, context: ModelContext) -> TrainResult:

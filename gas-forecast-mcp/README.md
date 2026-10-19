@@ -26,15 +26,17 @@ gas:
 
 ## Tools
 
+- `conversation_prepare`, `conversation_reply_append`
 - `memory_get`, `memory_update`
 - `customer_search`, `region_search`, `industry_search`
 - `training_start`, `training_status_get`, `training_result_get`
 - `forecast_start`, `forecast_status_get`, `forecast_result_get`
 
-Mutation tools reuse `AiConversationService`, which in turn calls the existing
-training and forecast business services. Entity tools reuse `AiEntityTranslator`.
-The MCP adapter does not write model, training, forecast, customer, region or
-industry tables directly.
+Conversation tools use `AiConversationService` only for authenticated conversation
+and message persistence. Training, forecast and entity tools call their corresponding
+deterministic business services. Java does not select Skills, parse user intent or
+plan tool order. The MCP adapter does not write model, training, forecast, customer,
+region or industry tables directly.
 
 Batch training and forecast calls require `bulk=true` and `confirmed=true`.
 

@@ -5,11 +5,9 @@ description = "Conversation router and AI agents for gas forecasting."
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.115,<1",
-    "langgraph>=1.0,<2",
     "mcp>=1.20,<2",
     "openai>=2.0,<3",
     "pydantic-settings>=2.6,<3",
-    "PyMySQL>=1.1,<2",
     "PyYAML>=6,<7",
     "uvicorn[standard]>=0.30,<1",
 ]
@@ -29,8 +27,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-gas_forecast_agent = ["capabilities/definitions/*.yml"]
+[tool.setuptools.data-files]
+"share/gas-forecast-agent/skills/business-data-query" = ["skills/business-data-query/SKILL.md"]
+"share/gas-forecast-agent/skills/business-data-query/references" = ["skills/business-data-query/references/*.md"]
+"share/gas-forecast-agent/skills/customer-gas-forecast" = ["skills/customer-gas-forecast/SKILL.md"]
+"share/gas-forecast-agent/skills/customer-gas-forecast/references" = ["skills/customer-gas-forecast/references/*.md"]
+"share/gas-forecast-agent/skills/model-training-management" = ["skills/model-training-management/SKILL.md"]
+"share/gas-forecast-agent/skills/model-training-management/references" = ["skills/model-training-management/references/*.md"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

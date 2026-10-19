@@ -262,7 +262,7 @@ public class AgentExecutionTaskServiceImpl implements AgentExecutionTaskService 
         return Map.of("recoverable", !"RETRY".equals(action), "recommendedAction", action, "resumeFromStep", step, "existingBusinessResult", existing, "reason", reason);
     }
 
-    /** 将恢复建议转换成供LangGraph和受限ReAct使用的动作白名单。 */
+    /** 将恢复建议转换成供 Skill Agent 使用的动作白名单。 */
     private List<String> allowedActions(String action) {
         return switch (action) {
             case "WAIT" -> List.of("WAIT", "QUERY_STATUS");

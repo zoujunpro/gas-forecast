@@ -37,7 +37,7 @@ class ModelCityGasV1Handler:
         capabilities=["train", "backtest", "predict"],
         training_data_range=TrainingDataRange(
             type="history_length", frequency="day", minimum=365, recommended=730,
-            continuous=True, description="至少需要365天连续日数据并覆盖完整年度，推荐730天；避免短历史进行50天外推时趋势失真。"))
+            continuous=False, description="至少需要365条日数据并覆盖完整年度，推荐730条；日期不连续时提示警告，但不阻断训练。"))
 
     def validate_training_data(self, context: ModelContext) -> TrainingDataValidationResult:
         frame, _ = self._prepare(context.dataset)
@@ -45,12 +45,13 @@ class ModelCityGasV1Handler:
         missing = pd.date_range(dates.min(), dates.max(), freq="D").difference(dates)
         duplicate_count = int(dates.duplicated().sum())
         errors = []
+        warnings = []
         if len(frame) < 365:
             errors.append(TrainingDataValidationIssue(code="INSUFFICIENT_HISTORY",
-                message="城市燃气模型至少需要365天连续日数据", expected=365, actual=len(frame)))
+                message="城市燃气模型至少需要365条日数据", expected=365, actual=len(frame)))
         if len(missing):
-            errors.append(TrainingDataValidationIssue(code="NON_CONTINUOUS_DATES",
-                message=f"训练数据缺少{len(missing)}个日期", expected=0, actual=len(missing)))
+            warnings.append(TrainingDataValidationIssue(code="NON_CONTINUOUS_DATES",
+                message=f"训练数据缺少{len(missing)}个日期，将继续训练，但可能影响预测精度", expected=0, actual=len(missing)))
         if duplicate_count:
             errors.append(TrainingDataValidationIssue(code="DUPLICATE_DATES",
                 message=f"训练数据存在{duplicate_count}个重复日期", expected=0, actual=duplicate_count))
@@ -58,7 +59,7 @@ class ModelCityGasV1Handler:
             model_code=self.info.model_code, valid=not errors,
             summary={"row_count": len(frame), "start_date": str(dates.min().date()),
                      "end_date": str(dates.max().date()), "missing_date_count": len(missing)},
-            errors=errors)
+            errors=errors, warnings=warnings)
 
     def train(self, context: ModelContext) -> TrainResult:
         if not context.train_batch_no:

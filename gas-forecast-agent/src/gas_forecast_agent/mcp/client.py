@@ -12,6 +12,10 @@ logger = logging.getLogger(__name__)
 class McpClientError(RuntimeError):
     """MCP 初始化、工具发现或工具调用失败。"""
 
+    def __init__(self, message: str, http_status: int | None = None) -> None:
+        super().__init__(message)
+        self.http_status = http_status
+
 
 class StreamableHttpMcpClient:
     """调用项目内无状态 Java MCP JSON-RPC 端点。"""
@@ -37,7 +41,10 @@ class StreamableHttpMcpClient:
             body = response.text.strip()
             if len(body) > 2000:
                 body = body[:2000] + "..."
-            raise McpClientError(f"MCP method={payload.get('method')} HTTP失败：status={response.status_code} body={body or '<empty>'}")
+            raise McpClientError(
+                f"MCP method={payload.get('method')} HTTP失败：status={response.status_code} body={body or '<empty>'}",
+                response.status_code,
+            )
         return response
 
     async def _request(self, method: str, params: dict[str, Any] | None = None) -> dict[str, Any]:

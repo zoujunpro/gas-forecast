@@ -70,9 +70,15 @@
             </details>
             <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
             <AiTrainingResult v-if="message.presentation?.type === 'TRAINING_BACKTEST' && message.presentation.trainingResult" :result="message.presentation.trainingResult" />
-            <section v-if="message.analysis" class="ai-analysis">
+            <section v-if="message.presentation?.type === 'LIST' && listRows(message).length" class="result-list">
+              <div class="result-list-head">查询结果 <span>共 {{ listRows(message).length }} 条</span></div>
+              <el-table :data="listRows(message)" height="420" stripe>
+                <el-table-column v-for="column in listColumns(message)" :key="column.key" :prop="column.key" :label="column.label" min-width="150" show-overflow-tooltip />
+              </el-table>
+            </section>
+            <section v-if="analysisVisible(message)" class="ai-analysis">
               <div class="analysis-title"><el-icon><MagicStick /></el-icon><strong>AI 智能分析</strong></div>
-              <div v-html="sanitizeHtml(renderMarkdown(message.analysis))"></div>
+              <div v-html="sanitizeHtml(renderMarkdown(localizeAnalysis(message.analysis)))"></div>
             </section>
             <div v-if="message.suggestedQuestions?.length" class="follow-up">
               <span>您还可以继续问</span>
@@ -105,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Delete as DeleteIcon, Edit, MagicStick, Plus, Promotion, VideoPause } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getJson, postJson } from '@/api/management'
@@ -114,14 +120,14 @@ import AiForecastResult from './AiForecastResult.vue'
 import AiTrainingResult from './AiTrainingResult.vue'
 
 type Role = 'user' | 'assistant'
-interface ProgressStep { index: number; name: string; status: 'SUCCESS' | 'RUNNING' | 'WAITING' | 'PARTIAL_FAILED' | 'FAILED'; detail?: string }
+interface ProgressStep { index: number; name: string; status: 'SUCCESS' | 'RUNNING' | 'WAITING' | 'PARTIAL_FAILED' | 'FAILED' | 'SKIPPED'; detail?: string }
 interface ExecutionProgress { title: string; currentStep: number; totalSteps: number; steps: ProgressStep[] }
 interface ForecastPoint { date: string; value: number }
 interface ForecastResult { batchNo: string; average: number; minimum: number; maximum: number; points: ForecastPoint[]; training?: { batchNo: string } }
 interface TrainingBacktestPoint { date: string; actualValue?: number; predictedValue?: number; absoluteError?: number; errorRate?: number }
 interface TrainingResult { batchNo: string; status?: string; customerName?: string; regionName?: string; industryName?: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; modelVersion?: string; trainDurationSeconds?: number; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number; backtestPoints?: TrainingBacktestPoint[] }
 interface Presentation { type: 'TEXT' | 'LIST' | 'PROGRESS' | 'FORECAST_CHART' | 'TRAINING_BACKTEST'; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
-interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; presentation?: Presentation; analysis?: string; suggestedQuestions?: string[] }
+interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
 interface Session { id: string; conversationNo?: string; title: string; updatedAt: string; messages: Message[] }
 
 const welcomeMessage = (): Message => ({
@@ -218,6 +224,7 @@ const switchSession = async (id: string) => {
         progress: item.progress || undefined,
         forecastResult: item.forecastResult || undefined,
         presentation: item.presentation || undefined,
+        executionResult: item.executionResult || undefined,
         analysis: item.analysis || undefined,
         suggestedQuestions: item.suggestedQuestions || undefined
       }))
@@ -229,9 +236,31 @@ const switchSession = async (id: string) => {
   }
 }
 const scrollBottom = () => nextTick(() => { if (messageContainer.value) messageContainer.value.scrollTop = messageContainer.value.scrollHeight })
-const stepStatusText = (status: ProgressStep['status']) => ({ SUCCESS: '已完成', RUNNING: '执行中', WAITING: '等待中', PARTIAL_FAILED: '部分失败', FAILED: '全部失败' }[status])
+const listRows = (message: Message): Record<string, any>[] => {
+  const records = message.executionResult?.data?.records
+  return Array.isArray(records) ? records : []
+}
+const listColumns = (message: Message) => {
+  const first = listRows(message)[0] || {}
+  const labels: Record<string, string> = {
+    customerCode: '客户编码', customerName: '客户名称', regionCode: '地区编码', regionName: '地区名称',
+    industryCode: '行业编码', industryName: '行业名称', code: '编码', name: '名称', status: '状态'
+  }
+  return Object.keys(labels).filter((key) => key in first).map((key) => ({ key, label: labels[key] }))
+}
+const stepStatusText = (status: ProgressStep['status']) => ({
+  SUCCESS: '已完成', RUNNING: '执行中', WAITING: '等待中', PARTIAL_FAILED: '部分失败', FAILED: '失败', SKIPPED: '已跳过'
+}[status])
 const validProgress = (progress?: ExecutionProgress) => Boolean(progress && progress.totalSteps > 0 && progress.currentStep > 0 && Array.isArray(progress.steps))
 const currentStepName = (progress: ExecutionProgress) => progress.steps.find((step) => step.index === progress.currentStep)?.name || progress.title
+const localizeAnalysis = (content?: string) => (content || '')
+  .replace(/\bchangePercent\b/gi, '同比变化率')
+  .replace(/\byearOverYearComparison\b/gi, '同比比较')
+const analysisVisible = (message: Message) => {
+  if (!message.analysis) return false
+  if (!message.progress) return true
+  return !message.progress.steps.some((step) => step.status === 'RUNNING' || step.status === 'WAITING')
+}
 
 const ask = (text: string, contextualFollowUp = false) => { input.value = text; void send(contextualFollowUp) }
 const stop = () => abortController.value?.abort()
@@ -245,12 +274,14 @@ const send = async (contextualFollowUp = false) => {
   session.messages.push({ id: crypto.randomUUID(), role: 'user', content: text })
   if (session.title === '新会话') session.title = text.slice(0, 18)
   session.updatedAt = nowText()
-  const answer: Message = { id: crypto.randomUUID(), role: 'assistant', content: '' }
+  // 后台训练、预测轮询会继续修改这条消息，必须持有 Vue 代理对象才能实时刷新页面。
+  const answer = reactive<Message>({ id: crypto.randomUUID(), role: 'assistant', content: '' })
   session.messages.push(answer)
   streaming.value = true; scrollBottom()
   const controller = new AbortController(); abortController.value = controller
   try {
-    const response = await postJson<any>('/ai/conversations/chat', {
+    const response = await postJson<any>('/agent-api/api/v1/chat', {
+      turnId: crypto.randomUUID(),
       conversationNo: session.conversationNo || null,
       message: text,
       contextualFollowUp: isContextualFollowUp
@@ -265,9 +296,13 @@ const send = async (contextualFollowUp = false) => {
     answer.progress = data.progress || undefined
     answer.forecastResult = data.forecastResult || undefined
     answer.presentation = data.presentation || undefined
+    answer.executionResult = data.executionResult || undefined
     answer.analysis = data.analysis || undefined
     answer.suggestedQuestions = data.suggestedQuestions || undefined
-    if (data.trainBatchNo && data.status === 'WAITING_TRAINING') {
+    const runningTrainStep = answer.progress?.steps?.some((step) => step.index === 2 && step.status === 'RUNNING')
+    // Agent 对完整预测任务返回 EXECUTING，对仅训练任务返回 WAITING_TRAINING。
+    // 是否轮询训练应以真实批次和步骤状态为准，不能依赖顶层任务状态的单一取值。
+    if (data.trainBatchNo && runningTrainStep) {
       void watchTraining(data.trainBatchNo, answer)
     }
     if (data.forecastBatchNo && data.status === 'EXECUTING') {
@@ -284,31 +319,39 @@ const send = async (contextualFollowUp = false) => {
   }
 }
 
+const watchingTrainings = new Set<string>()
 const watchTraining = async (batchNo: string, message: Message) => {
-  for (let count = 0; count < 120; count += 1) {
-    await new Promise((resolve) => window.setTimeout(resolve, 3000))
-    try {
-      const response = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(batchNo)}`)
-      const batch = response.data
-      if (!batch) continue
-      if (applyTrainingStatus(message, batchNo, batch, true)) {
-        if (String(batch.status) === 'SUCCESS' && batch.continuationExpected) {
-          if (!batch.forecastBatchNo) continue
-          const predictStep = message.progress?.steps.find((item) => item.index === 3)
-          if (predictStep) { predictStep.status = 'RUNNING'; predictStep.detail = batch.forecastBatchNo }
-          void watchForecast(batch.forecastBatchNo, message)
+  if (watchingTrainings.has(batchNo)) return
+  watchingTrainings.add(batchNo)
+  try {
+    for (let count = 0; count < 120; count += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 3000))
+      try {
+        const response = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(batchNo)}`)
+        const batch = response.data
+        if (!batch) continue
+        if (applyTrainingStatus(message, batchNo, batch, true)) {
+          if (String(batch.status) === 'SUCCESS' && batch.continuationExpected) {
+            if (!batch.forecastBatchNo) continue
+            const predictStep = message.progress?.steps.find((item) => item.index === 3)
+            if (predictStep) { predictStep.status = 'RUNNING'; predictStep.detail = batch.forecastBatchNo }
+            void watchForecast(batch.forecastBatchNo, message)
+          }
+          return
         }
-        return
+      } catch {
+        // 临时查询失败时继续下一轮，不中断当前对话。
       }
-    } catch {
-      // 临时查询失败时继续下一轮，不中断当前对话。
     }
-  }
-  const trainStep = message.progress?.steps.find((item) => item.index === 2)
-  if (trainStep?.status === 'RUNNING') {
-    trainStep.status = 'FAILED'
-    trainStep.detail = '页面等待超时，请刷新或查询训练状态'
-    message.content += renderMarkdown('\n\n⚠️ 页面等待训练结果超时，已停止自动轮询。任务可能仍在后台执行，可刷新会话或询问“训练到哪了”。')
+    const trainStep = message.progress?.steps.find((item) => item.index === 2)
+    if (trainStep?.status === 'RUNNING') {
+      trainStep.status = 'FAILED'
+      trainStep.detail = '页面等待超时，请刷新或查询训练状态'
+      message.content += renderMarkdown('\n\n⚠️ 页面等待训练结果超时，已停止自动轮询。任务可能仍在后台执行，可刷新会话或询问“训练到哪了”。')
+      scrollBottom()
+    }
+  } finally {
+    watchingTrainings.delete(batchNo)
     scrollBottom()
   }
 }
@@ -343,6 +386,7 @@ const watchForecast = async (batchNo: string, message: Message) => {
         const data = response.data || {}
         if (data.progress) message.progress = data.progress
         if (data.status === 'EXECUTING') { scrollBottom(); continue }
+        applyForecastTerminalStatus(message, data.status, batchNo)
         const answer = data.answer || (data.status === 'FAILED' ? '预测执行失败' : '预测已完成')
         if (!message.content.includes(answer)) message.content += renderMarkdown(`\n\n${data.status === 'FAILED' ? '⚠️ ' : ''}${answer}`)
         message.forecastResult = data.forecastResult || undefined
@@ -370,6 +414,31 @@ const watchForecast = async (batchNo: string, message: Message) => {
   }
 }
 
+const applyForecastTerminalStatus = (message: Message, status: string, batchNo: string) => {
+  const progress = message.progress
+  if (!progress) return
+  const predictStep = progress.steps.find((item) => item.index === 3)
+  const saveStep = progress.steps.find((item) => item.index === 4)
+  if (status === 'FAILED') {
+    progress.currentStep = predictStep?.index || progress.currentStep
+    if (predictStep) predictStep.status = 'FAILED'
+    if (saveStep) {
+      saveStep.status = 'SKIPPED'
+      saveStep.detail = '因预测失败未执行'
+    }
+    return
+  }
+  if (predictStep) {
+    predictStep.status = 'SUCCESS'
+    predictStep.detail = batchNo
+  }
+  if (saveStep) {
+    saveStep.status = 'SUCCESS'
+    saveStep.detail = '预测结果已保存'
+    progress.currentStep = saveStep.index
+  }
+}
+
 const applyTrainingStatus = (message: Message, batchNo: string, batch: any, appendNotice: boolean) => {
   const progress = message.progress
   const status = String(batch.status || '')
@@ -380,7 +449,13 @@ const applyTrainingStatus = (message: Message, batchNo: string, batch: any, appe
     trainStep.detail = failed ? (batch.message || '训练未能完成') : batchNo
   }
   if (failed) {
-    if (progress) progress.currentStep = 2
+    if (progress) {
+      progress.currentStep = 2
+      progress.steps.filter((item) => item.index > 2 && item.status === 'WAITING').forEach((item) => {
+        item.status = 'SKIPPED'
+        item.detail = '因训练失败未执行'
+      })
+    }
     if (appendNotice && !message.content.includes('本次训练未能完成'))
       message.content += renderMarkdown(`\n\n⚠️ ${batch.message || '本次训练未能完成，请稍后重试或联系平台管理员。'}`)
     scrollBottom()
@@ -469,6 +544,7 @@ const refreshActiveBulkProgress = async () => {
       progress: item.progress || undefined,
       forecastResult: item.forecastResult || undefined,
       presentation: item.presentation || undefined,
+      executionResult: item.executionResult || undefined,
       analysis: item.analysis || undefined,
       suggestedQuestions: item.suggestedQuestions || undefined
     }))
@@ -505,7 +581,8 @@ onBeforeUnmount(() => {
 .chat-panel{min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column}.chat-header{height:74px;flex:0 0 74px;padding:0 24px;border-bottom:1px solid #edf0f5;display:flex;align-items:center;justify-content:space-between}.chat-header h1{font-size:18px;margin:0}.chat-header p{font-size:12px;color:#94a3b8;margin:5px 0 0}.online{font-size:12px;color:#16a34a}.online i{display:inline-block;width:7px;height:7px;background:#22c55e;border-radius:50%;margin-right:6px}
 .messages{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:28px 8%;scroll-behavior:smooth}.welcome{text-align:center;padding:10px 0 26px}.welcome-icon{margin:auto;width:46px;height:46px}.welcome h2{margin:14px 0 8px;font-size:20px}.welcome p{color:#64748b}.quick-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:620px;margin:22px auto 0}.quick-list button{padding:11px 14px;border:1px solid #dfe5ef;border-radius:9px;background:#fff;color:#475569;cursor:pointer}.quick-list button:hover{border-color:#6688ef;color:#315ecc;background:#f8faff}
 .message{display:flex;gap:12px;margin:22px 0}.message.user{flex-direction:row-reverse}.avatar{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#eef2ff;color:#4169d8;font-size:12px;font-weight:700}.user .avatar{background:#4169d8;color:#fff}.message-main{max-width:82%}.message-name{font-size:12px;color:#94a3b8;margin-bottom:6px}.user .message-name{text-align:right}.user-text,.assistant-text{padding:12px 15px;border-radius:12px;line-height:1.75}.user-text{background:#4169d8;color:#fff}.assistant-text{background:#f7f9fc;color:#334155}.assistant-text :deep(p){margin:0 0 8px}.assistant-text :deep(p:last-child){margin-bottom:0}.typing{background:#f7f9fc;padding:14px;border-radius:12px}.typing i{display:inline-block;width:6px;height:6px;background:#94a3b8;border-radius:50%;margin:0 2px;animation:pulse 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}@keyframes pulse{50%{opacity:.25}}
-.execution-trace{margin-top:7px;color:#64748b;font-size:12px}.execution-trace summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;width:max-content}.execution-trace summary::-webkit-details-marker{display:none}.execution-trace summary>i{width:7px;height:7px;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 4px #dbeafe}.execution-trace summary>small{color:#94a3b8}.execution-trace[open] summary{margin-bottom:9px}.trace-step{display:grid;grid-template-columns:21px minmax(180px,1fr) auto;align-items:start;gap:8px;padding:5px 0 5px 3px;color:#94a3b8}.trace-step>b{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#edf1f7;font-size:10px}.trace-step span>small{display:block;margin-top:2px;color:#a3acb9}.trace-step em{font-style:normal;font-size:11px}.trace-step.success{color:#16a34a}.trace-step.running{color:#2563eb}.trace-step.partial_failed{color:#d97706}.trace-step.failed{color:#dc2626}
+.execution-trace{margin-top:7px;color:#64748b;font-size:12px}.execution-trace summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;width:max-content}.execution-trace summary::-webkit-details-marker{display:none}.execution-trace summary>i{width:7px;height:7px;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 4px #dbeafe}.execution-trace summary>small{color:#94a3b8}.execution-trace[open] summary{margin-bottom:9px}.trace-step{display:grid;grid-template-columns:21px minmax(180px,1fr) auto;align-items:start;gap:8px;padding:5px 0 5px 3px;color:#94a3b8}.trace-step>b{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#edf1f7;font-size:10px}.trace-step span>small{display:block;margin-top:2px;color:#a3acb9}.trace-step em{font-style:normal;font-size:11px}.trace-step.success{color:#16a34a}.trace-step.running{color:#2563eb}.trace-step.partial_failed{color:#d97706}.trace-step.failed{color:#dc2626}.trace-step.skipped{color:#94a3b8}
+.result-list{margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff}.result-list-head{display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;font-weight:600;color:#334155;background:#f8fafc}.result-list-head span{font-weight:400;color:#64748b}
 .ai-analysis{margin-top:12px;padding:15px 17px;border:1px solid #dfe7fb;border-radius:12px;background:linear-gradient(135deg,#f8faff,#f4f7ff);color:#334155;line-height:1.75}.analysis-title{display:flex;align-items:center;gap:7px;margin-bottom:8px;color:#4169d8}.ai-analysis :deep(p){margin:0 0 8px}.ai-analysis :deep(p:last-child){margin-bottom:0}.follow-up{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:12px}.follow-up>span{font-size:12px;color:#94a3b8}.follow-up button{max-width:100%;padding:8px 12px;border:1px solid #dbe4f5;border-radius:16px;background:#fff;color:#4169d8;text-align:left;cursor:pointer}.follow-up button:hover{border-color:#6688ef;background:#f5f8ff}
 .composer{flex:0 0 auto;padding:14px 22px 12px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:1fr 42px;gap:10px}.composer :deep(.el-textarea__inner){box-shadow:none;border:1px solid #dfe5ef;border-radius:10px;padding:11px}.composer p{grid-column:1/-1;text-align:center;color:#a0a9b8;font-size:11px;margin:0}
 .messages{height:0;flex:1 1 0;scrollbar-gutter:stable}

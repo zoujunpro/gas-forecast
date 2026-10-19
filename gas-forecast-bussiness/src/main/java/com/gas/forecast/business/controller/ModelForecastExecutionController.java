@@ -34,7 +34,8 @@ public class ModelForecastExecutionController {
         var command = new ForecastApplicationService.ForecastCommand(
                 null, request.getAgentCode(), List.of(request.getCustomerCode()), request.getRegionCode(), request.getIndustryCode(), false,
                 null, null, request.getForecastHorizon(), request.getForecastFrequency(), "ALL", null, null, null,
-                false, true, "AUTO", true, request.getIdempotencyKey());
+                false, Boolean.TRUE.equals(request.getAutoTrain()), request.getTrainingPreference(),
+                Boolean.TRUE.equals(request.getConfirmed()), request.getIdempotencyKey());
         return ResponseResult.success(forecastApplicationService.start(command));
     }
 

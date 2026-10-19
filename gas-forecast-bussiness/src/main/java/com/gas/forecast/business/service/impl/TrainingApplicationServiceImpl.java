@@ -58,7 +58,17 @@ public class TrainingApplicationServiceImpl implements TrainingApplicationServic
         result.put("failed", failures.size());
         result.put("tasks", tasks);
         result.put("failures", failures);
-        result.put("status", tasks.isEmpty() ? "FAILED" : "EXECUTING");
+        String status = tasks.isEmpty() ? "FAILED" : "EXECUTING";
+        result.put("status", status);
+        if ("FAILED".equals(status)) {
+            String reason = failures.stream().map(item -> item.get("message")).filter(TextUtils::hasText).distinct().limit(3).reduce((left, right) -> left + "；" + right)
+                    .orElse("没有任务通过业务校验");
+            result.put("message", "训练任务未创建：" + reason);
+        } else if (!failures.isEmpty()) {
+            result.put("message", "训练任务部分受理：成功" + tasks.size() + "个，失败" + failures.size() + "个");
+        } else {
+            result.put("message", "训练任务已受理");
+        }
         return result;
     }
 

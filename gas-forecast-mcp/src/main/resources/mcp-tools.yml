@@ -7,17 +7,53 @@ standardOutput: &standardOutput
     status:
       type: string
       description: 业务状态
-      enum: [COMPLETED, EMPTY_RESULT, EXECUTING, WAITING_TRAINING, NEED_INFORMATION, NEED_SELECTION, NEED_CONFIRMATION, NOT_FOUND, CANCELLED, SUCCESS, FAILED, UNKNOWN]
+      enum: [COMPLETED, EMPTY_RESULT, EXECUTING, WAITING_TRAINING, NEED_INFORMATION, NEED_SELECTION, NEED_CONFIRMATION, NEED_CLARIFICATION, NOT_FOUND, CANCELLED, SUCCESS, FAILED, SYSTEM_ERROR, UNKNOWN]
     resultType:
       type: string
       description: 通用结果形态，供Agent统一解释，不依赖具体工具
       enum: [PAGE, ENTITY, TASK, PROGRESS, RESULT, COMMAND, MEMORY, OBJECT, ERROR]
     errorCode: {type: [string, "null"], description: 失败时的稳定错误码，成功时为null}
+    errorType: {type: [string, "null"], description: 错误分类，成功时为null, enum: [BUSINESS, SYSTEM, null]}
     message: {type: string, description: 可展示给用户的结果或具体失败原因}
     retryable: {type: boolean, description: 是否允许调用方自动重试}
     data: {type: object, description: 业务结果；状态和失败查询包含机器可读的nextAction、allowedActions、reason和retryable, additionalProperties: true}
 
 tools:
+  - name: conversation_prepare
+    title: 准备会话轮次
+    description: 创建或校验当前用户会话，保存本轮用户消息，并返回历史消息与可信页面上下文。仅供Agent入口调用。
+    inputSchema:
+      type: object
+      required: [turnId, message]
+      additionalProperties: false
+      properties:
+        conversationNo: {type: string, description: 已有会话编号；新会话可不传}
+        forecastBatchNo: {type: string, description: 预测详情页绑定的预测批次}
+        turnId: {type: string, description: 本轮请求唯一标识；网络重试必须复用, minLength: 1, maxLength: 64}
+        message: {type: string, description: 本轮用户原始消息, minLength: 1, maxLength: 4000}
+        agentType: {type: string, description: 页面指定的智能体类型}
+        metadata: {type: object, description: 页面提供的结构化上下文, additionalProperties: true}
+    outputSchema: *standardOutput
+    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
+
+  - name: conversation_reply_append
+    title: 归档Agent回复
+    description: 保存Agent最终回复，并同步会话状态及真实训练预测批次。仅供Agent入口调用。
+    inputSchema:
+      type: object
+      required: [conversationNo, turnId, status, answer]
+      additionalProperties: false
+      properties:
+        conversationNo: {type: string, description: 当前会话编号}
+        turnId: {type: string, description: 与用户消息相同的本轮唯一标识, minLength: 1, maxLength: 64}
+        status: {type: string, description: 本轮最终状态}
+        answer: {type: string, description: 展示给用户的最终回复}
+        skillName: {type: string, description: 本轮选中的Skill}
+        executionResult: {type: object, description: 工具的结构化执行结果, additionalProperties: true}
+        payload: {type: object, description: 前端展示所需的结构化内容, additionalProperties: true}
+    outputSchema: *standardOutput
+    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
+
   - name: memory_get
     title: 查询会话记忆
     description: 查询当前用户会话的工作记忆、待确认动作及最近训练预测批次。成功时data包含记忆键值、lastTrainBatchNo和lastForecastBatchNo。

@@ -5,149 +5,113 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.env.example" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/easyapi-cache/.api.local.storage.v2.db" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/git_toolbox_prj.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/pyproject.toml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/SKILL.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/agents/openai.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/failure-handling.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/parameters.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/validation.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/workflow.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/agents/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/agents/base.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/agents/registry.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/analysis.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/common.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/monthly-sales.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/short-term.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/winter-supply.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/registry.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/checkpoint/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/checkpoint/mysql_single_table.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/conversation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/entities/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/entities/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/entities/resolver.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/decision.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/executor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/monitor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/result_interpreter.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/graph/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/graph/main_graph.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/graph/state.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/intent/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/intent/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/intent/recognizer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/llm.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/mcp/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/mcp/client.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/router.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_api.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_capabilities.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_capability_executor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_checkpoint.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_entity_resolver.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_execution_monitor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_forecast_analysis.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_intent_recognizer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_presentation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_reference_validation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_registry.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_result_interpreter.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_router.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiTrainingProgressResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiReplyComposer.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/AgentConversationClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ForecastAnalysisAgentClient.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ScopedForecastStartRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AgentBusinessQueryService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AgentExecutionTaskService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/TaskForecastCompletionService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/TaskForecastContinuationService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AgentBusinessQueryServiceImpl.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AgentExecutionTaskServiceImpl.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AgentExecutionBatchTb.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AgentExecutionStepTb.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AgentExecutionTaskTb.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/mapper/AgentExecutionBatchTbMapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/mapper/AgentExecutionStepTbMapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/mapper/AgentExecutionTaskTbMapper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/82_create_agent_execution_task.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/83_create_agent_graph_checkpoint.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/84_bind_ai_conversation_forecast.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/85_optimize_ai_conversation_binding.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiTrainingResult.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/pom.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/controller/AiConversationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/controller/AiConversationController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiChatRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiChatRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiChatResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiChatResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiContinueForecastRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiContinueForecastRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiConversationRenameRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiConversationRenameRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiConversationResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiConversationResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/dto/AiTrainingProgressResponse.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiIntent.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiIntent.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiIntentType.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiIntentType.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiSpeechAct.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiSpeechAct.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/model/AiToolName.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiToolName.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiConversationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiConversationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiEntityTranslator.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiEntityTranslator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiExecutionPolicy.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiExecutionPolicy.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiIntentParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiIntentParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiToolArgumentValidator.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiToolArgumentValidator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiToolRegistry.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiToolRegistry.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-ai/src/main/java/com/gas/forecast/ai/service/AiTrainForecastContinuationScheduler.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ForecastAnalysisLlmClient.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ForecastAnalysisLlmClient.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ForecastPromptProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ForecastPromptProvider.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ShortTermAutoTrainScheduler.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/model/bin/stop.sh" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/model/bin/stop.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/nginx/gas-web-dev.conf" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/nginx/gas-web-dev.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/root-bin/start-all.sh" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/root-bin/start-all.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/root-bin/stop-all.sh" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/root-bin/stop-all.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/SKILL.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/agents/openai.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/failure-handling.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/parameters.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/validation.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/short-term-customer-forecast/references/workflow.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/agents/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/agents/base.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/agents/registry.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/common.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/monthly-sales.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/short-term.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/definitions/winter-supply.yml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/capabilities/registry.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/checkpoint/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/checkpoint/mysql_single_table.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/conversation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/entities/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/entities/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/entities/resolver.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/decision.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/executor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/monitor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/execution/result_interpreter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/graph/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/graph/main_graph.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/graph/state.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/intent/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/intent/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/intent/recognizer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/mcp/client.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/mcp/client.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/router.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_capabilities.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_capability_executor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_checkpoint.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_entity_resolver.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_execution_monitor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_intent_recognizer.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_reference_validation.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_registry.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_result_interpreter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_router.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/controller/AiConversationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/controller/AiConversationController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiChatRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiChatResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiChatResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiConversationResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/dto/AiConversationResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiIntent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiIntentType.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiSpeechAct.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/model/AiToolName.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiConversationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiConversationService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiEntityTranslator.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiExecutionPolicy.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiIntentParser.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiReplyComposer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiToolArgumentValidator.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/ai/service/AiToolRegistry.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/AgentConversationClient.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ModelTrainQueueDispatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/component/ModelTrainQueueDispatcher.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastExecutionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/ModelForecastExecutionController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/AutoTrainRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/AutoTrainRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ScopedForecastStartRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/request/ScopedForecastStartRequest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastAnalysisService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastAnalysisService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastApplicationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastApplicationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ModelForecastManagementService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AgentMemoryServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AgentMemoryServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AgentExecutionTaskServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AgentExecutionTaskServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AutoTrainServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/AutoTrainServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ForecastApplicationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ForecastApplicationServiceImpl.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainExecutionServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainQueueServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/ModelTrainQueueServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-core/src/main/java/com/gas/forecast/common/util/HttpUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-core/src/main/java/com/gas/forecast/common/util/HttpUtil.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpServerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpServerController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/TrainingApplicationServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/impl/TrainingApplicationServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AiConversationMessageTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AiConversationMessageTb.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/60_create_ai_conversation.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/60_create_ai_conversation.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/83_create_agent_graph_checkpoint.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolCatalog.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolCatalog.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolDispatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolDispatcher.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolResult.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/java/com/gas/forecast/mcp/McpToolResult.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/main/resources/mcp-tools.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/main/resources/mcp-tools.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-mcp/src/test/java/com/gas/forecast/mcp/McpToolCatalogTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-mcp/src/test/java/com/gas/forecast/mcp/McpToolCatalogTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-local.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-local.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/ai/service/AiIntentParserCombinedActionTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserCombinedActionTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/ai/service/AiIntentParserCustomerCodeTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserCustomerCodeTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/ai/service/AiIntentParserRegionTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserRegionTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/ai/service/AiIntentParserTrainingRangeTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserTrainingRangeTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/api/management.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserCombinedActionTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserCustomerCodeTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserRegionTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/test/java/com/gas/forecast/business/ai/service/AiIntentParserTrainingRangeTest.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiAssistant.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiAssistant.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiForecastResult.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiForecastResult.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/vite.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_city_gas_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_city_gas_v1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_power_generation_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_power_generation_v1.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_sector_gas_xgb_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/models/short_agent/model_sector_gas_xgb_v1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_model_city_gas_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_model_city_gas_v1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_model_power_generation_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_model_power_generation_v1.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_model_sector_gas_xgb_v1.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_model_sector_gas_xgb_v1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -155,7 +119,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="20553" />
+    <option name="cachedIndexableFilesCount" value="20932" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -262,7 +226,7 @@
     &quot;Spring Boot.GasForecastStartupApplication.executor&quot;: &quot;Debug&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/zoujun/work/workspace/shiyou/gas-forecast&quot;,
@@ -384,6 +348,8 @@
         <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest.prepareJiangsuPowerDynamicFeaturesWithoutTraining" />
         <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest" />
         <item itemvalue="Application.GasForecastBusinessApplication" />
+        <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest.prepareJiangsuPowerDynamicFeaturesWithoutTraining" />
+        <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest" />
       </list>
     </recent_temporary>
   </component>

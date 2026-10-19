@@ -1482,15 +1482,21 @@ const runShortTermForecast = async () => {
   runningForecast.value = true
   try {
     const customer = shortTermForecastContext(30)
-    const response = await postJson<any>('/model-forecast-execution/start', {
+    const idempotencyKey = crypto.randomUUID()
+    const request = {
       agentCode: 'short-term',
       customerCode: customer.customerCode,
       regionCode: customer.regionCode,
       industryCode: customer.industryCode,
       forecastHorizon: 30,
       forecastFrequency: 'DAILY',
-      idempotencyKey: crypto.randomUUID()
-    })
+      // 页面“开始预测”包含缺少模型时自动训练并继续预测的明确业务语义。
+      autoTrain: true,
+      trainingPreference: 'AUTO',
+      confirmed: true,
+      idempotencyKey
+    }
+    const response = await postJson<any>('/model-forecast-execution/start', request)
     const data = response.data || {}
     const task = Array.isArray(data.tasks) ? data.tasks[0] || {} : data
     if (task.trainBatchNo && task.status === 'WAITING_TRAINING') {
@@ -2104,8 +2110,9 @@ const sendMessage = async () => {
     const forecastBatchNo = currentResult.value?.forecast_batch_no
     if (forecastBatchNo) {
       const response = await postJson<any>(
-        '/ai/conversations/chat',
+        '/agent-api/api/v1/chat',
         {
+          turnId: crypto.randomUUID(),
           conversationNo: forecastConversationNo.value,
           forecastBatchNo,
           message: userMessage,
@@ -2130,8 +2137,9 @@ const sendMessage = async () => {
     }
     if (isShortTerm.value) {
       const response = await postJson<any>(
-        '/ai/conversations/chat',
+        '/agent-api/api/v1/chat',
         {
+          turnId: crypto.randomUUID(),
           conversationNo: shortTermConversationMemory.get(streamId) || null,
           message: userMessage,
           contextualFollowUp: false,

@@ -124,6 +124,17 @@ public class ModelTrainQueueDispatcher {
         int retryCount = record.getRetryCount() == null ? 0 : record.getRetryCount();
         int maxRetry = record.getMaxRetryCount() == null ? 3 : record.getMaxRetryCount();
         Date now = new Date();
+        // 数据质量和业务参数不会因重试自行恢复。直接进入最终失败，避免前端长期显示“执行中”。
+        if (isNonRetryableBusinessFailure(errorMessage)) {
+            recordMapper.update(null,
+                    Wrappers.<ModelTrainRecordTb>lambdaUpdate().eq(ModelTrainRecordTb::getId, record.getId())
+                            .notIn(ModelTrainRecordTb::getStatus, "SUCCESS", FAILED_FINAL)
+                            .set(ModelTrainRecordTb::getStatus, FAILED_FINAL).set(ModelTrainRecordTb::getActiveDedupKey, null)
+                            .set(ModelTrainRecordTb::getNextRetryTime, null).set(ModelTrainRecordTb::getClaimedBy, null)
+                            .set(ModelTrainRecordTb::getClaimedAt, null).set(ModelTrainRecordTb::getErrorMessage, abbreviate(errorMessage))
+                            .set(ModelTrainRecordTb::getFinishedAt, now).set(ModelTrainRecordTb::getUpdatedAt, now));
+            return;
+        }
         if (retryCount < maxRetry) {
             Date next = new Date(now.getTime() + retryInterval(record.getAgentCode()) * 60_000L);
             recordMapper.update(null,
@@ -137,6 +148,13 @@ public class ModelTrainQueueDispatcher {
                             .set(ModelTrainRecordTb::getActiveDedupKey, null).set(ModelTrainRecordTb::getErrorMessage, abbreviate(errorMessage)).set(ModelTrainRecordTb::getFinishedAt, now)
                             .set(ModelTrainRecordTb::getUpdatedAt, now));
         }
+    }
+
+    private boolean isNonRetryableBusinessFailure(String message) {
+        if (message == null || message.isBlank())
+            return false;
+        return message.contains("训练数据校验未通过") || message.contains("有效训练数据为空") || message.contains("全零")
+                || message.contains("连续日数据") || message.contains("训练日期范围无效") || message.contains("训练开始日期不能晚于结束日期");
     }
 
     private int retryInterval(String agentCode) {

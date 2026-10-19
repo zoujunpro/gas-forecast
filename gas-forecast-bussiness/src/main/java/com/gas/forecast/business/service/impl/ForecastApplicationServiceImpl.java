@@ -98,8 +98,19 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         result.put("failed", failures.size());
         result.put("tasks", tasks);
         result.put("failures", failures);
-        result.put("status", aggregateSubmissionStatus(tasks));
+        String status = aggregateSubmissionStatus(tasks);
+        result.put("status", status);
+        result.put("message", submissionMessage("预测", status, tasks.size(), failures));
         return result;
+    }
+
+    private String submissionMessage(String action, String status, int submitted, List<Map<String, String>> failures) {
+        if ("FAILED".equals(status)) {
+            String reason = failures.stream().map(item -> item.get("message")).filter(TextUtils::hasText).distinct().limit(3).reduce((left, right) -> left + "；" + right).orElse("没有任务通过业务校验");
+            return action + "任务未创建：" + reason;
+        }
+        if (!failures.isEmpty()) return action + "任务部分受理：成功" + submitted + "个，失败" + failures.size() + "个";
+        return action + "任务已受理";
     }
 
     /** 创建任务前校验真实模型状态；没有用户授权时只返回原因，不创建失败任务或擅自训练。 */
@@ -115,7 +126,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
                     : trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId())
                             .eq(ModelTrainRecordTb::getStatus, "SUCCESS").orderByDesc(ModelTrainRecordTb::getUpdatedAt).last("limit 1"));
             if (trained == null) {
-                unavailable.add(Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "reason", "没有可用的成功训练模型"));
+                unavailable.add(Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "reason", "未找到该客户状态为SUCCESS的训练记录"));
                 continue;
             }
             try {
@@ -132,6 +143,9 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         result.put("errorCode", hasMismatch ? "MODEL_GRANULARITY_MISMATCH" : existingOnly ? "NO_COMPATIBLE_TRAINED_MODEL" : "TRAINING_REQUIRED");
         result.put("reason", hasMismatch ? "现有模型的时间粒度与用户要求不匹配，需要用户调整预测要求或模型配置"
                 : existingOnly ? "用户要求只使用现有模型，但部分业务对象没有匹配的成功模型" : "部分业务对象没有匹配的成功模型，需要先训练");
+        result.put("message", hasMismatch ? "现有模型与本次预测要求不匹配，请调整预测参数或模型配置。"
+                : existingOnly ? "没有找到可直接使用的成功模型，且当前要求仅使用已有模型。"
+                        : "当前客户没有可直接用于预测的成功训练模型，是否先校验数据并训练，训练成功后自动继续预测？");
         result.put("unavailable", unavailable);
         result.put("incompatible", incompatible);
         result.put("affectedCount", unavailable.size() + incompatible.size());
@@ -179,10 +193,43 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
                     .eq(ModelTrainBacktestTb::getTrainBatchNo, training.getBatchNo()).orderByAsc(ModelTrainBacktestTb::getTrainDate)).stream()
                     .map(this::backtestPoint).toList());
         }
-        if (includePoints)
-            result.put("points", forecastResultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo)
-                    .orderByAsc(ModelForecastResultTb::getForecastDate)));
+        if (includePoints) {
+            List<ModelForecastResultTb> points = forecastResultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
+                    .eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo).orderByAsc(ModelForecastResultTb::getForecastDate));
+            result.put("points", points);
+            result.put("lastYearPoints", lastYearPoints(record, points));
+        }
         return result;
+    }
+
+    private List<Map<String, Object>> lastYearPoints(ModelForecastRecordTb record, List<ModelForecastResultTb> points) {
+        Map<String, String> previousToForecastDate = new LinkedHashMap<>();
+        for (ModelForecastResultTb point : points) {
+            if (!TextUtils.hasText(point.getForecastDate())) continue;
+            LocalDate forecastDate = LocalDate.parse(point.getForecastDate());
+            previousToForecastDate.put(forecastDate.minusYears(1).toString(), forecastDate.toString());
+        }
+        if (previousToForecastDate.isEmpty()) return List.of();
+        var query = Wrappers.<DataDailySalesTb>query().select("stat_date", "SUM(CAST(gas_sales AS DECIMAL(18,4))) AS gas_sales")
+                .in("stat_date", previousToForecastDate.keySet()).isNotNull("gas_sales");
+        if (TextUtils.hasText(record.getRegionCode())) query.eq("region_code", record.getRegionCode());
+        if (TextUtils.hasText(record.getIndustryCode())) query.eq("industry_code", record.getIndustryCode());
+        if (TextUtils.hasText(record.getCustomerCode())) query.eq("customer_code", record.getCustomerCode());
+        query.groupBy("stat_date");
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> row : dailySalesMapper.selectMaps(query)) {
+            Object sourceDate = mapValue(row, "stat_date");
+            Object value = mapValue(row, "gas_sales");
+            String forecastDate = sourceDate == null ? null : previousToForecastDate.get(String.valueOf(sourceDate));
+            if (TextUtils.hasText(forecastDate) && value != null) result.add(Map.of("date", forecastDate, "value", value));
+        }
+        result.sort(java.util.Comparator.comparing(item -> String.valueOf(item.get("date"))));
+        return result;
+    }
+
+    private Object mapValue(Map<String, Object> row, String key) {
+        return row.entrySet().stream().filter(entry -> key.equalsIgnoreCase(entry.getKey()))
+                .map(Map.Entry::getValue).findFirst().orElse(null);
     }
 
     /** 优先使用统一任务保存的真实训练批次，旧数据再按预测配置和发生时间回退匹配。 */
@@ -462,6 +509,8 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     private void validate(ForecastCommand command) {
         if (command == null || !TextUtils.hasText(command.agentCode())) throw new BusinessException("agentCode不能为空");
         if (command.bulk() && !command.confirmed()) throw new BusinessException("批量预测必须先获得用户确认");
+        if ((command.autoTrain() || command.forceRetrain()) && !command.confirmed())
+            throw new BusinessException("自动训练或重新训练必须先获得用户确认");
     }
 
     private String statusName(Integer status) {

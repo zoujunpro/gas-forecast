@@ -161,10 +161,8 @@ def test_power_generation_training_data_validation_reports_range_and_continuity(
 
     assert result.valid is False
     assert result.summary["missing_date_count"] == 1
-    assert {issue.code for issue in result.errors} == {
-        "INSUFFICIENT_HISTORY",
-        "NON_CONTINUOUS_DATES",
-    }
+    assert {issue.code for issue in result.errors} == {"INSUFFICIENT_HISTORY"}
+    assert "NON_CONTINUOUS_DATES" in {issue.code for issue in result.warnings}
 
 
 def test_power_generation_v1_future_date_alias_is_supported() -> None:

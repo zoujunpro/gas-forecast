@@ -1,11 +1,10 @@
 package com.gas.forecast.business.ai.dto;
 
-import com.gas.forecast.business.ai.model.AiIntent;
 import java.math.BigDecimal;
 import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 
-public record AiChatResponse(String conversationNo, String status, String answer, AiIntent intent, List<AiIntent.EntityCandidate> candidates, String trainBatchNo, String forecastBatchNo,
+public record AiChatResponse(String conversationNo, String status, String answer, String trainBatchNo, String forecastBatchNo,
         ExecutionProgress progress, ForecastResult forecastResult, String analysis, List<String> suggestedQuestions, JsonNode presentation) {
     public record ExecutionProgress(String title, int currentStep, int totalSteps, List<Step> steps) {
     }

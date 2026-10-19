@@ -3,7 +3,7 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class AgentType(StrEnum):
@@ -13,8 +13,19 @@ class AgentType(StrEnum):
 
 
 class ChatRequest(BaseModel):
+    turn_id: str | None = Field(
+        default=None, min_length=1, max_length=64, validation_alias=AliasChoices("turn_id", "turnId")
+    )
+    conversation_no: str | None = Field(
+        default=None, max_length=64, validation_alias=AliasChoices("conversation_no", "conversationNo")
+    )
+    forecast_batch_no: str | None = Field(
+        default=None, max_length=64, validation_alias=AliasChoices("forecast_batch_no", "forecastBatchNo")
+    )
     message: str = Field(min_length=1, max_length=4000)
-    agent_type: AgentType | None = None
+    agent_type: AgentType | None = Field(
+        default=None, validation_alias=AliasChoices("agent_type", "agentType")
+    )
     metadata: dict[str, Any] = Field(default_factory=dict)
     history: list[dict[str, str]] = Field(default_factory=list, max_length=12)
 
@@ -24,8 +35,8 @@ class ChatResponse(BaseModel):
     agent_type: AgentType | None = None
     message: str
     status: str
-    capability_code: str | None = None
-    intent: dict[str, Any] | None = None
+    skill_name: str | None = None
+    skill_selection: dict[str, Any] | None = None
     parameters: dict[str, Any] = Field(default_factory=dict)
     entity_resolution: dict[str, Any] | None = None
     missing_parameters: list[str] = Field(default_factory=list)

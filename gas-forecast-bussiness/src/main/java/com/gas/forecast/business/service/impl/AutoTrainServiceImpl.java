@@ -10,6 +10,8 @@ import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.service.AutoTrainService;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.ModelTrainQueueService;
+import com.gas.forecast.business.service.TrainingDataQualityValidator;
+import com.gas.forecast.business.service.TrainingDatasetAssembler;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.enums.ForecastAgentEnum;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
@@ -55,6 +57,8 @@ public class AutoTrainServiceImpl implements AutoTrainService {
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final BaseCodeGenerateService codeGenerateService;
     private final ModelTrainQueueService trainQueueService;
+    private final TrainingDatasetAssembler trainingDatasetAssembler;
+    private final TrainingDataQualityValidator trainingDataQualityValidator;
 
     @Override
     @Transactional
@@ -88,6 +92,9 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         int recentPeriods = resolveRecommendedPeriods(model, range);
         ModelTrainConfigTb trainConfig = findOrCreateConfig(agent, model, target, range, recentPeriods, triggerSource);
 
+        // 入队前同步校验，避免明知无效的数据仍显示“训练任务已受理”。
+        trainingDataQualityValidator.validate(trainingDatasetAssembler.assemble(trainConfig, model));
+
         if (!Boolean.TRUE.equals(request.getForceTrain())) {
             ModelTrainRecordTb active = trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, trainConfig.getId())
                     .in(ModelTrainRecordTb::getStatus, ModelTrainStatus.PENDING.getCode(), ModelTrainStatus.RUNNING.getCode()).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
@@ -114,6 +121,7 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         ModelConfigTb model = modelMapper.selectById(config.getModelId());
         if (model == null)
             throw new BusinessException("所属模型不存在");
+        trainingDataQualityValidator.validate(trainingDatasetAssembler.assemble(config, model));
         if (!TextUtils.hasText(request.getRetryBatchNo()) && !Boolean.TRUE.equals(request.getForceTrain())) {
             ModelTrainRecordTb active = trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId())
                     .in(ModelTrainRecordTb::getStatus, ModelTrainStatus.PENDING.getCode(), ModelTrainStatus.RUNNING.getCode()).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));

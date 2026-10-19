@@ -1,6 +1,7 @@
 package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
@@ -13,8 +14,10 @@ public class AiConversationMessageTb {
     private Long id;
     private Long conversationId;
     private String role;
+    private String turnId;
     private String content;
-    private String intentCode;
+    @TableField("message_type")
+    private String messageType;
     private String structuredJson;
     private Date createdAt;
 }
