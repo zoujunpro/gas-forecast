@@ -519,14 +519,19 @@ class SkillAgent:
         if region_name:
             values["regionName"] = region_name
             values.pop("regionCode", None)
+            # 这是从本轮原文中按明确边界抽出的名称。模型可以补充缺失参数，
+            # 但不能把“江苏”扩写成“江苏城燃”等无法匹配主数据的内容。
+            locked_parameters.add("regionName")
         if any(word in message for word in ("城市燃气", "城镇燃气", "城燃")):
             values["industryName"] = next(
                 word for word in ("城市燃气", "城镇燃气", "城燃") if word in message
             )
             values.pop("industryCode", None)
+            locked_parameters.add("industryName")
         elif "化工" in message:
             values["industryName"] = "化工"
             values.pop("industryCode", None)
+            locked_parameters.add("industryName")
         recent = re.search(r"最近\s*(\d{1,5})\s*(?:天|日|期|个月|月|旬)", message)
         if recent and skill_name == "model-training-management":
             values["trainMode"] = "RECENT"
@@ -560,12 +565,17 @@ class SkillAgent:
             for code_key, name_key in (
                 ("customerCode", "customerName"), ("regionCode", "regionName"), ("industryCode", "industryName")
             ):
-                if code_key in semantic_values:
+                if code_key in semantic_values and code_key not in locked_parameters:
                     values.pop(name_key, None)
-                elif name_key in semantic_values:
+                elif name_key in semantic_values and name_key not in locked_parameters:
                     values.pop(code_key, None)
-            values.update(semantic_values)
-            locked_parameters.update(semantic_values)
+            # 模型语义只补充或修正非锁定参数。本轮原文中已经明确识别出的
+            # 编码、地区、行业、预测天数等参数必须保持不变。
+            accepted_semantic_values = {
+                key: value for key, value in semantic_values.items() if key not in locked_parameters
+            }
+            values.update(accepted_semantic_values)
+            locked_parameters.update(accepted_semantic_values)
             if semantics.needs_clarification:
                 values["_clarificationQuestion"] = semantics.clarification_question or (
                     "请确认训练策略：是无条件创建新的训练批次，还是仅在没有可用模型时训练？"

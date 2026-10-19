@@ -334,6 +334,24 @@ def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> No
     assert values["fetchAll"] is True
 
 
+def test_explicit_region_and_industry_are_not_overwritten_by_model_semantics() -> None:
+    semantics = RequestSemantics(
+        operation="QUERY_CUSTOMERS",
+        region_name="江苏城燃",
+        industry_name="燃气客户信息",
+    )
+
+    values = SkillAgent._initial_parameters(
+        "查询下江苏城燃的所有客户信息",
+        {}, {}, "C-REGION-LOCKED", "business-data-query", semantics,
+    )
+
+    assert values["regionName"] == "江苏"
+    assert values["industryName"] == "城燃"
+    assert values["fetchAll"] is True
+    assert {"regionName", "industryName"}.issubset(values["_lockedParameters"])
+
+
 def test_forecast_with_new_training_result_forces_retraining() -> None:
     values = SkillAgent._initial_parameters(
         "帮我预测下客户CUS000023的未来40天燃气销量，用新训练的结果",
