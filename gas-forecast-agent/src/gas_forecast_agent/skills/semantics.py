@@ -23,12 +23,23 @@ class TrainingPolicy(StrEnum):
     UNSPECIFIED = "UNSPECIFIED"
 
 
+class DialogueAct(StrEnum):
+    """用户本轮话语相对于待确认动作的作用。"""
+
+    NEW_REQUEST = "NEW_REQUEST"
+    CONFIRM_PENDING = "CONFIRM_PENDING"
+    REJECT_PENDING = "REJECT_PENDING"
+    MODIFY_PENDING = "MODIFY_PENDING"
+    UNSPECIFIED = "UNSPECIFIED"
+
+
 class RequestSemantics(BaseModel):
     """只描述用户本轮明确表达的内容，不补全历史参数。"""
 
     model_config = ConfigDict(extra="forbid")
 
     operation: str = "UNSPECIFIED"
+    dialogue_act: DialogueAct = DialogueAct.UNSPECIFIED
     customer_code: str | None = None
     customer_name: str | None = None
     region_name: str | None = None
@@ -95,7 +106,12 @@ class RequestSemanticExtractor:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
-    async def extract(self, message: str, skill_name: str) -> RequestSemantics:
+    async def extract(
+        self,
+        message: str,
+        skill_name: str,
+        pending_action: dict[str, object] | None = None,
+    ) -> RequestSemantics:
         if self._settings.skill_routing_mode == "rules" or not self._settings.llm_api_key or not self._settings.llm_model:
             return RequestSemantics()
         try:
@@ -108,9 +124,12 @@ class RequestSemanticExtractor:
                         "role": "system",
                         "content": (
                             "你是业务参数语义抽取器，只分析用户本轮原话，不使用或猜测历史信息。"
-                            "只输出JSON，字段必须为：operation、customer_code、customer_name、region_name、"
+                            "只输出JSON，字段必须为：operation、dialogue_act、customer_code、customer_name、region_name、"
                             "industry_name、forecast_horizon、training_policy、needs_clarification、"
-                            "clarification_question、evidence。未明确字段填null。"
+                            "clarification_question、evidence。dialogue_act未明确时填UNSPECIFIED，其他未明确字段填null。"
+                            "dialogue_act只能是NEW_REQUEST、CONFIRM_PENDING、REJECT_PENDING、MODIFY_PENDING、UNSPECIFIED。"
+                            "仅当输入包含pending_action时，结合该待确认动作判断用户是在确认、拒绝还是修改它；"
+                            "用户提出无关的新目标时为NEW_REQUEST。没有pending_action时不得输出CONFIRM_PENDING。"
                             "region_name和industry_name只保留用户原话中的实体名称，不要包含查询、所有、客户信息等修饰语，"
                             "不要生成或猜测地区编码、行业编码。"
                             "training_policy只能是FORCE_RETRAIN、AUTO_IF_MISSING、USE_EXISTING、UNSPECIFIED。"
@@ -122,12 +141,20 @@ class RequestSemanticExtractor:
                     },
                     {
                         "role": "user",
-                        "content": json.dumps({"skill": skill_name, "message": message}, ensure_ascii=False),
+                        "content": json.dumps(
+                            {"skill": skill_name, "message": message, "pending_action": pending_action},
+                            ensure_ascii=False,
+                        ),
                     },
                 ],
             )
             extracted = RequestSemantics.model_validate_json(response.choices[0].message.content or "{}")
             updates: dict[str, object] = {}
+            # 没有服务端待确认动作时，模型无权凭用户一句话伪造确认。
+            if extracted.dialogue_act in {
+                DialogueAct.CONFIRM_PENDING, DialogueAct.REJECT_PENDING, DialogueAct.MODIFY_PENDING,
+            } and not pending_action:
+                updates["dialogue_act"] = DialogueAct.UNSPECIFIED
             # 编码属于强标识，只能来自用户本轮原文，不能接受模型推测。
             if extracted.customer_code and extracted.customer_code.lower() not in message.lower():
                 updates["customer_code"] = None

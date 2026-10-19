@@ -209,11 +209,15 @@ async def _run_agent(
         started_at = time.monotonic()
         memory = await _read_memory(client, conversation_no)
         memory_ms = round((time.monotonic() - started_at) * 1000)
-        selection = await SkillRouter(settings, skill_registry).select(request.message, memory, request.metadata)
-        routing_ms = round((time.monotonic() - started_at) * 1000) - memory_ms
+        skill_hint = str(memory.get("currentSkill") or "UNSPECIFIED")
+        pending_action = memory.get("pendingAction") if isinstance(memory.get("pendingAction"), dict) else None
+        semantics = await RequestSemanticExtractor(settings).extract(request.message, skill_hint, pending_action)
+        semantics_ms = round((time.monotonic() - started_at) * 1000) - memory_ms
+        selection = await SkillRouter(settings, skill_registry).select(
+            request.message, memory, request.metadata, semantics
+        )
+        routing_ms = round((time.monotonic() - started_at) * 1000) - memory_ms - semantics_ms
         skill = skill_registry.get(selection.skill_name)
-        semantics = await RequestSemanticExtractor(settings).extract(request.message, skill.name)
-        semantics_ms = round((time.monotonic() - started_at) * 1000) - memory_ms - routing_ms
         result = await SkillAgent(settings).run(
             conversation_no=conversation_no,
             skill=skill,

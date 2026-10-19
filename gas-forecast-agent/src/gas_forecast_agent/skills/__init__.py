@@ -4,9 +4,9 @@ from .agent import SkillAgent, SkillRunResult
 from .models import SkillDefinition
 from .registry import SkillRegistry
 from .router import SkillRouter, SkillSelection
-from .semantics import RequestSemanticExtractor, RequestSemantics, TrainingPolicy
+from .semantics import DialogueAct, RequestSemanticExtractor, RequestSemantics, TrainingPolicy
 
 __all__ = [
-    "RequestSemanticExtractor", "RequestSemantics", "SkillAgent", "SkillDefinition", "SkillRegistry",
+    "DialogueAct", "RequestSemanticExtractor", "RequestSemantics", "SkillAgent", "SkillDefinition", "SkillRegistry",
     "SkillRouter", "SkillRunResult", "SkillSelection", "TrainingPolicy",
 ]

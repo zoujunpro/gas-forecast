@@ -11,6 +11,7 @@ from gas_forecast_agent.config import Settings
 from gas_forecast_agent.llm import build_llm_client
 
 from .registry import SkillRegistry
+from .semantics import DialogueAct, RequestSemantics
 
 
 class SkillSelection(BaseModel):
@@ -31,6 +32,7 @@ class SkillRouter:
         message: str,
         memory: dict[str, object] | None = None,
         context: dict[str, object] | None = None,
+        semantics: RequestSemantics | None = None,
     ) -> SkillSelection:
         if (context or {}).get("scene") == "FORECAST_ANALYSIS":
             return SkillSelection(
@@ -39,7 +41,9 @@ class SkillRouter:
                 reason="页面已绑定预测结果场景。",
             )
         remembered = (memory or {}).get("currentSkill")
-        if remembered and self._is_confirmation(message):
+        if remembered and semantics and semantics.dialogue_act in {
+            DialogueAct.CONFIRM_PENDING, DialogueAct.REJECT_PENDING, DialogueAct.MODIFY_PENDING,
+        }:
             self._registry.get(str(remembered))
             return SkillSelection(skill_name=str(remembered), confidence=1, reason="继续处理待确认操作。")
         if self._settings.skill_routing_mode != "rules" and self._settings.llm_api_key and self._settings.llm_model:
@@ -48,10 +52,6 @@ class SkillRouter:
             except Exception:
                 pass
         return self._select_with_rules(message)
-
-    @staticmethod
-    def _is_confirmation(message: str) -> bool:
-        return re.sub(r"\s+", "", message).lower() in {"确认", "确定", "继续", "是", "好的", "可以", "同意"}
 
     async def _select_with_model(self, message: str) -> SkillSelection:
         catalog = [skill.summary() for skill in self._registry.list_skills()]

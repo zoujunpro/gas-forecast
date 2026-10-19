@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from gas_forecast_agent.config import Settings, get_settings
 from gas_forecast_agent.main import app, get_mcp_client
 from gas_forecast_agent.mcp import McpClientError
+from gas_forecast_agent.skills import DialogueAct, RequestSemantics
 
 
 TOOLS = [
@@ -235,7 +236,7 @@ def test_customer_query_uses_read_only_skill() -> None:
     ]
 
 
-def test_task_retry_requires_confirmation_before_tool_call() -> None:
+def test_task_retry_requires_confirmation_before_tool_call(monkeypatch) -> None:
     fake = FakeMcpClient()
     app.dependency_overrides[get_mcp_client] = lambda: fake
     app.dependency_overrides[get_settings] = rule_settings
@@ -250,6 +251,13 @@ def test_task_retry_requires_confirmation_before_tool_call() -> None:
     assert response.status_code == 200
     assert response.json()["data"]["status"] == "NEED_CONFIRMATION"
     assert all(name != "task_retry" for name, _ in fake.calls)
+
+    async def confirm_pending(self, message, skill_name, pending_action=None):
+        return RequestSemantics(dialogue_act=DialogueAct.CONFIRM_PENDING)
+
+    monkeypatch.setattr(
+        "gas_forecast_agent.main.RequestSemanticExtractor.extract", confirm_pending,
+    )
 
     app.dependency_overrides[get_mcp_client] = lambda: fake
     app.dependency_overrides[get_settings] = rule_settings

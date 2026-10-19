@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import ast
 import asyncio
 import hashlib
 import json
@@ -16,7 +17,7 @@ from gas_forecast_agent.mcp import McpClientError, StreamableHttpMcpClient
 
 from .models import SkillDefinition
 from .result_adapter import ToolResultAdapter
-from .semantics import RequestSemantics
+from .semantics import DialogueAct, RequestSemantics
 
 
 WRITE_TOOLS = {"forecast_start", "training_start", "task_resume", "task_retry"}
@@ -62,6 +63,14 @@ class SkillAgent:
         tools = {item["name"]: item for item in tool_catalog if item.get("name") in skill.allowed_tools}
         parameters = self._initial_parameters(message, memory, metadata, conversation_no, skill.name, semantics)
         trace: list[dict[str, Any]] = []
+        if semantics and semantics.dialogue_act == DialogueAct.REJECT_PENDING and memory.get("pendingAction"):
+            return SkillRunResult(
+                status="COMPLETED",
+                message="已取消本次待确认操作。",
+                parameters=parameters,
+                available_tools=list(tools),
+                tool_trace=trace,
+            )
         if parameters.get("_clarificationQuestion"):
             return SkillRunResult(
                 status="NEED_CLARIFICATION",
@@ -105,9 +114,12 @@ class SkillAgent:
                 last = trace[-1] if trace else None
                 if last and self._is_successful_page(last["result"]) and decision.get("status") != "COMPLETED":
                     return self._page_fallback_result(parameters, tools, trace)
+                decision_message = decision["message"]
+                if last and self._is_successful_page(last["result"]):
+                    decision_message = ToolResultAdapter.presentation_message(last["result"], decision_message)
                 return SkillRunResult(
                     status=decision.get("status", "COMPLETED"),
-                    message=decision["message"],
+                    message=decision_message,
                     parameters=parameters,
                     available_tools=list(tools),
                     executed_tool=last["tool"] if last else None,
@@ -487,7 +499,9 @@ class SkillAgent:
         semantics: RequestSemantics | None = None,
     ) -> dict[str, Any]:
         normalized_message = re.sub(r"\s+", "", message).lower()
-        explicit_confirmation = normalized_message in {"确认", "确定", "继续", "是", "好的", "可以", "同意"}
+        explicit_confirmation = bool(
+            semantics and semantics.dialogue_act == DialogueAct.CONFIRM_PENDING
+        )
         keys = (
             "customerCode", "customerName", "regionCode", "regionName", "industryCode", "industryName",
             "taskNo", "trainBatchNo", "forecastBatchNo", "forecastHorizon",
@@ -606,7 +620,11 @@ class SkillAgent:
             values["autoTrain"] = True
             values["trainingPreference"] = "FORCE_RETRAIN"
             locked_parameters.update(("forceRetrain", "autoTrain", "trainingPreference"))
-        if semantics is not None:
+        # “继续/确认”等纯确认回复只负责批准上一轮已经解析完成的动作。
+        # 此时 pendingAction 中的参数快照是唯一可信输入，不能再把确认词当成
+        # 新业务请求交给语义模型，否则模型很容易因为文本里没有客户和周期而
+        # 生成一次错误的补充提问。
+        if semantics is not None and not (explicit_confirmation and has_pending_action):
             semantic_values = semantics.parameter_overrides()
             for code_key, name_key in (
                 ("customerCode", "customerName"), ("regionCode", "regionName"), ("industryCode", "industryName")
@@ -808,13 +826,21 @@ class SkillAgent:
     @staticmethod
     def _message_decision(content: str | None) -> dict[str, Any]:
         message = (content or "请补充必要信息。").strip()
+        candidate = re.sub(r"^```(?:json|python)?\s*|\s*```$", "", message, flags=re.I).strip()
+        parsed: Any = None
         try:
-            parsed = json.loads(message)
+            parsed = json.loads(candidate)
+        except (json.JSONDecodeError, TypeError):
+            # 部分兼容模型会返回Python字面量格式（单引号）。literal_eval只解析
+            # 字面量，不执行代码，可安全兼容这种非标准但常见的输出。
+            try:
+                parsed = ast.literal_eval(candidate)
+            except (ValueError, SyntaxError, TypeError):
+                parsed = None
+        if parsed is not None:
             allowed = {"COMPLETED", "NEED_INFORMATION", "NEED_CLARIFICATION", "NOT_FOUND", "FAILED"}
             if isinstance(parsed, dict) and parsed.get("status") in allowed and str(parsed.get("message") or "").strip():
                 return {"type": "message", "status": parsed["status"], "message": str(parsed["message"]).strip()}
-        except (json.JSONDecodeError, TypeError):
-            pass
         # 兼容暂未遵循 JSON 输出约定的模型，至少不把明显失败或追问标成 COMPLETED。
         if any(word in message for word in ("没有找到", "没有查询到", "不存在", "未找到")):
             status = "NOT_FOUND"

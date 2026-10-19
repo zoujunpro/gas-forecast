@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from gas_forecast_agent.config import Settings
-from gas_forecast_agent.skills import RequestSemantics, SkillAgent, SkillDefinition, SkillRouter, TrainingPolicy
+from gas_forecast_agent.skills import DialogueAct, RequestSemantics, SkillAgent, SkillDefinition, SkillRouter, TrainingPolicy
 from gas_forecast_agent.skills.result_adapter import ToolResultAdapter
 
 
@@ -104,6 +104,23 @@ def test_successful_page_status_cannot_be_overridden_by_model() -> None:
     assert fallback.status == "COMPLETED"
     assert fallback.message == "查询完成，共找到154条记录，完整结果已展示。"
     assert fallback.execution_result is result
+
+
+def test_python_style_model_message_is_parsed_and_long_page_text_uses_fallback() -> None:
+    decision = SkillAgent._message_decision(
+        "{'status':'COMPLETED','message':'已查询到154家客户：\\n- 客户1\\n- 客户2'}"
+    )
+    assert decision["status"] == "COMPLETED"
+    assert decision["message"].startswith("已查询到154家客户")
+
+    result = {
+        "status": "COMPLETED", "resultType": "PAGE",
+        "data": {"total": 154, "records": [{"customerName": "客户1"}]},
+    }
+    long_message = "已查询到客户：\n" + "\n".join(f"- 客户{i}" for i in range(154))
+    assert ToolResultAdapter.presentation_message(result, long_message) == (
+        "查询完成，共找到154条记录，完整结果已展示。"
+    )
 
 
 def test_model_selects_one_allowed_tool_then_explains_result(monkeypatch) -> None:
@@ -436,6 +453,7 @@ def test_forecast_with_new_training_result_forces_retraining() -> None:
         "是",
         {"currentParameters": values, "pendingAction": {"tool": "forecast_start", "parameters": values}},
         {}, "C-NEW-TRAIN", "customer-gas-forecast",
+        RequestSemantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
     )
     assert confirmed["confirmed"] is True
     assert confirmed["customerCode"] == "CUS000023"
@@ -498,6 +516,7 @@ def test_confirmation_restores_and_locks_pending_parameter_snapshot() -> None:
         {"customerCode": "STALE-PAGE-CUSTOMER"},
         "C-SNAPSHOT",
         "customer-gas-forecast",
+        RequestSemantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
     )
 
     assert values["_pendingTool"] == "forecast_start"
@@ -509,6 +528,37 @@ def test_confirmation_restores_and_locks_pending_parameter_snapshot() -> None:
     SkillAgent._apply_locked_parameters(values, arguments)
     assert arguments["customerCode"] == "CUS-9"
     assert arguments["forceRetrain"] is True
+
+
+def test_confirmation_ignores_semantic_clarification_and_uses_pending_snapshot() -> None:
+    snapshot = {
+        "customerCode": "CUS000140",
+        "customerName": "扬州中燃",
+        "forecastHorizon": 50,
+        "idempotencyKey": "pending-operation",
+    }
+    values = SkillAgent._initial_parameters(
+        "继续",
+        {"pendingAction": {"tool": "forecast_start", "parameters": snapshot}},
+        {},
+        "C-CONFIRMATION",
+        "customer-gas-forecast",
+        RequestSemantics(
+            operation="UNSPECIFIED",
+            dialogue_act=DialogueAct.CONFIRM_PENDING,
+            needs_clarification=True,
+            clarification_question="请明确要继续执行的具体客户、区域、行业或预测周期？",
+            evidence={"message": "继续"},
+        ),
+    )
+
+    assert values["_pendingTool"] == "forecast_start"
+    assert values["confirmed"] is True
+    assert values["customerCode"] == "CUS000140"
+    assert values["forecastHorizon"] == 50
+    assert values["idempotencyKey"] == "pending-operation"
+    assert "_clarificationQuestion" not in values
+    assert "_semanticEvidence" not in values
 
 
 def test_training_completion_question_queries_status() -> None:

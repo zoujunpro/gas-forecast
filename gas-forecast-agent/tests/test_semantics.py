@@ -2,7 +2,30 @@ import asyncio
 from types import SimpleNamespace
 
 from gas_forecast_agent.config import Settings
-from gas_forecast_agent.skills import RequestSemanticExtractor, RequestSemantics, TrainingPolicy
+from gas_forecast_agent.skills import DialogueAct, RequestSemanticExtractor, RequestSemantics, TrainingPolicy
+
+
+def test_confirmation_dialogue_act_requires_a_real_pending_action(monkeypatch) -> None:
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='''{
+                "operation":"UNSPECIFIED","dialogue_act":"CONFIRM_PENDING",
+                "customer_code":null,"customer_name":null,"region_name":null,"industry_name":null,
+                "forecast_horizon":null,"training_policy":"UNSPECIFIED","needs_clarification":false,
+                "clarification_question":null,"evidence":{"message":"照此办理"}
+            }'''))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
+    extractor = RequestSemanticExtractor(model_settings())
+
+    accepted = asyncio.run(extractor.extract(
+        "照此办理", "customer-gas-forecast", {"tool": "forecast_start", "parameters": {}},
+    ))
+    rejected = asyncio.run(extractor.extract("照此办理", "customer-gas-forecast"))
+
+    assert accepted.dialogue_act == DialogueAct.CONFIRM_PENDING
+    assert rejected.dialogue_act == DialogueAct.UNSPECIFIED
 
 
 def model_settings() -> Settings:
