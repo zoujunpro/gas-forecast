@@ -658,6 +658,42 @@ def test_forecast_customer_name_is_resolved_before_model_planning(monkeypatch) -
     assert decision["name"] == "customer_search"
 
 
+def test_unique_customer_match_continues_to_forecast_without_model_replanning(monkeypatch) -> None:
+    agent = SkillAgent(model_settings())
+
+    def unexpected_model_client(settings):
+        raise AssertionError("客户唯一匹配后应按工具依赖继续，不应再次调用规划模型")
+
+    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", unexpected_model_client)
+    parameters = {
+        "customerCode": "CUS000140",
+        "customerName": "扬州中燃",
+        "forecastHorizon": 50,
+    }
+    trace = [{
+        "tool": "customer_search",
+        "arguments": {"customerName": "扬州中燃"},
+        "result": {
+            "success": True,
+            "status": "COMPLETED",
+            "message": "客户唯一匹配",
+            "retryable": False,
+            "data": {"status": "UNIQUE"},
+        },
+    }]
+
+    decision = asyncio.run(agent._decide(
+        SimpleNamespace(name="customer-gas-forecast", model_instructions=lambda: ""),
+        "帮我预测下扬州中燃未来50天的燃气销量",
+        [],
+        parameters,
+        trace,
+        [{"name": "forecast_start", "inputSchema": {"type": "object", "properties": {}}}],
+    ))
+
+    assert decision == {"type": "tool", "name": "forecast_start", "arguments": parameters}
+
+
 def test_confirmation_and_idempotency_do_not_leak_to_next_request() -> None:
     remembered = {"currentParameters": {"confirmed": True, "idempotencyKey": "old-key"}}
     values = SkillAgent._initial_parameters("发起新的预测", remembered, {}, "C-4", "customer-gas-forecast")

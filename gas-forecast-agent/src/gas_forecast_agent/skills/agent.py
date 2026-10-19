@@ -327,6 +327,10 @@ class SkillAgent:
         deterministic_query = self._explicit_read_query(skill.name, message, parameters)
         if deterministic_query:
             return deterministic_query
+        # 用户已经确认的待执行动作必须按服务端保存的快照继续，不能再次交给
+        # 规划模型解释，否则“确认/继续”可能被误判成缺少业务参数。
+        if parameters.get("_pendingTool") and parameters.get("confirmed") is True:
+            return {"type": "tool", "name": parameters["_pendingTool"], "arguments": parameters}
         # 客户名称必须先通过主数据工具解析成唯一编码。这是工具依赖关系，
         # 不交给规划模型决定，避免模型在参数已经齐全时仍用文本追问拦截流程。
         if (
@@ -335,6 +339,16 @@ class SkillAgent:
             and not parameters.get("customerCode")
         ):
             return {"type": "tool", "name": "customer_search", "arguments": parameters}
+        # 实体解析工具已经唯一命中后，下一步由 Skill 的固定依赖关系决定。
+        # 模型无需再次猜测“是继续还是追问”，但工具仍会执行 Schema 校验和
+        # 写操作确认；参数缺失时会返回精确的字段提示，而不是泛化追问。
+        if trace and trace[-1].get("tool") == "customer_search" and parameters.get("customerCode"):
+            next_tool = {
+                "customer-gas-forecast": "forecast_start",
+                "model-training-management": "training_start",
+            }.get(skill.name)
+            if next_tool:
+                return {"type": "tool", "name": next_tool, "arguments": parameters}
         if self._settings.skill_routing_mode == "rules" or not self._settings.llm_api_key or not self._settings.llm_model:
             return self._rule_decision(skill.name, message, parameters)
         openai_tools = [
