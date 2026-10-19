@@ -240,12 +240,9 @@ def test_customer_query_uses_read_only_skill() -> None:
     body = response.json()["data"]
     assert body["skillName"] == "business-data-query"
     assert body["executedTool"] == "customer_list"
-    assert body["parameters"]["industryName"] == "城燃"
-    assert body["parameters"]["regionCode"] == "330000"
-    assert body["parameters"]["industryCode"] == "CITY_GAS"
-    assert [name for name, _ in fake.calls if name in {"region_search", "industry_search", "customer_list"}] == [
-        "region_search", "industry_search", "customer_list",
-    ]
+    assert "industryName" not in body["parameters"]
+    assert "regionName" not in body["parameters"]
+    assert [name for name, _ in fake.calls if name == "customer_list"] == ["customer_list"]
 
 
 def test_task_retry_requires_confirmation_before_tool_call(monkeypatch) -> None:

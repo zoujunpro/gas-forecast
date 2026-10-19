@@ -173,3 +173,49 @@ def test_string_evidence_from_compatible_model_is_normalized(monkeypatch) -> Non
         "刚才预测所用的训练信息给我", "model-training-management",
     ))
     assert result.evidence == {"message": "刚才预测所用的训练信息"}
+
+
+def test_overlapping_scope_region_and_industry_are_disentangled(monkeypatch) -> None:
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='''{
+                "operation":"QUERY_CUSTOMERS","dialogue_act":"NEW_REQUEST",
+                "customer_code":null,"customer_name":null,
+                "region_name":"所有江苏城燃","industry_name":"城燃","fetch_all":true,
+                "forecast_horizon":null,"training_policy":"UNSPECIFIED","needs_clarification":false,
+                "clarification_question":null,
+                "evidence":{"region_name":"江苏","industry_name":"城燃","fetch_all":"所有"}
+            }'''))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
+    result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
+        "查询所有江苏城燃的客户", "business-data-query",
+    ))
+
+    assert result.region_name == "江苏"
+    assert result.industry_name == "城燃"
+    assert result.fetch_all is True
+
+
+def test_ambiguous_training_request_cannot_silently_reuse_old_training(monkeypatch) -> None:
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='''{
+                "operation":"FORECAST","dialogue_act":"NEW_REQUEST",
+                "customer_code":"CUS000260","customer_name":null,
+                "region_name":null,"industry_name":null,"fetch_all":null,
+                "forecast_horizon":30,"training_policy":"UNSPECIFIED",
+                "needs_clarification":false,"clarification_question":null,
+                "evidence":{"message":"并用发布最新的训练"}
+            }'''))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
+    result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
+        "预测CUS000260未来30天，并用发布最新的训练", "customer-gas-forecast",
+    ))
+
+    assert result.training_policy == TrainingPolicy.UNSPECIFIED
+    assert result.needs_clarification is True
+    assert "重新训练" in result.clarification_question

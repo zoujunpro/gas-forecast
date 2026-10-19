@@ -624,25 +624,11 @@ class SkillAgent:
         if customer:
             values["customerName"] = customer.group(1)
             values.pop("customerCode", None)
-        # 规则模式只抽取用户说出的名称，不维护省份清单，也不在 Agent 中翻译主数据编码。
-        # 标准名称、别名和编码统一由 Java 的 region_search / industry_search 解析。
-        region_name = SkillAgent._extract_region_name(message)
-        if region_name:
-            values["regionName"] = region_name
-            values.pop("regionCode", None)
-            # 这是从本轮原文中按明确边界抽出的名称。模型可以补充缺失参数，
-            # 但不能把“江苏”扩写成“江苏城燃”等无法匹配主数据的内容。
-            locked_parameters.add("regionName")
-        if any(word in message for word in ("城市燃气", "城镇燃气", "城燃")):
-            values["industryName"] = next(
-                word for word in ("城市燃气", "城镇燃气", "城燃") if word in message
-            )
-            values.pop("industryCode", None)
-            locked_parameters.add("industryName")
-        elif "化工" in message:
-            values["industryName"] = "化工"
-            values.pop("industryCode", None)
-            locked_parameters.add("industryName")
+            if skill_name == "customer-gas-forecast":
+                # 单客户预测以本轮客户实体为准。客户名称本身可能包含地名、
+                # 行业词，不能继续沿用历史范围过滤条件。
+                for key in ("regionCode", "regionName", "industryCode", "industryName"):
+                    values.pop(key, None)
         recent = re.search(r"最近\s*(\d{1,5})\s*(?:天|日|期|个月|月|旬)", message)
         if recent and skill_name == "model-training-management":
             values["trainMode"] = "RECENT"
@@ -689,6 +675,14 @@ class SkillAgent:
             accepted_semantic_values = {
                 key: value for key, value in semantic_values.items() if key not in locked_parameters
             }
+            current_customer_name = values.get("customerName") or accepted_semantic_values.get("customerName")
+            if skill_name == "customer-gas-forecast" and current_customer_name:
+                # 只有规则从本轮明确范围表达中锁定的地区/行业才可作为客户
+                # 搜索约束；拒绝模型从“扬州中燃”之类客户名中重叠拆出的实体。
+                for key in ("regionCode", "regionName", "industryCode", "industryName"):
+                    if key not in locked_parameters:
+                        accepted_semantic_values.pop(key, None)
+                        values.pop(key, None)
             values.update(accepted_semantic_values)
             locked_parameters.update(accepted_semantic_values)
             if semantics.needs_clarification:
@@ -714,8 +708,6 @@ class SkillAgent:
                     values.setdefault("forecastFrequency", "DAILY")
                     # 明确进入单客户 Schema 分支；批量预测只允许由用户范围表达触发。
                     values.setdefault("bulk", False)
-        if "全部" in message or "所有" in message:
-            values["fetchAll"] = True
         if (
             skill_name == "business-data-query"
             and values.get("fetchAll") is True
@@ -728,28 +720,6 @@ class SkillAgent:
         if locked_parameters:
             values["_lockedParameters"] = sorted(locked_parameters)
         return values
-
-    @staticmethod
-    def _extract_region_name(message: str) -> str | None:
-        """抽取地区原名；标准化与真实性校验交给 Java 主数据工具。"""
-        text = re.sub(r"\s+", "", message)
-        text = re.sub(
-            r"^(?:请|麻烦)?(?:帮我|帮|给我|查询|查看|查找|检索|统计|列出|获取)*(?:一下|下)?",
-            "",
-            text,
-        )
-        with_suffix = re.match(
-            r"(?P<name>[\u4e00-\u9fa5]{2,12}?)(?:特别行政区|壮族自治区|回族自治区|维吾尔自治区|自治区|省|市|地区)",
-            text,
-        )
-        if with_suffix:
-            return with_suffix.group("name")
-        # 没有行政区后缀时，只抽取紧邻明确行业表达的范围，避免把普通句子误识别为地区。
-        before_industry = re.match(
-            r"(?P<name>[\u4e00-\u9fa5]{2,12}?)(?=城市燃气|城镇燃气|城燃|化工)",
-            text,
-        )
-        return before_industry.group("name") if before_industry else None
 
     @staticmethod
     def _apply_locked_parameters(parameters: dict[str, Any], arguments: dict[str, Any]) -> None:
@@ -774,7 +744,26 @@ class SkillAgent:
             )))
         )
         if confirmation_required:
-            return f"即将执行“{tool.get('title') or tool.get('name')}”，该操作会写入业务数据或改变任务状态，是否确认继续？"
+            title = tool.get("title") or tool.get("name")
+            if tool.get("name") == "forecast_start":
+                customer = arguments.get("customerName") or arguments.get("customerCode") or "未指定客户"
+                horizon = arguments.get("forecastHorizon")
+                horizon_text = f"未来{horizon}天" if horizon else "默认预测周期"
+                preference = arguments.get("trainingPreference")
+                if arguments.get("forceRetrain") is True or preference == "FORCE_RETRAIN":
+                    training_text = "重新发起训练，并使用本次新训练结果预测"
+                elif preference == "USE_EXISTING_ONLY" or arguments.get("autoTrain") is False:
+                    training_text = "仅使用已有训练结果，不发起新训练"
+                else:
+                    training_text = "优先使用已有训练结果；没有可用结果时自动训练"
+                return (
+                    f"即将发起燃气预测：\n"
+                    f"- 客户：{customer}\n"
+                    f"- 预测周期：{horizon_text}\n"
+                    f"- 训练策略：{training_text}\n"
+                    "该操作会创建业务任务，是否确认继续？"
+                )
+            return f"即将执行“{title}”，该操作会写入业务数据或改变任务状态，是否确认继续？"
         return None
 
     @staticmethod

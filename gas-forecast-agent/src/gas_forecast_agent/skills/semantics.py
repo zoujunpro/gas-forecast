@@ -44,6 +44,7 @@ class RequestSemantics(BaseModel):
     customer_name: str | None = None
     region_name: str | None = None
     industry_name: str | None = None
+    fetch_all: bool | None = None
     forecast_horizon: int | None = Field(default=None, ge=1, le=365)
     training_policy: TrainingPolicy = TrainingPolicy.UNSPECIFIED
     needs_clarification: bool = False
@@ -88,6 +89,7 @@ class RequestSemantics(BaseModel):
             "customerName": self.customer_name,
             "regionName": self.region_name,
             "industryName": self.industry_name,
+            "fetchAll": self.fetch_all,
             "forecastHorizon": self.forecast_horizon,
         }
         values.update({name: value for name, value in mapping.items() if value not in (None, "")})
@@ -125,17 +127,20 @@ class RequestSemanticExtractor:
                         "content": (
                             "你是业务参数语义抽取器，只分析用户本轮原话，不使用或猜测历史信息。"
                             "只输出JSON，字段必须为：operation、dialogue_act、customer_code、customer_name、region_name、"
-                            "industry_name、forecast_horizon、training_policy、needs_clarification、"
+                            "industry_name、fetch_all、forecast_horizon、training_policy、needs_clarification、"
                             "clarification_question、evidence。dialogue_act未明确时填UNSPECIFIED，其他未明确字段填null。"
                             "dialogue_act只能是NEW_REQUEST、CONFIRM_PENDING、REJECT_PENDING、MODIFY_PENDING、UNSPECIFIED。"
                             "仅当输入包含pending_action时，结合该待确认动作判断用户是在确认、拒绝还是修改它；"
                             "用户提出无关的新目标时为NEW_REQUEST。没有pending_action时不得输出CONFIRM_PENDING。"
                             "region_name和industry_name只保留用户原话中的实体名称，不要包含查询、所有、客户信息等修饰语，"
+                            "用户要求所有、全部或完整范围时fetch_all=true，否则填null。"
                             "不要生成或猜测地区编码、行业编码。"
                             "training_policy只能是FORCE_RETRAIN、AUTO_IF_MISSING、USE_EXISTING、UNSPECIFIED。"
                             "用户表达重新、重做、从头、再跑一遍、新建或不沿用旧模型等同义语义时，"
                             "training_policy=FORCE_RETRAIN；只在缺少模型时训练为AUTO_IF_MISSING；"
-                            "明确复用已有训练为USE_EXISTING。不能明确区分且会影响是否创建新训练时，"
+                            "发起、创建或跑一轮新的/最新的训练也属于FORCE_RETRAIN；"
+                            "明确使用已有、当前或最近一次训练结果才是USE_EXISTING。"
+                            "不能明确区分且会影响是否创建新训练时，"
                             "needs_clarification=true并给出简短问题。evidence记录对应原文片段。"
                         ),
                     },
@@ -150,6 +155,20 @@ class RequestSemanticExtractor:
             )
             extracted = RequestSemantics.model_validate_json(response.choices[0].message.content or "{}")
             updates: dict[str, object] = {}
+            # 兼容模型把相邻实体粘在一起，例如 region_name=“所有江苏”或
+            # region_name=“江苏城燃”。依据已经结构化的范围/行业证据消除重叠，
+            # 不维护任何省份、行业或自然语言说法清单。
+            region_name = extracted.region_name
+            industry_name = extracted.industry_name
+            scope_evidence = extracted.evidence.get("fetch_all", "").strip() if extracted.fetch_all else ""
+            if region_name:
+                region_name = self._remove_entity_overlap(region_name, scope_evidence, industry_name)
+                if region_name != extracted.region_name:
+                    updates["region_name"] = region_name or None
+            if industry_name:
+                industry_name = self._remove_entity_overlap(industry_name, scope_evidence, region_name)
+                if industry_name != extracted.industry_name:
+                    updates["industry_name"] = industry_name or None
             # 没有服务端待确认动作时，模型无权凭用户一句话伪造确认。
             if extracted.dialogue_act in {
                 DialogueAct.CONFIRM_PENDING, DialogueAct.REJECT_PENDING, DialogueAct.MODIFY_PENDING,
@@ -158,6 +177,13 @@ class RequestSemanticExtractor:
             # 编码属于强标识，只能来自用户本轮原文，不能接受模型推测。
             if extracted.customer_code and extracted.customer_code.lower() not in message.lower():
                 updates["customer_code"] = None
+            # 实体名称必须能直接回指本轮原话。模型负责抽取，程序只验证，
+            # 不再通过地区或行业词表自行猜测实体。
+            for field_name in ("customer_name", "region_name", "industry_name"):
+                value = updates.get(field_name, getattr(extracted, field_name))
+                evidence = extracted.evidence.get(field_name, "").strip()
+                if value and value not in message and (not evidence or evidence not in message):
+                    updates[field_name] = None
             # 会触发新训练的高风险语义必须能指回本轮原文，而且证据本身必须
             # 明确谈到训练或模型。仅把“预测”等普通词放进 evidence 不能证明
             # 用户要求了新的训练策略。
@@ -176,6 +202,15 @@ class RequestSemanticExtractor:
                 policy_evidence = extracted.evidence.get("training_policy", "").strip()
                 if not self._valid_training_policy_evidence(policy_evidence, message):
                     updates.update(needs_clarification=False, clarification_question=None)
+            # 预测请求提到了训练/模型，但模型未能给出明确策略时，禁止静默
+            # 回退到AUTO并复用旧训练。此时必须由用户确认新训练还是复用已有。
+            mentions_training = bool(re.search(r"训练|模型|建模|学习", message))
+            effective_policy = updates.get("training_policy", extracted.training_policy)
+            if mentions_training and effective_policy == TrainingPolicy.UNSPECIFIED:
+                updates.update(
+                    needs_clarification=True,
+                    clarification_question="请确认训练策略：重新训练并使用新结果，还是复用已有训练结果？",
+                )
             normalized = extracted.model_copy(update=updates) if updates else extracted
             logger.info(
                 "event=request_semantics_extracted skill=%s operation=%s dialogue_act=%s "
@@ -190,6 +225,20 @@ class RequestSemanticExtractor:
         except Exception:
             logger.exception("event=request_semantics_extract_failed skill=%s", skill_name)
             return RequestSemantics()
+
+    @staticmethod
+    def _remove_entity_overlap(value: str, *other_values: str | None) -> str:
+        """只移除位于实体边界、且已被其他结构化字段解释的重叠文本。"""
+        cleaned = value.strip()
+        for other in other_values:
+            token = (other or "").strip()
+            if not token or token == cleaned:
+                continue
+            if cleaned.startswith(token):
+                cleaned = cleaned[len(token):].strip()
+            if cleaned.endswith(token):
+                cleaned = cleaned[:-len(token)].strip()
+        return cleaned
 
     @staticmethod
     def _valid_training_policy_evidence(evidence: str, message: str) -> bool:

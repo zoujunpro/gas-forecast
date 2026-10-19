@@ -397,14 +397,18 @@ def test_training_range_and_industry_alias_are_extracted() -> None:
     assert (date_range["trainMode"], date_range["trainingStartDate"], date_range["trainingEndDate"]) == (
         "RANGE", "2025-01-01", "2025-03-01",
     )
-    chemical = SkillAgent._initial_parameters("训练浙江城市化工客户", {}, {}, "C-9", "model-training-management")
+    chemical = SkillAgent._initial_parameters(
+        "训练浙江城市化工客户", {}, {}, "C-9", "model-training-management",
+        RequestSemantics(region_name="浙江", industry_name="化工"),
+    )
     assert chemical["industryName"] == "化工"
     assert chemical["bulk"] is True
 
 
 def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> None:
     values = SkillAgent._initial_parameters(
-        "查询江苏省城市燃气行业的所有客户信息", {}, {}, "C-REGION", "business-data-query"
+        "查询江苏省城市燃气行业的所有客户信息", {}, {}, "C-REGION", "business-data-query",
+        RequestSemantics(region_name="江苏", industry_name="城市燃气", fetch_all=True),
     )
 
     assert values["regionName"] == "江苏"
@@ -412,11 +416,31 @@ def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> No
     assert values["fetchAll"] is True
 
 
-def test_explicit_region_and_industry_are_not_overwritten_by_model_semantics() -> None:
+def test_scope_quantifier_is_not_part_of_region_name() -> None:
+    leading = SkillAgent._initial_parameters(
+        "查询所有江苏城燃的客户", {}, {}, "C-REGION-ALL-1", "business-data-query",
+        RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
+    )
+    middle = SkillAgent._initial_parameters(
+        "查询江苏所有城燃的客户", {}, {}, "C-REGION-ALL-2", "business-data-query",
+        RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
+    )
+
+    assert leading["regionName"] == "江苏"
+    assert middle["regionName"] == "江苏"
+    assert leading["industryName"] == "城燃"
+    assert middle["industryName"] == "城燃"
+    assert leading["fetchAll"] is True
+    assert middle["fetchAll"] is True
+
+
+def test_structured_region_and_industry_are_used_without_phrase_rules() -> None:
     semantics = RequestSemantics(
         operation="QUERY_CUSTOMERS",
-        region_name="江苏城燃",
-        industry_name="燃气客户信息",
+        region_name="江苏",
+        industry_name="城燃",
+        fetch_all=True,
+        evidence={"region_name": "江苏", "industry_name": "城燃", "fetch_all": "所有"},
     )
 
     values = SkillAgent._initial_parameters(
@@ -427,7 +451,35 @@ def test_explicit_region_and_industry_are_not_overwritten_by_model_semantics() -
     assert values["regionName"] == "江苏"
     assert values["industryName"] == "城燃"
     assert values["fetchAll"] is True
-    assert {"regionName", "industryName"}.issubset(values["_lockedParameters"])
+    assert {"regionName", "industryName", "fetchAll"}.issubset(values["_lockedParameters"])
+
+
+def test_customer_name_does_not_become_region_or_industry_filter() -> None:
+    values = SkillAgent._initial_parameters(
+        "帮我预测下扬州中燃未来50天的燃气销量",
+        {"currentParameters": {
+            "regionCode": "OLD-REGION", "industryCode": "OLD-INDUSTRY",
+            "customerCode": "OLD-CUSTOMER",
+        }},
+        {},
+        "C-CUSTOMER-BOUNDARY",
+        "customer-gas-forecast",
+        RequestSemantics(
+            operation="FORECAST",
+            customer_name="扬州中燃",
+            region_name="扬州",
+            industry_name="燃气",
+            forecast_horizon=50,
+        ),
+    )
+
+    assert values["customerName"] == "扬州中燃"
+    assert values["forecastHorizon"] == 50
+    assert "customerCode" not in values
+    assert "regionCode" not in values
+    assert "regionName" not in values
+    assert "industryCode" not in values
+    assert "industryName" not in values
 
 
 def test_forecast_with_new_training_result_forces_retraining() -> None:
@@ -762,6 +814,7 @@ def test_internal_clarification_and_old_customer_do_not_leak_into_scoped_list_qu
         {},
         "C-FRESH-QUERY",
         "business-data-query",
+        RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
     )
 
     assert values["regionName"] == "江苏"
@@ -789,6 +842,23 @@ def test_only_risky_forecast_requires_confirmation() -> None:
 
     assert SkillAgent._confirmation_message(tool, {"bulk": False, "autoTrain": False}) is None
     assert SkillAgent._confirmation_message(tool, {"autoTrain": True}) is not None
+
+
+def test_forecast_confirmation_displays_execution_snapshot() -> None:
+    tool = {
+        "name": "forecast_start", "title": "发起燃气预测",
+        "inputSchema": {"properties": {"confirmed": {"type": "boolean"}}},
+        "annotations": {"destructiveHint": True},
+    }
+    message = SkillAgent._confirmation_message(tool, {
+        "customerCode": "CUS000260", "forecastHorizon": 30,
+        "forceRetrain": True, "trainingPreference": "FORCE_RETRAIN",
+    })
+
+    assert "CUS000260" in message
+    assert "未来30天" in message
+    assert "重新发起训练" in message
+    assert "新训练结果预测" in message
 
 
 def test_entity_merge_keeps_region_out_of_customer_fields() -> None:
