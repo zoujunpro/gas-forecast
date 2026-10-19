@@ -27,6 +27,7 @@ DIRECT_RESULT_TOOLS = {
     "forecast_result_get", "forecast_latest_get", "forecast_history_get", "forecast_status_get",
     "task_status_get", "task_steps_get",
 }
+STRUCTURED_LIST_TOOLS = {"customer_list", "region_list", "industry_list"}
 
 
 @dataclass
@@ -232,6 +233,19 @@ class SkillAgent:
                 return SkillRunResult(
                     status=str(result.get("status") or "EXECUTING"),
                     message=str(result.get("message") or "任务已提交。"),
+                    parameters=parameters,
+                    available_tools=list(tools),
+                    executed_tool=name,
+                    execution_result=result,
+                    tool_trace=trace,
+                )
+            # 列表工具已返回结构化 records 时，用户的查询目标已经完成。
+            # 直接交给 PresentationPlanner 渲染，不能再让模型重复选择同一工具。
+            result_data = result.get("data") if isinstance(result.get("data"), dict) else {}
+            if name in STRUCTURED_LIST_TOOLS and isinstance(result_data.get("records"), list):
+                return SkillRunResult(
+                    status=str(result.get("status") or "COMPLETED"),
+                    message=ToolResultAdapter.fallback_message(result),
                     parameters=parameters,
                     available_tools=list(tools),
                     executed_tool=name,

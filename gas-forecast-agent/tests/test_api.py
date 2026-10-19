@@ -4,7 +4,7 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from gas_forecast_agent.config import Settings, get_settings
-from gas_forecast_agent.main import app, get_mcp_client
+from gas_forecast_agent.main import _persistent_parameters, app, get_mcp_client
 from gas_forecast_agent.mcp import McpClientError
 from gas_forecast_agent.skills import DialogueAct, RequestSemantics
 
@@ -126,6 +126,18 @@ def test_skill_endpoint_exposes_skill_tool_allowlists() -> None:
     assert body["total"] == 3
     forecast = next(item for item in body["skills"] if item["name"] == "customer-gas-forecast")
     assert "forecast_start" in forecast["allowed_tools"]
+
+
+def test_only_business_parameters_are_persisted_between_turns() -> None:
+    assert _persistent_parameters({
+        "customerCode": "CUS-1",
+        "forecastHorizon": 30,
+        "confirmed": True,
+        "turnId": "TURN-1",
+        "_clarificationQuestion": "旧问题",
+        "_lockedParameters": ["customerCode"],
+        "_pendingTool": "forecast_start",
+    }) == {"customerCode": "CUS-1", "forecastHorizon": 30}
 
 
 def test_forecast_uses_skill_allowed_tool_and_stops_after_async_start() -> None:

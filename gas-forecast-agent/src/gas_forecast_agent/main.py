@@ -310,18 +310,27 @@ async def _read_memory(client: StreamableHttpMcpClient, conversation_no: str) ->
 
 
 async def _write_memory(client: StreamableHttpMcpClient, conversation_no: str, skill_name: str, result: Any) -> None:
+    parameters = _persistent_parameters(result.parameters)
     values = {
         "currentSkill": skill_name,
-        "currentParameters": result.parameters,
+        "currentParameters": parameters,
         "lastTool": result.executed_tool,
         "lastExecution": result.execution_result,
-        "pendingAction": {"tool": result.pending_tool, "parameters": result.parameters}
+        "pendingAction": {"tool": result.pending_tool, "parameters": parameters}
         if result.pending_tool else None,
     }
     await client.call_tool(
         "memory_update",
         {"conversationNo": conversation_no, "operation": "UPSERT", "values": values},
     )
+
+
+def _persistent_parameters(parameters: dict[str, Any]) -> dict[str, Any]:
+    """只持久化可跨轮复用的业务参数，排除单轮控制状态。"""
+    return {
+        key: value for key, value in parameters.items()
+        if not key.startswith("_") and key not in {"confirmed", "turnId"}
+    }
 
 
 async def _append_reply_safely(

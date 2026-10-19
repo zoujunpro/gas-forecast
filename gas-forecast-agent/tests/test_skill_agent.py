@@ -123,7 +123,7 @@ def test_python_style_model_message_is_parsed_and_long_page_text_uses_fallback()
     )
 
 
-def test_model_selects_one_allowed_tool_then_explains_result(monkeypatch) -> None:
+def test_model_selects_one_allowed_tool_then_returns_structured_list(monkeypatch) -> None:
     requests = []
     responses = [
         SimpleNamespace(
@@ -181,13 +181,12 @@ def test_model_selects_one_allowed_tool_then_explains_result(monkeypatch) -> Non
         mcp=mcp,
     ))
 
-    assert result.status == "NOT_FOUND"
+    assert result.status == "COMPLETED"
     assert result.executed_tool == "customer_list"
-    assert result.message == "浙江没有查询到符合条件的客户。"
+    assert len(requests) == 2
+    assert result.message == "查询完成"
     assert mcp.calls == ["customer_list"]
     assert result.tool_trace[0]["arguments"] == {"regionName": "浙江"}
-    assert requests
-    assert len(requests) == 3
     assert all(request["parallel_tool_calls"] is False for request in requests)
     assert "只选择当前最先需要执行的一个工具" in requests[1]["messages"][-1]["content"]
 
@@ -836,7 +835,16 @@ def test_same_tool_call_budget_stops_parameter_churn(monkeypatch) -> None:
             return [{
                 "name": "customer_list",
                 "inputSchema": {"properties": {"pageNo": {"type": "integer"}}},
-            }]
+                }]
+
+        async def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {
+                "structuredContent": {
+                    "success": True, "status": "COMPLETED", "message": "已翻页",
+                    "retryable": False, "data": {"pageNo": arguments.get("pageNo")},
+                }
+            }
 
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
@@ -855,7 +863,51 @@ def test_same_tool_call_budget_stops_parameter_churn(monkeypatch) -> None:
 
     assert result.status == "FAILED"
     assert "调用次数达到安全上限" in result.message
-    assert mcp.calls == ["customer_list", "customer_list"]
+    assert mcp.calls == [("customer_list", {"pageNo": 1}), ("customer_list", {"pageNo": 2})]
+
+
+def test_structured_customer_list_is_terminal_and_not_replanned(monkeypatch) -> None:
+    responses = [SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+        content=None,
+        tool_calls=[SimpleNamespace(function=SimpleNamespace(
+            name="customer_list", arguments='{"fetchAll":true}',
+        ))],
+    ))])]
+
+    class Completions:
+        async def create(self, **kwargs):
+            if not responses:
+                raise AssertionError("结构化客户列表返回后不应再次调用规划模型")
+            return responses.pop(0)
+
+    class ListMcp(FakeMcp):
+        async def call_tool(self, name, arguments):
+            self.calls.append((name, arguments))
+            return {"structuredContent": {
+                "success": True, "status": "COMPLETED", "resultType": "PAGE",
+                "message": "查询成功", "retryable": False,
+                "data": {"total": 2, "records": [
+                    {"customerCode": "CUS-1", "customerName": "客户一"},
+                    {"customerCode": "CUS-2", "customerName": "客户二"},
+                ]},
+            }}
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
+    skill = SkillDefinition.model_validate({
+        "name": "business-data-query", "description": "查询客户",
+        "allowed-tools": ["customer_list"], "instructions": "查询客户。",
+    })
+
+    result = asyncio.run(SkillAgent(model_settings()).run(
+        conversation_no="C-LIST", skill=skill, message="查询全部客户",
+        history=[], memory={}, metadata={}, mcp=ListMcp(),
+    ))
+
+    assert result.status == "COMPLETED"
+    assert result.executed_tool == "customer_list"
+    assert result.execution_result["data"]["total"] == 2
+    assert not responses
 
 
 def test_conditional_required_parameters_are_checked_before_execution() -> None:
