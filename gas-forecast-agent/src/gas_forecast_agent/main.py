@@ -167,6 +167,7 @@ async def browser_chat(
     payload = {
         "progress": reply.progress,
         "forecastResult": reply.forecast_result,
+        "trainingResult": reply.training_result,
         "executionResult": execution,
         "analysis": None,
         "suggestedQuestions": [],
@@ -183,6 +184,7 @@ async def browser_chat(
         "forecastBatchNo": persisted.get("lastForecastBatchNo") or _find_text(execution, "forecastBatchNo"),
         "progress": reply.progress,
         "forecastResult": reply.forecast_result,
+        "trainingResult": reply.training_result,
         "executionResult": execution,
         "presentation": reply.presentation,
         "analysis": None,
@@ -247,11 +249,12 @@ async def _run_agent(
         agent_type = AgentType.WINTER_SUPPLY if "冬季" in request.message or "保供" in request.message else \
             AgentType.MONTHLY_SALES if "月度" in request.message or "销量" in request.message else AgentType.SHORT_TERM
     presentation = PresentationPlanner.plan(result.executed_tool, result.execution_result or {})
+    training_result = presentation.get("training_result")
     return ChatResponse(
         conversation_no=conversation_no,
         agent_type=agent_type,
         status=result.status,
-        message=result.message,
+        message=_training_result_summary(training_result) if training_result else result.message,
         skill_name=skill.name,
         skill_selection={"skill_name": skill.name, "confidence": selection.confidence, "reason": selection.reason},
         parameters=result.parameters,
@@ -262,8 +265,35 @@ async def _run_agent(
         presentation=presentation.get("presentation"),
         progress=presentation.get("progress"),
         forecast_result=presentation.get("forecast_result"),
+        training_result=training_result,
         decision_reason=selection.reason,
     )
+
+
+def _training_result_summary(training: dict[str, Any]) -> str:
+    """即使前端详情卡未渲染，也返回核心训练结果。"""
+    lines = [f"训练批次：{training.get('batchNo') or '-'}", f"状态：{training.get('status') or '-'}"]
+    scope = " / ".join(str(value) for value in (
+        training.get("regionName"), training.get("industryName"), training.get("customerName")
+    ) if value)
+    if scope:
+        lines.append(f"训练范围：{scope}")
+    if training.get("trainStartDate") or training.get("trainEndDate"):
+        lines.append(f"训练区间：{training.get('trainStartDate') or '-'} 至 {training.get('trainEndDate') or '-'}")
+    if training.get("bestModel"):
+        model = str(training["bestModel"])
+        if training.get("modelVersion"):
+            model += f"（{training['modelVersion']}）"
+        lines.append(f"最优模型：{model}")
+    metrics = []
+    for key, label in (("mape", "MAPE"), ("wmape", "WMAPE"), ("smape", "SMAPE"), ("mae", "MAE"), ("rmse", "RMSE"), ("r2", "R²")):
+        if training.get(key) is not None:
+            metrics.append(f"{label}={training[key]}")
+    if metrics:
+        lines.append("评估指标：" + "，".join(metrics))
+    points = training.get("backtestPoints")
+    lines.append(f"回测明细：{len(points)} 个数据点" if isinstance(points, list) and points else "回测明细：暂无")
+    return "\n".join(lines)
 
 
 async def _read_memory(client: StreamableHttpMcpClient, conversation_no: str) -> dict[str, Any]:

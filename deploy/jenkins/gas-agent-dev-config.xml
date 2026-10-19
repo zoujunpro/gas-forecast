@@ -1,0 +1,119 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Freestyle 单执行器任务；从远程 Git 拉取 main，构建并部署 Python Agent。</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>20</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>10</artifactNumToKeep>
+        <removeLastBuild>false</removeLastBuild>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@5.11.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/zoujunpro/gas-forecast.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec><name>*/main</name></hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>set -eu
+BUILD_VENV=&quot;$WORKSPACE/agent-build-venv&quot;
+python3 -m venv &quot;$BUILD_VENV&quot;
+&quot;$BUILD_VENV/bin/pip&quot; install --upgrade pip setuptools wheel
+cd gas-forecast-agent
+&quot;$BUILD_VENV/bin/pip&quot; install -e &apos;.[dev]&apos;
+&quot;$BUILD_VENV/bin/pytest&quot; -q
+rm -rf dist
+&quot;$BUILD_VENV/bin/pip&quot; wheel --no-deps --no-build-isolation --wheel-dir dist .
+cd &quot;$WORKSPACE&quot;
+mkdir -p deploy-package/config
+cp gas-forecast-agent/dist/*.whl deploy-package/
+cp deploy/config/agent.env.example deploy-package/config/
+tar -C deploy-package -czf gas-agent-deploy.tar.gz .</command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin plugin="publish-over-ssh@409.v73ca_23a_5b_48e">
+      <consolePrefix>SSH: </consolePrefix>
+      <delegate plugin="publish-over@242.vf56f6892cb_b_a_">
+        <publishers>
+          <jenkins.plugins.publish__over__ssh.BapSshPublisher plugin="publish-over-ssh@409.v73ca_23a_5b_48e">
+            <configName>Jun Zou</configName>
+            <verbose>true</verbose>
+            <transfers>
+              <jenkins.plugins.publish__over__ssh.BapSshTransfer>
+                <remoteDirectory>incoming/gas-agent-${BUILD_NUMBER}</remoteDirectory>
+                <sourceFiles>gas-agent-deploy.tar.gz</sourceFiles>
+                <excludes></excludes>
+                <removePrefix></removePrefix>
+                <remoteDirectorySDF>false</remoteDirectorySDF>
+                <flatten>false</flatten>
+                <cleanRemote>false</cleanRemote>
+                <noDefaultExcludes>false</noDefaultExcludes>
+                <makeEmptyDirs>true</makeEmptyDirs>
+                <patternSeparator>[, ]+</patternSeparator>
+                <execCommand>set -eu
+root=/Users/zoujun/data/gas
+release=&quot;$root/gas-agent/releases/agent-${BUILD_NUMBER}&quot;
+mkdir -p &quot;$release&quot; &quot;$root/gas-agent/logs&quot;
+tar -xzf &quot;$root/incoming/gas-agent-${BUILD_NUMBER}/gas-agent-deploy.tar.gz&quot; -C &quot;$release&quot;
+if ! &quot;$root/gas-agent/venv/bin/python&quot; -c &apos;import sys; raise SystemExit(0 if sys.prefix != sys.base_prefix else 1)&apos; &gt;/dev/null 2&gt;&amp;1; then
+  rm -rf &quot;$root/gas-agent/venv&quot;
+  /Users/zoujun/.pyenv/versions/3.12.13/bin/python3 -m venv &quot;$root/gas-agent/venv&quot;
+fi
+&quot;$root/gas-agent/venv/bin/pip&quot; install --upgrade &quot;$release&quot;/*.whl
+&quot;$root/gas-agent/venv/bin/pip&quot; install --force-reinstall --no-deps &quot;$release&quot;/*.whl
+ln -sfn &quot;releases/agent-${BUILD_NUMBER}&quot; &quot;$root/gas-agent/current&quot;
+&quot;$root/gas-agent/bin/stop.sh&quot;
+&quot;$root/gas-agent/bin/start.sh&quot;</execCommand>
+                <execTimeout>300000</execTimeout>
+                <usePty>false</usePty>
+                <useAgentForwarding>false</useAgentForwarding>
+                <useSftpForExec>false</useSftpForExec>
+                <keepFilePermissions>false</keepFilePermissions>
+              </jenkins.plugins.publish__over__ssh.BapSshTransfer>
+            </transfers>
+            <useWorkspaceInPromotion>false</useWorkspaceInPromotion>
+            <usePromotionTimestamp>false</usePromotionTimestamp>
+            <retry class="jenkins.plugins.publish_over_ssh.BapSshRetry">
+              <retries>0</retries><retryDelay>10000</retryDelay>
+            </retry>
+            <label class="jenkins.plugins.publish_over_ssh.BapSshPublisherLabel"><label></label></label>
+          </jenkins.plugins.publish__over__ssh.BapSshPublisher>
+        </publishers>
+        <continueOnError>false</continueOnError>
+        <failOnError>true</failOnError>
+        <alwaysPublishFromMaster>false</alwaysPublishFromMaster>
+        <masterNodeName></masterNodeName>
+        <hostConfigurationAccess class="jenkins.plugins.publish_over_ssh.BapSshPublisherPlugin" reference="../.."/>
+        <paramPublish class="jenkins.plugins.publish_over_ssh.BapSshParamPublish" plugin="publish-over-ssh@409.v73ca_23a_5b_48e">
+          <parameterName></parameterName>
+        </paramPublish>
+      </delegate>
+    </jenkins.plugins.publish__over__ssh.BapSshPublisherPlugin>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.30"/>
+  </buildWrappers>
+</project>

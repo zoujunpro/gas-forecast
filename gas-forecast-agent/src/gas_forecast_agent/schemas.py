@@ -47,6 +47,7 @@ class ChatResponse(BaseModel):
     presentation: dict[str, Any] | None = None
     progress: dict[str, Any] | None = None
     forecast_result: dict[str, Any] | None = None
+    training_result: dict[str, Any] | None = None
     next_action: str | None = None
     next_check_seconds: int | None = None
     decision_reason: str | None = None

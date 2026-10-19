@@ -36,6 +36,18 @@ def test_waiting_training_builds_visible_dynamic_progress() -> None:
     assert planned["progress"]["title"] == "训练与预测任务"
 
 
+def test_successful_training_status_is_terminal_and_never_uses_forecast_steps() -> None:
+    planned = PresentationPlanner.plan("training_status_get", {
+        "resultType": "PROGRESS", "status": "COMPLETED",
+        "data": {"trainBatchNo": "TR-1", "status": "SUCCESS"},
+    })
+    progress = planned["progress"]
+    assert progress["title"] == "模型训练状态"
+    assert progress["currentStep"] == 3
+    assert all(step["status"] == "SUCCESS" for step in progress["steps"])
+    assert all("预测" not in step["name"] for step in progress["steps"])
+
+
 def test_forecast_result_keeps_training_and_backtest_information() -> None:
     planned = PresentationPlanner.plan("forecast_result_get", {
         "resultType": "RESULT",
@@ -65,6 +77,7 @@ def test_training_result_generates_basic_info_and_backtest_chart_data() -> None:
     })
     presentation = planned["presentation"]
     assert presentation["type"] == "TRAINING_BACKTEST"
+    assert planned["training_result"] == presentation["trainingResult"]
     assert presentation["trainingResult"]["batchNo"] == "T-1"
     assert presentation["trainingResult"]["customerName"] == "测试客户"
     assert presentation["trainingResult"]["backtestPoints"][0] == {

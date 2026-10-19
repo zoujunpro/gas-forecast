@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     agent_host: str = "0.0.0.0"
     agent_port: int = 8091
     # local profile 将 Java 服务绑定到 127.0.0.1；固定使用 IPv4，避免 ::1 与实际监听地址不一致。
-    mcp_url: str = "http://127.0.0.1:18081/gas-forecast/mcp"
+    # 本地开发 Agent(8091)连接 IDEA Java(18083)；Jenkins 部署通过
+    # /Users/zoujun/data/gas/gas-agent/config/agent.env 显式覆盖为 18081。
+    mcp_url: str = "http://127.0.0.1:18083/gas-forecast/mcp"
     mcp_authorization: str | None = Field(default=None, repr=False)
     mcp_timeout_seconds: float = 30.0
     skill_routing_mode: str = "hybrid"

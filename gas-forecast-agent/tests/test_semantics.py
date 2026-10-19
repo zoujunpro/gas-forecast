@@ -2,13 +2,20 @@ import asyncio
 from types import SimpleNamespace
 
 from gas_forecast_agent.config import Settings
-from gas_forecast_agent.skills import RequestSemanticExtractor, TrainingPolicy
+from gas_forecast_agent.skills import RequestSemanticExtractor, RequestSemantics, TrainingPolicy
 
 
 def model_settings() -> Settings:
     # 动态构造敏感配置名，避免安全扫描器把单元测试占位值误判为真实密钥。
     values = {"LLM_" + "API_KEY": "unit-test-placeholder", "LLM_MODEL": "test-model"}
     return Settings(GAS_SKILL_ROUTING_MODE="hybrid", **values)
+
+
+def test_model_entity_names_are_cleaned_without_translating_master_data() -> None:
+    semantics = RequestSemantics(region_name="江苏省", industry_name="城市燃气行业")
+
+    assert semantics.region_name == "江苏"
+    assert semantics.industry_name == "城市燃气"
 
 
 def test_model_extracts_force_retrain_from_free_form_language(monkeypatch) -> None:
@@ -95,3 +102,27 @@ def test_unverifiable_force_retrain_evidence_is_not_executed(monkeypatch) -> Non
     assert result.customer_code is None
     assert result.training_policy == TrainingPolicy.UNSPECIFIED
     assert result.needs_clarification is True
+
+
+def test_string_evidence_from_compatible_model_is_normalized(monkeypatch) -> None:
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='''{
+                "operation":"TRAINING_RESULT_QUERY",
+                "customer_code":null,
+                "customer_name":null,
+                "region_name":null,
+                "industry_name":null,
+                "forecast_horizon":null,
+                "training_policy":"UNSPECIFIED",
+                "needs_clarification":false,
+                "clarification_question":null,
+                "evidence":"刚才预测所用的训练信息"
+            }'''))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
+    result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
+        "刚才预测所用的训练信息给我", "model-training-management",
+    ))
+    assert result.evidence == {"message": "刚才预测所用的训练信息"}

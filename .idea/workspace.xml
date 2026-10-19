@@ -5,36 +5,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change afterPath="$PROJECT_DIR$/deploy/agent/bin/start.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deploy/agent/bin/stop.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deploy/config/agent.env.example" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/business-data-query/SKILL.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/business-data-query/references/query-rules.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/business-data-query/references/result-handling.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/customer-gas-forecast/SKILL.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/customer-gas-forecast/references/decision-flow.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/customer-gas-forecast/references/parameters.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/customer-gas-forecast/references/status-handling.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/model-training-management/SKILL.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/model-training-management/references/recovery.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/model-training-management/references/result-interpretation.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/model-training-management/references/training-rules.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/registry.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/router.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_semantics.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skills.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AgentTaskProgressService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/ForecastConversationService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/TrainingDataQualityValidator.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/84_rename_ai_message_intent_code.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/85_add_ai_message_turn_id.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/config/agent.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/config/agent.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/nginx/gas-web-dev.conf" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/nginx/gas-web-dev.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_presentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_presentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_semantics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_semantics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/application-dev.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiAssistant.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiAssistant.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,7 +29,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="20932" />
+    <option name="cachedIndexableFilesCount" value="20936" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -331,14 +318,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00007" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1790060918398</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1790060918398</updated>
     </task>
     <task id="LOCAL-00008" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -724,7 +703,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792368214741</updated>
     </task>
-    <option name="localTasksCounter" value="56" />
+    <task id="LOCAL-00056" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1792371012259</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1792371012259</updated>
+    </task>
+    <option name="localTasksCounter" value="57" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

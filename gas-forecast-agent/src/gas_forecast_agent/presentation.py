@@ -30,14 +30,37 @@ class PresentationPlanner:
                         "type": "TRAINING_BACKTEST",
                         "title": "训练信息与回测效果",
                         "trainingResult": training,
-                    }
+                    },
+                    "training_result": training,
                 }
         if str(result.get("resultType") or "").upper() == "PAGE":
             return {"presentation": {"type": "LIST", "dataSource": "executionResult.data.records"}}
+        if tool_name == "training_status_get":
+            progress = cls._training_progress(data)
+            return {"presentation": {"type": "PROGRESS", "dataSource": "progress"}, "progress": progress}
         if str(result.get("resultType") or "").upper() in {"TASK", "PROGRESS"} and str(result.get("status") or "").upper() not in {"NEED_CONFIRMATION", "NEED_CLARIFICATION"}:
             progress = cls._progress(tool_name, data)
             return {"presentation": {"type": "PROGRESS", "dataSource": "progress"}, "progress": progress}
         return {"presentation": {"type": "TEXT"}}
+
+    @staticmethod
+    def _training_progress(data: dict[str, Any]) -> dict[str, Any]:
+        batch = data.get("record") if isinstance(data.get("record"), dict) else data
+        status = str(batch.get("status") or "UNKNOWN").upper()
+        batch_no = batch.get("batchNo") or batch.get("trainBatchNo") or "训练批次"
+        failed = status in {"FAILED", "FAILED_FINAL", "PREPARE_FAILED", "CANCELLED"}
+        completed = status == "SUCCESS"
+        running = status in {"WAITING", "PENDING", "CLAIMED", "PREPARING", "RUNNING"}
+        step_status = "SUCCESS" if completed else "FAILED" if failed else "RUNNING" if running else "WAITING"
+        save_status = "SUCCESS" if completed else "SKIPPED" if failed else "WAITING"
+        steps = [
+            {"index": 1, "name": "确认训练任务", "status": "SUCCESS", "detail": str(batch_no)},
+            {"index": 2, "name": "执行模型训练", "status": step_status, "detail": str(batch.get("message") or status)},
+            {"index": 3, "name": "保存模型与评估指标", "status": save_status,
+             "detail": "已完成" if completed else "因训练失败未执行" if failed else "等待训练完成"},
+        ]
+        current = 3 if completed else 2
+        return {"title": "模型训练状态", "currentStep": current, "totalSteps": 3, "steps": steps}
 
     @staticmethod
     def _training_result(data: dict[str, Any]) -> dict[str, Any] | None:

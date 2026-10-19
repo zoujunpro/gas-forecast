@@ -24,8 +24,8 @@ spring:
 
 gas:
   agent:
-    forecast-analysis-url: ${GAS_AGENT_FORECAST_ANALYSIS_URL:http://127.0.0.1:8091/api/v1/forecast-analysis}
-    llm-chat-url: ${GAS_AGENT_LLM_CHAT_URL:http://127.0.0.1:8091/api/v1/llm/chat-completions}
+    forecast-analysis-url: ${GAS_AGENT_FORECAST_ANALYSIS_URL:http://127.0.0.1:18091/api/v1/forecast-analysis}
+    llm-chat-url: ${GAS_AGENT_LLM_CHAT_URL:http://127.0.0.1:18091/api/v1/llm/chat-completions}
     train-url: ${GAS_AGENT_TRAIN_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/train}
     predict-url: ${GAS_AGENT_PREDICT_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/predict}
     models-url: ${GAS_AGENT_MODELS_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/models}

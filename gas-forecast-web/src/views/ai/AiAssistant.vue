@@ -69,7 +69,7 @@
               </div>
             </details>
             <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
-            <AiTrainingResult v-if="message.presentation?.type === 'TRAINING_BACKTEST' && message.presentation.trainingResult" :result="message.presentation.trainingResult" />
+            <AiTrainingResult v-if="trainingResultOf(message)" :result="trainingResultOf(message)!" />
             <section v-if="message.presentation?.type === 'LIST' && listRows(message).length" class="result-list">
               <div class="result-list-head">查询结果 <span>共 {{ listRows(message).length }} 条</span></div>
               <el-table :data="listRows(message)" height="420" stripe>
@@ -127,7 +127,7 @@ interface ForecastResult { batchNo: string; average: number; minimum: number; ma
 interface TrainingBacktestPoint { date: string; actualValue?: number; predictedValue?: number; absoluteError?: number; errorRate?: number }
 interface TrainingResult { batchNo: string; status?: string; customerName?: string; regionName?: string; industryName?: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; modelVersion?: string; trainDurationSeconds?: number; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number; backtestPoints?: TrainingBacktestPoint[] }
 interface Presentation { type: 'TEXT' | 'LIST' | 'PROGRESS' | 'FORECAST_CHART' | 'TRAINING_BACKTEST'; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
-interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
+interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; trainingResult?: TrainingResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
 interface Session { id: string; conversationNo?: string; title: string; updatedAt: string; messages: Message[] }
 
 const welcomeMessage = (): Message => ({
@@ -223,6 +223,7 @@ const switchSession = async (id: string) => {
         id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
         progress: item.progress || undefined,
         forecastResult: item.forecastResult || undefined,
+        trainingResult: item.trainingResult || item.presentation?.trainingResult || undefined,
         presentation: item.presentation || undefined,
         executionResult: item.executionResult || undefined,
         analysis: item.analysis || undefined,
@@ -240,6 +241,7 @@ const listRows = (message: Message): Record<string, any>[] => {
   const records = message.executionResult?.data?.records
   return Array.isArray(records) ? records : []
 }
+const trainingResultOf = (message: Message) => message.trainingResult || message.presentation?.trainingResult
 const listColumns = (message: Message) => {
   const first = listRows(message)[0] || {}
   const labels: Record<string, string> = {
@@ -295,6 +297,7 @@ const send = async (contextualFollowUp = false) => {
     answer.content = renderMarkdown(data.answer || 'AI 未返回有效内容')
     answer.progress = data.progress || undefined
     answer.forecastResult = data.forecastResult || undefined
+    answer.trainingResult = data.trainingResult || data.presentation?.trainingResult || undefined
     answer.presentation = data.presentation || undefined
     answer.executionResult = data.executionResult || undefined
     answer.analysis = data.analysis || undefined
@@ -543,6 +546,7 @@ const refreshActiveBulkProgress = async () => {
       id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
       progress: item.progress || undefined,
       forecastResult: item.forecastResult || undefined,
+      trainingResult: item.trainingResult || item.presentation?.trainingResult || undefined,
       presentation: item.presentation || undefined,
       executionResult: item.executionResult || undefined,
       analysis: item.analysis || undefined,

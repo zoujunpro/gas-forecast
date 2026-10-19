@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from gas_forecast_agent.config import Settings
 from gas_forecast_agent.llm import build_llm_client
@@ -37,6 +38,37 @@ class RequestSemantics(BaseModel):
     needs_clarification: bool = False
     clarification_question: str | None = None
     evidence: dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("region_name", mode="before")
+    @classmethod
+    def normalize_region_name(cls, value: object) -> object:
+        """只清理行政区划通用后缀，不在 Agent 中维护省份名单。"""
+        if not isinstance(value, str):
+            return value
+        text = "".join(value.split())
+        return re.sub(r"(特别行政区|壮族自治区|回族自治区|维吾尔自治区|自治区|省|市|地区)$", "", text)
+
+    @field_validator("industry_name", mode="before")
+    @classmethod
+    def normalize_industry_name(cls, value: object) -> object:
+        """去掉模型附带的字段描述，行业别名仍交给 Java 主数据解析。"""
+        if not isinstance(value, str):
+            return value
+        text = "".join(value.split())
+        return re.sub(r"行业$", "", text)
+
+    @field_validator("evidence", mode="before")
+    @classmethod
+    def normalize_evidence(cls, value: object) -> dict[str, str]:
+        """兼容部分兼容模型把 evidence 直接返回成原文字符串。"""
+        if value is None:
+            return {}
+        if isinstance(value, str):
+            text = value.strip()
+            return {"message": text} if text else {}
+        if isinstance(value, dict):
+            return {str(key): str(item) for key, item in value.items() if item is not None}
+        return {}
 
     def parameter_overrides(self) -> dict[str, object]:
         values: dict[str, object] = {}
@@ -79,6 +111,8 @@ class RequestSemanticExtractor:
                             "只输出JSON，字段必须为：operation、customer_code、customer_name、region_name、"
                             "industry_name、forecast_horizon、training_policy、needs_clarification、"
                             "clarification_question、evidence。未明确字段填null。"
+                            "region_name和industry_name只保留用户原话中的实体名称，不要包含查询、所有、客户信息等修饰语，"
+                            "不要生成或猜测地区编码、行业编码。"
                             "training_policy只能是FORCE_RETRAIN、AUTO_IF_MISSING、USE_EXISTING、UNSPECIFIED。"
                             "用户表达重新、重做、从头、再跑一遍、新建或不沿用旧模型等同义语义时，"
                             "training_policy=FORCE_RETRAIN；只在缺少模型时训练为AUTO_IF_MISSING；"

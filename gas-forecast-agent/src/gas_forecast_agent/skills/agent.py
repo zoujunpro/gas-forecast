@@ -170,6 +170,7 @@ class SkillAgent:
                 if write_calls > self._settings.agent_max_write_calls:
                     return self._budget_exceeded("写操作调用次数达到安全上限", parameters, tools, trace)
             result, attempts = await self._call_with_retry(mcp, tools[name], name, arguments)
+            result = self._normalize_empty_query_result(name, result, arguments)
             trace.append({"tool": name, "arguments": arguments, "result": result, "attempts": attempts})
             self._merge_result(parameters, result)
             outcome = self._result_status(result)
@@ -267,6 +268,11 @@ class SkillAgent:
         trace: list[dict[str, Any]],
         tools: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        # 明确的只读查询不交给模型在“状态/结果/发起任务”之间自由猜测。
+        # 特别是“刚才预测所用的训练信息”必须查询训练结果，绝不能创建预测任务。
+        deterministic_query = self._explicit_read_query(skill.name, message, parameters)
+        if deterministic_query:
+            return deterministic_query
         if self._settings.skill_routing_mode == "rules" or not self._settings.llm_api_key or not self._settings.llm_model:
             return self._rule_decision(skill.name, message, parameters)
         openai_tools = [
@@ -358,6 +364,18 @@ class SkillAgent:
         }
 
     @staticmethod
+    def _explicit_read_query(skill_name: str, message: str, parameters: dict[str, Any]) -> dict[str, Any] | None:
+        text = re.sub(r"\s+", "", message).lower()
+        if skill_name == "model-training-management":
+            result_terms = ("训练信息", "训练结果", "训练指标", "训练效果", "训练详情", "所用的训练", "使用的训练")
+            if any(term in text for term in result_terms) and parameters.get("trainBatchNo"):
+                return {"type": "tool", "name": "training_result_get", "arguments": parameters}
+            status_terms = ("训练进度", "训练状态", "训练到哪", "训练好了吗", "训练完成了吗", "训练结束了吗")
+            if any(term in text for term in status_terms) and parameters.get("trainBatchNo"):
+                return {"type": "tool", "name": "training_status_get", "arguments": parameters}
+        return None
+
+    @staticmethod
     def _rule_decision(skill_name: str, message: str, parameters: dict[str, Any]) -> dict[str, Any]:
         text = re.sub(r"\s+", "", message).lower()
         if parameters.get("_pendingTool") and parameters.get("confirmed") is True:
@@ -388,7 +406,7 @@ class SkillAgent:
                 name = "training_latest_get"
             elif any(word in text for word in ("进度", "状态", "到哪", "好了吗", "完成了吗", "结束了吗")):
                 name = "training_status_get"
-            elif any(word in text for word in ("结果", "指标", "效果")):
+            elif any(word in text for word in ("结果", "指标", "效果", "信息", "详情", "所用的训练", "使用的训练")):
                 name = "training_result_get"
             else:
                 name = "training_start"
@@ -458,13 +476,17 @@ class SkillAgent:
         if explicit_confirmation and has_pending_action:
             values["confirmed"] = True
         for key, pattern in {
-            "taskNo": r"\b(TASK[-_A-Za-z0-9]+)\b",
-            "trainBatchNo": r"\b((?:TRBATCH|TRAIN)[-_A-Za-z0-9]+)\b",
-            "forecastBatchNo": r"\b(FORECAST[-_A-Za-z0-9]+)\b",
+            # 不能使用 \b：中文“的”等字符在 Python Unicode 正则中也属于 word，
+            # 会让编号在最后一个连字符处回退截断。
+            "taskNo": r"(?<![A-Za-z0-9_-])(TASK[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
+            "trainBatchNo": r"(?<![A-Za-z0-9_-])((?:TRBATCH|TRAIN)[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
+            "forecastBatchNo": r"(?<![A-Za-z0-9_-])(FORECAST[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
         }.items():
             match = re.search(pattern, message, re.I)
             if match:
                 values[key] = match.group(1)
+                # 用户明确输入的业务编号属于强标识，模型不得截断或改写。
+                locked_parameters.add(key)
         horizon = re.search(r"(?:未来|预测)\s*(\d{1,3})\s*(?:天|日)", message)
         if horizon and skill_name == "customer-gas-forecast":
             values["forecastHorizon"] = int(horizon.group(1))
@@ -491,12 +513,16 @@ class SkillAgent:
         if customer:
             values["customerName"] = customer.group(1)
             values.pop("customerCode", None)
-        for region in ("江苏", "浙江", "安徽", "上海", "山东", "河南", "河北", "北京", "天津", "广东"):
-            if region in message:
-                values["regionName"] = region
-                break
+        # 规则模式只抽取用户说出的名称，不维护省份清单，也不在 Agent 中翻译主数据编码。
+        # 标准名称、别名和编码统一由 Java 的 region_search / industry_search 解析。
+        region_name = SkillAgent._extract_region_name(message)
+        if region_name:
+            values["regionName"] = region_name
+            values.pop("regionCode", None)
         if any(word in message for word in ("城市燃气", "城镇燃气", "城燃")):
-            values["industryName"] = "城燃"
+            values["industryName"] = next(
+                word for word in ("城市燃气", "城镇燃气", "城燃") if word in message
+            )
             values.pop("industryCode", None)
         elif "化工" in message:
             values["industryName"] = "化工"
@@ -568,6 +594,28 @@ class SkillAgent:
         if locked_parameters:
             values["_lockedParameters"] = sorted(locked_parameters)
         return values
+
+    @staticmethod
+    def _extract_region_name(message: str) -> str | None:
+        """抽取地区原名；标准化与真实性校验交给 Java 主数据工具。"""
+        text = re.sub(r"\s+", "", message)
+        text = re.sub(
+            r"^(?:请|麻烦)?(?:帮我|帮|给我|查询|查看|查找|检索|统计|列出|获取)*(?:一下|下)?",
+            "",
+            text,
+        )
+        with_suffix = re.match(
+            r"(?P<name>[\u4e00-\u9fa5]{2,12}?)(?:特别行政区|壮族自治区|回族自治区|维吾尔自治区|自治区|省|市|地区)",
+            text,
+        )
+        if with_suffix:
+            return with_suffix.group("name")
+        # 没有行政区后缀时，只抽取紧邻明确行业表达的范围，避免把普通句子误识别为地区。
+        before_industry = re.match(
+            r"(?P<name>[\u4e00-\u9fa5]{2,12}?)(?=城市燃气|城镇燃气|城燃|化工)",
+            text,
+        )
+        return before_industry.group("name") if before_industry else None
 
     @staticmethod
     def _apply_locked_parameters(parameters: dict[str, Any], arguments: dict[str, Any]) -> None:
@@ -801,6 +849,25 @@ class SkillAgent:
                 "success": False, "status": "SYSTEM_ERROR", "errorType": "SYSTEM",
                 "errorCode": "INVALID_TOOL_RESPONSE", "message": "工具返回字段类型不正确。", "retryable": True,
             }
+        return result
+
+    @staticmethod
+    def _normalize_empty_query_result(name: str, result: dict[str, Any], arguments: dict[str, Any]) -> dict[str, Any]:
+        """训练查询返回空集合时不能伪装成查询成功。"""
+        data = result.get("data") if isinstance(result.get("data"), dict) else {}
+        if name in {"training_result_get", "training_latest_get"}:
+            batches = data.get("batches")
+            if isinstance(batches, list) and not batches:
+                batch_no = arguments.get("trainBatchNo")
+                return {
+                    **result,
+                    "success": False,
+                    "status": "NOT_FOUND",
+                    "errorType": "BUSINESS",
+                    "errorCode": "TRAINING_RESULT_NOT_FOUND",
+                    "message": f"未找到训练批次：{batch_no}" if batch_no else "没有找到符合条件的训练结果",
+                    "retryable": False,
+                }
         return result
 
     @staticmethod

@@ -324,6 +324,16 @@ def test_training_range_and_industry_alias_are_extracted() -> None:
     assert chemical["bulk"] is True
 
 
+def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> None:
+    values = SkillAgent._initial_parameters(
+        "查询江苏省城市燃气行业的所有客户信息", {}, {}, "C-REGION", "business-data-query"
+    )
+
+    assert values["regionName"] == "江苏"
+    assert values["industryName"] == "城市燃气"
+    assert values["fetchAll"] is True
+
+
 def test_forecast_with_new_training_result_forces_retraining() -> None:
     values = SkillAgent._initial_parameters(
         "帮我预测下客户CUS000023的未来40天燃气销量，用新训练的结果",
@@ -424,6 +434,43 @@ def test_confirmation_restores_and_locks_pending_parameter_snapshot() -> None:
 def test_training_completion_question_queries_status() -> None:
     decision = SkillAgent._rule_decision("model-training-management", "杭州天然气训练好了吗", {})
     assert decision["name"] == "training_status_get"
+
+
+def test_training_information_query_is_deterministically_a_result_query() -> None:
+    decision = SkillAgent._explicit_read_query(
+        "model-training-management",
+        "刚才的这个预测所用的训练信息给我",
+        {"trainBatchNo": "TRBATCH-1"},
+    )
+    assert decision == {
+        "type": "tool", "name": "training_result_get", "arguments": {"trainBatchNo": "TRBATCH-1"}
+    }
+
+
+def test_explicit_training_batch_number_cannot_be_truncated_by_model() -> None:
+    values = SkillAgent._initial_parameters(
+        "把训练批次：TRBATCH-20261014-00707的训练结果给我",
+        {}, {}, "C-BATCH", "model-training-management",
+    )
+    arguments = {**values, "trainBatchNo": "TRBATCH-20261014-"}
+    SkillAgent._apply_locked_parameters(values, arguments)
+
+    assert values["trainBatchNo"] == "TRBATCH-20261014-00707"
+    assert "trainBatchNo" in values["_lockedParameters"]
+    assert arguments["trainBatchNo"] == "TRBATCH-20261014-00707"
+
+
+def test_empty_training_result_is_not_reported_as_success() -> None:
+    normalized = SkillAgent._normalize_empty_query_result(
+        "training_result_get",
+        {"success": True, "status": "COMPLETED", "message": "训练结果查询成功", "retryable": False,
+         "data": {"batches": [], "selectedBatchNo": None}},
+        {"trainBatchNo": "TRBATCH-404"},
+    )
+
+    assert normalized["status"] == "NOT_FOUND"
+    assert normalized["success"] is False
+    assert normalized["message"] == "未找到训练批次：TRBATCH-404"
 
 
 def test_current_entity_fields_replace_stale_memory_without_code_patterns() -> None:

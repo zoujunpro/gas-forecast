@@ -18,7 +18,7 @@ cp .env.example .env
 .venv/bin/uvicorn gas_forecast_agent.main:app --reload --port 8091
 ```
 
-Java 本地环境 MCP 默认地址为 `http://127.0.0.1:18081/gas-forecast/mcp`。本地脱离浏览器联调时，可以在 `GAS_MCP_AUTHORIZATION` 中配置完整的 `Authorization` 请求头值。
+Java 本地开发环境 MCP 默认地址为 `http://127.0.0.1:18083/gas-forecast/mcp`。Jenkins 部署环境通过独立的 `agent.env` 覆盖为 `http://127.0.0.1:18081/gas-forecast/mcp`。本地脱离浏览器联调时，可以在 `GAS_MCP_AUTHORIZATION` 中配置完整的 `Authorization` 请求头值。
 
 生产请求会优先把 Web 请求的 `X-Access-Token` 或 `Authorization` 原样透传给 Java MCP，由 Java 对每次工具调用独立鉴权；`GAS_MCP_AUTHORIZATION` 只作为本地联调兜底，不会进入模型上下文或会话记忆。
 
