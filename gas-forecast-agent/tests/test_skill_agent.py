@@ -801,6 +801,33 @@ def test_confirmation_and_idempotency_do_not_leak_to_next_request() -> None:
     assert values["idempotencyKey"] != "old-key"
 
 
+def test_new_forecast_resets_previous_force_retrain_policy_to_auto() -> None:
+    values = SkillAgent._initial_parameters(
+        "帮我预测南京洁宁未来50天的燃气销量",
+        {"currentParameters": {
+            "customerCode": "OLD-CUSTOMER",
+            "forceRetrain": True,
+            "autoTrain": True,
+            "trainingPreference": "FORCE_RETRAIN",
+        }},
+        {},
+        "C-RESET-POLICY",
+        "customer-gas-forecast",
+        RequestSemantics(
+            operation="FORECAST",
+            dialogue_act=DialogueAct.NEW_REQUEST,
+            customer_name="南京洁宁",
+            forecast_horizon=50,
+            training_policy=TrainingPolicy.UNSPECIFIED,
+        ),
+    )
+
+    assert values["customerName"] == "南京洁宁"
+    assert values["forceRetrain"] is False
+    assert values["autoTrain"] is True
+    assert values["trainingPreference"] == "AUTO"
+
+
 def test_internal_clarification_and_old_customer_do_not_leak_into_scoped_list_query() -> None:
     values = SkillAgent._initial_parameters(
         "帮我查询下江苏省的城燃行业的所有客户信息",

@@ -219,3 +219,32 @@ def test_ambiguous_training_request_cannot_silently_reuse_old_training(monkeypat
     assert result.training_policy == TrainingPolicy.UNSPECIFIED
     assert result.needs_clarification is True
     assert "重新训练" in result.clarification_question
+
+
+def test_focused_policy_model_resolves_clear_retraining_reply(monkeypatch) -> None:
+    responses = [
+        '''{
+            "operation":"FORECAST","dialogue_act":"MODIFY_PENDING",
+            "customer_code":null,"customer_name":null,"region_name":null,"industry_name":null,
+            "fetch_all":null,"forecast_horizon":null,"training_policy":"UNSPECIFIED",
+            "needs_clarification":false,"clarification_question":null,
+            "evidence":{"message":"重新训练并使用新结果"}
+        }''',
+        '''{"training_policy":"FORCE_RETRAIN","evidence":"重新训练并使用新结果"}''',
+    ]
+
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=responses.pop(0)))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
+    result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
+        "重新训练并使用新结果", "customer-gas-forecast",
+        {"tool": "forecast_start", "parameters": {"customerCode": "CUS000260"}},
+    ))
+
+    assert result.training_policy == TrainingPolicy.FORCE_RETRAIN
+    assert result.needs_clarification is False
+    assert result.evidence["training_policy"] == "重新训练并使用新结果"
+    assert not responses

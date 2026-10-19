@@ -569,6 +569,14 @@ class SkillAgent:
         locked_parameters = set(values.get("_lockedParameters") or [])
         pending = memory.get("pendingAction")
         has_pending_action = isinstance(pending, dict) and bool(pending.get("tool"))
+        if skill_name == "customer-gas-forecast" and not explicit_confirmation:
+            # 训练策略属于本次预测操作，不能从上一轮继承。新请求默认优先
+            # 复用已有结果，仅在没有可用结果时自动训练；本轮明确语义随后覆盖。
+            values.update(
+                forceRetrain=False,
+                autoTrain=True,
+                trainingPreference="AUTO",
+            )
         if explicit_confirmation and has_pending_action and isinstance(pending.get("parameters"), dict):
             snapshot = {
                 key: value for key, value in pending["parameters"].items()

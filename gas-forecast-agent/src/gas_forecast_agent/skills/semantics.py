@@ -102,6 +102,15 @@ class RequestSemantics(BaseModel):
         return values
 
 
+class TrainingPolicyDecision(BaseModel):
+    """通用语义抽取不确定时的聚焦训练策略判断。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    training_policy: TrainingPolicy
+    evidence: str | None = None
+
+
 class RequestSemanticExtractor:
     """使用结构化模型输出理解本轮参数；失败时不伪造语义。"""
 
@@ -207,6 +216,19 @@ class RequestSemanticExtractor:
             mentions_training = bool(re.search(r"训练|模型|建模|学习", message))
             effective_policy = updates.get("training_policy", extracted.training_policy)
             if mentions_training and effective_policy == TrainingPolicy.UNSPECIFIED:
+                focused = await self._classify_training_policy(message)
+                if (
+                    focused.training_policy != TrainingPolicy.UNSPECIFIED
+                    and self._valid_training_policy_evidence(focused.evidence or "", message)
+                ):
+                    effective_policy = focused.training_policy
+                    updates.update(
+                        training_policy=focused.training_policy,
+                        needs_clarification=False,
+                        clarification_question=None,
+                        evidence={**extracted.evidence, "training_policy": focused.evidence},
+                    )
+            if mentions_training and effective_policy == TrainingPolicy.UNSPECIFIED:
                 updates.update(
                     needs_clarification=True,
                     clarification_question="请确认训练策略：重新训练并使用新结果，还是复用已有训练结果？",
@@ -225,6 +247,32 @@ class RequestSemanticExtractor:
         except Exception:
             logger.exception("event=request_semantics_extract_failed skill=%s", skill_name)
             return RequestSemantics()
+
+    async def _classify_training_policy(self, message: str) -> TrainingPolicyDecision:
+        """聚焦判断训练策略；失败时保持不确定，不猜测也不执行。"""
+        try:
+            response = await build_llm_client(self._settings).chat.completions.create(
+                model=self._settings.llm_model,
+                temperature=0,
+                response_format={"type": "json_object"},
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "只判断用户本轮表达的训练策略，输出JSON字段training_policy和evidence。"
+                            "training_policy只能是FORCE_RETRAIN、USE_EXISTING、AUTO_IF_MISSING、UNSPECIFIED。"
+                            "要求重新训练、新建训练、重新跑模型并使用新结果为FORCE_RETRAIN；"
+                            "使用已有、上次、当前训练结果为USE_EXISTING；仅缺少模型时训练为AUTO_IF_MISSING；"
+                            "无法确定为UNSPECIFIED。evidence必须逐字摘自用户原话。"
+                        ),
+                    },
+                    {"role": "user", "content": message},
+                ],
+            )
+            return TrainingPolicyDecision.model_validate_json(response.choices[0].message.content or "{}")
+        except Exception:
+            logger.exception("event=training_policy_classify_failed")
+            return TrainingPolicyDecision(training_policy=TrainingPolicy.UNSPECIFIED)
 
     @staticmethod
     def _remove_entity_overlap(value: str, *other_values: str | None) -> str:
