@@ -750,6 +750,30 @@ def test_confirmation_and_idempotency_do_not_leak_to_next_request() -> None:
     assert values["idempotencyKey"] != "old-key"
 
 
+def test_internal_clarification_and_old_customer_do_not_leak_into_scoped_list_query() -> None:
+    values = SkillAgent._initial_parameters(
+        "帮我查询下江苏省的城燃行业的所有客户信息",
+        {"currentParameters": {
+            "customerCode": "CUS-OLD",
+            "customerName": "旧客户",
+            "_clarificationQuestion": "旧的澄清问题",
+            "_pendingTool": "forecast_start",
+            "_lockedParameters": ["customerCode"],
+        }},
+        {},
+        "C-FRESH-QUERY",
+        "business-data-query",
+    )
+
+    assert values["regionName"] == "江苏"
+    assert values["industryName"] == "城燃"
+    assert values["fetchAll"] is True
+    assert "customerCode" not in values
+    assert "customerName" not in values
+    assert "_clarificationQuestion" not in values
+    assert "_pendingTool" not in values
+
+
 def test_only_risky_forecast_requires_confirmation() -> None:
     tool = {
         "name": "forecast_start",

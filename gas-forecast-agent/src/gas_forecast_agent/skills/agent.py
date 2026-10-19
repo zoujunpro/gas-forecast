@@ -543,9 +543,14 @@ class SkillAgent:
         if isinstance(remembered, dict):
             values.update({
                 key: value for key, value in remembered.items()
-                if value not in (None, "") and key != "confirmed"
+                # 下划线开头的是单轮控制字段（澄清、锁定、待执行工具等），
+                # 绝不能跨轮恢复，否则一次追问会永久劫持后续所有请求。
+                if value not in (None, "") and key != "confirmed" and not key.startswith("_")
             })
-        values.update({key: value for key, value in metadata.items() if value not in (None, "") and key != "confirmed"})
+        values.update({
+            key: value for key, value in metadata.items()
+            if value not in (None, "") and key != "confirmed" and not key.startswith("_")
+        })
         values["conversationNo"] = conversation_no
         locked_parameters = set(values.get("_lockedParameters") or [])
         pending = memory.get("pendingAction")
@@ -697,6 +702,15 @@ class SkillAgent:
                     values.setdefault("bulk", False)
         if "全部" in message or "所有" in message:
             values["fetchAll"] = True
+        if (
+            skill_name == "business-data-query"
+            and values.get("fetchAll") is True
+            and any(values.get(key) for key in ("regionName", "regionCode", "industryName", "industryCode"))
+        ):
+            # 本轮查询的是地区/行业范围内的客户集合，旧会话中的单客户条件
+            # 不属于当前请求，必须清除，避免列表被历史客户错误收窄。
+            values.pop("customerCode", None)
+            values.pop("customerName", None)
         if locked_parameters:
             values["_lockedParameters"] = sorted(locked_parameters)
         return values
