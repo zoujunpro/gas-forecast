@@ -87,7 +87,7 @@ def test_model_can_require_training_policy_clarification(monkeypatch) -> None:
                 "training_policy":"UNSPECIFIED",
                 "needs_clarification":true,
                 "clarification_question":"需要重新训练，还是仅在没有模型时训练？",
-                "evidence":{}
+                "evidence":{"training_policy":"训练一下"}
             }'''))])
 
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
@@ -98,6 +98,30 @@ def test_model_can_require_training_policy_clarification(monkeypatch) -> None:
 
     assert result.needs_clarification is True
     assert "重新训练" in result.clarification_question
+
+
+def test_generic_model_clarification_cannot_override_complete_business_parameters(monkeypatch) -> None:
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='''{
+                "operation":"FORECAST","dialogue_act":"NEW_REQUEST",
+                "customer_code":null,"customer_name":"扬州中燃","region_name":null,"industry_name":null,
+                "forecast_horizon":50,"training_policy":"UNSPECIFIED","needs_clarification":true,
+                "clarification_question":"请明确客户、区域、行业或预测周期？",
+                "evidence":{"message":"帮我预测下扬州中燃未来50天的燃气销量"}
+            }'''))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
+    result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
+        "帮我预测下扬州中燃未来50天的燃气销量", "customer-gas-forecast",
+        {"tool": "forecast_start", "parameters": {"customerCode": "CUS000140"}},
+    ))
+
+    assert result.customer_name == "扬州中燃"
+    assert result.forecast_horizon == 50
+    assert result.needs_clarification is False
+    assert result.clarification_question is None
 
 
 def test_unverifiable_force_retrain_evidence_is_not_executed(monkeypatch) -> None:

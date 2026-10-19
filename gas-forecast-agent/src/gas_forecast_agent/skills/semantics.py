@@ -167,7 +167,24 @@ class RequestSemanticExtractor:
                         needs_clarification=True,
                         clarification_question="请确认：是否要忽略已有模型并创建一个全新的训练批次？",
                     )
-            return extracted.model_copy(update=updates) if updates else extracted
+            # 参数是否缺失由工具 Schema 和实体解析结果确定，不能接受模型生成的
+            # 泛化追问。当前语义层唯一需要主动澄清的是会改变训练行为的策略冲突，
+            # 且必须提供能在用户原话中定位到的证据。
+            if extracted.needs_clarification:
+                policy_evidence = extracted.evidence.get("training_policy", "").strip()
+                if not policy_evidence or policy_evidence not in message:
+                    updates.update(needs_clarification=False, clarification_question=None)
+            normalized = extracted.model_copy(update=updates) if updates else extracted
+            logger.info(
+                "event=request_semantics_extracted skill=%s operation=%s dialogue_act=%s "
+                "customer=%s region=%s industry=%s horizon=%s training_policy=%s clarification=%s",
+                skill_name, normalized.operation, normalized.dialogue_act,
+                normalized.customer_code or normalized.customer_name or "-",
+                normalized.region_name or "-", normalized.industry_name or "-",
+                normalized.forecast_horizon or "-", normalized.training_policy,
+                normalized.needs_clarification,
+            )
+            return normalized
         except Exception:
             logger.exception("event=request_semantics_extract_failed skill=%s", skill_name)
             return RequestSemantics()
