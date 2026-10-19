@@ -15,6 +15,7 @@ from gas_forecast_agent.llm import build_llm_client
 from gas_forecast_agent.mcp import McpClientError, StreamableHttpMcpClient
 
 from .models import SkillDefinition
+from .result_adapter import ToolResultAdapter
 from .semantics import RequestSemantics
 
 
@@ -74,9 +75,24 @@ class SkillAgent:
         write_calls = 0
 
         for _ in range(self._settings.agent_max_steps):
-            if time.monotonic() - started_at >= self._settings.agent_max_duration_seconds:
+            elapsed = time.monotonic() - started_at
+            if elapsed >= self._settings.agent_max_duration_seconds:
                 return self._budget_exceeded("处理时间达到安全上限", parameters, tools, trace)
-            decision = await self._decide(skill, message, history, parameters, trace, list(tools.values()))
+            try:
+                # SDK自身可能自动重试，单纯配置HTTP超时仍可能把一次模型调用拖到数倍。
+                # wait_for确保所有规划步骤合计不会突破Agent总预算。
+                remaining = self._settings.agent_max_duration_seconds - elapsed
+                decision = await asyncio.wait_for(
+                    self._decide(skill, message, history, parameters, trace, list(tools.values())),
+                    timeout=remaining,
+                )
+            except Exception:
+                # 查询工具已经返回完整页面数据时，后续模型只负责组织说明文字。
+                # 总结失败不能吞掉真实业务结果，更不能让前端一直等待。
+                last_result = trace[-1]["result"] if trace else {}
+                if self._is_successful_page(last_result):
+                    return self._page_fallback_result(parameters, tools, trace)
+                raise
             if decision["type"] == "message":
                 if not trace and skill.name in {"customer-gas-forecast", "model-training-management"} and decision.get("status", "COMPLETED") == "COMPLETED":
                     return SkillRunResult(
@@ -87,6 +103,8 @@ class SkillAgent:
                         tool_trace=trace,
                     )
                 last = trace[-1] if trace else None
+                if last and self._is_successful_page(last["result"]) and decision.get("status") != "COMPLETED":
+                    return self._page_fallback_result(parameters, tools, trace)
                 return SkillRunResult(
                     status=decision.get("status", "COMPLETED"),
                     message=decision["message"],
@@ -259,6 +277,30 @@ class SkillAgent:
             tool_trace=trace,
         )
 
+    @staticmethod
+    def _is_successful_page(result: dict[str, Any]) -> bool:
+        return (
+            str(result.get("status") or "").upper() == "COMPLETED"
+            and str(result.get("resultType") or "").upper() == "PAGE"
+        )
+
+    @staticmethod
+    def _page_fallback_result(
+        parameters: dict[str, Any],
+        tools: dict[str, dict[str, Any]],
+        trace: list[dict[str, Any]],
+    ) -> SkillRunResult:
+        last = trace[-1]
+        return SkillRunResult(
+            status="COMPLETED",
+            message=ToolResultAdapter.fallback_message(last["result"]),
+            parameters=parameters,
+            available_tools=list(tools),
+            executed_tool=last["tool"],
+            execution_result=last["result"],
+            tool_trace=trace,
+        )
+
     async def _decide(
         self,
         skill: SkillDefinition,
@@ -310,7 +352,11 @@ class SkillAgent:
             {
                 "role": "user",
                 "content": json.dumps(
-                    {"message": message, "knownParameters": parameters, "toolTrace": trace},
+                    {
+                        "message": message,
+                        "knownParameters": parameters,
+                        "toolTrace": ToolResultAdapter.trace_for_model(trace),
+                    },
                     ensure_ascii=False,
                     default=str,
                 ),

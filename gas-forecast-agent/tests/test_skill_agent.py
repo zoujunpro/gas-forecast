@@ -4,6 +4,7 @@ from typing import Any
 
 from gas_forecast_agent.config import Settings
 from gas_forecast_agent.skills import RequestSemantics, SkillAgent, SkillDefinition, SkillRouter, TrainingPolicy
+from gas_forecast_agent.skills.result_adapter import ToolResultAdapter
 
 
 def model_settings(**overrides) -> Settings:
@@ -42,6 +43,67 @@ class FakeMcp:
                 "data": {"records": [], "total": 0},
             }
         }
+
+
+def test_large_page_result_is_compacted_for_model_but_original_is_unchanged() -> None:
+    records = [
+        {"customerCode": f"CUS{i:06d}", "customerName": f"客户{i}"}
+        for i in range(154)
+    ]
+    result = {
+        "success": True,
+        "status": "COMPLETED",
+        "resultType": "PAGE",
+        "message": "客户列表查询成功",
+        "data": {"records": records, "total": 154, "page": 1, "size": 154},
+    }
+
+    model_result = ToolResultAdapter.for_model(result)
+
+    assert model_result["data"]["total"] == 154
+    assert len(model_result["data"]["sample"]) == 5
+    assert model_result["data"]["truncated"] is True
+    assert len(result["data"]["records"]) == 154
+
+
+def test_forecast_points_are_summarized_for_model() -> None:
+    points = [
+        {"forecastDate": f"2026-11-{day:02d}", "forecastValue": day}
+        for day in range(1, 21)
+    ]
+    result = {
+        "success": True,
+        "status": "COMPLETED",
+        "resultType": "RESULT",
+        "data": {"record": {"forecastBatchNo": "F-1"}, "points": points},
+    }
+
+    model_result = ToolResultAdapter.for_model(result)
+    summary = model_result["data"]["pointSummary"]
+
+    assert summary["count"] == 20
+    assert summary["minimum"] == 1
+    assert summary["maximum"] == 20
+    assert len(summary["first"]) == 3
+    assert len(summary["last"]) == 3
+    assert "points" not in model_result["data"]
+
+
+def test_successful_page_status_cannot_be_overridden_by_model() -> None:
+    result = {
+        "success": True,
+        "status": "COMPLETED",
+        "resultType": "PAGE",
+        "message": "客户列表查询成功",
+        "data": {"records": [{"customerName": "东台中油"}], "total": 154},
+    }
+    fallback = SkillAgent._page_fallback_result(
+        {}, {"customer_list": {}}, [{"tool": "customer_list", "arguments": {}, "result": result}],
+    )
+
+    assert fallback.status == "COMPLETED"
+    assert fallback.message == "查询完成，共找到154条记录，完整结果已展示。"
+    assert fallback.execution_result is result
 
 
 def test_model_selects_one_allowed_tool_then_explains_result(monkeypatch) -> None:
