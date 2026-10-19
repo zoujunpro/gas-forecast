@@ -33,7 +33,9 @@ class PresentationPlanner:
                     },
                     "training_result": training,
                 }
-        if str(result.get("resultType") or "").upper() == "PAGE":
+        # 部分 MCP 列表工具返回 records，但旧版本没有设置 resultType=PAGE。
+        # 展示层应依据真实数据结构兜底识别，避免完整列表退化成几条文本示例。
+        if str(result.get("resultType") or "").upper() == "PAGE" or isinstance(data.get("records"), list):
             return {"presentation": {"type": "LIST", "dataSource": "executionResult.data.records"}}
         if tool_name == "training_status_get":
             progress = cls._training_progress(data)

@@ -1,6 +1,22 @@
 from gas_forecast_agent.presentation import PresentationPlanner
 
 
+def test_records_result_without_page_type_is_presented_as_list() -> None:
+    planned = PresentationPlanner.plan("customer_list", {
+        "success": True,
+        "status": "COMPLETED",
+        "message": "查询成功",
+        "data": {"total": 2, "records": [
+            {"customerCode": "CUS-1", "customerName": "客户一"},
+            {"customerCode": "CUS-2", "customerName": "客户二"},
+        ]},
+    })
+
+    assert planned["presentation"] == {
+        "type": "LIST", "dataSource": "executionResult.data.records"
+    }
+
+
 def test_forecast_result_generates_whitelisted_chart_and_ui_data() -> None:
     planned = PresentationPlanner.plan("forecast_result_get", {
         "resultType": "RESULT",
