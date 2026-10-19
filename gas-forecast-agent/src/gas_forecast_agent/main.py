@@ -209,7 +209,9 @@ async def _run_agent(
         started_at = time.monotonic()
         memory = await _read_memory(client, conversation_no)
         memory_ms = round((time.monotonic() - started_at) * 1000)
-        skill_hint = str(memory.get("currentSkill") or "UNSPECIFIED")
+        # 语义抽取应以本轮请求的候选 Skill 为上下文，不能使用上一轮 Skill；
+        # 否则新查询会被旧的预测/训练会话状态污染。最终路由仍会结合待确认动作。
+        skill_hint = SkillRouter._select_with_rules(request.message).skill_name
         pending_action = memory.get("pendingAction") if isinstance(memory.get("pendingAction"), dict) else None
         semantics = await RequestSemanticExtractor(settings).extract(request.message, skill_hint, pending_action)
         semantics_ms = round((time.monotonic() - started_at) * 1000) - memory_ms

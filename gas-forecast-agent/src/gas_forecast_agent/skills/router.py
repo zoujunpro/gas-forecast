@@ -46,12 +46,32 @@ class SkillRouter:
         }:
             self._registry.get(str(remembered))
             return SkillSelection(skill_name=str(remembered), confidence=1, reason="继续处理待确认操作。")
+        # 本轮已经包含明确的业务动作时，稳定规则足以确定唯一 Skill，不能再让
+        # 模型把“查询客户”误路由到会话中先前使用过的预测或训练 Skill。
+        # 模型路由只用于没有这些明确动作线索的开放式表达。
+        explicit = self._select_explicit_action(message)
+        if explicit:
+            return explicit
         if self._settings.skill_routing_mode != "rules" and self._settings.llm_api_key and self._settings.llm_model:
             try:
                 return await self._select_with_model(message)
             except Exception:
                 pass
         return self._select_with_rules(message)
+
+    @staticmethod
+    def _select_explicit_action(message: str) -> SkillSelection | None:
+        text = re.sub(r"\s+", "", message).lower()
+        if any(word in text for word in ("预测", "预估")):
+            return SkillSelection(skill_name="customer-gas-forecast", confidence=1, reason="本轮明确要求预测。")
+        if any(word in text for word in (
+            "训练", "重训", "重新建模", "重新学习", "跑模型",
+            "恢复任务", "恢复训练", "重试任务", "重试训练",
+        )):
+            return SkillSelection(skill_name="model-training-management", confidence=1, reason="本轮明确要求训练管理。")
+        if any(word in text for word in ("查询", "查看", "查一下", "查下", "列表", "哪些", "客户信息")):
+            return SkillSelection(skill_name="business-data-query", confidence=1, reason="本轮明确要求查询业务数据。")
+        return None
 
     async def _select_with_model(self, message: str) -> SkillSelection:
         catalog = [skill.summary() for skill in self._registry.list_skills()]

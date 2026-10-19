@@ -624,6 +624,20 @@ def test_forecast_with_retraining_goal_selects_forecast_skill() -> None:
     assert selection.skill_name == "customer-gas-forecast"
 
 
+def test_explicit_customer_query_bypasses_model_router(monkeypatch) -> None:
+    registry = SimpleNamespace(get=lambda name: None)
+    router = SkillRouter(model_settings(), registry)
+
+    async def unexpected_model_selection(message):
+        raise AssertionError("明确的业务查询不应再交给模型改写 Skill")
+
+    monkeypatch.setattr(router, "_select_with_model", unexpected_model_selection)
+    selection = asyncio.run(router.select("帮我查询下江苏省的城燃行业的所有客户信息"))
+
+    assert selection.skill_name == "business-data-query"
+    assert selection.confidence == 1
+
+
 def test_forecast_page_context_binds_forecast_skill() -> None:
     registry = SimpleNamespace(get=lambda name: None)
     router = SkillRouter(Settings(GAS_SKILL_ROUTING_MODE="rules"), registry)
