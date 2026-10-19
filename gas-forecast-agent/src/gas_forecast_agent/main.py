@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import sys
+import time
 import uuid
 from pathlib import Path
 from typing import Annotated, Any
@@ -19,7 +20,7 @@ if __name__ == "__main__" and not __package__:
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 
-from gas_forecast_agent.skills import SkillAgent, SkillRegistry, SkillRouter
+from gas_forecast_agent.skills import RequestSemanticExtractor, SkillAgent, SkillRegistry, SkillRouter
 from gas_forecast_agent.analysis import ForecastAnalysisRequest, ForecastAnalysisResponse, ForecastResultAnalyzer
 from gas_forecast_agent.config import Settings, get_settings
 from gas_forecast_agent.llm import build_llm_client
@@ -203,9 +204,14 @@ async def _run_agent(
 ) -> ChatResponse:
     """选择 Skill，让模型在工具白名单内逐步处理请求。"""
     try:
+        started_at = time.monotonic()
         memory = await _read_memory(client, conversation_no)
+        memory_ms = round((time.monotonic() - started_at) * 1000)
         selection = await SkillRouter(settings, skill_registry).select(request.message, memory, request.metadata)
+        routing_ms = round((time.monotonic() - started_at) * 1000) - memory_ms
         skill = skill_registry.get(selection.skill_name)
+        semantics = await RequestSemanticExtractor(settings).extract(request.message, skill.name)
+        semantics_ms = round((time.monotonic() - started_at) * 1000) - memory_ms - routing_ms
         result = await SkillAgent(settings).run(
             conversation_no=conversation_no,
             skill=skill,
@@ -213,7 +219,14 @@ async def _run_agent(
             history=request.history[-12:],
             memory=memory,
             metadata=request.metadata,
+            semantics=semantics,
             mcp=client,
+        )
+        agent_ms = round((time.monotonic() - started_at) * 1000) - memory_ms - routing_ms - semantics_ms
+        logger.info(
+            "event=agent_timing conversation_no=%s skill=%s tool=%s memory_ms=%s routing_ms=%s semantics_ms=%s agent_ms=%s total_ms=%s",
+            conversation_no, skill.name, result.executed_tool or "-", memory_ms, routing_ms, semantics_ms,
+            agent_ms, round((time.monotonic() - started_at) * 1000),
         )
         try:
             await _write_memory(client, conversation_no, skill.name, result)
