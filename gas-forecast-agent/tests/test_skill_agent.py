@@ -694,6 +694,40 @@ def test_unique_customer_match_continues_to_forecast_without_model_replanning(mo
     assert decision == {"type": "tool", "name": "forecast_start", "arguments": parameters}
 
 
+def test_scoped_customer_list_resolves_entities_without_model_replanning(monkeypatch) -> None:
+    agent = SkillAgent(model_settings())
+
+    def unexpected_model_client(settings):
+        raise AssertionError("范围参数已抽取后应按工具依赖推进，不应由模型泛化追问")
+
+    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", unexpected_model_client)
+    skill = SimpleNamespace(name="business-data-query", model_instructions=lambda: "")
+    tools = [
+        {"name": "region_search", "inputSchema": {}},
+        {"name": "industry_search", "inputSchema": {}},
+        {"name": "customer_list", "inputSchema": {}},
+    ]
+
+    region_decision = asyncio.run(agent._decide(
+        skill, "任意表达", [],
+        {"regionName": "江苏", "industryName": "城燃", "fetchAll": True}, [], tools,
+    ))
+    industry_decision = asyncio.run(agent._decide(
+        skill, "任意表达", [],
+        {"regionCode": "32", "industryName": "城燃", "fetchAll": True},
+        [{"tool": "region_search", "result": {}}], tools,
+    ))
+    list_decision = asyncio.run(agent._decide(
+        skill, "任意表达", [],
+        {"regionCode": "32", "industryCode": "CITY_GAS", "fetchAll": True},
+        [{"tool": "industry_search", "result": {}}], tools,
+    ))
+
+    assert region_decision["name"] == "region_search"
+    assert industry_decision["name"] == "industry_search"
+    assert list_decision["name"] == "customer_list"
+
+
 def test_confirmation_and_idempotency_do_not_leak_to_next_request() -> None:
     remembered = {"currentParameters": {"confirmed": True, "idempotencyKey": "old-key"}}
     values = SkillAgent._initial_parameters("发起新的预测", remembered, {}, "C-4", "customer-gas-forecast")

@@ -349,6 +349,16 @@ class SkillAgent:
             }.get(skill.name)
             if next_tool:
                 return {"type": "tool", "name": next_tool, "arguments": parameters}
+        # 带地区/行业范围的全量客户查询也有确定的工具依赖：先把名称解析为
+        # 主数据编码，再查询客户列表。这里依据结构化参数推进，不维护地区、
+        # 行业名称或用户话术清单。
+        if skill.name == "business-data-query" and parameters.get("fetchAll") is True:
+            if parameters.get("regionName") and not parameters.get("regionCode"):
+                return {"type": "tool", "name": "region_search", "arguments": parameters}
+            if parameters.get("industryName") and not parameters.get("industryCode"):
+                return {"type": "tool", "name": "industry_search", "arguments": parameters}
+            if any(parameters.get(key) for key in ("regionCode", "industryCode")):
+                return {"type": "tool", "name": "customer_list", "arguments": parameters}
         if self._settings.skill_routing_mode == "rules" or not self._settings.llm_api_key or not self._settings.llm_model:
             return self._rule_decision(skill.name, message, parameters)
         openai_tools = [
