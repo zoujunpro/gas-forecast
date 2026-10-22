@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     # 本地开发 Agent(8091)连接 IDEA Java(18083)；Jenkins 部署通过
     # /Users/zoujun/data/gas/gas-agent/config/agent.env 显式覆盖为 18081。
     mcp_url: str = "http://127.0.0.1:18083/gas-forecast/mcp"
+    entity_resolve_url: str = "http://127.0.0.1:18083/gas-forecast/internal/agent/entities:resolve"
     mcp_authorization: str | None = Field(default=None, repr=False)
     mcp_timeout_seconds: float = 30.0
     skill_routing_mode: str = "hybrid"

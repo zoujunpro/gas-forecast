@@ -1,10 +1,13 @@
 package com.gas.forecast.business.ai.controller;
 
+import com.gas.forecast.business.ai.dto.AiChatRequest;
 import com.gas.forecast.business.ai.dto.AiChatResponse;
 import com.gas.forecast.business.ai.dto.AiConversationResponse;
 import com.gas.forecast.business.ai.dto.AiConversationRenameRequest;
 import com.gas.forecast.business.ai.dto.AiContinueForecastRequest;
+import com.gas.forecast.business.ai.dto.AiTaskProgressResponse;
 import com.gas.forecast.business.ai.dto.AiTrainingProgressResponse;
+import com.gas.forecast.business.ai.service.AiChatService;
 import com.gas.forecast.business.ai.service.AiConversationService;
 import com.gas.forecast.business.service.AgentTaskProgressService;
 import com.gas.forecast.common.core.ResponseResult;
@@ -20,31 +23,89 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * AI 会话及会话关联任务查询接口。
+ *
+ * <p>Vue 只调用本 Controller，不直接调用 Python Agent。Java 负责用户权限校验、
+ * 会话和消息持久化、Agent Run 创建以及业务对象引用保存；Python 仅负责 Agent 编排。</p>
+ *
+ * <p>会话接口中的 status 表示 Agent 本轮处理状态。训练、预测任务的真实执行状态，
+ * 应通过训练进度、预测进度或后续统一执行任务接口查询。</p>
+ */
 @RestController
 @RequestMapping("/ai/conversations")
 @RequiredArgsConstructor
 public class AiConversationController {
     private final AiConversationService conversationService;
+    private final AiChatService chatService;
     private final AgentTaskProgressService taskProgressService;
 
+    /**
+     * 发送一条智能体会话消息。
+     *
+     * <p>首次请求不传 conversationNo，由 Java 创建会话；继续已有会话时传入
+     * conversationNo。turnId 和 runNo 始终由 Java 生成，并通过响应返回前端。
+     * 页面恢复时通过 conversationNo 加载历史消息、Agent Run 和关联任务，不重复提交聊天请求。</p>
+     *
+     * @param request 用户消息、可选会话编号及业务上下文
+     * @return Agent 本轮回复、服务端生成的会话标识以及关联的业务对象引用
+     */
+    @PostMapping("/chat")
+    @WebLog("发送智能体会话消息")
+    @RequirePermission("ai:assistant:use")
+    public ResponseResult<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
+        return ResponseResult.success(chatService.chat(request));
+    }
+
+    /**
+     * 查询当前登录用户最近的会话列表。
+     *
+     * <p>列表只返回会话摘要，不加载历史消息正文；需要查看消息时调用会话详情接口。</p>
+     *
+     * @return 当前用户的会话摘要列表，按最近消息时间倒序排列
+     */
     @GetMapping
     @RequirePermission("ai:assistant:use")
     public ResponseResult<List<AiConversationResponse>> list() {
         return ResponseResult.success(conversationService.list());
     }
 
+    /**
+     * 查询一个会话的完整详情。
+     *
+     * <p>返回历史消息、每轮 Agent Run 状态以及每条消息关联的训练批次、
+     * 预测批次或统一执行对象引用。</p>
+     *
+     * @param conversationNo 会话唯一编号
+     * @return 当前用户有权访问的会话详情
+     */
     @GetMapping("/detail")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<AiConversationResponse> detail(@RequestParam String conversationNo) {
         return ResponseResult.success(conversationService.detail(conversationNo));
     }
 
+    /**
+     * 根据预测批次编号查找曾经引用该任务的会话。
+     *
+     * <p>该接口用于审计或从任务跳转到来源消息，不应在用户切换左侧业务对象时
+     * 自动替换右侧当前会话。接口只查询ai_message_ref_tb，不会修改会话当前焦点。</p>
+     *
+     * @param forecastBatchNo 模型预测业务批次编号
+     * @return 与该预测批次最近一次关联的会话详情
+     */
     @GetMapping("/forecast-detail")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<AiConversationResponse> forecastDetail(@RequestParam String forecastBatchNo) {
         return ResponseResult.success(conversationService.forecastDetail(forecastBatchNo));
     }
 
+    /**
+     * 修改会话标题。
+     *
+     * @param request 会话编号和新的会话标题
+     * @return 成功时返回空数据
+     */
     @PostMapping("/rename")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<Void> rename(@Valid @RequestBody AiConversationRenameRequest request) {
@@ -52,6 +113,15 @@ public class AiConversationController {
         return ResponseResult.success(null);
     }
 
+    /**
+     * 删除当前用户的一个会话。
+     *
+     * <p>删除范围包括会话、会话消息、消息业务引用和 Agent Run；不会删除已经创建的
+     * 训练、预测或统一执行任务及其业务结果。</p>
+     *
+     * @param conversationNo 要删除的会话唯一编号
+     * @return 成功时返回空数据
+     */
     @GetMapping("/delete")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<Void> delete(@RequestParam String conversationNo) {
@@ -59,22 +129,51 @@ public class AiConversationController {
         return ResponseResult.success(null);
     }
 
+    /**
+     * 查询模型训练批次的当前进度和结果摘要。
+     *
+     * <p>这是现有训练业务的过渡查询接口，返回的是训练任务状态，不是 Agent Run 状态。</p>
+     *
+     * @param batchNo 模型训练业务批次编号
+     * @return 训练进度、步骤状态及可用的训练结果摘要
+     */
     @GetMapping("/training-progress")
     @RequirePermission("ai:assistant:use")
     public ResponseResult<AiTrainingProgressResponse> trainingProgress(@RequestParam String batchNo) {
         return ResponseResult.success(taskProgressService.trainingProgress(batchNo));
     }
 
+    /**
+     * 查询模型预测批次的当前进度和结果摘要。
+     *
+     * <p>conversationNo 用于校验和恢复会话关联，batchNo 用于定位真实预测任务。</p>
+     *
+     * @param conversationNo 预测任务关联的会话编号
+     * @param batchNo 模型预测业务批次编号
+     * @return 预测任务的当前状态、进度及可用结果
+     */
     @GetMapping("/forecast-progress")
     @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiChatResponse> forecastProgress(@RequestParam String conversationNo, @RequestParam String batchNo) {
+    public ResponseResult<AiTaskProgressResponse> forecastProgress(
+            @RequestParam String conversationNo,
+            @RequestParam String batchNo) {
         return ResponseResult.success(taskProgressService.forecastProgress(conversationNo, batchNo));
     }
 
+    /**
+     * 在指定训练批次成功后继续创建预测任务。
+     *
+     * <p>用于现有“先训练、再预测”的前端衔接流程。返回状态属于后台预测任务，
+     * 不表示新的 Agent 对话轮次。</p>
+     *
+     * @param request 会话编号和已经完成的训练批次编号
+     * @return 后续预测任务的状态及预测批次信息
+     */
     @PostMapping("/continue-forecast")
     @WebLog("训练完成后自动继续预测")
     @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiChatResponse> continueForecast(@Valid @RequestBody AiContinueForecastRequest request) {
-        return ResponseResult.success(taskProgressService.continueForecast(request.conversationNo(), request.trainBatchNo()));
+    public ResponseResult<AiTaskProgressResponse> continueForecast(@Valid @RequestBody AiContinueForecastRequest request) {
+        return ResponseResult.success(taskProgressService.continueForecast(
+                request.conversationNo(), request.trainBatchNo()));
     }
 }

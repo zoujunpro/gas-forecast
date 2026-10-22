@@ -10,7 +10,8 @@ public interface TrainingApplicationService {
 
     Object result(String trainBatchNo);
 
-    record TrainingCommand(String agentCode, List<String> customerCodes, String regionCode, String industryCode, boolean bulk, String trainMode, Integer trainingPeriods,
+    record TrainingCommand(String agentCode, List<String> customerCodes, String regionCode, String industryCode,
+            List<String> regionCodes, List<String> industryCodes, boolean bulk, String trainMode, Integer trainingPeriods,
             String trainingStartDate, String trainingEndDate, boolean forceRetrain, boolean confirmed, String idempotencyKey) {
     }
 }

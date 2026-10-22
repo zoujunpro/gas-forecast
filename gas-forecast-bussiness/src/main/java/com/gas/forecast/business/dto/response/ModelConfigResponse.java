@@ -44,6 +44,9 @@ public class ModelConfigResponse {
      */
     private String agentName;
 
+    /** 是否启用：1启用，0停用。 */
+    private Integer enabled;
+
     /**
      * 场景编码。
      */

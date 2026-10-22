@@ -1,6 +1,7 @@
 package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelConfigEnabledUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
@@ -95,6 +96,14 @@ public class ModelConfigController {
     public ResponseResult<ModelConfigResponse> updateScope(@Valid @RequestBody ModelConfigScopeUpdateRequest reqDTO) {
         var result = modelConfigService.updateScope(reqDTO);
         return ResponseResult.success(result);
+    }
+
+    /** 直接启用或停用模型。 */
+    @PostMapping("updateEnabled")
+    @WebLog("启停模型")
+    @RequirePermission("model:config:update")
+    public ResponseResult<ModelConfigResponse> updateEnabled(@Valid @RequestBody ModelConfigEnabledUpdateRequest reqDTO) {
+        return ResponseResult.success(modelConfigService.updateEnabled(reqDTO));
     }
 
     /**

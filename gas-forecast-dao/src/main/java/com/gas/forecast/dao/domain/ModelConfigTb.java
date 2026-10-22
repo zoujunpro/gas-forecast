@@ -40,6 +40,9 @@ public class ModelConfigTb {
      */
     private String agentCode;
 
+    /** 是否启用：1启用，0停用。 */
+    private Integer enabled;
+
     /** 支持的时间粒度：DAY/TENDAY/MONTH。 */
     private String timeGranularity;
 

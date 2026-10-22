@@ -19,111 +19,13 @@ standardOutput: &standardOutput
     data: {type: object, description: 业务结果；状态和失败查询包含机器可读的nextAction、allowedActions、reason和retryable, additionalProperties: true}
 
 tools:
-  - name: conversation_prepare
-    title: 准备会话轮次
-    description: 创建或校验当前用户会话，保存本轮用户消息，并返回历史消息与可信页面上下文。仅供Agent入口调用。
-    inputSchema:
-      type: object
-      required: [turnId, message]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 已有会话编号；新会话可不传}
-        forecastBatchNo: {type: string, description: 预测详情页绑定的预测批次}
-        turnId: {type: string, description: 本轮请求唯一标识；网络重试必须复用, minLength: 1, maxLength: 64}
-        message: {type: string, description: 本轮用户原始消息, minLength: 1, maxLength: 4000}
-        agentType: {type: string, description: 页面指定的智能体类型}
-        metadata: {type: object, description: 页面提供的结构化上下文, additionalProperties: true}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
-
-  - name: conversation_reply_append
-    title: 归档Agent回复
-    description: 保存Agent最终回复，并同步会话状态及真实训练预测批次。仅供Agent入口调用。
-    inputSchema:
-      type: object
-      required: [conversationNo, turnId, status, answer]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 当前会话编号}
-        turnId: {type: string, description: 与用户消息相同的本轮唯一标识, minLength: 1, maxLength: 64}
-        status: {type: string, description: 本轮最终状态}
-        answer: {type: string, description: 展示给用户的最终回复}
-        skillName: {type: string, description: 本轮选中的Skill}
-        executionResult: {type: object, description: 工具的结构化执行结果, additionalProperties: true}
-        payload: {type: object, description: 前端展示所需的结构化内容, additionalProperties: true}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
-
-  - name: memory_get
-    title: 查询会话记忆
-    description: 查询当前用户会话的工作记忆、待确认动作及最近训练预测批次。成功时data包含记忆键值、lastTrainBatchNo和lastForecastBatchNo。
-    inputSchema:
-      type: object
-      required: [conversationNo]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 必填，只能查询当前登录用户拥有的会话编号}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false}
-
-  - name: memory_update
-    title: 更新会话记忆
-    description: 更新会话记忆。UPSERT写入values；DELETE删除values中出现的键；CLEAR清空工作记忆。不得修改其他用户会话。
-    inputSchema:
-      type: object
-      required: [conversationNo, operation]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 会话编号}
-        operation: {type: string, description: 操作类型, enum: [UPSERT, DELETE, CLEAR]}
-        values: {type: object, description: 需要写入的键值，或DELETE时需要删除的键, additionalProperties: true}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
-
-  - name: customer_search
-    title: 查询客户
-    description: 查询标准客户及其地区、行业编码。至少提供customerCode或customerName。MULTIPLE时必须让用户从candidates选择，不得猜测。客户存在不代表支持预测。
-    inputSchema: &entityInput
-      type: object
-      additionalProperties: false
-      anyOf: [{required: [customerCode]}, {required: [customerName]}]
-      properties: &entityProperties
-        conversationNo: {type: string, description: 可选会话编号}
-        customerCode: {type: string, description: 客户标准编码，或客户查询条件}
-        customerName: {type: string, description: 客户名称或名称片段}
-        regionCode: {type: string, description: 地区标准编码，或客户查询筛选条件}
-        regionName: {type: string, description: 地区名称或名称片段，或客户查询筛选条件}
-        industryCode: {type: string, description: 行业标准编码，或客户查询筛选条件}
-        industryName: {type: string, description: 行业名称或业务别名，或客户查询筛选条件}
-        limit: {type: integer, description: 最大返回数量，默认20, minimum: 1, maximum: 50}
-    outputSchema: *standardOutput
-    annotations: &readOnly {readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false}
-
-  - name: region_search
-    title: 查询地区
-    description: 查询标准地区。至少提供regionCode或regionName。MULTIPLE时让用户选择；NOT_FOUND时请用户修正名称。
-    inputSchema:
-      type: object
-      additionalProperties: false
-      anyOf: [{required: [regionCode]}, {required: [regionName]}]
-      properties: *entityProperties
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: industry_search
-    title: 查询行业
-    description: 查询标准行业，支持“城市燃气”等业务别名。至少提供industryCode或industryName；多个匹配时不得自行选择。
-    inputSchema:
-      type: object
-      additionalProperties: false
-      anyOf: [{required: [industryCode]}, {required: [industryName]}]
-      properties: *entityProperties
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
   - name: region_list
     title: 查询地区列表
-    description: 分页查询地区。keyword可按地区编码或名称模糊筛选；不传时返回全部地区的当前页。
+    description: |
+      业务能力：查询地区基础数据目录，返回地区记录，不返回客户、行业、预测或训练数据。
+      适用用户目标：查询所有地区、有哪些省份、查看行政区/区域列表、按地区名称查找地区。
+      筛选规则：不传keyword时返回全部地区；keyword仅用于按地区名称或编码筛选地区本身。
+      禁止场景：用户要查询客户时不得调用，即使原话包含地区名称；例如“查询江苏所有客户”应使用customer_list，并把江苏作为客户筛选条件。
     inputSchema: &listInput
       type: object
       additionalProperties: false
@@ -133,18 +35,26 @@ tools:
         pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
         fetchAll: {type: boolean, description: 是否一次返回全部符合条件的数据，最多5000条；明确要求全部时使用}
     outputSchema: *standardOutput
-    annotations: *readOnly
+    annotations: &readOnly {readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false}
 
   - name: industry_list
     title: 查询行业列表
-    description: 分页查询行业。keyword可按行业编码或名称模糊筛选；不传时返回全部行业的当前页。
+    description: |
+      业务能力：查询行业基础数据目录，返回行业记录，不返回客户、地区、预测或训练数据。
+      适用用户目标：查询所有行业、有哪些行业分类、查看行业列表、按行业名称查找行业。
+      筛选规则：不传keyword时返回全部行业；keyword仅用于按行业名称或编码筛选行业本身。
+      禁止场景：用户要查询客户或地区时不得调用；例如“查询城燃行业所有客户”应使用customer_list，并把城燃作为客户筛选条件。
     inputSchema: *listInput
     outputSchema: *standardOutput
     annotations: *readOnly
 
   - name: customer_list
     title: 查询客户列表
-    description: 按名称关键字、地区编码和行业编码分页查询客户；不传筛选条件时返回当前页客户。用于浏览客户，不用于唯一实体确认。
+    description: |
+      业务能力：查询客户基础数据目录，返回客户记录及其所属地区、行业；不返回地区目录或行业目录。
+      适用用户目标：查询所有客户、查询江苏所有客户、查询某行业的客户、按客户名称浏览客户。
+      筛选规则：regionCode和industryCode只是客户过滤条件；不传筛选条件时返回全部客户。keyword仅用于客户名称或编码。
+      禁止场景：用户目标是“所有地区/省份/行政区”时不得调用regionCode筛选后替代region_list；用户目标是行业目录时不得调用。
     inputSchema:
       type: object
       additionalProperties: false
@@ -158,22 +68,20 @@ tools:
     outputSchema: *standardOutput
     annotations: *readOnly
 
-  - name: business_reference_resolve
-    title: 校验业务编号
-    description: 根据业务表校验训练批次号、预测批次号或智能体任务号的真实类型。用于Agent在查询状态或结果前纠正意图和参数，不创建或修改业务数据。
-    inputSchema:
-      type: object
-      required: [reference]
-      additionalProperties: false
-      properties:
-        reference: {type: string, description: 用户明确提供或从当前会话指代解析得到的批次号或任务号}
-        expectedType: {type: string, description: Agent初步识别的类型，仅用于冲突诊断, enum: [TRAINING_BATCH, FORECAST_BATCH, TASK, UNKNOWN]}
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
   - name: training_start
     title: 发起模型训练
-    description: 单客户需bulk=false并提供客户；批量需bulk=true、地区和/或行业范围及confirmed=true。模型训练配置只提供默认数据范围；用户本次明确提供trainingStartDate和trainingEndDate时，必须优先采用用户时段并按RANGE执行。RECENT需要trainingPeriods；RANGE需要开始和结束日期。成功时data.tasks包含trainBatchNo。超时后先查状态，不得盲目重提。
+    description: |
+      业务能力：按用户指定的训练范围发起模型训练。
+      训练范围由客户、地区、行业三个维度组合确定：可指定一个或多个客户、地区或行业；
+      可只指定地区（例如“训练江苏省每个客户”）、只指定行业（例如“训练城燃行业所有客户”）、
+      同时指定地区和行业（例如“训练江苏城燃行业所有客户”），或直接指定客户。
+      范围计算规则：同一维度中的多个值按“或”匹配；不同维度同时存在时按“且”取交集。
+      未指定客户、地区或行业时不得发起训练，必须向用户澄清训练对象范围。
+      单个客户训练可直接发起；目标范围可能包含多个客户时，必须先展示训练范围并取得用户确认；
+      强制重新训练也必须取得用户确认。
+      数据范围：未指定时使用当前智能体默认训练数据范围；RECENT模式必须提供trainingPeriods；
+      RANGE模式必须同时提供trainingStartDate和trainingEndDate。
+      返回训练任务和训练批次信息。训练为异步执行，任务受理成功不代表训练已完成。
     inputSchema: &executionInput
       type: object
       required: [conversationNo]
@@ -196,8 +104,11 @@ tools:
             required: [confirmed]
             properties: {confirmed: {const: true}}
             anyOf:
+              - required: [customerCodes]
+              - required: [regionCodes]
               - required: [regionCode]
               - required: [regionName]
+              - required: [industryCodes]
               - required: [industryCode]
               - required: [industryName]
         - if:
@@ -210,10 +121,31 @@ tools:
         conversationNo: {type: string, description: 会话编号}
         agentCode: {type: string, description: 智能体编码，默认short-term, enum: [short-term, monthly-sales, winter-supply]}
         customerCode: {type: string, description: 单客户标准编码}
+        customerCodes:
+          type: array
+          minItems: 1
+          maxItems: 5000
+          uniqueItems: true
+          items: {type: string}
+          description: 批量实体校验后得到的标准客户编码集合
         customerName: {type: string, description: 客户名称，服务端解析成唯一编码}
         regionCode: {type: string, description: 批量范围的标准地区编码}
+        regionCodes:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items: {type: string}
+          description: 批量实体校验后得到的标准地区编码集合，同类地区按或关系筛选
         regionName: {type: string, description: 批量范围地区名称，服务端解析成唯一编码}
         industryCode: {type: string, description: 批量范围的标准行业编码}
+        industryCodes:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          items: {type: string}
+          description: 批量实体校验后得到的标准行业编码集合，同类行业按或关系筛选
         industryName: {type: string, description: 批量范围行业名称或别名，服务端解析成唯一编码}
         bulk: {type: boolean, description: 是否批量执行，默认false}
         confirmed: {type: boolean, description: bulk=true时必须为true，表示用户已明确确认}
@@ -226,122 +158,81 @@ tools:
     outputSchema: *standardOutput
     annotations: &mutating {readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false}
 
-  - name: training_status_get
-    title: 查询训练进度
-    description: 查询训练状态和执行步骤。优先传trainBatchNo；未传时从conversationNo对应记忆读取lastTrainBatchNo。返回result和steps。
-    inputSchema: &trainBatchInput
-      type: object
-      required: [conversationNo]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 会话编号，批次号为空时用于读取最近批次}
-        trainBatchNo: {type: string, description: 训练批次号，建议明确传入}
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: training_result_get
+  - name: training_result_query
     title: 查询训练结果
-    description: 查询训练模型、训练范围及MAPE、WMAPE、SMAPE、RMSE、MAE、R2等指标。任务未完成时不要编造指标，应继续查询状态。
-    inputSchema: *trainBatchInput
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: training_latest_get
-    title: 查询客户最新训练
-    description: 按标准客户编码查询最新训练记录，可用agentCode限定短期、月度或冬季场景。
-    inputSchema: &customerRecordInput
-      type: object
-      required: [customerCode]
-      additionalProperties: false
-      properties:
-        customerCode: {type: string, description: 标准客户编码}
-        agentCode: {type: string, description: 可选业务场景编码, enum: [short-term, monthly-sales, winter-supply]}
-        includePoints: {type: boolean, description: 查询最新预测时是否包含预测点，默认true}
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: training_history_get
-    title: 查询客户历史训练
-    description: 按客户和场景分页查询训练历史，可按训练状态筛选。
+    description: 根据客户、地区、行业的组合条件，查询该训练范围最新一次训练结果。至少提供客户、地区或行业之一；同一维度多个条件按或匹配，不同维度同时存在时按且取交集。返回最新训练的状态、训练时间和结果指标。
     inputSchema:
       type: object
-      required: [customerCode]
       additionalProperties: false
+      anyOf: [{required: [customerCode]}, {required: [regionCode]}, {required: [industryCode]}]
       properties:
-        customerCode: {type: string, description: 标准客户编码}
-        agentCode: {type: string, description: 可选业务场景编码, enum: [short-term, monthly-sales, winter-supply]}
-        status: {type: string, description: 可选训练状态}
-        pageNo: {type: integer, description: 页码，默认1, minimum: 1}
-        pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+        customerCode: {type: string, description: 已校验的客户编码}
+        regionCode: {type: string, description: 已校验的地区编码}
+        industryCode: {type: string, description: 已校验的行业编码}
+        agentCode: {type: string, description: 可选智能体编码, enum: [short-term, monthly-sales, winter-supply]}
     outputSchema: *standardOutput
     annotations: *readOnly
 
   - name: forecast_start
     title: 发起燃气预测
-    description: 单客户需bulk=false并提供客户；批量需bulk=true、范围及confirmed=true。短期客户智能体按日预测，默认30天；月度销量智能体按月预测，默认12个月；冬季保供智能体按旬预测，默认18旬。没有匹配模型时必须先返回原因并获得用户训练确认，不能默认自动训练。
+    description: 根据客户、地区、行业的组合范围，为匹配到的一个或多个客户发起指定智能体的燃气预测。至少提供客户、地区或行业之一；同时提供多个维度时按且取交集。服务端根据实际命中客户数自动判定单客户或批量预测：命中多个客户时先返回客户范围并要求确认，不能由模型自行指定批量模式，也不得从历史会话补充范围。short-term按天预测，默认30天；monthly-sales按月预测，默认12个月；winter-supply按旬预测，默认18旬。缺少可用模型时只返回原因并询问是否训练后预测，不得擅自训练。
     inputSchema:
       type: object
-      required: [conversationNo]
+      required: [conversationNo, agentCode]
       additionalProperties: false
-      allOf: *executionRules
+      anyOf:
+        - required: [customerCode]
+        - required: [customerCodes]
+        - required: [regionCode]
+        - required: [regionCodes]
+        - required: [regionName]
+        - required: [industryCode]
+        - required: [industryCodes]
+        - required: [industryName]
       properties:
-        <<: *executionProperties
+        conversationNo: {type: string, description: 会话编号}
+        agentCode: {type: string, description: 预测智能体编码；short-term为短期客户预测，monthly-sales为月度销量预测，winter-supply为冬季保供预测, enum: [short-term, monthly-sales, winter-supply]}
+        customerCode: {type: string, description: 单个标准客户编码}
+        customerCodes: {type: array, minItems: 1, maxItems: 5000, uniqueItems: true, items: {type: string}, description: 已确认的标准客户编码集合}
+        customerName: {type: string, description: 单个客户名称，由服务端解析为唯一编码}
+        regionCode: {type: string, description: 标准地区编码}
+        regionCodes: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: string}, description: 标准地区编码集合}
+        regionName: {type: string, description: 地区名称，由服务端解析为唯一编码}
+        industryCode: {type: string, description: 标准行业编码}
+        industryCodes: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: string}, description: 标准行业编码集合}
+        industryName: {type: string, description: 行业名称，由服务端解析为唯一编码}
         forecastStartDate: {type: string, format: date, description: 用户指定的预测开始日期；未传时默认为客户最新销量日期的下一天}
         forecastEndDate: {type: string, format: date, description: 用户指定的预测结束日期；提供后按开始和结束日期计算周期，并优先于forecastHorizon}
-        forecastHorizon: {type: integer, description: 用户指定的预测周期；默认值和最大值由智能体及模型配置决定, minimum: 1, maximum: 366}
-        forecastFrequency: {type: string, description: 预测时间粒度；short-term只能DAILY，monthly-sales只能MONTHLY，winter-supply只能TENDAY, enum: [DAILY, TENDAY, MONTHLY]}
+        forecastHorizon: {type: integer, description: 预测周期；short-term单位为天，monthly-sales单位为月，winter-supply单位为旬。未传时分别默认30天、12个月、18旬, minimum: 1, maximum: 366}
+        forecastFrequency: {type: string, description: 预测时间粒度；应与智能体匹配, enum: [DAILY, TENDAY, MONTHLY]}
+        trainMode: {type: string, description: 仅在用户确认需要训练时使用的训练数据范围模式, enum: [ALL, RECENT, RANGE]}
+        trainingPeriods: {type: integer, description: RECENT训练模式的最近周期数, minimum: 1, maximum: 10000}
+        trainingStartDate: {type: string, format: date, description: RANGE训练模式开始日期}
+        trainingEndDate: {type: string, format: date, description: RANGE训练模式结束日期}
+        forceRetrain: {type: boolean, description: 是否明确要求重新训练后预测}
         trainingPreference: {type: string, description: 用户训练偏好；UNSPECIFIED不授权训练，AUTO仅在用户确认缺少模型后使用, enum: [FORCE_RETRAIN, USE_EXISTING_ONLY, UNSPECIFIED, AUTO]}
         autoTrain: {type: boolean, description: 是否已获得用户授权在缺少模型时训练，默认false}
+        confirmed: {type: boolean, description: 用户已确认批量预测、自动训练或重新训练时为true}
+        idempotencyKey: {type: string, description: 调用方生成的唯一幂等键，同一次网络重试必须复用}
     outputSchema: *standardOutput
     annotations: *mutating
 
-  - name: forecast_status_get
-    title: 查询预测进度
-    description: 查询预测状态和已保存点数。优先传forecastBatchNo；未传时读取会话最近预测批次。WAITING_TRAINING且无forecastBatchNo时应改查trainBatchNo。
-    inputSchema: &forecastBatchInput
-      type: object
-      required: [conversationNo]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 会话编号，批次号为空时用于读取最近批次}
-        forecastBatchNo: {type: string, description: 预测批次号，建议明确传入}
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: forecast_result_get
-    title: 查询预测结果
-    description: 查询已有预测记录和逐期预测值，不创建任务。includePoints=false只返回记录，true返回points。未成功时先根据status继续等待或处理失败原因。
+  - name: forecast_result_query
+    title: 查询预测进度与结果
+    description: 根据客户、地区、行业的组合条件和智能体，查询该预测范围最新一次预测的当前状态、预测时间及预测值。至少提供客户、地区或行业之一；同时提供多个维度时按且取交集。
     inputSchema:
       type: object
-      required: [conversationNo]
       additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 会话编号，批次号为空时用于读取最近批次}
-        forecastBatchNo: {type: string, description: 预测批次号，建议明确传入}
-        includePoints: {type: boolean, description: 是否返回逐期预测明细，默认true，数据量大时可设为false}
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: forecast_latest_get
-    title: 查询客户最新预测
-    description: 按标准客户编码查询最新预测记录，可按agentCode限定业务场景；includePoints控制是否返回逐期预测值。
-    inputSchema: *customerRecordInput
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: forecast_history_get
-    title: 查询客户历史预测
-    description: 按客户和场景分页查询预测历史，可按预测状态码筛选。
-    inputSchema:
-      type: object
-      required: [customerCode]
-      additionalProperties: false
+      anyOf:
+        - required: [customerCode]
+        - required: [regionCode]
+        - required: [industryCode]
       properties:
         customerCode: {type: string, description: 标准客户编码}
-        agentCode: {type: string, description: 可选业务场景编码, enum: [short-term, monthly-sales, winter-supply]}
-        status: {type: integer, description: 可选预测状态码，1执行中、2成功、3失败, enum: [1, 2, 3]}
-        pageNo: {type: integer, description: 页码，默认1, minimum: 1}
-        pageSize: {type: integer, description: 每页数量，默认20，最大100, minimum: 1, maximum: 100}
+        regionCode: {type: string, description: 标准地区编码}
+        industryCode: {type: string, description: 标准行业编码}
+        agentCode: {type: string, description: 预测智能体编码, enum: [short-term, monthly-sales, winter-supply]}
+        includePoints: {type: boolean, description: 是否返回逐期预测值，默认true}
     outputSchema: *standardOutput
     annotations: *readOnly
 
@@ -371,52 +262,3 @@ tools:
         includeAttempts: {type: boolean, description: 是否包含历史任务尝试，默认false}
     outputSchema: *standardOutput
     annotations: *readOnly
-
-  - name: task_step_record
-    title: 记录智能体执行步骤
-    description: 记录实体解析、参数收集、等待确认、工具调用或结果解释等可审计智能体步骤。不能写入或伪造模型训练、预测等业务步骤状态。
-    inputSchema:
-      type: object
-      required: [taskNo, stepCode, status]
-      additionalProperties: false
-      properties:
-        taskNo: {type: string, description: 统一任务编号}
-        stepCode: {type: string, description: 允许的智能体步骤编码, enum: [ENTITY_RESOLUTION, PARAMETER_COLLECTION, WAITING_USER_CONFIRMATION, TOOL_CALL, RESULT_EXPLANATION]}
-        stepName: {type: string, description: 用户可理解的步骤名称}
-        status: {type: string, description: 步骤状态, enum: [WAITING, RUNNING, SUCCESS, FAILED, SKIPPED, CANCELLED]}
-        stepOrder: {type: integer, description: 步骤显示顺序, minimum: 0}
-        inputSummary: {type: string, description: 输入摘要，不得保存大模型思维链或敏感凭证}
-        outputSummary: {type: string, description: 输出摘要}
-        checkpoint: {type: object, description: 恢复所需的结构化检查点, additionalProperties: true}
-        errorCode: {type: string, description: 失败错误码}
-        errorMessage: {type: string, description: 具体失败原因}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false}
-
-  - name: task_resume
-    title: 恢复中断的智能体任务
-    description: 恢复FAILED或INTERRUPTED任务。Java会重新核实已有训练和预测批次；仍在执行则返回WAIT，明确失败则要求使用task_retry，不会把恢复误当作重试并重复创建批次。
-    inputSchema:
-      type: object
-      required: [taskNo, confirmed]
-      additionalProperties: false
-      properties:
-        taskNo: {type: string, description: 统一任务编号}
-        resumeFromStep: {type: string, description: 可选恢复步骤；服务端会基于真实业务状态复核}
-        confirmed: {type: boolean, const: true, description: 用户是否确认恢复执行，必须为true}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}
-
-  - name: task_retry
-    title: 重试失败任务
-    description: 为FAILED任务创建新的训练或预测批次，保留原失败批次用于审计。调用前必须先查询任务状态并取得用户明确确认。
-    inputSchema:
-      type: object
-      required: [taskNo, confirmed]
-      additionalProperties: false
-      properties:
-        taskNo: {type: string, description: 统一任务编号}
-        retryStage: {type: string, description: 可选重试阶段；未传时根据任务最新批次判断, enum: [TRAINING, FORECAST]}
-        confirmed: {type: boolean, const: true, description: 用户已确认创建新批次}
-    outputSchema: *standardOutput
-    annotations: {readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false}

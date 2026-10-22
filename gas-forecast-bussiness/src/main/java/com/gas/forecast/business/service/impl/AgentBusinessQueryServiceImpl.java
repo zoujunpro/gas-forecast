@@ -13,8 +13,8 @@ import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
-import com.gas.forecast.dao.domain.AgentExecutionTaskTb;
-import com.gas.forecast.dao.mapper.AgentExecutionTaskTbMapper;
+import com.gas.forecast.dao.domain.ExecutionTaskTb;
+import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
@@ -42,7 +42,7 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final ModelForecastResultTbMapper forecastResultMapper;
-    private final AgentExecutionTaskTbMapper taskMapper;
+    private final ExecutionTaskTbMapper taskMapper;
 
     @Override
     public Object regions(String keyword, Integer pageNo, Integer pageSize, boolean fetchAll) {
@@ -90,37 +90,33 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     }
 
     @Override
-    public Object latestTraining(String customerCode, String agentCode) {
-        ModelTrainRecordTb record = trainRecordMapper.selectOne(trainingQuery(customerCode, agentCode, null).orderByDesc(ModelTrainRecordTb::getCreatedAt)
+    public Object latestTraining(String customerCode, String regionCode, String industryCode, String agentCode) {
+        var query = Wrappers.<ModelTrainRecordTb>lambdaQuery();
+        if (TextUtils.hasText(customerCode)) query.eq(ModelTrainRecordTb::getCustomerCode, customerCode);
+        if (TextUtils.hasText(regionCode)) query.eq(ModelTrainRecordTb::getRegionCode, regionCode);
+        if (TextUtils.hasText(industryCode)) query.eq(ModelTrainRecordTb::getIndustryCode, industryCode);
+        if (TextUtils.hasText(agentCode)) query.eq(ModelTrainRecordTb::getAgentCode, agentCode);
+        ModelTrainRecordTb record = trainRecordMapper.selectOne(query.orderByDesc(ModelTrainRecordTb::getCreatedAt)
                 .orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
-        if (record == null) throw new BusinessException("没有找到该客户的训练记录");
+        if (record == null) throw new BusinessException("没有找到符合条件的训练记录");
         return record;
     }
 
     @Override
-    public Object trainingHistory(String customerCode, String agentCode, String status, Integer pageNo, Integer pageSize) {
-        var query = trainingQuery(customerCode, agentCode, status).orderByDesc(ModelTrainRecordTb::getCreatedAt).orderByDesc(ModelTrainRecordTb::getId);
-        IPage<ModelTrainRecordTb> page = trainRecordMapper.selectPage(page(pageNo, pageSize), query);
-        return PageInfoDTO.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
-    }
-
-    @Override
-    public Object latestForecast(String customerCode, String agentCode, boolean includePoints) {
-        ModelForecastRecordTb record = forecastRecordMapper.selectOne(forecastQuery(customerCode, agentCode, null).orderByDesc(ModelForecastRecordTb::getCreatedAt)
+    public Object latestForecast(String customerCode, String regionCode, String industryCode, String agentCode, boolean includePoints) {
+        var query = Wrappers.<ModelForecastRecordTb>lambdaQuery();
+        if (TextUtils.hasText(customerCode)) query.eq(ModelForecastRecordTb::getCustomerCode, customerCode);
+        if (TextUtils.hasText(regionCode)) query.eq(ModelForecastRecordTb::getRegionCode, regionCode);
+        if (TextUtils.hasText(industryCode)) query.eq(ModelForecastRecordTb::getIndustryCode, industryCode);
+        if (TextUtils.hasText(agentCode)) query.eq(ModelForecastRecordTb::getAgentCode, agentCode);
+        ModelForecastRecordTb record = forecastRecordMapper.selectOne(query.orderByDesc(ModelForecastRecordTb::getCreatedAt)
                 .orderByDesc(ModelForecastRecordTb::getId).last("limit 1"));
-        if (record == null) throw new BusinessException("没有找到该客户的预测记录");
+        if (record == null) throw new BusinessException("没有找到符合条件的预测记录");
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("record", record);
         if (includePoints) result.put("points", forecastResultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
                 .eq(ModelForecastResultTb::getForecastBatchNo, record.getForecastBatchNo()).orderByAsc(ModelForecastResultTb::getForecastDate)));
         return result;
-    }
-
-    @Override
-    public Object forecastHistory(String customerCode, String agentCode, Integer status, Integer pageNo, Integer pageSize) {
-        var query = forecastQuery(customerCode, agentCode, status).orderByDesc(ModelForecastRecordTb::getCreatedAt).orderByDesc(ModelForecastRecordTb::getId);
-        IPage<ModelForecastRecordTb> page = forecastRecordMapper.selectPage(page(pageNo, pageSize), query);
-        return PageInfoDTO.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
 
     @Override
@@ -145,14 +141,16 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
             result.put("supportedActions", List.of("STATUS", "RESULT"));
             return result;
         }
-        AgentExecutionTaskTb task = taskMapper.selectOne(Wrappers.<AgentExecutionTaskTb>lambdaQuery()
-                .eq(AgentExecutionTaskTb::getTaskNo, value).last("limit 1"));
+        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
+                .eq(ExecutionTaskTb::getTaskNo, value).last("limit 1"));
         if (task != null) {
             Map<String, Object> result = reference("TASK", value, task.getStatus(), task.getAgentCode());
-            result.put("taskType", task.getTaskType());
+            result.put("businessType", task.getBusinessType());
+            result.put("businessNo", task.getBusinessNo());
+            result.put("executionBatchNo", task.getBatchNo());
             result.put("customerCode", task.getCustomerCode());
             result.put("customerName", task.getCustomerName());
-            result.put("supportedActions", List.of("STATUS", "STEPS", "RESUME", "RETRY"));
+            result.put("supportedActions", List.of("STATUS", "STEPS"));
             return result;
         }
         Map<String, Object> result = new LinkedHashMap<>();
@@ -171,22 +169,6 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
         result.put("status", status);
         result.put("agentCode", agentCode);
         return result;
-    }
-
-    private com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelTrainRecordTb> trainingQuery(String customerCode, String agentCode, String status) {
-        if (!TextUtils.hasText(customerCode)) throw new BusinessException("customerCode不能为空");
-        var query = Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getCustomerCode, customerCode);
-        if (TextUtils.hasText(agentCode)) query.eq(ModelTrainRecordTb::getAgentCode, agentCode);
-        if (TextUtils.hasText(status)) query.eq(ModelTrainRecordTb::getStatus, status);
-        return query;
-    }
-
-    private com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ModelForecastRecordTb> forecastQuery(String customerCode, String agentCode, Integer status) {
-        if (!TextUtils.hasText(customerCode)) throw new BusinessException("customerCode不能为空");
-        var query = Wrappers.<ModelForecastRecordTb>lambdaQuery().eq(ModelForecastRecordTb::getCustomerCode, customerCode);
-        if (TextUtils.hasText(agentCode)) query.eq(ModelForecastRecordTb::getAgentCode, agentCode);
-        if (status != null) query.eq(ModelForecastRecordTb::getStatus, status);
-        return query;
     }
 
     private <T> Page<T> page(Integer pageNo, Integer pageSize) {

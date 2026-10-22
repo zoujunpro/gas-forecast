@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelConfigEnabledUpdateRequest;
 import com.gas.forecast.business.component.ModelPlatformClient;
 import com.gas.forecast.business.component.dto.ModelInfoApiResponse;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
@@ -99,6 +100,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             if (creating) {
                 entity = new ModelConfigTb();
                 entity.setModelCode(platformModel.getModelCode());
+                entity.setEnabled(1);
                 entity.setCreatedAt(now);
                 entity.setCreatedBy(String.valueOf(SecurityContextHolder.getUserId()));
                 entity.setCreatedByName(SecurityContextHolder.getUserName());
@@ -204,6 +206,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         ForecastAgentEnum agent = ForecastAgentEnum.ofAgentCode(exists.getAgentCode()).orElseThrow(() -> new BusinessException("智能体编码不合法"));
         // 模型能力边界由模型平台同步；默认训练范围属于业务策略，可在配置页维护。
         exists.setDefaultTrainingRangeMode(normalizeTrainingRangeMode(reqDTO.getDefaultTrainingRangeMode(), exists.getDefaultTrainingRangeMode()));
+        exists.setEnabled(normalizeEnabled(reqDTO.getEnabled()));
         if ("CUSTOM".equals(exists.getDefaultTrainingRangeMode())) {
             if (reqDTO.getDefaultTrainingPeriods() == null || reqDTO.getDefaultTrainingPeriods() <= 0)
                 throw new BusinessException("自定义训练范围必须填写大于0的训练周期数");
@@ -216,6 +219,19 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         saveFeatureRefs(reqDTO.id(), reqDTO.featureRefs());
         ModelConfigTb updated = modelConfigTbMapper.selectById(reqDTO.id());
         return toResp(updated, loadScopeContext(List.of(updated)));
+    }
+
+    @Override
+    @Transactional
+    public ModelConfigResponse updateEnabled(ModelConfigEnabledUpdateRequest reqDTO) {
+        ModelConfigTb modelConfig = modelConfigTbMapper.selectById(reqDTO.getId());
+        if (modelConfig == null) {
+            throw new BusinessException("模型配置不存在");
+        }
+        modelConfig.setEnabled(normalizeEnabled(reqDTO.getEnabled()));
+        modelConfig.setUpdatedAt(new Date());
+        modelConfigTbMapper.updateById(modelConfig);
+        return toResp(modelConfig, loadScopeContext(List.of(modelConfig)));
     }
 
     @Override
@@ -287,7 +303,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         boolean allIndustries = industryCodes.isEmpty();
         boolean allCustomers = customerCodes.isEmpty();
         return new ModelConfigResponse(modelConfig.getId(), modelConfig.getModelCode(), modelConfig.getModelName(), modelConfig.getModelVersion(), modelConfig.getAgentCode(),
-                agent == null ? null : agent.getAgentName(), agent == null ? null : agent.getSceneCode(), agent == null ? null : agent.getStrategyType(), regionCode,
+                agent == null ? null : agent.getAgentName(), modelConfig.getEnabled(), agent == null ? null : agent.getSceneCode(), agent == null ? null : agent.getStrategyType(), regionCode,
                 allRegions ? "全部" : region == null ? null : region.getRegionName(), industryCode, allIndustries ? "全部" : industry == null ? null : industry.getIndustryName(), customerCode,
                 allCustomers ? "全部" : customer == null ? null : customer.getCustomerName(), regionCodes, allRegions ? List.of("全部") : regionNames, industryCodes,
                 allIndustries ? List.of("全部") : industryNames, customerCodes, allCustomers ? List.of("全部") : customerNames, featureRefs, modelConfig.getTimeGranularity(),
@@ -525,6 +541,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setModelName(reqDTO.getConfigName());
         modelConfig.setModelVersion(TextUtils.hasText(reqDTO.getModelVersion()) ? reqDTO.getModelVersion() : "V1.0");
         modelConfig.setAgentCode(reqDTO.getAgentCode());
+        modelConfig.setEnabled(normalizeEnabled(reqDTO.getEnabled()));
         modelConfig.setTimeGranularity(defaultGranularity(reqDTO.getTimeGranularity(), reqDTO.getAgentCode()));
         modelConfig.setMinForecastHorizon(reqDTO.getMinForecastHorizon() == null ? 1 : reqDTO.getMinForecastHorizon());
         modelConfig.setMaxForecastHorizon(reqDTO.getMaxForecastHorizon() == null ? 30 : reqDTO.getMaxForecastHorizon());
@@ -544,6 +561,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setModelName(reqDTO.configName());
         modelConfig.setModelVersion(TextUtils.hasText(reqDTO.modelVersion()) ? reqDTO.modelVersion() : "V1.0");
         modelConfig.setAgentCode(reqDTO.agentCode());
+        modelConfig.setEnabled(normalizeEnabled(reqDTO.getEnabled()));
         modelConfig.setTimeGranularity(defaultGranularity(reqDTO.getTimeGranularity(), reqDTO.agentCode()));
         modelConfig.setMinForecastHorizon(reqDTO.getMinForecastHorizon() == null ? 1 : reqDTO.getMinForecastHorizon());
         modelConfig.setMaxForecastHorizon(reqDTO.getMaxForecastHorizon() == null ? 30 : reqDTO.getMaxForecastHorizon());
@@ -571,6 +589,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         if (!Set.of("RECOMMENDED", "CUSTOM", "ALL").contains(mode))
             throw new BusinessException("默认训练范围只支持推荐、自定义或全部历史数据");
         return mode;
+    }
+
+    private int normalizeEnabled(Integer enabled) {
+        if (enabled == null || (enabled != 0 && enabled != 1))
+            throw new BusinessException("启用状态只支持0或1");
+        return enabled;
     }
 
     private void validateDefaultTrainingRange(String modeValue, Integer periods) {

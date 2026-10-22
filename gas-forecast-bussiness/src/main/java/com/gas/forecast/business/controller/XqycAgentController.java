@@ -241,6 +241,7 @@ public class XqycAgentController {
         putDecimal(metrics, "mae", record.getMae());
         putDecimal(metrics, "r2", record.getR2());
         item.set("metrics", metrics);
+        appendModelComparison(item, record);
         if (includeBacktest) {
             ArrayNode dates = objectMapper.createArrayNode();
             ArrayNode actual = objectMapper.createArrayNode();
@@ -263,6 +264,27 @@ public class XqycAgentController {
             }
         }
         return item;
+    }
+
+    private void appendModelComparison(ObjectNode item, ModelTrainRecordTb record) {
+        Object rawResult = record.getResultJson();
+        if (rawResult == null)
+            return;
+        try {
+            JsonNode result = rawResult instanceof JsonNode node ? node
+                    : rawResult instanceof String text ? objectMapper.readTree(text) : objectMapper.valueToTree(rawResult);
+            JsonNode candidates = result.path("candidate_evaluations");
+            if (candidates.isArray())
+                item.set("candidate_models", candidates.deepCopy());
+            if (result.hasNonNull("selection_reason"))
+                item.put("selection_reason", result.path("selection_reason").asText());
+            if (result.hasNonNull("requested_candidate_count"))
+                item.put("requested_candidate_count", result.path("requested_candidate_count").asInt());
+            if (result.hasNonNull("successful_candidate_count"))
+                item.put("successful_candidate_count", result.path("successful_candidate_count").asInt());
+        } catch (Exception ignored) {
+            // 兼容历史记录中的非 JSON 结果；不影响基础预测结果展示。
+        }
     }
 
     private void appendLatestForecast(ObjectNode item, ModelTrainRecordTb trainRecord, String forecastCustomer) {

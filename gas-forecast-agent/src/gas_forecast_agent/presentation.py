@@ -12,7 +12,7 @@ class PresentationPlanner:
     @classmethod
     def plan(cls, tool_name: str | None, result: dict[str, Any]) -> dict[str, Any]:
         data = result.get("data") if isinstance(result.get("data"), dict) else {}
-        if tool_name in {"forecast_result_get", "forecast_latest_get"}:
+        if tool_name == "forecast_result_query":
             forecast = cls._forecast_result(data)
             if forecast:
                 return {
@@ -22,7 +22,7 @@ class PresentationPlanner:
                     },
                     "forecast_result": forecast,
                 }
-        if tool_name in {"training_result_get", "training_latest_get"}:
+        if tool_name == "training_result_query":
             training = cls._training_result(data)
             if training:
                 return {
@@ -37,9 +37,6 @@ class PresentationPlanner:
         # 展示层应依据真实数据结构兜底识别，避免完整列表退化成几条文本示例。
         if str(result.get("resultType") or "").upper() == "PAGE" or isinstance(data.get("records"), list):
             return {"presentation": {"type": "LIST", "dataSource": "executionResult.data.records"}}
-        if tool_name == "training_status_get":
-            progress = cls._training_progress(data)
-            return {"presentation": {"type": "PROGRESS", "dataSource": "progress"}, "progress": progress}
         if str(result.get("resultType") or "").upper() in {"TASK", "PROGRESS"} and str(result.get("status") or "").upper() not in {"NEED_CONFIRMATION", "NEED_CLARIFICATION"}:
             progress = cls._progress(tool_name, data)
             return {"presentation": {"type": "PROGRESS", "dataSource": "progress"}, "progress": progress}

@@ -1,11 +1,7 @@
 package com.gas.forecast.mcp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gas.forecast.business.service.AgentMemoryService;
-import com.gas.forecast.business.ai.service.AiConversationService;
 import com.gas.forecast.business.service.AgentBusinessQueryService;
 import com.gas.forecast.business.service.AgentExecutionTaskService;
-import com.gas.forecast.business.service.AgentExecutionTaskService.StepCommand;
 import com.gas.forecast.business.service.BusinessEntityResolutionService;
 import com.gas.forecast.business.service.BusinessEntityResolutionService.*;
 import com.gas.forecast.business.service.ForecastApplicationService;
@@ -24,14 +20,11 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class McpToolDispatcher {
-    private final AgentMemoryService memoryService;
-    private final AiConversationService conversationService;
     private final AgentBusinessQueryService queryService;
     private final AgentExecutionTaskService taskService;
     private final BusinessEntityResolutionService entityService;
     private final TrainingApplicationService trainingService;
     private final ForecastApplicationService forecastService;
-    private final ObjectMapper objectMapper;
 
     /**
      * MCP工具统一调用入口。
@@ -48,44 +41,18 @@ public class McpToolDispatcher {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
         try {
             return switch (toolName) {
-                case "conversation_prepare" -> success(toolName, "会话轮次准备完成", conversationService.prepareTurn(
-                        text(args, "conversationNo"), text(args, "forecastBatchNo"), requiredText(args, "turnId"), requiredText(args, "message"),
-                        text(args, "agentType"), map(args, "metadata")));
-                case "conversation_reply_append" -> success(toolName, "Agent回复已归档", conversationService.completeTurn(
-                        requiredText(args, "conversationNo"), requiredText(args, "turnId"), requiredText(args, "status"), requiredText(args, "answer"),
-                        text(args, "skillName"), map(args, "executionResult"), map(args, "payload")));
-                case "memory_get" -> success(toolName, "记忆查询成功", memoryService.get(requiredText(args, "conversationNo")));
-                case "memory_update" -> memoryUpdate(args);
-                case "customer_search" -> resolve(args, EntityType.CUSTOMER);
-                case "region_search" -> resolve(args, EntityType.REGION);
-                case "industry_search" -> resolve(args, EntityType.INDUSTRY);
                 case "region_list" -> success(toolName, "地区列表查询成功", queryService.regions(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "industry_list" -> success(toolName, "行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "customer_list" -> success(toolName, "客户列表查询成功",
                         queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
-                case "business_reference_resolve" -> success(toolName, "业务编号校验完成",
-                        queryService.resolveBusinessReference(requiredText(args, "reference")));
                 case "training_start" -> success(toolName, "训练任务已受理", trainingService.start(trainingCommand(args)));
-                case "training_status_get" -> success(toolName, "训练进度查询成功", trainingService.status(batch(args, "trainBatchNo", "lastTrainBatchNo")));
-                case "training_result_get" -> success(toolName, "训练结果查询成功", trainingService.result(batch(args, "trainBatchNo", "lastTrainBatchNo")));
-                case "training_latest_get" -> success(toolName, "最新训练查询成功", queryService.latestTraining(requiredText(args, "customerCode"), text(args, "agentCode")));
-                case "training_history_get" -> success(toolName, "训练历史查询成功", queryService.trainingHistory(requiredText(args, "customerCode"), text(args, "agentCode"), text(args, "status"),
-                        integer(args, "pageNo"), integer(args, "pageSize")));
+                case "training_result_query" -> success(toolName, "训练结果查询成功", queryService.latestTraining(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode")));
                 case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args)));
-                case "forecast_status_get" -> success(toolName, "预测进度查询成功", forecastService.status(batch(args, "forecastBatchNo", "lastForecastBatchNo")));
-                case "forecast_result_get" -> success(toolName, "预测结果查询成功", forecastService.result(batch(args, "forecastBatchNo", "lastForecastBatchNo"), bool(args, "includePoints", true)));
-                case "forecast_latest_get" -> success(toolName, "最新预测查询成功",
-                        queryService.latestForecast(requiredText(args, "customerCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
-                case "forecast_history_get" -> success(toolName, "预测历史查询成功", queryService.forecastHistory(requiredText(args, "customerCode"), text(args, "agentCode"),
-                        integer(args, "status"), integer(args, "pageNo"), integer(args, "pageSize")));
+                case "forecast_result_query" -> success(toolName, "预测结果查询成功",
+                        queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
                 case "task_status_get" -> success(toolName, "任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
                 case "task_steps_get" -> success(toolName, "任务步骤查询成功",
                         taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));
-                case "task_step_record" -> success(toolName, "智能体步骤记录成功", taskService.recordStep(requiredText(args, "taskNo"), stepCommand(args)));
-                case "task_resume" -> success(toolName, "任务恢复指令已生成",
-                        taskService.resume(requiredText(args, "taskNo"), text(args, "resumeFromStep"), bool(args, "confirmed", false)));
-                case "task_retry" -> success(toolName, "任务重试批次已创建",
-                        taskService.retry(requiredText(args, "taskNo"), text(args, "retryStage"), bool(args, "confirmed", false)));
                 default -> failure(toolName, "TOOL_NOT_FOUND", "未知工具：" + toolName, false);
             };
         } catch (BusinessException | IllegalArgumentException exception) {
@@ -97,47 +64,11 @@ public class McpToolDispatcher {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> map(Map<String, Object> args, String name) {
-        Object value = args.get(name);
-        return value instanceof Map<?, ?> ? objectMapper.convertValue(value, Map.class) : Map.of();
-    }
-
-    /**
-     * 更新指定会话的工作记忆。
-     *
-     * @param args 包含conversationNo、operation和values的工具参数
-     * @return 更新后的完整记忆
-     */
-    @SuppressWarnings("unchecked")
-    private McpToolResult memoryUpdate(Map<String, Object> args) {
-        Object raw = args.get("values");
-        Map<String, Object> values = raw instanceof Map<?, ?> ? objectMapper.convertValue(raw, Map.class) : Map.of();
-        return success("memory_update", "记忆更新成功", memoryService.update(requiredText(args, "conversationNo"), text(args, "operation"), values));
-    }
-
-    /**
-     * 根据实体类型查询客户、地区或行业；多条匹配时返回候选项，由调用方继续确认。
-     *
-     * @param args 实体编码、名称以及可选查询条数
-     * @param type 要解析的实体类型
-     * @return 唯一匹配或待确认候选结果
-     */
-    private McpToolResult resolve(Map<String, Object> args, EntityType type) {
-        EntityQuery query = query(args);
-        ResolutionResult result = switch (type) {
-            case CUSTOMER -> entityService.resolveCustomer(query);
-            case REGION -> entityService.resolveRegion(query);
-            case INDUSTRY -> entityService.resolveIndustry(query);
-        };
-        String status = "UNIQUE".equals(result.status()) ? "COMPLETED" : "MULTIPLE".equals(result.status()) ? "NEED_SELECTION" : "NOT_FOUND";
-        return McpToolResult.success(status, "ENTITY", result.message(), result);
-    }
-
     /** 将MCP训练参数转换成Business Service训练命令。 */
     private TrainingCommand trainingCommand(Map<String, Object> args) {
         Scope scope = scope(args);
-        return new TrainingCommand(defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(), bool(args, "bulk", false),
+        return new TrainingCommand(defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(),
+                scope.regionCodes(), scope.industryCodes(), bool(args, "bulk", false),
                 text(args, "trainMode"), integer(args, "trainingPeriods"), text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false),
                 bool(args, "confirmed", false), text(args, "idempotencyKey"));
     }
@@ -145,7 +76,8 @@ public class McpToolDispatcher {
     /** 将MCP预测参数转换成Business Service预测命令。 */
     private ForecastCommand forecastCommand(Map<String, Object> args) {
         Scope scope = scope(args);
-        return new ForecastCommand(text(args, "conversationNo"), defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(), bool(args, "bulk", false),
+        return new ForecastCommand(text(args, "conversationNo"), defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(),
+                scope.regionCodes(), scope.industryCodes(), bool(args, "bulk", false),
                 text(args, "forecastStartDate"), text(args, "forecastEndDate"), integer(args, "forecastHorizon"), text(args, "forecastFrequency"), text(args, "trainMode"), integer(args, "trainingPeriods"),
                 text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false), bool(args, "autoTrain", false),
                 defaultText(text(args, "trainingPreference"), "UNSPECIFIED"), bool(args, "confirmed", false),
@@ -158,9 +90,12 @@ public class McpToolDispatcher {
      */
     private Scope scope(Map<String, Object> args) {
         String customerCode = text(args, "customerCode");
+        List<String> customerCodes = texts(args, "customerCodes");
         String regionCode = text(args, "regionCode");
         String industryCode = text(args, "industryCode");
-        if (!TextUtils.hasText(customerCode) && TextUtils.hasText(text(args, "customerName"))) {
+        List<String> regionCodes = texts(args, "regionCodes");
+        List<String> industryCodes = texts(args, "industryCodes");
+        if (customerCodes.isEmpty() && !TextUtils.hasText(customerCode) && TextUtils.hasText(text(args, "customerName"))) {
             EntityCandidate candidate = unique(entityService.resolveCustomer(query(args)));
             customerCode = candidate.code();
             regionCode = candidate.regionCode();
@@ -168,7 +103,13 @@ public class McpToolDispatcher {
         }
         if (!TextUtils.hasText(regionCode) && TextUtils.hasText(text(args, "regionName"))) regionCode = unique(entityService.resolveRegion(query(args))).code();
         if (!TextUtils.hasText(industryCode) && TextUtils.hasText(text(args, "industryName"))) industryCode = unique(entityService.resolveIndustry(query(args))).code();
-        return new Scope(TextUtils.hasText(customerCode) ? List.of(customerCode) : List.of(), regionCode, industryCode);
+        if (customerCodes.isEmpty() && TextUtils.hasText(customerCode))
+            customerCodes = List.of(customerCode);
+        if (regionCodes.isEmpty() && TextUtils.hasText(regionCode))
+            regionCodes = List.of(regionCode);
+        if (industryCodes.isEmpty() && TextUtils.hasText(industryCode))
+            industryCodes = List.of(industryCode);
+        return new Scope(customerCodes, regionCode, industryCode, regionCodes, industryCodes);
     }
 
     /**
@@ -183,30 +124,6 @@ public class McpToolDispatcher {
     private EntityQuery query(Map<String, Object> args) {
         return new EntityQuery(text(args, "customerCode"), text(args, "customerName"), text(args, "regionCode"), text(args, "regionName"), text(args, "industryCode"),
                 text(args, "industryName"), integer(args, "limit"));
-    }
-
-    /** 将MCP参数转换为受限的智能体步骤记录命令。 */
-    @SuppressWarnings("unchecked")
-    private StepCommand stepCommand(Map<String, Object> args) {
-        Object raw = args.get("checkpoint");
-        Map<String, Object> checkpoint = raw instanceof Map<?, ?> ? objectMapper.convertValue(raw, Map.class) : Map.of();
-        return new StepCommand(requiredText(args, "stepCode"), text(args, "stepName"), requiredText(args, "status"), integer(args, "stepOrder"), text(args, "inputSummary"),
-                text(args, "outputSummary"), checkpoint, text(args, "errorCode"), text(args, "errorMessage"));
-    }
-
-    /**
-     * 获取训练或预测批次号。
-     * <p>请求中没有显式批次号时，尝试从当前会话记忆中的最近批次号回退获取。</p>
-     */
-    private String batch(Map<String, Object> args, String key, String memoryKey) {
-        String value = text(args, key);
-        if (TextUtils.hasText(value)) return value;
-        String conversationNo = text(args, "conversationNo");
-        if (TextUtils.hasText(conversationNo)) {
-            Object remembered = memoryService.get(conversationNo).get(memoryKey);
-            if (remembered != null && TextUtils.hasText(String.valueOf(remembered))) return String.valueOf(remembered);
-        }
-        throw new BusinessException("缺少必填参数" + key);
     }
 
     /** 创建状态为COMPLETED的标准成功结果。 */
@@ -226,14 +143,11 @@ public class McpToolDispatcher {
     }
 
     private String resultType(String toolName) {
-        if (toolName.equals("memory_get") || toolName.equals("memory_update")) return "MEMORY";
         if (toolName.endsWith("_list") || toolName.endsWith("_history_get") || toolName.equals("task_steps_get")) return "PAGE";
         if (toolName.endsWith("_search")) return "ENTITY";
-        if (toolName.equals("business_reference_resolve")) return "OBJECT";
         if (toolName.endsWith("_start")) return "TASK";
         if (toolName.endsWith("_status_get")) return "PROGRESS";
         if (toolName.endsWith("_result_get") || toolName.endsWith("_latest_get")) return "RESULT";
-        if (toolName.equals("task_resume") || toolName.equals("task_retry") || toolName.equals("task_step_record")) return "COMMAND";
         return "OBJECT";
     }
 
@@ -249,6 +163,18 @@ public class McpToolDispatcher {
     private String text(Map<String, Object> args, String key) {
         Object value = args.get(key);
         return value == null ? null : String.valueOf(value).trim();
+    }
+
+    /** 读取字符串数组，过滤空值并保持用户输入顺序。 */
+    private List<String> texts(Map<String, Object> args, String key) {
+        Object value = args.get(key);
+        if (!(value instanceof List<?> values))
+            return List.of();
+        return values.stream()
+                .filter(item -> item != null && TextUtils.hasText(String.valueOf(item)))
+                .map(item -> String.valueOf(item).trim())
+                .distinct()
+                .toList();
     }
 
     /** 读取可选整数参数；格式错误时返回明确的业务参数异常。 */
@@ -347,9 +273,7 @@ public class McpToolDispatcher {
         return TextUtils.hasText(exception.getMessage()) ? exception.getMessage() : "业务执行失败";
     }
 
-    /** 分发器内部使用的实体分类。 */
-    private enum EntityType { CUSTOMER, REGION, INDUSTRY }
-
     /** 已完成名称到编码转换的业务范围。 */
-    private record Scope(List<String> customerCodes, String regionCode, String industryCode) {}
+    private record Scope(List<String> customerCodes, String regionCode, String industryCode,
+                         List<String> regionCodes, List<String> industryCodes) {}
 }

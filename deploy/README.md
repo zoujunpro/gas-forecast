@@ -21,7 +21,7 @@ cp /Users/zoujun/data/gas/gas-agent/config/agent.env.example /Users/zoujun/data/
 
 本机公共 Nginx 使用 `deploy/nginx/gas-web-dev.conf`，Web 入口为
 `http://localhost:18082`。普通业务接口转发至 Java 服务 `18081`；
-`/agent-api/` 对话入口转发至 Python Agent `18091`，用户 Token 由 Agent 原样透传给 Java MCP 校验。
+浏览器会话统一请求 Java `/ai/conversations/chat`。Python Agent `18091` 仅供 Java 服务在内网调用，不再通过 Nginx 或 Vite 暴露 `/agent-api/` 浏览器代理。
 
 手动管理服务：
 

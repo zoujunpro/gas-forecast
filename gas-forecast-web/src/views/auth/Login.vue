@@ -7,7 +7,7 @@
       <div class="brand-area">
         <img :src="logoUrl" alt="" />
         <div>
-          <h1>天然气预测平台</h1>
+          <h1>天然气市场需求智能预测平台</h1>
           <p>GAS FORECAST PLATFORM</p>
         </div>
       </div>

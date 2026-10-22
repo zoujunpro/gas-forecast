@@ -2,6 +2,21 @@
   <div class="agent-detail" :class="{ dragging: isDragging }" :style="{ '--split': splitRatio }">
     <!-- 左侧工作区 -->
     <div class="workspace" :style="{ flexBasis: splitRatio * 100 + '%' }">
+      <nav class="agent-workspace-tabs" aria-label="智能体列表">
+        <RouterLink
+          v-for="item in agentOptions"
+          :key="item.id"
+          :to="item.path"
+          :class="{ active: item.id === agentId }"
+        >
+          <span class="agent-tab-icon" :class="item.id">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path :d="agentTabIcon(item.id)" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+            </svg>
+          </span>
+          <span><strong>{{ item.name }}</strong><small>{{ agentTabDescription(item.id) }}</small></span>
+        </RouterLink>
+      </nav>
       <div class="workspace-scroll">
         <!-- ==================== -->
         <!-- 月度销量预测专用布局 -->
@@ -140,23 +155,23 @@
                   <el-icon class="metric-icon"><TrendCharts /></el-icon>
                   <span class="metric-label">MAPE</span>
                   <span class="metric-value" :class="mapeClass(currentResult.metrics.mape)"
-                    >{{ currentResult.metrics.mape }}%</span
+                    >{{ formatShortTermMetric(currentResult.metrics.mape, '%') }}</span
                   >
                 </div>
                 <div class="metric-item">
                   <el-icon class="metric-icon"><DataLine /></el-icon>
                   <span class="metric-label">MAE</span>
-                  <span class="metric-value">{{ currentResult.metrics.mae }}</span>
+                  <span class="metric-value">{{ formatShortTermMetric(currentResult.metrics.mae) }}</span>
                 </div>
                 <div class="metric-item">
                   <el-icon class="metric-icon"><Histogram /></el-icon>
                   <span class="metric-label">RMSE</span>
-                  <span class="metric-value">{{ currentResult.metrics.rmse }}</span>
+                  <span class="metric-value">{{ formatShortTermMetric(currentResult.metrics.rmse) }}</span>
                 </div>
                 <div class="metric-item">
                   <el-icon class="metric-icon"><Finished /></el-icon>
                   <span class="metric-label">R²</span>
-                  <span class="metric-value">{{ currentResult.metrics.r2 ?? '-' }}</span>
+                  <span class="metric-value">{{ formatShortTermMetric(currentResult.metrics.r2) }}</span>
                 </div>
               </div>
             </div>
@@ -227,11 +242,6 @@
               <h1>短期客户预测</h1>
               <p>基于历史用气数据、运行特征与天气因素，预测客户短期用气趋势</p>
             </div>
-            <div class="short-term-range" v-if="currentResult?.future_dates?.length">
-              <el-icon><DataAnalysis /></el-icon>
-              {{ currentResult.future_dates[0] }} 至
-              {{ currentResult.future_dates[currentResult.future_dates.length - 1] }}
-            </div>
           </header>
 
           <section class="section-block compact-section">
@@ -272,7 +282,7 @@
                 <el-button @click="resetShortTermFilters">重置</el-button>
                 <button
                   class="refresh-result-btn predict-result-btn"
-                  :disabled="loadingResult || runningForecast || !selectedStCustomer"
+                  :disabled="loadingResult || runningForecast || isStreaming || !selectedStCustomer"
                   @click="runShortTermForecast"
                 >
                   <svg v-if="!runningForecast" viewBox="0 0 20 20" fill="currentColor">
@@ -295,35 +305,35 @@
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">预测摘要</h2>
-                <p class="section-hint">当前范围的核心预测信息</p>
+                <h2 class="section-title">推荐模型</h2>
+                <p class="section-hint">基于回测精度自动推荐最优模型</p>
               </div>
             </div>
-            <div class="short-term-summary-grid">
-              <article class="short-term-summary-card">
-                <el-icon><User /></el-icon>
-                <div>
-                  <span>客户</span><strong>{{ selectedStCustomer || '-' }}</strong>
+            <div class="model-info-card short-term-model-card">
+              <div class="model-info-header">
+                <div class="model-info-name">{{ currentResult.model_name }}</div>
+                <div class="model-info-tag">最佳模型</div>
+              </div>
+              <div class="metrics-grid">
+                <div class="metric-item">
+                  <span class="metric-label compact-metric-label"><el-icon class="metric-icon"><TrendCharts /></el-icon>MAPE</span>
+                  <span class="metric-value" :class="mapeClass(currentResult.metrics.mape)"
+                    >{{ formatShortTermMetric(currentResult.metrics.mape, '%') }}</span
+                  >
                 </div>
-              </article>
-              <article class="short-term-summary-card">
-                <el-icon><DataLine /></el-icon>
-                <div>
-                  <span>未来预测总用气量</span><strong>{{ shortTermForecastTotal }}</strong>
+                <div class="metric-item">
+                  <span class="metric-label compact-metric-label"><el-icon class="metric-icon"><DataLine /></el-icon>MAE</span>
+                  <span class="metric-value">{{ formatShortTermMetric(currentResult.metrics.mae) }}</span>
                 </div>
-              </article>
-              <article class="short-term-summary-card" :class="`trend-${shortTermTrendTone}`">
-                <el-icon><TrendCharts /></el-icon>
-                <div>
-                  <span>{{ shortTermTrendLabel }}</span><strong>{{ shortTermTrendText }}</strong>
+                <div class="metric-item">
+                  <span class="metric-label compact-metric-label"><el-icon class="metric-icon"><Histogram /></el-icon>RMSE</span>
+                  <span class="metric-value">{{ formatShortTermMetric(currentResult.metrics.rmse) }}</span>
                 </div>
-              </article>
-              <article class="short-term-summary-card">
-                <el-icon><Cpu /></el-icon>
-                <div>
-                  <span>推荐模型</span><strong>{{ currentResult.model_name || '-' }}</strong>
+                <div class="metric-item">
+                  <span class="metric-label compact-metric-label"><el-icon class="metric-icon"><Finished /></el-icon>R²</span>
+                  <span class="metric-value">{{ formatShortTermMetric(currentResult.metrics.r2) }}</span>
                 </div>
-              </article>
+              </div>
             </div>
           </section>
 
@@ -358,16 +368,6 @@
                 <div ref="chartRefTop" class="chart" v-if="currentResult.dates?.length"></div>
                 <el-empty v-else description="暂无滚动回测数据" :image-size="64" />
               </section>
-              <div class="short-term-metrics">
-                <div v-for="metric in shortTermMetricItems" :key="metric.label">
-                  <span class="short-term-metric-icon" :class="metric.iconTone">
-                    <el-icon><component :is="metric.icon" /></el-icon>
-                  </span>
-                  <span class="short-term-metric-label">{{ metric.label }}</span
-                  ><strong :class="metric.tone">{{ metric.value }}</strong
-                  ><small>{{ metric.hint }}</small>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -398,21 +398,39 @@
               <em>客户级预测结果</em>
             </div>
             <div v-if="shortTermComparablePairs.length" class="future-comparison-summary">
-              <div class="reference-total"><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }}</strong></div>
-              <div class="forecast-total"><span>本次预测总量</span><strong>{{ shortTermForecastTotal }}</strong></div>
-              <div :class="`trend-${shortTermTrendTone}`"><span>同比变化</span><strong>{{ shortTermTrendText }}</strong></div>
-              <small>同比 = 本次预测总量与去年相同日期总量比较</small>
+              <div class="reference-total">
+                <span class="comparison-icon"><el-icon><DataAnalysis /></el-icon></span>
+                <div><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }}</strong><small>{{ shortTermLastYearStats }}</small></div>
+              </div>
+              <div class="forecast-total">
+                <span class="comparison-icon"><el-icon><Histogram /></el-icon></span>
+                <div><span>本次预测总量</span><strong>{{ shortTermForecastTotal }}</strong><small>{{ shortTermForecastStats }}</small></div>
+              </div>
+              <div :class="`trend-${shortTermTrendTone}`">
+                <span class="comparison-icon"><el-icon><TrendCharts /></el-icon></span>
+                <div><span>同比变化</span><strong>{{ shortTermTrendText }}</strong><small>{{ shortTermTrendDescription }}</small></div>
+              </div>
             </div>
             <div class="short-term-future-grid">
-              <section class="result-chart-panel compact-chart-panel">
+              <section v-if="futureChartType !== 'table'" class="result-chart-panel compact-chart-panel">
                 <div ref="chartRefBottom" class="chart" v-if="currentResult.future_dates?.length"></div>
                 <el-empty v-else description="暂无未来预测数据" :image-size="64" />
               </section>
-              <div class="future-table-wrap">
+              <div v-else class="future-table-wrap">
                 <el-table :data="shortTermFutureRows" size="small" height="280">
                   <el-table-column prop="date" label="日期" min-width="108" align="center" class-name="nowrap-cell" />
                   <el-table-column prop="samePeriodValue" label="去年同期" min-width="86" align="center" />
                   <el-table-column prop="value" label="最新预测" min-width="86" align="center" />
+                  <el-table-column prop="yearOnYearIncreaseText" label="同比增量" min-width="100" align="center">
+                    <template #default="{ row }">
+                      <span :class="row.yearOnYearTone">{{ row.yearOnYearIncreaseText }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="yearOnYearGrowthRateText" label="同比增幅" min-width="100" align="center">
+                    <template #default="{ row }">
+                      <span :class="row.yearOnYearTone">{{ row.yearOnYearGrowthRateText }}</span>
+                    </template>
+                  </el-table-column>
                 </el-table>
               </div>
             </div>
@@ -805,14 +823,32 @@
             </svg>
           </div>
           <div>
-            <div class="ai-title">智能分析助手</div>
+            <div class="ai-title">{{ currentAgent.name }}助手</div>
             <div v-if="currentResult?.forecast_batch_no" class="ai-context-batch">
               当前预测：{{ currentResult.forecast_batch_no }}
             </div>
             <div class="ai-status"><span class="status-dot"></span> 在线</div>
           </div>
         </div>
-        <button class="ai-clear" @click="clearChat">清空</button>
+        <div class="ai-header-actions">
+          <el-dropdown trigger="click" @command="switchAgentByPath">
+            <button class="agent-switch-button" type="button">
+              切换智能体
+              <span>⌄</span>
+            </button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  v-for="item in agentOptions"
+                  :key="item.id"
+                  :command="item.path"
+                  :disabled="item.id === agentId"
+                >{{ item.name }}</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <button class="ai-clear" @click="clearChat">清空</button>
+        </div>
       </div>
       <div class="ai-messages" ref="messagesRef">
         <div v-for="msg in messages" v-show="msg.role === 'user' || msg.content" :key="msg.id" class="msg" :class="msg.role">
@@ -830,6 +866,52 @@
           <div class="msg-body">
             <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ msg.content }}</div>
             <div v-else class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
+            <section v-if="msg.role === 'assistant' && chatListRows(msg).length" class="chat-result-list">
+              <div class="chat-result-list-head">查询结果 <span>共 {{ chatListRows(msg).length }} 条</span></div>
+              <el-table :data="chatListRows(msg)" height="360" stripe size="small">
+                <el-table-column v-for="column in chatListColumns(msg)" :key="column.key" :prop="column.key" :label="column.label" min-width="130" show-overflow-tooltip />
+              </el-table>
+            </section>
+            <div v-if="msg.role === 'assistant' && msg.clarification && !msg.clarificationResolved" class="msg-clarification">
+              <template v-if="msg.clarification.interactionType === 'CONFIRMATION'">
+                <button type="button" :disabled="isStreaming" @click="replyConfirmation(msg, true)">确认执行</button>
+                <button type="button" :disabled="isStreaming" @click="replyConfirmation(msg, false)">取消</button>
+              </template>
+              <template v-else>
+                <div v-for="field in msg.clarification.fields" :key="field.parameterCode" class="msg-clarification-field">
+                  <label>{{ field.parameterName }}</label>
+                  <div v-if="field.inputType === 'CONFIRM'">
+                    <button
+                      v-for="option in field.options"
+                      :key="option.value"
+                      type="button"
+                      :disabled="isStreaming"
+                      @click="replyClarification(msg, { [field.parameterCode]: option.value }, option.label)"
+                    >{{ option.label }}</button>
+                  </div>
+                  <select
+                    v-else-if="field.options.length"
+                    :value="clarificationDraft[msg.id]?.[field.parameterCode] || ''"
+                    @change="setAgentClarificationEvent(msg.id, field.parameterCode, $event)"
+                  >
+                    <option value="" disabled>请选择</option>
+                    <option v-for="option in field.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+                  <input
+                    v-else
+                    :type="field.inputType === 'NUMBER' ? 'number' : 'text'"
+                    :value="clarificationDraft[msg.id]?.[field.parameterCode] || ''"
+                    @input="setAgentClarificationEvent(msg.id, field.parameterCode, $event)"
+                  />
+                </div>
+                <button
+                  v-if="msg.clarification.fields.some((field) => field.inputType !== 'CONFIRM')"
+                  type="button"
+                  :disabled="isStreaming"
+                  @click="replyClarification(msg)"
+                >提交并继续</button>
+              </template>
+            </div>
           </div>
         </div>
         <div v-if="isStreaming" class="msg assistant">
@@ -854,14 +936,13 @@
           type="textarea"
           :rows="2"
           :placeholder="chatInputPlaceholder"
-          :disabled="!chatAvailable"
-          @keydown.enter.exact.prevent="sendMessage"
+          @keydown.enter.exact.prevent="sendMessage()"
           resize="none"
         />
         <button v-if="isStreaming" class="send-btn stop-btn" @click="stopStreaming">
           <svg viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="5" width="10" height="10" rx="2" /></svg>
         </button>
-        <button v-else class="send-btn" :disabled="!chatAvailable || !inputMessage.trim()" @click="sendMessage">
+        <button v-else class="send-btn" :disabled="!inputMessage.trim()" @click="sendMessage()">
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10L18 2L10 18L8 11L2 10Z" /></svg>
         </button>
       </div>
@@ -871,7 +952,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import echarts from '@/utils/echarts'
 import { getJson, listPage, postJson } from '@/api/management'
 import { renderMarkdown, sanitizeHtml } from '@/utils/markdown'
@@ -887,12 +968,12 @@ import {
   MagicStick,
   PieChart,
   TrendCharts,
-  User,
   VideoPlay
 } from '@element-plus/icons-vue'
 import type { ChatMessage } from '@/types'
 
 const route = useRoute()
+const router = useRouter()
 const chartRef = ref<HTMLElement>()
 const chartRefTop = ref<HTMLElement>()
 const chartRefBottom = ref<HTMLElement>()
@@ -902,6 +983,22 @@ const activeChatId = ref(agentId.value)
 const isMonthlySales = computed(() => agentId.value === 'monthly-sales')
 const isShortTerm = computed(() => agentId.value === 'short-term')
 const isWinterSupply = computed(() => agentId.value === 'winter-supply')
+const agentOptions = [
+  { id: 'winter-supply', name: '冬季保供预测', path: '/agent/winter-supply' },
+  { id: 'monthly-sales', name: '月度销量预测', path: '/agent/monthly-sales' },
+  { id: 'short-term', name: '短期客户预测', path: '/agent/short-term' }
+]
+const agentTabMeta: Record<string, { description: string; icon: string }> = {
+  'winter-supply': { description: '供需平衡 · 缺口预警', icon: 'M12 2 2 22h20L12 2Zm0 6v6m0 3v1' },
+  'monthly-sales': { description: '月度趋势 · 同比分析', icon: 'M3 3v18h18M7 14l4-4 4 4 6-6' },
+  'short-term': { description: '客户用气 · 短期预测', icon: 'M17 21v-2c0-3-2-5-5-5s-5 2-5 5v2m5-10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z' }
+}
+const agentTabIcon = (id: string) => agentTabMeta[id]?.icon || agentTabMeta['winter-supply'].icon
+const agentTabDescription = (id: string) => agentTabMeta[id]?.description || '智能预测分析'
+const currentAgent = computed(() => agentOptions.find((item) => item.id === agentId.value) || agentOptions[0])
+const switchAgentByPath = (path: string) => {
+  if (path && path !== route.path) void router.push(path)
+}
 
 const chartTypes = [
   { key: 'line', label: '折线' },
@@ -910,7 +1007,8 @@ const chartTypes = [
 ]
 const futureChartTypes = [
   { key: 'bar', label: '柱状' },
-  { key: 'line', label: '折线' }
+  { key: 'line', label: '折线' },
+  { key: 'table', label: '数据' }
 ]
 
 const isRunning = ref(false)
@@ -920,6 +1018,24 @@ const streamingSet = reactive(new Set<string>())
 const isStreaming = computed(() => streamingSet.has(activeChatId.value))
 const abortControllers = new Map<string, AbortController>()
 const inputMessage = ref('')
+
+const chatListRows = (message: ChatMessage): Record<string, any>[] => {
+  const result = message.executionResult
+  const records = result?.data?.records || result?.records
+  return Array.isArray(records) ? records : []
+}
+
+const chatListColumns = (message: ChatMessage) => {
+  const first = chatListRows(message)[0] || {}
+  const labels: Record<string, string> = {
+    regionName: '地区',
+    industryName: '行业',
+    customerName: '客户'
+  }
+  return Object.keys(labels)
+    .filter((key) => key in first)
+    .map((key) => ({ key, label: labels[key] }))
+}
 
 // === 拖动分隔条 ===
 const splitRatio = ref(0.7)
@@ -1009,7 +1125,6 @@ const shortTermLastYearTotal = computed(() => {
     ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
     : '-'
 })
-const shortTermTrendLabel = computed(() => shortTermComparablePairs.value.length ? '同比变化' : '预测趋势')
 const shortTermTrendRate = computed(() => {
   if (shortTermComparablePairs.value.length) {
     const forecastTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.forecast, 0)
@@ -1022,83 +1137,58 @@ const shortTermTrendRate = computed(() => {
 })
 const shortTermTrendText = computed(() => {
   const rate = shortTermTrendRate.value
-  if (Math.abs(rate) < 1) return '基本平稳'
-  return `${rate > 0 ? '上升' : '下降'} ${Math.abs(rate).toFixed(1)}%`
+  return `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`
+})
+const shortTermTrendDescription = computed(() => {
+  const rate = shortTermTrendRate.value
+  if (Math.abs(rate) < 1) return `总体保持平稳，略有${rate >= 0 ? '上升' : '下降'}`
+  return `较去年同期${rate > 0 ? '有所上升' : '有所下降'}`
 })
 const shortTermTrendTone = computed(() => {
   const rate = shortTermTrendRate.value
   if (Math.abs(rate) < 1) return 'flat'
   return rate > 0 ? 'up' : 'down'
 })
-const formatMetricValue = (value: unknown, digits = 2, suffix = '') => {
-  if (value === null || value === undefined || value === '') return '-'
-  const numericValue = Number(value)
-  if (!Number.isFinite(numericValue)) return '-'
-  return `${numericValue.toLocaleString('zh-CN', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits
-  })}${suffix}`
+const formatShortTermStats = (values: number[]) => {
+  if (!values.length) return '-'
+  const total = values.reduce((sum, value) => sum + value, 0)
+  const format = (value: number) => value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+  return `日均 ${format(total / values.length)} ｜ 峰值 ${format(Math.max(...values))} ｜ 谷值 ${format(Math.min(...values))}`
 }
-const shortTermMetricItems = computed(() => {
-  const metrics = currentResult.value?.metrics || {}
-  return [
-    {
-      label: 'MAPE',
-      value: formatMetricValue(metrics.mape, 2, '%'),
-      hint: '目标 < 20%',
-      tone: mapeClass(Number(metrics.mape)),
-      icon: TrendCharts,
-      iconTone: 'green'
-    },
-    {
-      label: 'MAE',
-      value: formatMetricValue(metrics.mae),
-      hint: '越小越好',
-      tone: '',
-      icon: DataLine,
-      iconTone: 'blue'
-    },
-    {
-      label: 'RMSE',
-      value: formatMetricValue(metrics.rmse),
-      hint: '越小越好',
-      tone: '',
-      icon: Histogram,
-      iconTone: 'orange'
-    },
-    {
-      label: 'R²',
-      value: formatMetricValue(metrics.r2, 3),
-      hint: '越接近 1 越好',
-      tone: '',
-      icon: Finished,
-      iconTone: 'purple'
-    }
-  ]
-})
+const shortTermLastYearStats = computed(() => formatShortTermStats(shortTermComparablePairs.value.map((point) => point.reference)))
+const shortTermForecastStats = computed(() => formatShortTermStats(shortTermFutureValues.value.map((value) => Number(value))))
+const formatShortTermMetric = (value: unknown, suffix = '') => {
+  if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) return '-'
+  return `${Number(value).toFixed(2)}${suffix}`
+}
 const shortTermFutureRows = computed(() => {
   const dates = currentResult.value?.future_dates || []
   const samePeriodValues = currentResult.value?.last_year_values || []
-  return dates.map((date: string, index: number) => ({
-    date,
-    samePeriodValue: samePeriodValues[index] ?? '-',
-    value: shortTermFutureValues.value[index] ?? '-'
-  }))
+  return dates.map((date: string, index: number) => {
+    const value = Number(shortTermFutureValues.value[index])
+    const samePeriodValue = samePeriodValues[index]
+    const reference = samePeriodValue == null || !Number.isFinite(Number(samePeriodValue)) ? null : Number(samePeriodValue)
+    const yearOnYearIncrease = reference === null ? null : value - reference
+    const yearOnYearGrowthRate = yearOnYearIncrease === null || reference === 0 ? null : (yearOnYearIncrease / Math.abs(reference)) * 100
+    const signed = (number: number, suffix = '') => `${number > 0 ? '+' : ''}${number.toFixed(2)}${suffix}`
+    return {
+      date,
+      samePeriodValue: samePeriodValue ?? '-',
+      value: shortTermFutureValues.value[index] ?? '-',
+      yearOnYearIncreaseText: yearOnYearIncrease === null ? '-' : signed(yearOnYearIncrease),
+      yearOnYearGrowthRateText: yearOnYearGrowthRate === null ? '-' : signed(yearOnYearGrowthRate, '%'),
+      yearOnYearTone: yearOnYearIncrease === null || yearOnYearIncrease === 0 ? '' : yearOnYearIncrease > 0 ? 'daily-up' : 'daily-down'
+    }
+  })
 })
-const formatDateRange = (dates: string[] = []) => {
-  if (!dates.length) return '-'
-  return dates.length === 1 ? dates[0] : `${dates[0]} 至 ${dates[dates.length - 1]}`
-}
 const shortTermRelatedItems = computed(() => {
   const dates = currentResult.value?.dates || []
   const futureDates = currentResult.value?.future_dates || []
   return [
-    { label: '训练批次', value: String(currentResult.value?.batch_no || '-').toUpperCase() },
-    { label: '预测批次', value: String(currentResult.value?.forecast_batch_no || '-').toUpperCase() },
-    { label: '模型版本', value: currentResult.value?.model_version || '-' },
-    { label: '回测区间', value: formatDateRange(dates) },
-    { label: '预测区间', value: formatDateRange(futureDates) },
-    { label: '预测点数', value: `${futureDates.length} 天` }
+    { label: '训练批次号', value: String(currentResult.value?.batch_no || '-').toUpperCase() },
+    { label: '回测天数', value: `${dates.length} 天` },
+    { label: '预测批次号', value: String(currentResult.value?.forecast_batch_no || '-').toUpperCase() },
+    { label: '预测天数', value: `${futureDates.length} 天` }
   ]
 })
 
@@ -1229,41 +1319,24 @@ const stProvinceMape = ref<Record<string, number>>({})
 const stAllResults = ref<any[]>([])
 const stFilterDirty = ref(false)
 const runningForecast = ref(false)
-const shortTermForecastConversationNo = ref<string | null>(null)
-const shortTermConversationMemory = new Map<string, string>()
+/** 每个智能体右侧会话面板对应的服务端会话编号。 */
+const conversationMemory = new Map<string, string>()
 let stResultRequestSeq = 0
 
 const isForecastAnalysisPage = computed(() => isMonthlySales.value || isShortTerm.value || isWinterSupply.value)
-const chatAvailable = computed(() => {
-  if (isShortTerm.value && !selectedStCustomer.value) return false
-  return !isForecastAnalysisPage.value || Boolean(currentResult.value?.forecast_batch_no)
-})
-const chatInputPlaceholder = computed(() => {
-  if (chatAvailable.value) return '输入问题，分析当前预测结果...'
-  if (isShortTerm.value && !selectedStCustomer.value) return '请先在左侧选择客户'
-  return '请先完成预测后再进行智能分析'
-})
+const chatInputPlaceholder = computed(() =>
+  isForecastAnalysisPage.value
+    ? '输入问题；业务对象不明确时，助手会向您确认...'
+    : '请输入问题...'
+)
 
-const shortTermChatId = () => {
-  const customer = stCustomerRecords.value.find(
+/** 当前短期预测选择对应的唯一客户记录。 */
+const selectedShortTermCustomerRecord = () =>
+  stCustomerRecords.value.find(
     (item) => item.customerName === selectedStCustomer.value
       && item.regionName === selectedStProvince.value
       && item.industryName === selectedStIndustry.value
   )
-  return selectedStCustomer.value
-    ? `short-term:${customer?.customerCode || selectedStCustomer.value}`
-    : 'short-term'
-}
-
-const switchShortTermChat = () => {
-  const nextId = shortTermChatId()
-  if (activeChatId.value === nextId) return
-  saveChatToMemory(activeChatId.value)
-  activeChatId.value = nextId
-  shortTermForecastConversationNo.value = shortTermConversationMemory.get(nextId) || null
-  initOrRestoreChat(nextId)
-  scrollToBottom()
-}
 
 const shortTermEmptyDescription = computed(() =>
   stFilterDirty.value
@@ -1332,7 +1405,6 @@ const loadStMape = async () => {
   } catch (e) {
     console.error('加载短期MAPE失败:', e)
     stAllResults.value = []
-    currentResult.value = null
   }
 }
 
@@ -1371,11 +1443,7 @@ const loadStResult = async () => {
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms))
 
 const shortTermForecastContext = (forecastHorizon?: number) => {
-  const customer = stCustomerRecords.value.find(
-    (item) => item.customerName === selectedStCustomer.value
-      && item.regionName === selectedStProvince.value
-      && item.industryName === selectedStIndustry.value
-  )
+  const customer = selectedShortTermCustomerRecord()
   return {
     regionCode: customer?.regionCode,
     regionName: selectedStProvince.value,
@@ -1387,11 +1455,17 @@ const shortTermForecastContext = (forecastHorizon?: number) => {
   }
 }
 
-const setShortTermForecastMessage = (messageId: string, text: string, chatId = activeChatId.value) => {
+const setShortTermForecastMessage = (
+  messageId: string,
+  text: string,
+  chatId = activeChatId.value,
+  executionResult?: Record<string, any>
+) => {
   const targetMessages = chatId === activeChatId.value ? messages.value : chatMemory.get(chatId)
   const message = targetMessages?.find((item) => item.id === messageId)
   if (message) {
     message.content = renderMarkdown(text)
+    if (executionResult) message.executionResult = executionResult
     if (chatId === activeChatId.value) {
       saveChatToMemory(chatId)
       scrollToBottom()
@@ -1399,16 +1473,74 @@ const setShortTermForecastMessage = (messageId: string, text: string, chatId = a
   }
 }
 
+type ShortTermForecastScope = {
+  regionName?: string
+  industryName?: string
+  customerName?: string
+}
+
+const forecastScopeFromResponse = (data: any): ShortTermForecastScope => {
+  const execution = data?.executionResult || data?.execution_result || data?.resultData?.executionResult || {}
+  const payload = execution?.data || execution
+  const task = Array.isArray(payload?.tasks) ? payload.tasks[0] || {} : payload
+  const result = data?.forecastResult || payload?.forecastResult || {}
+  return {
+    regionName: task?.regionName || task?.region_name || result?.regionName || result?.region_name,
+    industryName: task?.industryName || task?.industry_name || result?.industryName || result?.industry_name,
+    customerName: task?.customerName || task?.customer_name || result?.customerName || result?.customer_name
+  }
+}
+
+const forecastResultMessage = (data: any, scope: ShortTermForecastScope) => {
+  const result = data?.forecastResult || {}
+  const scopeText = [scope.regionName, scope.industryName, scope.customerName].filter(Boolean).join(' / ')
+  const lines = [
+    '预测已完成',
+    ...(scopeText ? [`- 预测范围：${scopeText}`] : []),
+    ...(data?.forecastBatchNo ? [`- 预测批次：${data.forecastBatchNo}`] : []),
+    ...(result.average !== undefined ? [`- 平均预测值：${result.average}`] : []),
+    ...(result.minimum !== undefined ? [`- 最小预测值：${result.minimum}`] : []),
+    ...(result.maximum !== undefined ? [`- 最大预测值：${result.maximum}`] : [])
+  ]
+  return lines.join('\n')
+}
+
+/** 仅预测任务可改变左侧范围；训练、查询、分析结果都不调用此方法。 */
+const focusShortTermForecastScope = async (scope: ShortTermForecastScope) => {
+  await loadStDimensions()
+  // 兼容尚未重启 Java 服务的旧任务返回：只能在客户名称在本地基础数据中
+  // 唯一命中时补足范围；同名客户绝不猜测，等待服务端返回完整任务范围。
+  const matched = !scope.regionName || !scope.industryName
+    ? stCustomerRecords.value.filter((item) => item.customerName === scope.customerName)
+    : []
+  const resolved = matched.length === 1
+    ? { ...scope, regionName: matched[0].regionName, industryName: matched[0].industryName }
+    : scope
+  if (!resolved.regionName || !resolved.industryName || !resolved.customerName) return false
+  if (!stProvinces.value.includes(resolved.regionName) || !stIndustries.value.includes(resolved.industryName)) return false
+  selectedStProvince.value = resolved.regionName
+  selectedStIndustry.value = resolved.industryName
+  syncShortTermCustomers()
+  if (!stCustomers.value.includes(resolved.customerName)) return false
+  selectedStCustomer.value = resolved.customerName
+  syncShortTermMape()
+  currentResult.value = null
+  stFilterDirty.value = true
+  return true
+}
+
 const refreshShortTermForecastResult = async () => {
-  await loadStMape()
   await loadStResult()
+  // 汇总指标不应阻塞客户预测结果展示，也不能让已完成任务一直保持“预测中”。
+  void loadStMape().then(syncShortTermMape)
 }
 
 const pollShortTermForecast = async (
   conversationNo: string,
   forecastBatchNo: string,
   messageId: string,
-  chatId: string
+  chatId: string,
+  scope: ShortTermForecastScope = {}
 ) => {
   for (let count = 0; count < 240; count += 1) {
     await wait(2000)
@@ -1420,8 +1552,16 @@ const pollShortTermForecast = async (
       if (count % 5 === 0) setShortTermForecastMessage(messageId, `预测任务执行中，预测批次：${forecastBatchNo}`, chatId)
       continue
     }
-    setShortTermForecastMessage(messageId, data.answer || (data.status === 'FAILED' ? '预测执行失败' : '预测已完成'), chatId)
+    const resultScope = {
+      ...scope,
+      ...Object.fromEntries(Object.entries(forecastScopeFromResponse(data)).filter(([, value]) => Boolean(value)))
+    }
+    const message = data.status === 'COMPLETED'
+      ? forecastResultMessage(data, resultScope)
+      : (data.answer || '预测执行失败')
+    setShortTermForecastMessage(messageId, message, chatId, data)
     if (data.status === 'FAILED') throw new Error(data.answer || '预测执行失败')
+    await focusShortTermForecastScope(resultScope)
     await refreshShortTermForecastResult()
     return
   }
@@ -1432,7 +1572,8 @@ const continueShortTermForecastAfterTraining = async (
   conversationNo: string,
   trainBatchNo: string,
   messageId: string,
-  chatId: string
+  chatId: string,
+  scope: ShortTermForecastScope = {}
 ) => {
   const response = await postJson<any>('/ai/conversations/continue-forecast', {
     conversationNo,
@@ -1441,7 +1582,7 @@ const continueShortTermForecastAfterTraining = async (
   const data = response.data || {}
   if (data.answer) setShortTermForecastMessage(messageId, data.answer, chatId)
   if (data.forecastBatchNo && data.status === 'EXECUTING') {
-    await pollShortTermForecast(conversationNo, data.forecastBatchNo, messageId, chatId)
+    await pollShortTermForecast(conversationNo, data.forecastBatchNo, messageId, chatId, scope)
     return
   }
   if (data.status === 'FAILED') throw new Error(data.answer || '自动预测失败')
@@ -1452,7 +1593,8 @@ const pollShortTermTraining = async (
   conversationNo: string,
   trainBatchNo: string,
   messageId: string,
-  chatId: string
+  chatId: string,
+  scope: ShortTermForecastScope = {}
 ) => {
   for (let count = 0; count < 120; count += 1) {
     await wait(3000)
@@ -1462,7 +1604,7 @@ const pollShortTermTraining = async (
     const status = String(batch.status || '')
     if (status === 'SUCCESS') {
       setShortTermForecastMessage(messageId, `训练已完成，训练批次：${trainBatchNo}。正在继续执行预测。`, chatId)
-      await continueShortTermForecastAfterTraining(conversationNo, trainBatchNo, messageId, chatId)
+      await continueShortTermForecastAfterTraining(conversationNo, trainBatchNo, messageId, chatId, scope)
       return
     }
     if (['FAILED', 'FAILED_FINAL', 'PREPARE_FAILED'].includes(status)) {
@@ -1474,64 +1616,16 @@ const pollShortTermTraining = async (
 }
 
 const runShortTermForecast = async () => {
-  if (runningForecast.value || loadingResult.value) return
+  if (runningForecast.value || loadingResult.value || isStreaming.value) return
   if (!selectedStProvince.value || !selectedStIndustry.value || !selectedStCustomer.value) {
     ElMessage.warning('请先选择客户')
     return
   }
-  runningForecast.value = true
-  try {
-    const customer = shortTermForecastContext(30)
-    const idempotencyKey = crypto.randomUUID()
-    const request = {
-      agentCode: 'short-term',
-      customerCode: customer.customerCode,
-      regionCode: customer.regionCode,
-      industryCode: customer.industryCode,
-      forecastHorizon: 30,
-      forecastFrequency: 'DAILY',
-      // 页面“开始预测”包含缺少模型时自动训练并继续预测的明确业务语义。
-      autoTrain: true,
-      trainingPreference: 'AUTO',
-      confirmed: true,
-      idempotencyKey
-    }
-    const response = await postJson<any>('/model-forecast-execution/start', request)
-    const data = response.data || {}
-    const task = Array.isArray(data.tasks) ? data.tasks[0] || {} : data
-    if (task.trainBatchNo && task.status === 'WAITING_TRAINING') {
-      ElMessage.info('当前范围暂无成功训练结果，已先发起训练')
-      let forecastBatchNo = ''
-      for (let count = 0; count < 120; count += 1) {
-        await wait(3000)
-        const progress = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(task.trainBatchNo)}`)
-        const batch = progress.data || {}
-        if (['FAILED', 'FAILED_FINAL', 'PREPARE_FAILED'].includes(String(batch.status || '')))
-          throw new Error(batch.message || '训练未能完成')
-        forecastBatchNo = String(batch.forecastBatchNo || '')
-        if (forecastBatchNo) break
-      }
-      if (!forecastBatchNo) throw new Error('训练已提交，但等待自动预测超时')
-      task.forecastBatchNo = forecastBatchNo
-    }
-    if (!task.forecastBatchNo) throw new Error(data.reason || task.message || '预测任务未返回预测批次')
-    for (let count = 0; count < 240; count += 1) {
-      await wait(2000)
-      const progress = await postJson<any>('/model-forecast-execution/status', { forecastBatchNo: task.forecastBatchNo })
-      const status = String(progress.data?.status || '')
-      if (status === 'EXECUTING' || status === 'RUNNING') continue
-      if (status === 'FAILED') throw new Error('预测执行失败')
-      await refreshShortTermForecastResult()
-      ElMessage.success('预测已完成')
-      return
-    }
-    throw new Error('页面等待预测结果超时，预测可能仍在后台执行')
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : '预测失败'
-    ElMessage.error(errorMessage)
-  } finally {
-    runningForecast.value = false
-  }
+  // 左侧按钮只负责把当前范围带入同一套对话流程；不直接创建任务，也不预设
+  // 预测周期、自动训练或确认状态。Agent 会先用结构化澄清要求填写预测天数。
+  const customer = shortTermForecastContext()
+  inputMessage.value = `发起${customer.regionName} ${customer.industryName} ${customer.customerName}的燃气预测`
+  await sendMessage()
 }
 
 const loadShortTermDashboard = async () => {
@@ -1546,7 +1640,6 @@ const loadShortTermDashboard = async () => {
   }
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
-  switchShortTermChat()
   syncShortTermMape()
   await loadStResult()
 }
@@ -1556,7 +1649,6 @@ const switchStProvince = (province: string) => {
   selectedStCustomer.value = ''
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
-  switchShortTermChat()
   syncShortTermMape()
   currentResult.value = null
   stFilterDirty.value = true
@@ -1568,7 +1660,6 @@ const switchStIndustry = (industry: string) => {
   selectedStCustomer.value = ''
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
-  switchShortTermChat()
   currentResult.value = null
   stFilterDirty.value = true
   void loadStResult()
@@ -1577,7 +1668,7 @@ const switchStIndustry = (industry: string) => {
 const switchStCustomer = (customer: string) => {
   selectedStCustomer.value = customer
   if (customer) {
-    const customerRecord = stCustomerRecords.value.find((item) => item.customerName === customer)
+    const customerRecord = selectedShortTermCustomerRecord()
     if (customerRecord) {
       selectedStProvince.value = customerRecord.regionName || selectedStProvince.value
       selectedStIndustry.value = customerRecord.industryName || selectedStIndustry.value
@@ -1585,7 +1676,6 @@ const switchStCustomer = (customer: string) => {
       syncShortTermMape()
     }
   }
-  switchShortTermChat()
   currentResult.value = null
   stFilterDirty.value = true
   void loadStResult()
@@ -1599,7 +1689,6 @@ const resetShortTermFilters = () => {
   selectedStCustomer.value = ''
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
-  switchShortTermChat()
   syncShortTermMape()
   loadStResult()
 }
@@ -1764,7 +1853,7 @@ const initMonthlyChart = (data: any) => {
             smooth: 0.25,
             data: lastYearValues,
             itemStyle: { color: '#9ca3af' },
-            lineStyle: { width: 2, color: '#9ca3af', type: 'dashed' },
+            lineStyle: { width: 1.5, color: '#9ca3af', type: 'solid' },
             symbol: 'none',
             connectNulls: false
           },
@@ -1774,7 +1863,7 @@ const initMonthlyChart = (data: any) => {
             smooth: 0.25,
             data: futureValues,
             itemStyle: { color: '#b91c1c' },
-            lineStyle: { width: 2.5, color: '#b91c1c' },
+            lineStyle: { width: 1.5, color: '#b91c1c' },
             symbol: 'none',
             connectNulls: false,
             areaStyle: { color: 'rgba(185,28,28,0.08)' }
@@ -2005,31 +2094,48 @@ const stopStreaming = () => {
 }
 
 const chatMemory = new Map<string, ChatMessage[]>()
-/** 当前预测批次唯一绑定的服务端会话，刷新页面后通过forecastBatchNo重新取得。 */
-const forecastConversationNo = ref<string | null>(null)
+const clarificationDraft = reactive<Record<string, Record<string, any>>>({})
+/** 当前智能体右侧面板正在使用的服务端会话；切换业务对象不会改变它。 */
+const activeConversationNo = ref<string | null>(null)
 
-const loadForecastConversation = async (forecastBatchNo?: string) => {
-  forecastConversationNo.value = null
-  if (!forecastBatchNo) return
+/** 页面重新打开时恢复当前智能体最近的会话，而不是按预测批次替换聊天记录。 */
+const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) => {
   try {
-    const response = await getJson<any>(
-      `/ai/conversations/forecast-detail?forecastBatchNo=${encodeURIComponent(forecastBatchNo)}`
+    const listResponse = await getJson<any[]>('/ai/conversations')
+    const latest = (listResponse.data || []).find(
+      (item: any) => item.agentCode === targetAgentCode && item.status === 'ACTIVE'
     )
-    const detail = response.data
-    if (currentResult.value?.forecast_batch_no !== forecastBatchNo || !detail) return
-    forecastConversationNo.value = detail.conversationNo || null
+    if (!latest || agentId.value !== targetAgentCode) return
+    const detailResponse = await getJson<any>(
+      `/ai/conversations/detail?conversationNo=${encodeURIComponent(latest.conversationNo)}`
+    )
+    const detail = detailResponse.data
+    if (!detail || agentId.value !== targetAgentCode) return
+    activeConversationNo.value = detail.conversationNo || null
+    if (activeConversationNo.value) {
+      conversationMemory.set(targetAgentCode, activeConversationNo.value)
+    }
     if (Array.isArray(detail.messages) && detail.messages.length) {
       messages.value = detail.messages.map((item: any) => ({
         id: String(item.id),
         role: item.role,
         content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+        clarification: item.clarification || undefined,
+        clarificationResolved: Boolean(item.clarification),
+        presentation: item.presentation || item.resultData?.presentation || undefined,
+        executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
         time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()
       }))
+      const latestMessage = messages.value[messages.value.length - 1]
+      if (latestMessage?.role === 'assistant' && latestMessage.clarification) {
+        latestMessage.clarificationResolved = false
+        clarificationDraft[latestMessage.id] = {}
+      }
       saveChatToMemory(activeChatId.value)
       scrollToBottom()
     }
   } catch (error) {
-    console.error('加载预测绑定会话失败:', error)
+    console.error('恢复智能体最近会话失败:', error)
   }
 }
 
@@ -2081,14 +2187,77 @@ const loadForecastAnalysis = async (forecastBatchNo?: string, attempt = 0) => {
   }
 }
 
-const sendMessage = async () => {
-  if (!chatAvailable.value) {
-    ElMessage.warning('请先选择客户后再开始对话')
+/**
+ * 发送消息时的当前业务焦点。
+ *
+ * 它可以随左侧选择变化，只帮助Agent理解“当前客户/这个范围”等指代，
+ * 不用于选择或切换会话。名称用于确认展示，编码仍由服务端校验后执行。
+ */
+const activeBusinessContext = () => {
+  const source = isShortTerm.value ? shortTermForecastContext() : (currentResult.value || modelResult.value || {})
+  return {
+    regionCode: source.regionCode || source.region_code || undefined,
+    regionName: source.regionName || source.region_name || source.province || undefined,
+    industryCode: source.industryCode || source.industry_code || undefined,
+    industryName: source.industryName || source.industry_name || source.industry || undefined,
+    customerCode: source.customerCode || source.customer_code || undefined,
+    customerName: source.customerName || source.customer_name || source.customer || undefined
+  }
+}
+
+const referencedBatch = (data: any, referenceType: 'TRAIN_BATCH' | 'FORECAST_BATCH') =>
+  Array.isArray(data?.references)
+    ? data.references.find((item: any) => item.referenceType === referenceType)?.referenceNo
+    : undefined
+
+interface AgentStructuredReply {
+  source: ChatMessage
+  inputType: 'CLARIFICATION_REPLY' | 'CONFIRMATION_REPLY' | 'REJECTION_REPLY'
+  answers: Record<string, any>
+  displayText: string
+}
+
+const setAgentClarificationValue = (messageId: string, field: string, value: any) => {
+  if (!clarificationDraft[messageId]) clarificationDraft[messageId] = {}
+  clarificationDraft[messageId][field] = value
+}
+const setAgentClarificationEvent = (messageId: string, field: string, event: Event) => {
+  setAgentClarificationValue(messageId, field, (event.target as HTMLInputElement | HTMLSelectElement)?.value)
+}
+const replyClarification = (
+  message: ChatMessage,
+  directAnswers?: Record<string, any>,
+  directLabel?: string
+) => {
+  const clarification = message.clarification
+  if (!clarification) return
+  const answers = directAnswers || { ...(clarificationDraft[message.id] || {}) }
+  const missing = clarification.fields.filter((field) => field.required && field.inputType !== 'CONFIRM'
+    && (answers[field.parameterCode] === undefined || answers[field.parameterCode] === ''))
+  if (missing.length) {
+    ElMessage.warning(`请先填写：${missing.map((field) => field.parameterName).join('、')}`)
     return
   }
-  if (!inputMessage.value.trim() || isStreaming.value) return
-  const userMessage = inputMessage.value
-  inputMessage.value = ''
+  const displayText = directLabel || clarification.fields.map((field) => {
+    const value = answers[field.parameterCode]
+    return field.options.find((option) => option.value === value)?.label || String(value || '')
+  }).filter(Boolean).join('；') || '补充信息'
+  void sendMessage({ source: message, inputType: 'CLARIFICATION_REPLY', answers, displayText })
+}
+const replyConfirmation = (message: ChatMessage, confirmed: boolean) => {
+  void sendMessage({
+    source: message,
+    inputType: confirmed ? 'CONFIRMATION_REPLY' : 'REJECTION_REPLY',
+    answers: {},
+    displayText: confirmed ? '确认执行' : '取消',
+  })
+}
+
+const sendMessage = async (structured?: AgentStructuredReply) => {
+  if ((!structured && !inputMessage.value.trim()) || isStreaming.value) return
+  const userMessage = structured?.displayText || inputMessage.value
+  if (!structured) inputMessage.value = ''
+  if (structured) structured.source.clarificationResolved = true
   const streamId = activeChatId.value
   messages.value.push({
     id: Date.now().toString(),
@@ -2107,132 +2276,58 @@ const sendMessage = async () => {
   let fullResponse = ''
 
   try {
-    const forecastBatchNo = currentResult.value?.forecast_batch_no
-    if (forecastBatchNo) {
-      const response = await postJson<any>(
-        '/agent-api/api/v1/chat',
-        {
-          turnId: crypto.randomUUID(),
-          conversationNo: forecastConversationNo.value,
-          forecastBatchNo,
-          message: userMessage,
-          contextualFollowUp: false,
-          agentType: agentId.value,
-          metadata: isShortTerm.value ? shortTermForecastContext() : {}
-        },
-        controller.signal,
-        60_000
-      )
-      const data = response.data || {}
-      forecastConversationNo.value = data.conversationNo || forecastConversationNo.value
-      fullResponse = data.answer || 'AI 未返回有效内容'
-      if (activeChatId.value === streamId) {
-        const msg = messages.value.find((m) => m.id === msgId)
-        if (msg) msg.content = renderMarkdown(fullResponse)
-        saveChatToMemory(streamId)
-      } else {
-        updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
-      }
-      return
-    }
-    if (isShortTerm.value) {
-      const response = await postJson<any>(
-        '/agent-api/api/v1/chat',
-        {
-          turnId: crypto.randomUUID(),
-          conversationNo: shortTermConversationMemory.get(streamId) || null,
-          message: userMessage,
-          contextualFollowUp: false,
-          agentType: 'short-term',
-          metadata: shortTermForecastContext()
-        },
-        controller.signal,
-        60_000
-      )
-      const data = response.data || {}
-      if (data.conversationNo) {
-        shortTermConversationMemory.set(streamId, data.conversationNo)
-        shortTermForecastConversationNo.value = data.conversationNo
-      }
-      fullResponse = data.answer || 'AI 未返回有效内容'
-      setShortTermForecastMessage(msgId, fullResponse, streamId)
-      const conversationNo = data.conversationNo || shortTermConversationMemory.get(streamId)
-      if (data.trainBatchNo && data.status === 'WAITING_TRAINING' && conversationNo) {
-        await pollShortTermTraining(conversationNo, data.trainBatchNo, msgId, streamId)
-      } else if (data.forecastBatchNo && data.status === 'EXECUTING' && conversationNo) {
-        await pollShortTermForecast(conversationNo, data.forecastBatchNo, msgId, streamId)
-      }
-      return
-    }
-    const context =
-      isMonthlySales.value || isShortTerm.value || isWinterSupply.value ? currentResult.value : modelResult.value
-    const response = await fetch('/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        agent_id: agentId.value,
+    const response = await postJson<any>(
+      '/ai/conversations/chat',
+      {
+        conversationNo: activeConversationNo.value || conversationMemory.get(streamId) || null,
         message: userMessage,
-        context: context || {},
-        conversation_history: messages.value
-          .slice(0, -2)
-          .slice(-8)
-          .map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: toPlainText(m.content) }))
-      }),
-      signal: controller.signal
-    })
-    if (!response.ok) {
-      throw new Error(`对话请求失败：HTTP ${response.status}`)
+        inputType: structured?.inputType || 'TEXT',
+        interactionId: structured?.source.clarification?.interactionId || null,
+        replyToTurnId: structured?.source.clarification?.replyToTurnId || null,
+        answers: structured?.answers || {},
+        agentCode: agentId.value,
+        businessContext: activeBusinessContext()
+      },
+      controller.signal,
+      120_000
+    )
+    const data = response.data || {}
+    if (data.conversationNo) {
+      conversationMemory.set(streamId, data.conversationNo)
+      activeConversationNo.value = data.conversationNo
     }
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('浏览器未收到流式响应')
-    }
-    const decoder = new TextDecoder()
-    let buffer = ''
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const event = JSON.parse(line.slice(6))
-            if (event.type === 'stream') {
-              fullResponse += event.content
-              if (activeChatId.value === streamId) {
-                const msg = messages.value.find((m) => m.id === msgId)
-                if (msg) msg.content = renderMarkdown(fullResponse)
-                scrollToBottom()
-              }
-            } else if (event.type === 'complete') {
-              fullResponse = event.content
-              if (activeChatId.value === streamId) {
-                const msg = messages.value.find((m) => m.id === msgId)
-                if (msg) msg.content = renderMarkdown(event.content)
-              }
-            } else if (event.type === 'error') {
-              fullResponse = '⚠️ ' + event.message
-              if (activeChatId.value === streamId) {
-                const msg = messages.value.find((m) => m.id === msgId)
-                if (msg) msg.content = renderMarkdown(fullResponse)
-              }
-            }
-          } catch {}
-        }
-      }
-    }
-    if (!fullResponse) {
-      throw new Error('大模型未返回有效内容，请稍后重试')
-    }
-    // Stream completed
+    fullResponse = data.message || 'AI 未返回有效内容'
     if (activeChatId.value === streamId) {
+      const msg = messages.value.find((item) => item.id === msgId)
+      if (msg) {
+        msg.content = renderMarkdown(fullResponse)
+        msg.clarification = data.clarification || undefined
+        msg.presentation = data.presentation || data.resultData?.presentation || undefined
+        msg.executionResult = data.executionResult || data.execution_result || data.resultData?.executionResult || undefined
+        if (msg.clarification) clarificationDraft[msg.id] = {}
+      }
       saveChatToMemory(streamId)
     } else {
       updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
     }
+
+    const conversationNo = data.conversationNo || conversationMemory.get(streamId)
+    const trainBatchNo = referencedBatch(data, 'TRAIN_BATCH')
+    const forecastBatchNo = referencedBatch(data, 'FORECAST_BATCH')
+    // 只从 forecast_start 的真实工具结果读取范围；页面旧选择和训练任务都
+    // 不能触发左侧联动，避免聊天查询/训练污染当前展示。
+    const forecastScope = forecastScopeFromResponse(data)
+    // forecast_start 通常同时返回“复用的训练批次”和“新建预测批次”。预测批次
+    // 一旦存在，就表示无需再等待训练，必须优先轮询预测；否则会错误进入训练
+    // 续跑分支，导致预测结果、左侧联动和聊天回填全部丢失。左侧范围则必须
+    // 等预测真正完成后才由 pollShortTermForecast 切换，避免执行期间出现空页。
+    if (isShortTerm.value && conversationNo && forecastBatchNo) {
+      await pollShortTermForecast(conversationNo, forecastBatchNo, msgId, streamId, forecastScope)
+    } else if (isShortTerm.value && conversationNo && trainBatchNo) {
+      await pollShortTermTraining(conversationNo, trainBatchNo, msgId, streamId, forecastScope)
+    }
   } catch (e: any) {
+    if (structured) structured.source.clarificationResolved = false
     if (e.name === 'AbortError') {
       const content = renderMarkdown(fullResponse || '（已停止）')
       if (activeChatId.value === streamId) {
@@ -2286,9 +2381,10 @@ const sendAnalysisMessage = async (analysisText: string) => {
 const clearChat = async () => {
   const forecastBatchNo = currentResult.value?.forecast_batch_no
   try {
-    if (forecastConversationNo.value) {
-      await getJson(`/ai/conversations/delete?conversationNo=${encodeURIComponent(forecastConversationNo.value)}`)
-      forecastConversationNo.value = null
+    if (activeConversationNo.value) {
+      await getJson(`/ai/conversations/delete?conversationNo=${encodeURIComponent(activeConversationNo.value)}`)
+      conversationMemory.delete(activeChatId.value)
+      activeConversationNo.value = null
     }
     messages.value = []
     saveChatToMemory(activeChatId.value)
@@ -2320,12 +2416,6 @@ const loadChatFromMemory = (id: string): boolean => {
   if (!saved) return false
   messages.value = saved.map((message) => ({ ...message }))
   return true
-}
-
-const toPlainText = (content: string) => {
-  const container = document.createElement('div')
-  container.innerHTML = content
-  return container.textContent || ''
 }
 
 const getGreeting = (id: string): string => {
@@ -2368,6 +2458,7 @@ let resizeHandler: (() => void) | null = null
 onMounted(() => {
   activeChatId.value = agentId.value
   initOrRestoreChat(activeChatId.value)
+  void restoreLatestAgentConversation(agentId.value)
   if (isMonthlySales.value) {
     loadProvinceMape()
     loadMonthlyResult()
@@ -2392,9 +2483,11 @@ watch(agentId, (newId, oldId) => {
   if (newId === oldId) return
   saveChatToMemory(activeChatId.value)
   activeChatId.value = newId
+  activeConversationNo.value = conversationMemory.get(newId) || null
   modelResult.value = null
   currentResult.value = null
   initOrRestoreChat(activeChatId.value)
+  void restoreLatestAgentConversation(newId)
   if (isMonthlySales.value) {
     loadProvinceMape()
     loadMonthlyResult()
@@ -2427,19 +2520,12 @@ watch(futureChartType, () => {
   }
 })
 
-// 预测结果切换时从服务端加载该批次唯一绑定的历史会话，不再依赖浏览器临时内存。
-watch(
-  () => currentResult.value?.forecast_batch_no,
-  (forecastBatchNo) => {
-    void loadForecastConversation(forecastBatchNo)
-  }
-)
 </script>
 
 <style scoped>
 .agent-detail {
   display: flex;
-  height: calc(100vh - 163px);
+  height: 100%;
   min-height: 520px;
   overflow: hidden;
 }
@@ -2452,13 +2538,53 @@ watch(
 .workspace {
   flex: 1 1 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   background: white;
   border: 1px solid #f1f5f9;
   border-radius: 16px;
   overflow: hidden;
 }
+.agent-workspace-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+.agent-workspace-tabs a {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #475569;
+  text-decoration: none;
+}
+.agent-workspace-tabs a.active {
+  border-color: #38bdf8;
+  background: #f0f9ff;
+  color: #0284c7;
+  box-shadow: 0 3px 10px rgba(14, 165, 233, 0.12);
+}
+.agent-workspace-tabs a > span:last-child { min-width: 0; }
+.agent-workspace-tabs strong,
+.agent-workspace-tabs small { display: block; }
+.agent-workspace-tabs strong { color: inherit; font-size: 13px; font-weight: 650; }
+.agent-workspace-tabs small { margin-top: 2px; overflow: hidden; color: #94a3b8; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.agent-tab-icon { width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 30px; border-radius: 8px; }
+.agent-tab-icon svg { width: 16px; height: 16px; }
+.agent-tab-icon.winter-supply { background: #e0f2fe; color: #0284c7; }
+.agent-tab-icon.monthly-sales { background: #d1fae5; color: #059669; }
+.agent-tab-icon.short-term { background: #fef3c7; color: #d97706; }
 .workspace-scroll {
-  height: 100%;
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
   padding: 24px 28px 32px;
 }
@@ -2751,19 +2877,6 @@ watch(
   font-size: 13px;
   font-weight: 400;
 }
-.short-term-range {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border: 1px solid #dbe7f5;
-  border-radius: 7px;
-  background: #f8fbff;
-  color: #475467;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-}
 .compact-section {
   margin-bottom: 12px;
   padding: 14px 16px;
@@ -2780,7 +2893,7 @@ watch(
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  background: #1677ff;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
   font-size: 13px;
 }
 .compact-section .section-title {
@@ -2857,7 +2970,7 @@ watch(
   flex: 0 0 auto;
   border-radius: 8px;
   background: #eaf3ff;
-  color: #1677ff;
+  color: #0ea5e9;
   font-size: 17px;
 }
 .short-term-summary-card:nth-child(2) > .el-icon {
@@ -2930,37 +3043,46 @@ watch(
 .future-comparison-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0 0 10px 38px;
+  gap: 24px;
+  margin: 4px 0 14px 38px;
 }
 .future-comparison-summary > div {
-  display: flex;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 9px 12px;
-  border: 1px solid #e8eef7;
-  border-radius: 8px;
-  background: #fff;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0;
+}
+.future-comparison-summary > div > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
 }
 .future-comparison-summary span { color: #667085; font-size: 12px; }
-.future-comparison-summary strong { color: #344054; font-size: 14px; }
-.future-comparison-summary .reference-total { border-left: 3px solid #9ca3af; }
-.future-comparison-summary .forecast-total { border-left: 3px solid #b91c1c; }
-.future-comparison-summary .forecast-total strong { color: #b91c1c; }
+.future-comparison-summary strong { color: #344054; font-size: 18px; line-height: 1.15; }
+.future-comparison-summary small { overflow: hidden; color: #667085; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.future-comparison-summary .comparison-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #eff8ff;
+  color: #2e90fa;
+  font-size: 14px;
+}
+.future-comparison-summary .forecast-total .comparison-icon { background: #eef4ff; color: #2f6fed; }
+.future-comparison-summary .forecast-total strong { color: #2f6fed; }
+.future-comparison-summary > div:last-child .comparison-icon { background: #ecfdf3; color: #12b76a; }
 .future-comparison-summary .trend-up strong { color: #f04438; }
 .future-comparison-summary .trend-down strong { color: #12b76a; }
-.future-comparison-summary > small {
-  grid-column: 1 / -1;
-  color: #98a2b3;
-  font-size: 11px;
-}
-.short-term-evaluation,
 .short-term-future-grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  padding-left: 38px;
 }
 .compact-chart-panel {
   min-height: 290px;
@@ -2970,81 +3092,6 @@ watch(
 }
 .compact-chart-panel .chart {
   height: 276px;
-}
-.short-term-metrics {
-  display: grid;
-  grid-template-columns: 1fr;
-  align-content: stretch;
-  gap: 8px;
-}
-.short-term-metrics > div {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 10px;
-  row-gap: 3px;
-  padding: 10px 12px;
-  border: 1px solid #edf1f7;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
-}
-.short-term-metric-icon {
-  grid-row: 1 / 3;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  font-size: 20px;
-}
-.short-term-metric-icon.green {
-  color: #12b76a;
-  background: #ecfdf3;
-}
-.short-term-metric-icon.blue {
-  color: #2e90fa;
-  background: #eff8ff;
-}
-.short-term-metric-icon.orange {
-  color: #f79009;
-  background: #fffaeb;
-}
-.short-term-metric-icon.purple {
-  color: #7a5af8;
-  background: #f4f3ff;
-}
-.short-term-metric-label {
-  grid-column: 2;
-  grid-row: 1;
-  color: #475467;
-  font-size: 13px;
-  font-weight: 600;
-}
-.short-term-metrics small {
-  grid-column: 2 / -1;
-  grid-row: 2;
-  color: #667085;
-  font-size: 13px;
-}
-.short-term-metrics strong {
-  grid-column: 3;
-  grid-row: 1;
-  color: #101828;
-  font-size: 17px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.short-term-metrics strong.metric-good {
-  color: #12b76a;
-}
-.short-term-metrics strong.metric-ok {
-  color: #f79009;
-}
-.short-term-metrics strong.metric-bad {
-  color: #f04438;
 }
 .future-table-wrap {
   overflow: hidden;
@@ -3063,9 +3110,17 @@ watch(
 .future-table-wrap :deep(.nowrap-cell .cell) {
   white-space: nowrap;
 }
+.future-table-wrap .daily-up {
+  color: #f04438;
+  font-weight: 600;
+}
+.future-table-wrap .daily-down {
+  color: #12b76a;
+  font-weight: 600;
+}
 .related-info-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   padding-left: 38px;
 }
@@ -3193,6 +3248,48 @@ watch(
 }
 .metric-value.metric-bad {
   color: #ef4444;
+}
+.short-term-model-card {
+  padding: 12px;
+  border-radius: 10px;
+}
+.short-term-model-card .model-info-header {
+  margin-bottom: 10px;
+}
+.short-term-model-card .model-info-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+.short-term-model-card .model-info-tag {
+  padding: 3px 9px;
+  font-size: 10px;
+}
+.short-term-model-card .metrics-grid {
+  gap: 8px;
+}
+.short-term-model-card .metric-item {
+  gap: 4px;
+  padding: 8px 10px;
+}
+.short-term-model-card .metric-label {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.short-term-model-card .compact-metric-label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+}
+.short-term-model-card .metric-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.short-term-model-card .metric-value {
+  font-size: 18px;
+  font-weight: 700;
 }
 
 /* 数据摘要 */
@@ -3611,6 +3708,29 @@ watch(
   align-items: center;
   gap: 10px;
 }
+.ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agent-switch-button {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  background: #f0f9ff;
+  color: #0284c7;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.agent-switch-button:hover {
+  border-color: #7dd3fc;
+  background: #e0f2fe;
+}
 .ai-avatar {
   width: 36px;
   height: 36px;
@@ -3730,6 +3850,49 @@ watch(
   color: white;
   border-bottom-right-radius: 4px;
 }
+.chat-result-list {
+  margin-top: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.chat-result-list-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 12px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+.chat-result-list-head span { color: #64748b; font-weight: 400; }
+.msg-clarification {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  background: #f0f9ff;
+}
+.msg-clarification-field {
+  display: grid;
+  flex: 1 1 100%;
+  gap: 6px;
+}
+.msg-clarification-field label { font-size: 12px; font-weight: 600; color: #475569; }
+.msg-clarification button,.msg-clarification input,.msg-clarification select {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 7px;
+  background: white;
+  color: #0369a1;
+}
+.msg-clarification button { cursor: pointer; }
+.msg-clarification button:disabled { cursor: not-allowed; opacity: .55; }
 .msg-bubble :deep(h2) {
   font-size: 15px;
   margin: 0 0 8px;
@@ -3853,12 +4016,8 @@ watch(
   .short-term-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .short-term-evaluation,
   .short-term-future-grid {
     grid-template-columns: 1fr;
-  }
-  .related-info-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -3868,11 +4027,14 @@ watch(
   }
   .short-term-filter-grid,
   .short-term-summary-grid,
+  .future-comparison-summary,
   .related-info-grid {
     grid-template-columns: 1fr;
     padding-left: 0;
   }
-  .short-term-evaluation,
+  .future-comparison-summary {
+    margin-left: 0;
+  }
   .short-term-future-grid {
     padding-left: 0;
   }

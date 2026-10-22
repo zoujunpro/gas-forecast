@@ -4,20 +4,23 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.gas.forecast.business.ai.dto.AiChatResponse;
+import com.gas.forecast.business.ai.dto.AiTaskProgressResponse;
 import com.gas.forecast.business.ai.dto.AiTrainingProgressResponse;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.AgentExecutionTaskTb;
 import com.gas.forecast.dao.domain.AiConversationTb;
+import com.gas.forecast.dao.domain.BaseCustomerTb;
+import com.gas.forecast.dao.domain.ExecutionBatchTb;
+import com.gas.forecast.dao.domain.ExecutionTaskTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelTrainRecordTb;
-import com.gas.forecast.dao.mapper.AgentExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationTbMapper;
+import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionBatchTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
-import java.util.Date;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -32,7 +35,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AgentTaskProgressService {
     private final AiConversationTbMapper conversationMapper;
-    private final AgentExecutionTaskTbMapper taskMapper;
+    private final BaseCustomerTbMapper customerMapper;
+    private final ExecutionTaskTbMapper taskMapper;
+    private final ExecutionBatchTbMapper batchMapper;
     private final ModelTrainRecordTbMapper trainRecordMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
     private final TaskForecastContinuationService continuationService;
@@ -47,63 +52,84 @@ public class AgentTaskProgressService {
                         ModelTrainRecordTb::getTrainStartDate, ModelTrainRecordTb::getTrainEndDate)
                 .eq(ModelTrainRecordTb::getBatchNo, batchNo).last("limit 1"));
         if (record == null) throw new BusinessException("训练批次不存在：" + batchNo);
-        AgentExecutionTaskTb task = taskMapper.selectOne(Wrappers.<AgentExecutionTaskTb>lambdaQuery()
-                .eq(AgentExecutionTaskTb::getLatestTrainBatchNo, batchNo).orderByDesc(AgentExecutionTaskTb::getUpdatedAt).last("limit 1"));
+        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
+                .eq(ExecutionTaskTb::getBusinessType, "TRAIN")
+                .eq(ExecutionTaskTb::getBusinessNo, batchNo)
+                .orderByDesc(ExecutionTaskTb::getUpdatedAt).last("limit 1"));
         // 训练批次才是真实状态来源。查询进度时同步任务表，避免批次已结束而任务仍永久停在 EXECUTING。
         if (task != null) taskService.status(task.getTaskNo(), false);
         boolean failed = isFailed(record.getStatus());
         String message = failed ? trainingFailureMessage(record) : null;
         // 对前端输出统一终态，内部可继续保留 FAILED_FINAL 等更细状态。
         String responseStatus = failed ? "FAILED" : record.getStatus();
+        ExecutionTaskTb forecastTask = task == null ? null : forecastTask(task.getBatchNo(), task.getCustomerCode());
+        ExecutionBatchTb batch = task == null ? null : batchMapper.selectOne(Wrappers.<ExecutionBatchTb>lambdaQuery()
+                .eq(ExecutionBatchTb::getBatchNo, task.getBatchNo()).last("limit 1"));
+        boolean continuationExpected = batch != null && "WORKFLOW".equals(batch.getBatchType());
         return new AiTrainingProgressResponse(batchNo, responseStatus, message, task == null ? null : task.getTaskNo(),
-                task != null && "FORECAST".equals(task.getTaskType()), task == null ? null : task.getLatestForecastBatchNo());
+                continuationExpected, forecastTask == null ? null : forecastTask.getBusinessNo());
     }
 
-    public AiChatResponse continueForecast(String conversationNo, String trainBatchNo) {
-        AiConversationTb conversation = findOwned(conversationNo);
-        if (!java.util.Objects.equals(conversation.getLastTrainBatchNo(), trainBatchNo))
-            throw new BusinessException("该训练批次不属于当前会话的最新任务");
+    public AiTaskProgressResponse continueForecast(String conversationNo, String trainBatchNo) {
+        findOwned(conversationNo);
+        ExecutionTaskTb trainTask = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
+                .eq(ExecutionTaskTb::getBusinessType, "TRAIN")
+                .eq(ExecutionTaskTb::getBusinessNo, trainBatchNo)
+                .orderByDesc(ExecutionTaskTb::getUpdatedAt).last("limit 1"));
+        if (trainTask == null || !belongsToConversation(trainTask.getBatchNo(), conversationNo))
+            throw new BusinessException("未找到当前会话对应的训练任务");
         continuationService.continueAfterTraining(trainBatchNo);
-        AgentExecutionTaskTb task = taskMapper.selectOne(Wrappers.<AgentExecutionTaskTb>lambdaQuery()
-                .eq(AgentExecutionTaskTb::getConversationNo, conversationNo).eq(AgentExecutionTaskTb::getLatestTrainBatchNo, trainBatchNo)
-                .orderByDesc(AgentExecutionTaskTb::getUpdatedAt).last("limit 1"));
-        if (task == null) throw new BusinessException("未找到对应的预测任务");
-        if (TextUtils.hasText(task.getLatestForecastBatchNo())) return forecastProgress(conversationNo, task.getLatestForecastBatchNo());
-        String status = "FAILED".equals(task.getStatus()) ? "FAILED" : "WAITING_TRAINING";
-        String answer = "FAILED".equals(status) ? task.getErrorMessage() : "训练完成后的预测续跑任务已接收。";
+        ExecutionTaskTb forecastTask = forecastTask(trainTask.getBatchNo(), trainTask.getCustomerCode());
+        if (forecastTask != null && TextUtils.hasText(forecastTask.getBusinessNo()))
+            return forecastProgress(conversationNo, forecastTask.getBusinessNo());
+        String status = forecastTask != null && "FAILED".equals(forecastTask.getStatus()) ? "FAILED" : "WAITING_TRAINING";
+        String answer = "FAILED".equals(status) ? forecastTask.getErrorMessage() : "训练完成后的预测续跑任务已接收。";
         return response(conversationNo, status, answer, trainBatchNo, null);
     }
 
-    public AiChatResponse forecastProgress(String conversationNo, String batchNo) {
-        AiConversationTb conversation = findOwned(conversationNo);
+    public AiTaskProgressResponse forecastProgress(String conversationNo, String batchNo) {
+        findOwned(conversationNo);
         ModelForecastRecordTb record = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery()
                 .eq(ModelForecastRecordTb::getForecastBatchNo, batchNo).last("limit 1"));
         if (record == null) throw new BusinessException("预测批次不存在：" + batchNo);
-        if (!java.util.Objects.equals(conversation.getLastForecastBatchNo(), batchNo)) {
-            AgentExecutionTaskTb task = taskMapper.selectOne(Wrappers.<AgentExecutionTaskTb>lambdaQuery()
-                    .eq(AgentExecutionTaskTb::getConversationNo, conversationNo).eq(AgentExecutionTaskTb::getLatestForecastBatchNo, batchNo).last("limit 1"));
-            if (task == null) throw new BusinessException("该预测批次不属于当前会话");
-            conversation.setLastForecastBatchNo(batchNo); conversation.setUpdatedAt(new Date()); conversationMapper.updateById(conversation);
-        }
+        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
+                .eq(ExecutionTaskTb::getBusinessType, "FORECAST")
+                .eq(ExecutionTaskTb::getBusinessNo, batchNo)
+                .orderByDesc(ExecutionTaskTb::getUpdatedAt)
+                .last("limit 1"));
+        if (task == null || !belongsToConversation(task.getBatchNo(), conversationNo))
+            throw new BusinessException("该预测批次不属于当前会话");
+
+        String trainBatchNo = trainingBatchNo(task.getBatchNo(), task.getCustomerCode());
         String status = Integer.valueOf(1).equals(record.getStatus()) ? "EXECUTING"
                 : Integer.valueOf(3).equals(record.getStatus()) ? "FAILED" : "COMPLETED";
+        BaseCustomerTb customer = TextUtils.hasText(task.getCustomerCode())
+                ? customerMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery()
+                        .eq(BaseCustomerTb::getCustomerCode, task.getCustomerCode()).last("limit 1")) : null;
+        List<String> scopeParts = new ArrayList<>();
+        if (customer != null) {
+            if (TextUtils.hasText(customer.getRegionName())) scopeParts.add(customer.getRegionName());
+            if (TextUtils.hasText(customer.getIndustryName())) scopeParts.add(customer.getIndustryName());
+            if (TextUtils.hasText(customer.getCustomerName())) scopeParts.add(customer.getCustomerName());
+        }
+        String scope = customer == null ? task.getCustomerName() : String.join(" / ", scopeParts);
         String answer = "EXECUTING".equals(status) ? "预测正在后台执行"
                 : "FAILED".equals(status) ? "预测未能完成：" + failureMessage(record.getResponseParam())
-                : "预测已完成，预测批次：" + batchNo;
-        AiChatResponse.ForecastResult forecastResult = "COMPLETED".equals(status) ? forecastResult(batchNo) : null;
+                : "预测已完成：" + scope + "，预测批次：" + batchNo;
+        AiTaskProgressResponse.ForecastResult forecastResult = "COMPLETED".equals(status) ? forecastResult(batchNo, customer) : null;
         JsonNode presentation = forecastResult == null ? null : forecastPresentation();
-        return new AiChatResponse(conversationNo, status, answer, conversation.getLastTrainBatchNo(), batchNo,
+        return new AiTaskProgressResponse(conversationNo, status, answer, trainBatchNo, batchNo,
                 null, forecastResult, null, List.of(), presentation);
     }
 
-    private AiChatResponse response(String conversationNo, String status, String answer, String trainBatchNo, String forecastBatchNo) {
-        return new AiChatResponse(conversationNo, status, answer, trainBatchNo, forecastBatchNo, null, null, null, List.of(), null);
+    private AiTaskProgressResponse response(String conversationNo, String status, String answer, String trainBatchNo, String forecastBatchNo) {
+        return new AiTaskProgressResponse(conversationNo, status, answer, trainBatchNo, forecastBatchNo, null, null, null, List.of(), null);
     }
 
-    private AiChatResponse.ForecastResult forecastResult(String batchNo) {
+    private AiTaskProgressResponse.ForecastResult forecastResult(String batchNo, BaseCustomerTb customer) {
         JsonNode data = objectMapper.valueToTree(forecastApplicationService.result(batchNo, true));
         JsonNode record = data.path("record");
-        List<AiChatResponse.ForecastPoint> points = new ArrayList<>();
+        List<AiTaskProgressResponse.ForecastPoint> points = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal minimum = null;
         BigDecimal maximum = null;
@@ -111,31 +137,37 @@ public class AgentTaskProgressService {
             String date = item.path("forecastDate").asText(null);
             BigDecimal value = decimal(item.get("forecastValue"));
             if (!TextUtils.hasText(date) || value == null) continue;
-            points.add(new AiChatResponse.ForecastPoint(date, value));
+            points.add(new AiTaskProgressResponse.ForecastPoint(date, value));
             total = total.add(value);
             minimum = minimum == null || value.compareTo(minimum) < 0 ? value : minimum;
             maximum = maximum == null || value.compareTo(maximum) > 0 ? value : maximum;
         }
         if (points.isEmpty()) return null;
         JsonNode training = data.path("training");
-        AiChatResponse.TrainingResult trainingResult = training.isObject()
-                ? new AiChatResponse.TrainingResult(text(training, "batchNo"), text(training, "trainStartDate"), text(training, "trainEndDate"), text(training, "bestModel"),
+        AiTaskProgressResponse.TrainingResult trainingResult = training.isObject()
+                ? new AiTaskProgressResponse.TrainingResult(text(training, "batchNo"), text(training, "trainStartDate"), text(training, "trainEndDate"), text(training, "bestModel"),
                         decimal(training.get("mape")), decimal(training.get("wmape")), decimal(training.get("smape")), decimal(training.get("mae")),
                         decimal(training.get("rmse")), decimal(training.get("r2")))
                 : null;
-        List<AiChatResponse.BacktestPoint> backtests = new ArrayList<>();
+        List<AiTaskProgressResponse.BacktestPoint> backtests = new ArrayList<>();
         for (JsonNode item : data.path("backtestPoints")) {
             String date = item.path("date").asText(null);
-            if (TextUtils.hasText(date)) backtests.add(new AiChatResponse.BacktestPoint(date, decimal(item.get("actualValue")), decimal(item.get("predictedValue"))));
+            if (TextUtils.hasText(date)) backtests.add(new AiTaskProgressResponse.BacktestPoint(date, decimal(item.get("actualValue")), decimal(item.get("predictedValue"))));
         }
-        List<AiChatResponse.ForecastPoint> lastYearPoints = new ArrayList<>();
+        List<AiTaskProgressResponse.ForecastPoint> lastYearPoints = new ArrayList<>();
         for (JsonNode item : data.path("lastYearPoints")) {
             String date = item.path("date").asText(null);
             BigDecimal value = decimal(item.get("value"));
-            if (TextUtils.hasText(date) && value != null) lastYearPoints.add(new AiChatResponse.ForecastPoint(date, value));
+            if (TextUtils.hasText(date) && value != null) lastYearPoints.add(new AiTaskProgressResponse.ForecastPoint(date, value));
         }
         BigDecimal average = total.divide(BigDecimal.valueOf(points.size()), 4, RoundingMode.HALF_UP);
-        return new AiChatResponse.ForecastResult(batchNo, text(record, "customerName"), average, minimum, maximum, trainingResult, points, List.of(), lastYearPoints, backtests);
+        return new AiTaskProgressResponse.ForecastResult(
+                batchNo,
+                customer == null ? null : customer.getRegionName(),
+                customer == null ? null : customer.getIndustryName(),
+                customer == null ? text(record, "customerCode") : customer.getCustomerCode(),
+                customer == null ? text(record, "customerName") : customer.getCustomerName(),
+                average, minimum, maximum, trainingResult, points, List.of(), lastYearPoints, backtests);
     }
 
     private JsonNode forecastPresentation() {
@@ -202,6 +234,32 @@ public class AgentTaskProgressService {
         } catch (RuntimeException ignored) {
             return null;
         }
+    }
+
+    private ExecutionTaskTb forecastTask(String executionBatchNo, String customerCode) {
+        var query = Wrappers.<ExecutionTaskTb>lambdaQuery()
+                .eq(ExecutionTaskTb::getBatchNo, executionBatchNo)
+                .eq(ExecutionTaskTb::getBusinessType, "FORECAST");
+        if (TextUtils.hasText(customerCode)) query.eq(ExecutionTaskTb::getCustomerCode, customerCode);
+        return taskMapper.selectOne(query.orderByDesc(ExecutionTaskTb::getUpdatedAt).last("limit 1"));
+    }
+
+    /** 从同一统一执行批次中查找当前预测对应的训练业务批次。 */
+    private String trainingBatchNo(String executionBatchNo, String customerCode) {
+        var query = Wrappers.<ExecutionTaskTb>lambdaQuery()
+                .eq(ExecutionTaskTb::getBatchNo, executionBatchNo)
+                .eq(ExecutionTaskTb::getBusinessType, "TRAIN");
+        if (TextUtils.hasText(customerCode)) query.eq(ExecutionTaskTb::getCustomerCode, customerCode);
+        ExecutionTaskTb task = taskMapper.selectOne(
+                query.orderByDesc(ExecutionTaskTb::getUpdatedAt).last("limit 1"));
+        return task == null ? null : task.getBusinessNo();
+    }
+
+    private boolean belongsToConversation(String executionBatchNo, String conversationNo) {
+        return batchMapper.selectCount(Wrappers.<ExecutionBatchTb>lambdaQuery()
+                .eq(ExecutionBatchTb::getBatchNo, executionBatchNo)
+                .eq(ExecutionBatchTb::getConversationNo, conversationNo)
+                .eq(ExecutionBatchTb::getCreatedBy, String.valueOf(SecurityContextHolder.getUserId()))) > 0;
     }
 
     private AiConversationTb findOwned(String conversationNo) {

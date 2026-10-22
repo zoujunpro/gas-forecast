@@ -57,6 +57,49 @@
             <div class="message-name">{{ message.role === 'user' ? '您' : 'AI 预测助手' }}</div>
             <div v-if="message.role === 'user'" class="user-text">{{ message.content }}</div>
             <div v-else class="assistant-text" v-html="sanitizeHtml(message.content)"></div>
+            <section v-if="message.role === 'assistant' && message.clarification && !message.clarificationResolved" class="clarification-card">
+              <template v-if="message.clarification.interactionType === 'CONFIRMATION'">
+                <div class="clarification-actions">
+                  <el-button type="primary" :disabled="streaming" @click="submitConfirmation(message, true)">确认执行</el-button>
+                  <el-button :disabled="streaming" @click="submitConfirmation(message, false)">取消</el-button>
+                </div>
+              </template>
+              <template v-else>
+                <div v-for="field in message.clarification.fields" :key="field.parameterCode" class="clarification-field">
+                  <label>{{ field.parameterName }}</label>
+                  <div v-if="field.inputType === 'CONFIRM'" class="clarification-actions">
+                    <el-button
+                      v-for="option in field.options"
+                      :key="option.value"
+                      :disabled="streaming"
+                      @click="submitClarification(message, { [field.parameterCode]: option.value }, option.label)"
+                    >{{ option.label }}</el-button>
+                  </div>
+                  <el-select
+                    v-else-if="field.options.length"
+                    :model-value="clarificationValue(message.id, field.parameterCode)"
+                    :multiple="field.inputType === 'MULTI_SELECT'"
+                    placeholder="请选择"
+                    @update:model-value="setClarificationValue(message.id, field.parameterCode, $event)"
+                  >
+                    <el-option v-for="option in field.options" :key="option.value" :label="option.label" :value="option.value" />
+                  </el-select>
+                  <el-input
+                    v-else
+                    :model-value="clarificationValue(message.id, field.parameterCode)"
+                    :type="field.inputType === 'NUMBER' ? 'number' : 'text'"
+                    placeholder="请补充信息"
+                    @update:model-value="setClarificationValue(message.id, field.parameterCode, $event)"
+                  />
+                </div>
+                <el-button
+                  v-if="message.clarification.fields.some((field) => field.inputType !== 'CONFIRM')"
+                  type="primary"
+                  :disabled="streaming"
+                  @click="submitClarification(message)"
+                >提交并继续</el-button>
+              </template>
+            </section>
             <details v-if="validProgress(message.progress)" class="execution-trace" open>
               <summary>
                 <i></i><span>{{ currentStepName(message.progress!) }}</span>
@@ -70,7 +113,7 @@
             </details>
             <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
             <AiTrainingResult v-if="trainingResultOf(message)" :result="trainingResultOf(message)!" />
-            <section v-if="message.presentation?.type === 'LIST' && listRows(message).length" class="result-list">
+            <section v-if="listRows(message).length" class="result-list">
               <div class="result-list-head">查询结果 <span>共 {{ listRows(message).length }} 条</span></div>
               <el-table :data="listRows(message)" height="420" stripe>
                 <el-table-column v-for="column in listColumns(message)" :key="column.key" :prop="column.key" :label="column.label" min-width="150" show-overflow-tooltip />
@@ -127,7 +170,11 @@ interface ForecastResult { batchNo: string; average: number; minimum: number; ma
 interface TrainingBacktestPoint { date: string; actualValue?: number; predictedValue?: number; absoluteError?: number; errorRate?: number }
 interface TrainingResult { batchNo: string; status?: string; customerName?: string; regionName?: string; industryName?: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; modelVersion?: string; trainDurationSeconds?: number; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number; backtestPoints?: TrainingBacktestPoint[] }
 interface Presentation { type: 'TEXT' | 'LIST' | 'PROGRESS' | 'FORECAST_CHART' | 'TRAINING_BACKTEST'; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
-interface Message { id: string; role: Role; content: string; progress?: ExecutionProgress; forecastResult?: ForecastResult; trainingResult?: TrainingResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
+interface BusinessReference { referenceType: 'EXECUTION_BATCH' | 'EXECUTION_TASK' | 'TRAIN_BATCH' | 'FORECAST_BATCH'; referenceNo: string; relationType: 'CREATED' | 'REFERENCED' | 'DISPLAYED'; title?: string; status?: string }
+interface ClarificationOption { value: string; label: string }
+interface ClarificationField { parameterCode: string; parameterName: string; reason: string; inputType: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'MULTI_SELECT' | 'CONFIRM'; required: boolean; options: ClarificationOption[] }
+interface Clarification { interactionId: string; interactionType: 'CLARIFICATION' | 'CONFIRMATION'; replyToTurnId: string; requestId?: string; reason: string; resumeFrom: string; prompt: string; fields: ClarificationField[] }
+interface Message { id: string; role: Role; content: string; clarification?: Clarification; clarificationResolved?: boolean; references?: BusinessReference[]; progress?: ExecutionProgress; forecastResult?: ForecastResult; trainingResult?: TrainingResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
 interface Session { id: string; conversationNo?: string; title: string; updatedAt: string; messages: Message[] }
 
 const welcomeMessage = (): Message => ({
@@ -142,6 +189,7 @@ const streaming = ref(false)
 const abortController = ref<AbortController | null>(null)
 const messageContainer = ref<HTMLElement>()
 const sessionMenu = ref({ visible: false, x: 0, y: 0, sessionId: '' })
+const clarificationDraft = reactive<Record<string, Record<string, any>>>({})
 
 const activeSession = computed(() => sessions.value.find((item) => item.id === activeSessionId.value))
 const messages = computed(() => activeSession.value?.messages || [])
@@ -221,14 +269,24 @@ const switchSession = async (id: string) => {
     if (detail?.messages) {
       session.messages = detail.messages.map((item: any) => ({
         id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+        clarification: item.clarification || undefined,
+        references: item.references || undefined,
         progress: item.progress || undefined,
         forecastResult: item.forecastResult || undefined,
         trainingResult: item.trainingResult || item.presentation?.trainingResult || undefined,
-        presentation: item.presentation || undefined,
-        executionResult: item.executionResult || undefined,
+        presentation: item.presentation || item.resultData?.presentation || undefined,
+        executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
         analysis: item.analysis || undefined,
         suggestedQuestions: item.suggestedQuestions || undefined
       }))
+      session.messages.forEach((message) => {
+        if (message.clarification) message.clarificationResolved = true
+      })
+      const latest = session.messages[session.messages.length - 1]
+      if (latest?.role === 'assistant' && latest.clarification) {
+        latest.clarificationResolved = false
+        clarificationDraft[latest.id] = {}
+      }
       await reconcileTrainingMessages(session.messages)
       scrollBottom()
     }
@@ -238,7 +296,8 @@ const switchSession = async (id: string) => {
 }
 const scrollBottom = () => nextTick(() => { if (messageContainer.value) messageContainer.value.scrollTop = messageContainer.value.scrollHeight })
 const listRows = (message: Message): Record<string, any>[] => {
-  const records = message.executionResult?.data?.records
+  const result = message.executionResult
+  const records = result?.data?.records || result?.records
   return Array.isArray(records) ? records : []
 }
 const trainingResultOf = (message: Message) => message.trainingResult || message.presentation?.trainingResult
@@ -264,15 +323,63 @@ const analysisVisible = (message: Message) => {
   return !message.progress.steps.some((step) => step.status === 'RUNNING' || step.status === 'WAITING')
 }
 
+interface StructuredReply {
+  source: Message
+  inputType: 'CLARIFICATION_REPLY' | 'CONFIRMATION_REPLY' | 'REJECTION_REPLY'
+  answers: Record<string, any>
+  displayText: string
+}
+
+const clarificationValue = (messageId: string, field: string) => clarificationDraft[messageId]?.[field]
+const setClarificationValue = (messageId: string, field: string, value: any) => {
+  if (!clarificationDraft[messageId]) clarificationDraft[messageId] = {}
+  clarificationDraft[messageId][field] = value
+}
+const submitClarification = (
+  message: Message,
+  answers?: Record<string, any>,
+  displayText?: string
+) => {
+  const clarification = message.clarification
+  if (!clarification) return
+  const values = answers || { ...(clarificationDraft[message.id] || {}) }
+  const missing = clarification.fields.filter(
+    (field) => field.required && field.inputType !== 'CONFIRM'
+      && (values[field.parameterCode] === undefined || values[field.parameterCode] === ''
+        || (Array.isArray(values[field.parameterCode]) && !values[field.parameterCode].length))
+  )
+  if (missing.length) {
+    ElMessage.warning(`请先填写：${missing.map((field) => field.parameterName).join('、')}`)
+    return
+  }
+  const text = displayText || clarification.fields
+    .map((field) => {
+      const value = values[field.parameterCode]
+      const selected = field.options.filter((option) => Array.isArray(value)
+        ? value.includes(option.value) : option.value === value)
+      return selected.length ? selected.map((option) => option.label).join('、') : String(value || '')
+    })
+    .filter(Boolean)
+    .join('；') || '补充信息'
+  void send(false, { source: message, inputType: 'CLARIFICATION_REPLY', answers: values, displayText: text })
+}
+const submitConfirmation = (message: Message, confirmed: boolean) => {
+  void send(false, {
+    source: message,
+    inputType: confirmed ? 'CONFIRMATION_REPLY' : 'REJECTION_REPLY',
+    answers: {},
+    displayText: confirmed ? '确认执行' : '取消',
+  })
+}
+
 const ask = (text: string, contextualFollowUp = false) => { input.value = text; void send(contextualFollowUp) }
 const stop = () => abortController.value?.abort()
-const send = async (contextualFollowUp = false) => {
-  // Vue 事件绑定遗漏括号时可能传入 MouseEvent/KeyboardEvent，接口只接受明确布尔值。
-  const isContextualFollowUp = contextualFollowUp === true
-  const text = input.value.trim()
+const send = async (_contextualFollowUp = false, structured?: StructuredReply) => {
+  const text = structured?.displayText || input.value.trim()
   const session = activeSession.value
   if (!text || !session || streaming.value) return
-  input.value = ''
+  if (!structured) input.value = ''
+  if (structured) structured.source.clarificationResolved = true
   session.messages.push({ id: crypto.randomUUID(), role: 'user', content: text })
   if (session.title === '新会话') session.title = text.slice(0, 18)
   session.updatedAt = nowText()
@@ -282,11 +389,14 @@ const send = async (contextualFollowUp = false) => {
   streaming.value = true; scrollBottom()
   const controller = new AbortController(); abortController.value = controller
   try {
-    const response = await postJson<any>('/agent-api/api/v1/chat', {
-      turnId: crypto.randomUUID(),
+    const response = await postJson<any>('/ai/conversations/chat', {
       conversationNo: session.conversationNo || null,
       message: text,
-      contextualFollowUp: isContextualFollowUp
+      inputType: structured?.inputType || 'TEXT',
+      interactionId: structured?.source.clarification?.interactionId || null,
+      replyToTurnId: structured?.source.clarification?.replyToTurnId || null,
+      answers: structured?.answers || {},
+      agentCode: 'general'
     }, controller.signal, 60_000)
     const data = response.data || {}
     if (data.conversationNo) {
@@ -294,28 +404,25 @@ const send = async (contextualFollowUp = false) => {
       session.id = data.conversationNo
       activeSessionId.value = data.conversationNo
     }
-    answer.content = renderMarkdown(data.answer || 'AI 未返回有效内容')
-    answer.progress = data.progress || undefined
-    answer.forecastResult = data.forecastResult || undefined
-    answer.trainingResult = data.trainingResult || data.presentation?.trainingResult || undefined
+    answer.content = renderMarkdown(data.message || 'AI 未返回有效内容')
+    answer.clarification = data.clarification || undefined
+    if (answer.clarification) clarificationDraft[answer.id] = {}
+    answer.references = data.references || undefined
+    // 查询接口的列表和图表数据在本轮响应中即可展示，不能只依赖随后重新
+    // 加载会话历史；否则用户会先看到“结果已展示”却没有任何表格。
     answer.presentation = data.presentation || undefined
     answer.executionResult = data.executionResult || undefined
-    answer.analysis = data.analysis || undefined
-    answer.suggestedQuestions = data.suggestedQuestions || undefined
-    const runningTrainStep = answer.progress?.steps?.some((step) => step.index === 2 && step.status === 'RUNNING')
-    // Agent 对完整预测任务返回 EXECUTING，对仅训练任务返回 WAITING_TRAINING。
-    // 是否轮询训练应以真实批次和步骤状态为准，不能依赖顶层任务状态的单一取值。
-    if (data.trainBatchNo && runningTrainStep) {
-      void watchTraining(data.trainBatchNo, answer)
+    const trainBatchNo = answer.references?.find((item) => item.referenceType === 'TRAIN_BATCH')?.referenceNo
+    const forecastBatchNo = answer.references?.find((item) => item.referenceType === 'FORECAST_BATCH')?.referenceNo
+    if (trainBatchNo) {
+      void watchTraining(trainBatchNo, answer)
     }
-    if (data.forecastBatchNo && data.status === 'EXECUTING') {
-      void watchForecast(data.forecastBatchNo, answer)
-    }
-    if (data.status === 'NEED_CONFIRMATION' && Array.isArray(data.candidates) && data.candidates.length) {
-      answer.content += renderMarkdown('\n\n请回复序号或完整名称。')
+    if (forecastBatchNo) {
+      void watchForecast(forecastBatchNo, answer)
     }
     await loadServerSessions(session)
   } catch (error: any) {
+    if (structured) structured.source.clarificationResolved = false
     answer.content = renderMarkdown(error?.name === 'AbortError' ? '已停止处理。' : `⚠️ ${error?.message || '问答失败'}`)
   } finally {
     streaming.value = false; abortController.value = null; scrollBottom()
@@ -547,8 +654,8 @@ const refreshActiveBulkProgress = async () => {
       progress: item.progress || undefined,
       forecastResult: item.forecastResult || undefined,
       trainingResult: item.trainingResult || item.presentation?.trainingResult || undefined,
-      presentation: item.presentation || undefined,
-      executionResult: item.executionResult || undefined,
+      presentation: item.presentation || item.resultData?.presentation || undefined,
+      executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
       analysis: item.analysis || undefined,
       suggestedQuestions: item.suggestedQuestions || undefined
     }))
@@ -587,6 +694,7 @@ onBeforeUnmount(() => {
 .message{display:flex;gap:12px;margin:22px 0}.message.user{flex-direction:row-reverse}.avatar{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#eef2ff;color:#4169d8;font-size:12px;font-weight:700}.user .avatar{background:#4169d8;color:#fff}.message-main{max-width:82%}.message-name{font-size:12px;color:#94a3b8;margin-bottom:6px}.user .message-name{text-align:right}.user-text,.assistant-text{padding:12px 15px;border-radius:12px;line-height:1.75}.user-text{background:#4169d8;color:#fff}.assistant-text{background:#f7f9fc;color:#334155}.assistant-text :deep(p){margin:0 0 8px}.assistant-text :deep(p:last-child){margin-bottom:0}.typing{background:#f7f9fc;padding:14px;border-radius:12px}.typing i{display:inline-block;width:6px;height:6px;background:#94a3b8;border-radius:50%;margin:0 2px;animation:pulse 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}@keyframes pulse{50%{opacity:.25}}
 .execution-trace{margin-top:7px;color:#64748b;font-size:12px}.execution-trace summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none;width:max-content}.execution-trace summary::-webkit-details-marker{display:none}.execution-trace summary>i{width:7px;height:7px;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 4px #dbeafe}.execution-trace summary>small{color:#94a3b8}.execution-trace[open] summary{margin-bottom:9px}.trace-step{display:grid;grid-template-columns:21px minmax(180px,1fr) auto;align-items:start;gap:8px;padding:5px 0 5px 3px;color:#94a3b8}.trace-step>b{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#edf1f7;font-size:10px}.trace-step span>small{display:block;margin-top:2px;color:#a3acb9}.trace-step em{font-style:normal;font-size:11px}.trace-step.success{color:#16a34a}.trace-step.running{color:#2563eb}.trace-step.partial_failed{color:#d97706}.trace-step.failed{color:#dc2626}.trace-step.skipped{color:#94a3b8}
 .result-list{margin-top:12px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff}.result-list-head{display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;font-weight:600;color:#334155;background:#f8fafc}.result-list-head span{font-weight:400;color:#64748b}
+.clarification-card{margin-top:10px;padding:14px;border:1px solid #cfdcf8;border-radius:12px;background:#f8faff}.clarification-field{display:grid;gap:7px;margin-bottom:12px}.clarification-field label{font-size:12px;font-weight:600;color:#475569}.clarification-actions{display:flex;flex-wrap:wrap;gap:8px}.clarification-card :deep(.el-select),.clarification-card :deep(.el-input){width:min(100%,420px)}
 .ai-analysis{margin-top:12px;padding:15px 17px;border:1px solid #dfe7fb;border-radius:12px;background:linear-gradient(135deg,#f8faff,#f4f7ff);color:#334155;line-height:1.75}.analysis-title{display:flex;align-items:center;gap:7px;margin-bottom:8px;color:#4169d8}.ai-analysis :deep(p){margin:0 0 8px}.ai-analysis :deep(p:last-child){margin-bottom:0}.follow-up{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:12px}.follow-up>span{font-size:12px;color:#94a3b8}.follow-up button{max-width:100%;padding:8px 12px;border:1px solid #dbe4f5;border-radius:16px;background:#fff;color:#4169d8;text-align:left;cursor:pointer}.follow-up button:hover{border-color:#6688ef;background:#f5f8ff}
 .composer{flex:0 0 auto;padding:14px 22px 12px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:1fr 42px;gap:10px}.composer :deep(.el-textarea__inner){box-shadow:none;border:1px solid #dfe5ef;border-radius:10px;padding:11px}.composer p{grid-column:1/-1;text-align:center;color:#a0a9b8;font-size:11px;margin:0}
 .messages{height:0;flex:1 1 0;scrollbar-gutter:stable}

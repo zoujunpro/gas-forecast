@@ -5,6 +5,8 @@ description = "Conversation router and AI agents for gas forecasting."
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.115,<1",
+    "jsonschema>=4.23,<5",
+    "langgraph>=1.2,<2",
     "mcp>=1.20,<2",
     "openai>=2.0,<3",
     "pydantic-settings>=2.6,<3",
@@ -29,11 +31,12 @@ where = ["src"]
 
 [tool.setuptools.data-files]
 "share/gas-forecast-agent/skills/business-data-query" = ["skills/business-data-query/SKILL.md"]
-"share/gas-forecast-agent/skills/business-data-query/references" = ["skills/business-data-query/references/*.md"]
 "share/gas-forecast-agent/skills/customer-gas-forecast" = ["skills/customer-gas-forecast/SKILL.md"]
-"share/gas-forecast-agent/skills/customer-gas-forecast/references" = ["skills/customer-gas-forecast/references/*.md"]
 "share/gas-forecast-agent/skills/model-training-management" = ["skills/model-training-management/SKILL.md"]
-"share/gas-forecast-agent/skills/model-training-management/references" = ["skills/model-training-management/references/*.md"]
+"share/gas-forecast-agent/skills/forecast-analysis" = ["skills/forecast-analysis/SKILL.md"]
+"share/gas-forecast-agent/skills/knowledge-qa" = ["skills/knowledge-qa/SKILL.md"]
+"share/gas-forecast-agent/skills/general-chat" = ["skills/general-chat/SKILL.md"]
+"share/gas-forecast-agent/skills/unknown-request" = ["skills/unknown-request/SKILL.md"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -26,19 +26,19 @@ gas:
 
 ## Tools
 
-- `conversation_prepare`, `conversation_reply_append`
-- `memory_get`, `memory_update`
-- `customer_search`, `region_search`, `industry_search`
-- `training_start`, `training_status_get`, `training_result_get`
-- `forecast_start`, `forecast_status_get`, `forecast_result_get`
+- `region_list`, `industry_list`, `customer_list`
+- `training_start`, `training_result_query`
+- `forecast_start`, `forecast_result_query`
 
-Conversation tools use `AiConversationService` only for authenticated conversation
-and message persistence. Training, forecast and entity tools call their corresponding
-deterministic business services. Java does not select Skills, parse user intent or
-plan tool order. The MCP adapter does not write model, training, forecast, customer,
-region or industry tables directly.
+Conversation and message persistence is handled by the Java HTTP chat entry before
+and after Python execution, so it is intentionally not exposed as an MCP tool.
+Training and forecast tools call their corresponding deterministic business
+services. Java does not select Skills, parse user intent or plan tool order. The MCP
+adapter does not write model, training, forecast, customer, region or industry tables
+directly.
 
-Batch training and forecast calls require `bulk=true` and `confirmed=true`.
+实体名称校验由 Java 的内部 Agent 接口完成，不出现在 MCP `tools/list`。Batch
+training and forecast calls require `bulk=true` and `confirmed=true`.
 
 ## Example
 
@@ -59,10 +59,10 @@ Tool call:
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "forecast_status_get",
+    "name": "forecast_result_query",
     "arguments": {
-      "conversationNo": "CONV-001",
-      "forecastBatchNo": "FCBATCH-001"
+      "customerCode": "CUSTOMER-001",
+      "agentCode": "short-term"
     }
   }
 }

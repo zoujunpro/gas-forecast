@@ -2,6 +2,7 @@ package com.gas.forecast.business.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,9 @@ public class ModelConfigCreateRequest {
 
     @NotBlank(message = "智能体编码不能为空")
     private @Size(max = 64, message = "智能体编码长度不能超过64个字符") String agentCode;
+
+    @NotNull(message = "启用状态不能为空")
+    private Integer enabled;
 
     @NotBlank(message = "场景编码不能为空")
     private @Size(max = 32, message = "场景编码长度不能超过32个字符") String sceneCode;

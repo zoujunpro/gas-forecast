@@ -1,7 +1,7 @@
 :root {
   --app-font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial,
-    sans-serif;
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    Arial, sans-serif;
   --el-font-family: var(--app-font-family);
   --el-font-size-base: 14px;
   --el-font-size-small: 13px;
@@ -13,16 +13,16 @@
   --app-font-size-secondary: 13px;
   --app-line-height-body: 1.5715;
   --app-font-weight-regular: 400;
-  --app-font-weight-medium: 550;
+  --app-font-weight-medium: 500;
   --app-font-weight-semibold: 600;
   --app-bg: #f3f6fa;
   --app-surface: #ffffff;
   --app-border: #d9e0e8;
   --app-border-soft: #e9eef4;
-  --app-primary: #1677ff;
-  --app-primary-hover: #0958d9;
-  --app-primary-dark: #003eb3;
-  --app-primary-soft: #e6f4ff;
+  --app-primary: #0ea5e9;
+  --app-primary-hover: #0284c7;
+  --app-primary-dark: #0369a1;
+  --app-primary-soft: #f0f9ff;
   --app-success: #16a34a;
   --app-warning: #d97706;
   --app-danger: #dc2626;
@@ -77,8 +77,9 @@ strong {
 
 .el-button {
   min-height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: var(--app-font-weight-semibold);
+  transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .el-button--primary:not(.is-link):not(.is-text) {
@@ -88,6 +89,13 @@ strong {
   --el-button-hover-border-color: var(--app-primary-hover);
   --el-button-active-bg-color: var(--app-primary-dark);
   --el-button-active-border-color: var(--app-primary-dark);
+  background: linear-gradient(135deg, var(--app-primary), var(--app-primary-hover));
+  box-shadow: 0 3px 9px -3px rgba(14, 165, 233, 0.38);
+}
+
+.el-button--primary:not(.is-link):not(.is-text):hover:not(.is-disabled) {
+  background: linear-gradient(135deg, #38bdf8, var(--app-primary-hover));
+  box-shadow: 0 6px 15px -5px rgba(14, 165, 233, 0.52);
 }
 
 .el-button.is-link,
@@ -97,7 +105,13 @@ strong {
 
 .el-button--primary.is-link,
 .el-button--primary.is-text {
-  color: #0958d9;
+  color: var(--app-primary-hover);
+}
+
+.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.is-link):not(.is-text):hover {
+  border-color: #7dd3fc;
+  background: #f0f9ff;
+  color: var(--app-primary-hover);
 }
 
 .el-button--danger.is-link,
@@ -114,7 +128,7 @@ strong {
 .el-select__wrapper,
 .el-textarea__inner,
 .el-input-number {
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .el-input__inner,

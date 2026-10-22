@@ -1,210 +1,269 @@
 package com.gas.forecast.business.ai.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gas.forecast.business.ai.dto.AiChatResponse.ExecutionProgress;
-import com.gas.forecast.business.ai.dto.AiChatResponse.ForecastResult;
+import com.gas.forecast.business.ai.dto.AiChatRequest;
+import com.gas.forecast.business.ai.dto.AiChatResponse;
 import com.gas.forecast.business.ai.dto.AiConversationResponse;
-import com.gas.forecast.business.service.ForecastConversationService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
+import com.gas.forecast.dao.domain.AgentRunTb;
 import com.gas.forecast.dao.domain.AiConversationMessageTb;
 import com.gas.forecast.dao.domain.AiConversationTb;
+import com.gas.forecast.dao.domain.AiMessageRefTb;
+import com.gas.forecast.dao.mapper.AgentRunTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationMessageTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationTbMapper;
+import com.gas.forecast.dao.mapper.AiMessageRefTbMapper;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 智能体会话持久化服务。
- * <p>只负责当前用户的会话和消息落库，不调用 Agent，也不理解用户语义。</p>
- */
+/** 查询和维护当前用户的会话；聊天写入由 {@link AiChatPersistenceService} 负责。 */
 @Service
 @RequiredArgsConstructor
 public class AiConversationService {
     private final AiConversationTbMapper conversationMapper;
     private final AiConversationMessageTbMapper messageMapper;
-    private final ForecastConversationService forecastConversationService;
+    private final AiMessageRefTbMapper referenceMapper;
+    private final AgentRunTbMapper runMapper;
     private final ObjectMapper objectMapper;
 
-    /** 为 Python Agent 准备当前轮次，并归档用户消息。 */
-    @Transactional
-    public Map<String, Object> prepareTurn(String conversationNo, String forecastBatchNo, String turnId, String message,
-                                           String agentType, Map<String, Object> requestMetadata) {
-        requireTurnId(turnId);
-        AiConversationTb conversation = requireConversation(conversationNo, forecastBatchNo, message);
-        List<Map<String, String>> history = recentHistory(conversation.getId(), 12, turnId);
-        if (findTurnMessage(conversation.getId(), turnId, "user") == null) {
-            try { saveMessage(conversation.getId(), turnId, "user", message, null, null); }
-            catch (DuplicateKeyException ignored) { /* 并发重试已由唯一键保存。 */ }
-        }
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        if (requestMetadata != null) metadata.putAll(requestMetadata);
-        putIfText(metadata, "scene", conversation.getScene());
-        putIfText(metadata, "businessType", conversation.getBusinessType());
-        putIfText(metadata, "businessNo", conversation.getBusinessNo());
-        putIfText(metadata, "forecastBatchNo", forecastBatchNo);
-        putIfText(metadata, "lastTrainBatchNo", conversation.getLastTrainBatchNo());
-        putIfText(metadata, "lastForecastBatchNo", conversation.getLastForecastBatchNo());
-        putIfText(metadata, "agentType", agentType);
-        metadata.put("turnId", turnId);
-        return Map.of("conversationNo", conversation.getConversationNo(), "history", history, "metadata", metadata);
-    }
-
-    /** 归档 Agent 回复，并同步会话的确定性状态和批次引用。 */
-    @Transactional
-    public Map<String, Object> completeTurn(String conversationNo, String turnId, String status, String answer, String skillName,
-                                            Map<String, Object> executionResult, Map<String, Object> payload) {
-        requireTurnId(turnId);
-        AiConversationTb conversation = findOwned(conversationNo);
-        // 同一轮已归档时直接返回原会话引用，不能让迟到的重复请求覆盖最终状态。
-        if (findTurnMessage(conversation.getId(), turnId, "assistant") != null) return turnResult(conversation);
-        var execution = objectMapper.valueToTree(executionResult == null ? Map.of() : executionResult);
-        conversation.setLastTrainBatchNo(firstText(execution, "trainBatchNo", conversation.getLastTrainBatchNo()));
-        conversation.setLastForecastBatchNo(firstText(execution, "forecastBatchNo", conversation.getLastForecastBatchNo()));
-        conversation.setStatus(status);
-        conversation.setUpdatedAt(new Date());
-        conversationMapper.updateById(conversation);
-        if (findTurnMessage(conversation.getId(), turnId, "assistant") == null) {
-            Map<String, Object> storedPayload = new LinkedHashMap<>();
-            if (payload != null) storedPayload.putAll(payload);
-            // 查询列表等展示必须持久化真实工具结果，不能只保存一个 LIST 展示标记。
-            storedPayload.put("executionResult", executionResult == null ? Map.of() : executionResult);
-            try { saveMessage(conversation.getId(), turnId, "assistant", answer, skillName, storedPayload); }
-            catch (DuplicateKeyException ignored) { /* 并发重试已由唯一键保存。 */ }
-        }
-        return turnResult(conversation);
-    }
-
-    private Map<String, Object> turnResult(AiConversationTb conversation) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("conversationNo", conversation.getConversationNo());
-        result.put("lastTrainBatchNo", conversation.getLastTrainBatchNo());
-        result.put("lastForecastBatchNo", conversation.getLastForecastBatchNo());
-        return result;
-    }
-
+    /** 最近会话列表，不加载消息正文。 */
     public List<AiConversationResponse> list() {
-        return conversationMapper.selectList(Wrappers.<AiConversationTb>lambdaQuery().eq(AiConversationTb::getCreatedBy, currentUserId())
-                .and(query -> query.eq(AiConversationTb::getScene, "GENERAL").or().isNull(AiConversationTb::getScene))
-                .orderByDesc(AiConversationTb::getUpdatedAt).last("limit 50")).stream().map(item -> toResponse(item, false)).toList();
+        return conversationMapper.selectList(Wrappers.<AiConversationTb>lambdaQuery()
+                        .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .orderByDesc(AiConversationTb::getLastMessageAt)
+                        .orderByDesc(AiConversationTb::getUpdatedAt)
+                        .last("limit 50"))
+                .stream()
+                .map(item -> toResponse(item, false))
+                .toList();
     }
 
-    public AiConversationResponse detail(String conversationNo) { return toResponse(findOwned(conversationNo), true); }
+    /** 按会话编号加载会话、消息、Agent Run 状态和所有业务对象引用。 */
+    public AiConversationResponse detail(String conversationNo) {
+        return toResponse(findOwned(conversationNo), true);
+    }
 
+    /** 根据预测批次引用查找来源会话，用于审计和显式跳转，不用于自动切换聊天记录。 */
     public AiConversationResponse forecastDetail(String forecastBatchNo) {
-        return toResponse(forecastConversationService.require(forecastBatchNo, null), true);
+        if (!TextUtils.hasText(forecastBatchNo)) {
+            throw new BusinessException("预测批次号不能为空");
+        }
+        AiMessageRefTb reference = referenceMapper.selectOne(
+                Wrappers.<AiMessageRefTb>lambdaQuery()
+                        .eq(AiMessageRefTb::getRefType, "FORECAST_BATCH")
+                        .eq(AiMessageRefTb::getRefNo, forecastBatchNo.trim())
+                        .orderByDesc(AiMessageRefTb::getId)
+                        .last("limit 1"));
+        if (reference == null) {
+            throw new BusinessException("该预测批次尚未关联智能体会话");
+        }
+        AiConversationMessageTb message = messageMapper.selectById(reference.getMessageId());
+        if (message == null) {
+            throw new BusinessException("预测批次关联的会话消息不存在");
+        }
+        AiConversationTb conversation = requireOwned(message.getConversationId());
+        return toResponse(conversation, true);
     }
 
     public void rename(String conversationNo, String title) {
         AiConversationTb conversation = findOwned(conversationNo);
-        conversation.setTitle(title.trim()); conversation.setUpdatedAt(new Date()); conversationMapper.updateById(conversation);
+        conversation.setTitle(title.trim());
+        conversation.setUpdatedAt(new Date());
+        conversationMapper.updateById(conversation);
     }
 
+    /** 删除会话自身、消息、消息引用和 Agent Run；后台训练预测业务数据不随会话删除。 */
+    @Transactional
     public void delete(String conversationNo) {
         AiConversationTb conversation = findOwned(conversationNo);
-        messageMapper.delete(Wrappers.<AiConversationMessageTb>lambdaQuery().eq(AiConversationMessageTb::getConversationId, conversation.getId()));
+        List<Long> messageIds = messages(conversation.getId()).stream()
+                .map(AiConversationMessageTb::getId)
+                .toList();
+        if (!messageIds.isEmpty()) {
+            referenceMapper.delete(Wrappers.<AiMessageRefTb>lambdaQuery()
+                    .in(AiMessageRefTb::getMessageId, messageIds));
+        }
+        runMapper.delete(Wrappers.<AgentRunTb>lambdaQuery()
+                .eq(AgentRunTb::getConversationId, conversation.getId()));
+        messageMapper.delete(Wrappers.<AiConversationMessageTb>lambdaQuery()
+                .eq(AiConversationMessageTb::getConversationId, conversation.getId()));
         conversationMapper.deleteById(conversation.getId());
     }
 
-    private AiConversationTb requireConversation(String conversationNo, String forecastBatchNo, String firstMessage) {
-        if (TextUtils.hasText(forecastBatchNo)) return forecastConversationService.require(forecastBatchNo, conversationNo);
-        if (TextUtils.hasText(conversationNo)) return findOwned(conversationNo);
-        return createConversation(firstMessage);
+    private AiConversationResponse toResponse(AiConversationTb conversation, boolean includeMessages) {
+        List<AiConversationResponse.Message> items = includeMessages
+                ? messageResponses(conversation.getId()) : List.of();
+        return new AiConversationResponse(
+                conversation.getConversationNo(),
+                conversation.getTitle(),
+                conversation.getAgentCode(),
+                currentBusinessContext(conversation.getMemoryJson()),
+                conversation.getStatus(),
+                conversation.getLastMessageAt(),
+                conversation.getUpdatedAt(),
+                items);
     }
 
-    private AiConversationTb createConversation(String firstMessage) {
-        AiConversationTb value = baseConversation();
-        String title = TextUtils.hasText(firstMessage) ? firstMessage : "新会话";
-        value.setTitle(title.length() > 30 ? title.substring(0, 30) : title); value.setScene("GENERAL"); conversationMapper.insert(value);
-        return value;
+    /** 从可变会话记忆中读取最近一次已经确认或实际使用的业务焦点。 */
+    private AiChatRequest.BusinessContext currentBusinessContext(String memoryJson) {
+        if (!TextUtils.hasText(memoryJson)) {
+            return null;
+        }
+        try {
+            var value = objectMapper.readTree(memoryJson).get("currentBusinessContext");
+            if (value == null || !value.isObject()) {
+                return null;
+            }
+            return objectMapper.treeToValue(value, AiChatRequest.BusinessContext.class);
+        } catch (Exception exception) {
+            throw new IllegalStateException("会话当前业务焦点JSON格式错误", exception);
+        }
     }
 
-    private AiConversationTb baseConversation() {
-        Date now = new Date(); AiConversationTb value = new AiConversationTb();
-        value.setConversationNo("AICHAT-" + UUID.randomUUID().toString().replace("-", "")); value.setStatus("ACTIVE");
-        value.setCreatedBy(currentUserId()); value.setCreatedAt(now); value.setUpdatedAt(now); return value;
+    private List<AiConversationResponse.Message> messageResponses(Long conversationId) {
+        List<AiConversationMessageTb> messages = messages(conversationId);
+        if (messages.isEmpty()) {
+            return List.of();
+        }
+        List<Long> messageIds = messages.stream().map(AiConversationMessageTb::getId).toList();
+        Map<Long, List<AiChatResponse.Reference>> references = referenceMapper.selectList(
+                        Wrappers.<AiMessageRefTb>lambdaQuery()
+                                .in(AiMessageRefTb::getMessageId, messageIds)
+                                .orderByAsc(AiMessageRefTb::getId))
+                .stream()
+                .collect(Collectors.groupingBy(
+                        AiMessageRefTb::getMessageId,
+                        LinkedHashMap::new,
+                        Collectors.mapping(this::toReference, Collectors.toList())));
+
+        Map<String, AgentRunTb> runsByTurn = new LinkedHashMap<>();
+        Map<Long, AgentRunTb> runsByMessage = runMapper.selectList(
+                        Wrappers.<AgentRunTb>lambdaQuery()
+                                .eq(AgentRunTb::getConversationId, conversationId)
+                                .orderByAsc(AgentRunTb::getId))
+                .stream()
+                .collect(Collectors.toMap(
+                        AgentRunTb::getMessageId,
+                        item -> item,
+                        (left, right) -> right,
+                        LinkedHashMap::new));
+        for (AiConversationMessageTb message : messages) {
+            AgentRunTb run = runsByMessage.get(message.getId());
+            if (run != null && TextUtils.hasText(message.getTurnId())) {
+                runsByTurn.put(message.getTurnId(), run);
+            }
+        }
+
+        return messages.stream().map(message -> {
+            AgentRunTb run = runsByTurn.get(message.getTurnId());
+            AiChatResponse stored = readStoredResponse(message.getStructuredJson());
+            List<AiChatResponse.Reference> messageReferences = references.getOrDefault(
+                    message.getId(), List.of());
+            if (stored != null && !stored.references().isEmpty()) {
+                messageReferences = mergeReferenceDisplay(messageReferences, stored.references());
+            }
+            return new AiConversationResponse.Message(
+                    message.getId(),
+                    message.getTurnId(),
+                    normalizeRole(message.getRole()),
+                    message.getContent(),
+                    message.getMessageType(),
+                    run == null ? null : run.getRunNo(),
+                    run == null ? null : run.getStatus(),
+                    stored == null ? null : stored.clarification(),
+                    stored == null ? null : stored.presentation(),
+                    stored == null ? null : stored.executionResult(),
+                    messageReferences,
+                    message.getCreatedAt());
+        }).toList();
     }
 
-    private AiConversationTb findOwned(String conversationNo) {
-        AiConversationTb value = conversationMapper.selectOne(Wrappers.<AiConversationTb>lambdaQuery()
-                .eq(AiConversationTb::getConversationNo, conversationNo).eq(AiConversationTb::getCreatedBy, currentUserId()).last("limit 1"));
-        if (value == null) throw new BusinessException("会话不存在或无权访问"); return value;
+    private List<AiChatResponse.Reference> mergeReferenceDisplay(
+            List<AiChatResponse.Reference> persisted,
+            List<AiChatResponse.Reference> stored) {
+        Map<String, AiChatResponse.Reference> display = stored.stream().collect(Collectors.toMap(
+                item -> referenceKey(item.referenceType(), item.referenceNo(), item.relationType()),
+                item -> item,
+                (left, right) -> right));
+        return persisted.stream().map(item -> {
+            AiChatResponse.Reference value = display.get(referenceKey(
+                    item.referenceType(), item.referenceNo(), item.relationType()));
+            return value == null ? item : value;
+        }).toList();
     }
 
-    private AiConversationResponse toResponse(AiConversationTb value, boolean includeMessages) {
-        List<AiConversationResponse.Message> items = includeMessages ? messages(value.getId()).stream().map(message -> {
-            StoredMessagePayload payload = readPayload(message.getStructuredJson());
-            return new AiConversationResponse.Message(message.getId(), message.getRole(), message.getContent(), message.getCreatedAt(),
-                    payload.progress(), payload.forecastResult(), payload.analysis(), payload.suggestedQuestions(), payload.presentation(), payload.executionResult());
-        }).toList() : List.of();
-        return new AiConversationResponse(value.getConversationNo(), value.getTitle(), value.getStatus(), value.getScene(), value.getBusinessType(), value.getBusinessNo(),
-                value.getLastTrainBatchNo(), value.getLastForecastBatchNo(), value.getUpdatedAt(), items);
+    private String referenceKey(String type, String number, String relation) {
+        return type + "\u0000" + number + "\u0000" + relation;
     }
 
-    private List<Map<String, String>> recentHistory(Long conversationId, int limit, String excludedTurnId) {
-        List<AiConversationMessageTb> all = messages(conversationId).stream()
-                .filter(item -> !java.util.Objects.equals(excludedTurnId, item.getTurnId())).toList();
-        int end = all.size(); int start = Math.max(0, end - limit);
-        return all.subList(start, end).stream().filter(item -> TextUtils.hasText(item.getRole()) && TextUtils.hasText(item.getContent()))
-                .map(item -> Map.of("role", item.getRole(), "content", item.getContent())).toList();
+    private AiChatResponse.Reference toReference(AiMessageRefTb value) {
+        return new AiChatResponse.Reference(
+                value.getRefType(), value.getRefNo(), value.getRelationType(), null, null);
     }
 
-    private AiConversationMessageTb findTurnMessage(Long conversationId, String turnId, String role) {
-        return messageMapper.selectOne(Wrappers.<AiConversationMessageTb>lambdaQuery()
-                .eq(AiConversationMessageTb::getConversationId, conversationId)
-                .eq(AiConversationMessageTb::getTurnId, turnId)
-                .eq(AiConversationMessageTb::getRole, role).last("limit 1"));
+    private AiChatResponse readStoredResponse(String json) {
+        if (!TextUtils.hasText(json)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, AiChatResponse.class);
+        } catch (Exception ignored) {
+            // 历史消息可能仍是旧 structured_json 格式；正文仍可正常展示。
+            return null;
+        }
+    }
+
+    private String normalizeRole(String role) {
+        return TextUtils.hasText(role) ? role.trim().toLowerCase() : role;
     }
 
     private List<AiConversationMessageTb> messages(Long conversationId) {
         return messageMapper.selectList(Wrappers.<AiConversationMessageTb>lambdaQuery()
-                .eq(AiConversationMessageTb::getConversationId, conversationId).orderByAsc(AiConversationMessageTb::getId));
+                .eq(AiConversationMessageTb::getConversationId, conversationId)
+                .orderByAsc(AiConversationMessageTb::getId));
     }
 
-    private void saveMessage(Long conversationId, String turnId, String role, String content, String code, Object structured) {
-        AiConversationMessageTb value = new AiConversationMessageTb();
-        value.setConversationId(conversationId); value.setTurnId(turnId); value.setRole(role); value.setContent(content); value.setMessageType(code); value.setCreatedAt(new Date());
-        try { value.setStructuredJson(structured == null ? null : objectMapper.writeValueAsString(structured)); }
-        catch (Exception exception) { value.setStructuredJson(null); }
-        messageMapper.insert(value);
+    private AiConversationTb findOwned(String conversationNo) {
+        if (!TextUtils.hasText(conversationNo)) {
+            throw new BusinessException("会话编号不能为空");
+        }
+        AiConversationTb conversation = conversationMapper.selectOne(
+                Wrappers.<AiConversationTb>lambdaQuery()
+                        .eq(AiConversationTb::getConversationNo, conversationNo.trim())
+                        .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .last("limit 1"));
+        if (conversation == null) {
+            throw new BusinessException("会话不存在或无权访问");
+        }
+        return conversation;
     }
 
-    private StoredMessagePayload readPayload(String json) {
-        if (!TextUtils.hasText(json)) return StoredMessagePayload.empty();
-        try { return objectMapper.readValue(json, StoredMessagePayload.class); } catch (Exception exception) { return StoredMessagePayload.empty(); }
+    private AiConversationTb requireOwned(Long conversationId) {
+        AiConversationTb conversation = conversationMapper.selectOne(
+                Wrappers.<AiConversationTb>lambdaQuery()
+                        .eq(AiConversationTb::getId, conversationId)
+                        .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .last("limit 1"));
+        if (conversation == null) {
+            throw new BusinessException("会话不存在或无权访问");
+        }
+        return conversation;
     }
 
-    private String firstText(com.fasterxml.jackson.databind.JsonNode node, String name, String fallback) {
-        String found = findText(node, name); return TextUtils.hasText(found) ? found : fallback;
-    }
-
-    private String findText(com.fasterxml.jackson.databind.JsonNode node, String name) {
-        if (node == null || node.isNull() || node.isMissingNode()) return null;
-        com.fasterxml.jackson.databind.JsonNode direct = node.get(name);
-        if (direct != null && direct.isValueNode() && TextUtils.hasText(direct.asText())) return direct.asText();
-        if (node.isContainerNode()) for (com.fasterxml.jackson.databind.JsonNode child : node) { String value = findText(child, name); if (TextUtils.hasText(value)) return value; }
-        return null;
-    }
-
-    private void putIfText(Map<String, Object> values, String key, String value) { if (TextUtils.hasText(value)) values.put(key, value); }
-    private void requireTurnId(String turnId) {
-        if (!TextUtils.hasText(turnId) || turnId.length() > 64) throw new BusinessException("turnId不能为空且长度不能超过64个字符");
-    }
-    private String currentUserId() { return String.valueOf(SecurityContextHolder.getUserId()); }
-
-    private record StoredMessagePayload(ExecutionProgress progress, ForecastResult forecastResult, String analysis,
-                                        List<String> suggestedQuestions, JsonNode presentation, JsonNode executionResult) {
-        private StoredMessagePayload { suggestedQuestions = suggestedQuestions == null ? List.of() : suggestedQuestions; }
-        private static StoredMessagePayload empty() { return new StoredMessagePayload(null, null, null, List.of(), null, null); }
+    private String currentUserId() {
+        Long userId = SecurityContextHolder.getUserId();
+        if (userId == null) {
+            throw new BusinessException("登录状态已失效");
+        }
+        return String.valueOf(userId);
     }
 }

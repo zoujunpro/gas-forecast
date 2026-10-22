@@ -255,6 +255,9 @@ public class ModelTrainConfigServiceImpl implements ModelTrainConfigService {
         if (modelConfig == null) {
             throw new BusinessException("所属模型不存在");
         }
+        if (!Integer.valueOf(1).equals(modelConfig.getEnabled())) {
+            throw new BusinessException("所属模型已停用，不能创建或更新训练配置");
+        }
         return modelConfig;
     }
 }

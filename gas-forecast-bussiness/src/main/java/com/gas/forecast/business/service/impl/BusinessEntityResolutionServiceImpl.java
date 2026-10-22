@@ -9,6 +9,8 @@ import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +70,79 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
         List<EntityCandidate> rows = industryMapper.selectList(wrapper.orderByAsc(BaseIndustryTb::getIndustryName).last("limit " + limit(query.limit()))).stream()
                 .map(row -> new EntityCandidate("INDUSTRY", row.getIndustryCode(), row.getIndustryName(), "行业", null, null, row.getIndustryCode(), row.getIndustryName())).toList();
         return result("行业", rows);
+    }
+
+    @Override
+    public BatchResolutionResult resolveBatch(BatchEntityQuery query) {
+        if (query == null)
+            throw new IllegalArgumentException("批量实体查询不能为空");
+        List<BatchResolutionItem> items = new ArrayList<>();
+        resolveNames(distinctNames(query.customerNames()), "CUSTOMER", query.limit(), items);
+        resolveNames(distinctNames(query.regionNames()), "REGION", query.limit(), items);
+        resolveNames(distinctNames(query.industryNames()), "INDUSTRY", query.limit(), items);
+        if (items.isEmpty())
+            throw new IllegalArgumentException("至少提供一个客户、地区或行业名称");
+
+        boolean hasMissing = items.stream().anyMatch(item -> "NOT_FOUND".equals(item.status()));
+        boolean hasMultiple = items.stream().anyMatch(item -> "MULTIPLE".equals(item.status()));
+        String status = hasMissing ? "NOT_FOUND" : hasMultiple ? "MULTIPLE" : "UNIQUE";
+        String message = switch (status) {
+            case "UNIQUE" -> "批量实体解析成功";
+            case "MULTIPLE" -> "部分实体存在多个候选，请逐项选择";
+            default -> "部分实体没有找到，请修正名称后重试";
+        };
+        Map<String, Object> proposed = "UNIQUE".equals(status)
+                ? proposedParameters(items)
+                : Map.of();
+        return new BatchResolutionResult(status, message, List.copyOf(items), proposed);
+    }
+
+    private void resolveNames(List<String> names, String type, Integer limit,
+                              List<BatchResolutionItem> target) {
+        for (String name : names) {
+            EntityQuery query = switch (type) {
+                case "CUSTOMER" -> new EntityQuery(null, name, null, null, null, null, limit);
+                case "REGION" -> new EntityQuery(null, null, null, name, null, null, limit);
+                default -> new EntityQuery(null, null, null, null, null, name, limit);
+            };
+            ResolutionResult result = switch (type) {
+                case "CUSTOMER" -> resolveCustomer(query);
+                case "REGION" -> resolveRegion(query);
+                default -> resolveIndustry(query);
+            };
+            target.add(new BatchResolutionItem(
+                    type, name, result.status(), result.message(), result.candidates()));
+        }
+    }
+
+    private List<String> distinctNames(List<String> values) {
+        if (values == null)
+            return List.of();
+        return values.stream()
+                .filter(TextUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+    }
+
+    private Map<String, Object> proposedParameters(List<BatchResolutionItem> items) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        putResolved(result, items, "CUSTOMER", "customerCodes", "customerNames");
+        putResolved(result, items, "REGION", "regionCodes", "regionNames");
+        putResolved(result, items, "INDUSTRY", "industryCodes", "industryNames");
+        return result;
+    }
+
+    private void putResolved(Map<String, Object> target, List<BatchResolutionItem> items,
+                             String type, String codeKey, String nameKey) {
+        List<EntityCandidate> candidates = items.stream()
+                .filter(item -> type.equals(item.entityType()))
+                .map(item -> item.candidates().get(0))
+                .toList();
+        if (candidates.isEmpty())
+            return;
+        target.put(codeKey, candidates.stream().map(EntityCandidate::code).distinct().toList());
+        target.put(nameKey, candidates.stream().map(EntityCandidate::name).distinct().toList());
     }
 
     private EntityCandidate customer(BaseCustomerTb row) {

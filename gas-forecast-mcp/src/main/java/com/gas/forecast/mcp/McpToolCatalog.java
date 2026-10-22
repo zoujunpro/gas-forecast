@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 /** 从YAML加载MCP工具名称、描述、输入输出Schema和安全提示。 */
 @Component
 public class McpToolCatalog {
-    private static final Set<String> DISPATCHED_TOOLS = Set.of("conversation_prepare", "conversation_reply_append", "memory_get", "memory_update", "customer_search", "region_search", "industry_search", "region_list", "industry_list",
-            "customer_list", "business_reference_resolve", "training_start", "training_status_get", "training_result_get", "training_latest_get", "training_history_get", "forecast_start", "forecast_status_get",
-            "forecast_result_get", "forecast_latest_get", "forecast_history_get", "task_status_get", "task_steps_get", "task_step_record", "task_resume", "task_retry");
+    private static final Set<String> DISPATCHED_TOOLS = Set.of("region_list", "industry_list",
+            "customer_list", "training_start", "training_result_query", "forecast_start", "forecast_result_query",
+            "task_status_get", "task_steps_get");
     private final Map<String, ToolDefinition> tools;
 
     /** Spring运行时入口，配置项允许以后切换成外部文件。 */

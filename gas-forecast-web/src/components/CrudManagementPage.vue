@@ -1280,6 +1280,10 @@ const averageScore = (scores: Array<number | null>) => {
   if (!availableScores.length) return 0
   return availableScores.reduce((sum, item) => sum + item, 0) / availableScores.length
 }
+const candidateMetricValue = (value: unknown) => {
+  const numberValue = toNumber(value)
+  return numberValue === null ? '-' : numberValue.toFixed(2)
+}
 const candidateRows = computed<Record<string, any>[]>(() => {
   const rows = asArray(selectedResultJson.value.candidate_evaluations)
   const metricRows: Record<string, any>[] = rows.map((row) => {
@@ -1315,7 +1319,16 @@ const candidateRows = computed<Record<string, any>[]>(() => {
       if (b.score !== a.score) return b.score - a.score
       return (Number(a.rank) || Number.MAX_SAFE_INTEGER) - (Number(b.rank) || Number.MAX_SAFE_INTEGER)
     })
-    .map((row, index) => ({ ...row, rank: index + 1 }))
+    .map((row, index) => ({
+      ...row,
+      rank: index + 1,
+      score: candidateMetricValue(row.score),
+      rmse: candidateMetricValue(row.rmse),
+      mape: candidateMetricValue(row.mape),
+      wmape: candidateMetricValue(row.wmape),
+      mae: candidateMetricValue(row.mae),
+      r2: candidateMetricValue(row.r2)
+    }))
 })
 const backtestRows = computed(() => asArray(selectedResultJson.value.rolling_backtest_results))
 const metricUnavailableMessage = computed(() => {

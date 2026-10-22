@@ -16,6 +16,7 @@ export const modelConfigTableFields: BaseDataFieldConfig[] = [
   { prop: 'configCode', label: '模型编码', minWidth: 150 },
   { prop: 'configName', label: '模型名称', minWidth: 180 },
   { prop: 'modelVersion', label: '模型版本', minWidth: 110 },
+  { prop: 'enabled', label: '启用状态', minWidth: 100, displayType: 'enabled' },
   { prop: 'agentName', label: '所属智能体', minWidth: 190 },
   { prop: 'regionNames', label: '支持地区', minWidth: 160, displayType: 'array' },
   { prop: 'industryNames', label: '支持行业', minWidth: 160, displayType: 'array' },

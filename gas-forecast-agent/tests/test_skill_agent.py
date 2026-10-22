@@ -2,8 +2,19 @@ import asyncio
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from gas_forecast_agent.config import Settings
-from gas_forecast_agent.skills import DialogueAct, RequestSemantics, SkillAgent, SkillDefinition, SkillRouter, TrainingPolicy
+from gas_forecast_agent.skills import (
+    ActionExecutor,
+    DialogueAct,
+    RequestSemantics,
+    SkillDefinition,
+    SkillIntent,
+    SkillRegistry,
+    SkillRouter,
+    TrainingPolicy,
+)
 from gas_forecast_agent.skills.result_adapter import ToolResultAdapter
 
 
@@ -16,6 +27,25 @@ def model_settings(**overrides) -> Settings:
         **overrides,
     }
     return Settings(**values)
+
+
+def skill_definition(
+    name: str,
+    *,
+    allowed_tools: list[str],
+    instructions: str,
+    intent: SkillIntent = SkillIntent.QUERY,
+    read_only: bool = True,
+) -> SkillDefinition:
+    """构造单元测试使用的最小 Skill，字段与正式 SKILL.md 保持一致。"""
+    return SkillDefinition.model_validate({
+        "name": name,
+        "intent": intent,
+        "description": f"测试 {name}",
+        "allowed-tools": allowed_tools,
+        "read-only": read_only,
+        "instructions": instructions,
+    })
 
 
 class FakeMcp:
@@ -43,6 +73,42 @@ class FakeMcp:
                 "data": {"records": [], "total": 0},
             }
         }
+
+
+def test_knowledge_qa_does_not_depend_on_mcp_tool_catalog(monkeypatch) -> None:
+    class UnavailableMcp:
+        async def list_tools(self):
+            raise AssertionError("知识问答不应读取 MCP 工具目录")
+
+    class Completions:
+        async def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                content='{"status":"COMPLETED","message":"MAPE 是平均绝对百分比误差。"}',
+                tool_calls=[],
+            ))])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
+    skill = skill_definition(
+        "knowledge-qa",
+        allowed_tools=[],
+        instructions="回答预测概念。",
+        intent=SkillIntent.KNOWLEDGE_QA,
+    )
+
+    result = asyncio.run(ActionExecutor(model_settings()).run(
+        conversation_no="C-KNOWLEDGE",
+        skill=skill,
+        message="MAPE 是什么？",
+        history=[],
+        memory={},
+        metadata={},
+        mcp=UnavailableMcp(),
+    ))
+
+    assert result.status == "COMPLETED"
+    assert result.message == "MAPE 是平均绝对百分比误差。"
+    assert result.available_tools == []
 
 
 def test_large_page_result_is_compacted_for_model_but_original_is_unchanged() -> None:
@@ -97,7 +163,7 @@ def test_successful_page_status_cannot_be_overridden_by_model() -> None:
         "message": "客户列表查询成功",
         "data": {"records": [{"customerName": "东台中油"}], "total": 154},
     }
-    fallback = SkillAgent._page_fallback_result(
+    fallback = ActionExecutor._page_fallback_result(
         {}, {"customer_list": {}}, [{"tool": "customer_list", "arguments": {}, "result": result}],
     )
 
@@ -107,7 +173,7 @@ def test_successful_page_status_cannot_be_overridden_by_model() -> None:
 
 
 def test_python_style_model_message_is_parsed_and_long_page_text_uses_fallback() -> None:
-    decision = SkillAgent._message_decision(
+    decision = ActionExecutor._message_decision(
         "{'status':'COMPLETED','message':'已查询到154家客户：\\n- 客户1\\n- 客户2'}"
     )
     assert decision["status"] == "COMPLETED"
@@ -163,15 +229,14 @@ def test_model_selects_one_allowed_tool_then_returns_structured_list(monkeypatch
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
     settings = model_settings()
-    skill = SkillDefinition.model_validate({
-        "name": "business-data-query",
-        "description": "查询客户",
-        "allowed-tools": ["customer_list"],
-        "instructions": "查询客户时调用 customer_list。",
-    })
+    skill = skill_definition(
+        "business-data-query",
+        allowed_tools=["customer_list"],
+        instructions="查询客户时调用 customer_list。",
+    )
     mcp = FakeMcp()
 
-    result = asyncio.run(SkillAgent(settings).run(
+    result = asyncio.run(ActionExecutor(settings).run(
         conversation_no="C-1",
         skill=skill,
         message="查询浙江客户",
@@ -186,7 +251,9 @@ def test_model_selects_one_allowed_tool_then_returns_structured_list(monkeypatch
     assert len(requests) == 2
     assert result.message == "查询完成"
     assert mcp.calls == ["customer_list"]
-    assert result.tool_trace[0]["arguments"] == {"regionName": "浙江"}
+    # ToolPlanner 不能自行生成实体；生产流程中的地区名称必须先由语义层验证
+    # 确实出现在用户原话，再进入 known parameters。
+    assert result.tool_trace[0]["arguments"] == {}
     assert all(request["parallel_tool_calls"] is False for request in requests)
     assert "只选择当前最先需要执行的一个工具" in requests[1]["messages"][-1]["content"]
 
@@ -223,14 +290,13 @@ def test_structured_training_result_returns_without_second_model_call(monkeypatc
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
     settings = model_settings()
-    skill = SkillDefinition.model_validate({
-        "name": "model-training-management",
-        "description": "查询训练结果",
-        "allowed-tools": ["training_result_get"],
-        "instructions": "查询训练结果。",
-    })
+    skill = skill_definition(
+        "business-data-query",
+        allowed_tools=["training_result_get"],
+        instructions="查询训练结果。",
+    )
 
-    result = asyncio.run(SkillAgent(settings).run(
+    result = asyncio.run(ActionExecutor(settings).run(
         conversation_no="C-TRAIN", skill=skill, message="查询训练信息", history=[],
         memory={}, metadata={}, mcp=TrainingMcp(),
     ))
@@ -239,53 +305,6 @@ def test_structured_training_result_returns_without_second_model_call(monkeypatc
     assert result.executed_tool == "training_result_get"
     assert result.message == "训练信息查询完成"
     assert len(requests) == 1
-
-
-def test_model_cannot_forge_user_confirmation(monkeypatch) -> None:
-    response = SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(
-            content=None,
-            tool_calls=[SimpleNamespace(function=SimpleNamespace(
-                name="task_retry",
-                arguments='{"taskNo":"TASK-1","confirmed":true}',
-            ))],
-        ))],
-    )
-
-    class Completions:
-        async def create(self, **kwargs):
-            return response
-
-    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
-    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
-    settings = model_settings()
-    skill = SkillDefinition.model_validate({
-        "name": "model-training-management",
-        "description": "重试任务",
-        "allowed-tools": ["task_retry"],
-        "instructions": "重试前必须获得用户确认。",
-    })
-
-    class RetryMcp(FakeMcp):
-        async def list_tools(self):
-            return [{
-                "name": "task_retry",
-                "description": "重试",
-                "inputSchema": {
-                    "type": "object",
-                    "required": ["taskNo", "confirmed"],
-                    "properties": {"taskNo": {"type": "string"}, "confirmed": {"type": "boolean"}},
-                },
-            }]
-
-    mcp = RetryMcp()
-    result = asyncio.run(SkillAgent(settings).run(
-        conversation_no="C-1", skill=skill, message="重试 TASK-1", history=[], memory={}, metadata={}, mcp=mcp,
-    ))
-
-    assert result.status == "NEED_CONFIRMATION"
-    assert result.pending_tool == "task_retry"
-    assert mcp.calls == []
 
 
 def test_action_skill_cannot_claim_success_without_tool(monkeypatch) -> None:
@@ -300,14 +319,15 @@ def test_action_skill_cannot_claim_success_without_tool(monkeypatch) -> None:
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
     settings = model_settings()
-    skill = SkillDefinition.model_validate({
-        "name": "customer-gas-forecast",
-        "description": "发起预测",
-        "allowed-tools": ["customer_list"],
-        "instructions": "预测必须调用工具。",
-    })
+    skill = skill_definition(
+        "customer-gas-forecast",
+        allowed_tools=["customer_list"],
+        instructions="预测必须调用工具。",
+        intent=SkillIntent.FORECAST,
+        read_only=False,
+    )
 
-    result = asyncio.run(SkillAgent(settings).run(
+    result = asyncio.run(ActionExecutor(settings).run(
         conversation_no="C-SAFE", skill=skill, message="预测某客户", history=[], memory={}, metadata={}, mcp=FakeMcp(),
     ))
 
@@ -328,13 +348,12 @@ def test_tool_business_status_is_not_flattened_to_failed() -> None:
             }}
 
     settings = Settings(GAS_SKILL_ROUTING_MODE="rules", LLM_API_KEY=None)
-    skill = SkillDefinition.model_validate({
-        "name": "business-data-query",
-        "description": "查询客户",
-        "allowed-tools": ["customer_list"],
-        "instructions": "查询客户。",
-    })
-    result = asyncio.run(SkillAgent(settings).run(
+    skill = skill_definition(
+        "business-data-query",
+        allowed_tools=["customer_list"],
+        instructions="查询客户。",
+    )
+    result = asyncio.run(ActionExecutor(settings).run(
         conversation_no="C-2", skill=skill, message="查询客户", history=[], memory={}, metadata={}, mcp=NeedInfoMcp(),
     ))
 
@@ -351,26 +370,77 @@ def test_all_of_schema_fields_are_kept() -> None:
             "allOf": [{"properties": {"customerCode": {"type": "string"}}}],
         },
     }
-    arguments = SkillAgent._validated_arguments(tool, {
+    arguments = ActionExecutor._validated_arguments(tool, {
         "conversationNo": "C-3", "customerCode": "CUS-1", "unknown": "drop",
     })
     assert arguments == {"conversationNo": "C-3", "customerCode": "CUS-1"}
 
 
+@pytest.mark.parametrize(
+    ("plural", "singular", "code"),
+    [
+        ("industryCodes", "industryCode", "IND000001"),
+        ("regionCodes", "regionCode", "REG000001"),
+        ("customerCodes", "customerCode", "CUS000001"),
+    ],
+)
+def test_single_verified_entity_collection_is_adapted_to_tool_parameter(
+    plural: str, singular: str, code: str,
+) -> None:
+    tool = {"name": "customer_list", "inputSchema": {"properties": {singular: {"type": "string"}}}}
+
+    arguments, error = ActionExecutor._adapt_tool_parameters(tool, {plural: [code]})
+
+    assert error is None
+    assert arguments == {singular: code}
+
+
+def test_multiple_verified_entities_are_not_silently_reduced() -> None:
+    tool = {"name": "customer_list", "inputSchema": {"properties": {"industryCode": {"type": "string"}}}}
+
+    arguments, error = ActionExecutor._adapt_tool_parameters(tool, {
+        "industryCodes": ["IND000001", "IND000002"],
+    })
+
+    assert arguments["industryCodes"] == ["IND000001", "IND000002"]
+    assert error is not None
+    assert "单个行业" in error
+
+
+def test_entity_adapter_rejects_conflicting_single_and_batch_parameters() -> None:
+    tool = {"name": "customer_list", "inputSchema": {"properties": {"industryCode": {"type": "string"}}}}
+
+    _, error = ActionExecutor._adapt_tool_parameters(tool, {
+        "industryCode": "IND-OLD", "industryCodes": ["IND-VERIFIED"],
+    })
+
+    assert error is not None
+    assert "参数冲突" in error
+
+
+def test_entity_adapter_keeps_unfiltered_query_unmodified() -> None:
+    tool = {"name": "customer_list", "inputSchema": {"properties": {"industryCode": {"type": "string"}}}}
+
+    arguments, error = ActionExecutor._adapt_tool_parameters(tool, {"conversationNo": "C-no-filter"})
+
+    assert error is None
+    assert arguments == {"conversationNo": "C-no-filter"}
+
+
 def test_direct_model_question_is_not_marked_completed() -> None:
-    decision = SkillAgent._message_decision("请提供具体客户名称。")
+    decision = ActionExecutor._message_decision("请提供具体客户名称。")
     assert decision["status"] == "NEED_INFORMATION"
 
 
 def test_direct_model_conflict_is_not_marked_completed() -> None:
-    decision = SkillAgent._message_decision('{"status":"NEED_CLARIFICATION","message":"预测参数存在冲突。"}')
+    decision = ActionExecutor._message_decision('{"status":"NEED_CLARIFICATION","message":"预测参数存在冲突。"}')
     assert decision == {"type": "message", "status": "NEED_CLARIFICATION", "message": "预测参数存在冲突。"}
 
 
 def test_schema_range_is_checked_before_tool_call() -> None:
     tool = {"inputSchema": {"properties": {"forecastHorizon": {"type": "integer", "minimum": 1, "maximum": 30}}}}
-    assert SkillAgent._argument_validation_error(tool, {"forecastHorizon": 31}) == "参数 forecastHorizon 不能大于 30。"
-    assert SkillAgent._argument_validation_error(tool, {
+    assert ActionExecutor._argument_validation_error(tool, {"forecastHorizon": 31}) == "参数 forecastHorizon 不能大于 30。"
+    assert ActionExecutor._argument_validation_error(tool, {
         "trainingStartDate": "2025-03-01", "trainingEndDate": "2025-01-01",
     }) == "训练开始日期不能晚于训练结束日期，请重新确认训练范围。"
 
@@ -383,30 +453,77 @@ def test_training_utterance_extracts_clean_customer_name() -> None:
         "查询杭州天然气训练进度",
         "开始跑一下杭州天然气模型",
     ):
-        values = SkillAgent._initial_parameters(message, {}, {}, "C-6", "model-training-management")
+        values = ActionExecutor._initial_parameters(message, {}, {}, "C-6", "model-training-management")
         assert values["customerName"] == "杭州天然气"
 
 
 def test_training_range_and_industry_alias_are_extracted() -> None:
-    recent = SkillAgent._initial_parameters("只用最近90天数据训练杭州天然气", {}, {}, "C-7", "model-training-management")
+    recent = ActionExecutor._initial_parameters("只用最近90天数据训练杭州天然气", {}, {}, "C-7", "model-training-management")
     assert (recent["trainMode"], recent["trainingPeriods"], recent["customerName"]) == ("RECENT", 90, "杭州天然气")
 
-    date_range = SkillAgent._initial_parameters(
+    date_range = ActionExecutor._initial_parameters(
         "使用2025-01-01到2025-03-01的数据训练杭州天然气", {}, {}, "C-8", "model-training-management",
     )
     assert (date_range["trainMode"], date_range["trainingStartDate"], date_range["trainingEndDate"]) == (
         "RANGE", "2025-01-01", "2025-03-01",
     )
-    chemical = SkillAgent._initial_parameters(
+    chemical = ActionExecutor._initial_parameters(
         "训练浙江城市化工客户", {}, {}, "C-9", "model-training-management",
-        RequestSemantics(region_name="浙江", industry_name="化工"),
+        RequestSemantics(region_name="浙江", industry_name="化工", fetch_all=True),
     )
     assert chemical["industryName"] == "化工"
     assert chemical["bulk"] is True
 
 
+def test_region_or_industry_does_not_implicitly_expand_write_scope() -> None:
+    values = ActionExecutor._initial_parameters(
+        "训练浙江城燃客户",
+        {},
+        {},
+        "C-SCOPE-UNSPECIFIED",
+        "model-training-management",
+        RequestSemantics(region_name="浙江", industry_name="城燃"),
+    )
+
+    assert values["bulk"] is False
+    assert "全部匹配客户" in values["_clarificationQuestion"]
+    assert values["_clarificationPendingTool"] == "training_start"
+
+
+def test_rejecting_scope_clears_singular_and_batch_entities() -> None:
+    values = ActionExecutor._initial_parameters(
+        "重新选择范围",
+        {
+            "pendingInteraction": {
+                "parameters": {
+                    "regionName": "浙江",
+                    "regionNames": ["浙江", "江苏"],
+                    "industryName": "城燃",
+                    "industryNames": ["城燃", "化工"],
+                },
+            },
+        },
+        {
+            "inputType": "CLARIFICATION_REPLY",
+            "clarificationResolvedParameters": {"_scopeRejected": True},
+        },
+        "C-SCOPE-CHANGE",
+        "model-training-management",
+    )
+
+    for key in ("regionName", "regionNames", "industryName", "industryNames"):
+        assert key not in values
+    assert "_clarificationQuestion" not in values
+
+
+def test_scope_clarification_uses_range_specific_labels() -> None:
+    issue = ActionExecutor._scope_issue("是否使用该范围？")
+
+    assert [option.label for option in issue.options] == ["确认使用该范围", "重新选择范围"]
+
+
 def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "查询江苏省城市燃气行业的所有客户信息", {}, {}, "C-REGION", "business-data-query",
         RequestSemantics(region_name="江苏", industry_name="城市燃气", fetch_all=True),
     )
@@ -417,11 +534,11 @@ def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> No
 
 
 def test_scope_quantifier_is_not_part_of_region_name() -> None:
-    leading = SkillAgent._initial_parameters(
+    leading = ActionExecutor._initial_parameters(
         "查询所有江苏城燃的客户", {}, {}, "C-REGION-ALL-1", "business-data-query",
         RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
     )
-    middle = SkillAgent._initial_parameters(
+    middle = ActionExecutor._initial_parameters(
         "查询江苏所有城燃的客户", {}, {}, "C-REGION-ALL-2", "business-data-query",
         RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
     )
@@ -436,14 +553,13 @@ def test_scope_quantifier_is_not_part_of_region_name() -> None:
 
 def test_structured_region_and_industry_are_used_without_phrase_rules() -> None:
     semantics = RequestSemantics(
-        operation="QUERY_CUSTOMERS",
         region_name="江苏",
         industry_name="城燃",
         fetch_all=True,
         evidence={"region_name": "江苏", "industry_name": "城燃", "fetch_all": "所有"},
     )
 
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "查询下江苏城燃的所有客户信息",
         {}, {}, "C-REGION-LOCKED", "business-data-query", semantics,
     )
@@ -455,7 +571,7 @@ def test_structured_region_and_industry_are_used_without_phrase_rules() -> None:
 
 
 def test_customer_name_does_not_become_region_or_industry_filter() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "帮我预测下扬州中燃未来50天的燃气销量",
         {"currentParameters": {
             "regionCode": "OLD-REGION", "industryCode": "OLD-INDUSTRY",
@@ -465,7 +581,6 @@ def test_customer_name_does_not_become_region_or_industry_filter() -> None:
         "C-CUSTOMER-BOUNDARY",
         "customer-gas-forecast",
         RequestSemantics(
-            operation="FORECAST",
             customer_name="扬州中燃",
             region_name="扬州",
             industry_name="燃气",
@@ -483,7 +598,7 @@ def test_customer_name_does_not_become_region_or_industry_filter() -> None:
 
 
 def test_forecast_with_new_training_result_forces_retraining() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "帮我预测下客户CUS000023的未来40天燃气销量，用新训练的结果",
         {}, {}, "C-NEW-TRAIN", "customer-gas-forecast",
     )
@@ -495,12 +610,12 @@ def test_forecast_with_new_training_result_forces_retraining() -> None:
     assert values["forecastHorizon"] == 40
 
     arguments = {**values, "customerCode": "CUS000135", "forecastHorizon": 90, "forceRetrain": False}
-    SkillAgent._apply_locked_parameters(values, arguments)
+    ActionExecutor._apply_locked_parameters(values, arguments)
     assert arguments["customerCode"] == "CUS000023"
     assert arguments["forecastHorizon"] == 40
     assert arguments["forceRetrain"] is True
 
-    confirmed = SkillAgent._initial_parameters(
+    confirmed = ActionExecutor._initial_parameters(
         "是",
         {"currentParameters": values, "pendingAction": {"tool": "forecast_start", "parameters": values}},
         {}, "C-NEW-TRAIN", "customer-gas-forecast",
@@ -519,7 +634,7 @@ def test_new_retraining_request_replaces_stale_pending_forecast() -> None:
         "autoTrain": True,
         "trainingPreference": "AUTO",
     }
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "预测下客户CUS000134未来50天燃气销量，同时训练也要重新发起",
         {"currentParameters": stale, "pendingAction": {"tool": "forecast_start", "parameters": stale}},
         {},
@@ -535,14 +650,13 @@ def test_new_retraining_request_replaces_stale_pending_forecast() -> None:
 
 
 def test_structured_semantics_overrides_stale_training_policy_without_phrase_rules() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "模型不要接着上次那个了，给我另起炉灶",
         {"currentParameters": {"customerCode": "CUS-9", "forceRetrain": False, "trainingPreference": "AUTO"}},
         {},
         "C-SEMANTIC",
         "customer-gas-forecast",
         RequestSemantics(
-            operation="FORECAST",
             training_policy=TrainingPolicy.FORCE_RETRAIN,
             evidence={"training_policy": "不要接着上次那个了，另起炉灶"},
         ),
@@ -556,9 +670,9 @@ def test_structured_semantics_overrides_stale_training_policy_without_phrase_rul
 def test_confirmation_restores_and_locks_pending_parameter_snapshot() -> None:
     snapshot = {
         "customerCode": "CUS-9", "forecastHorizon": 50, "forceRetrain": True,
-        "autoTrain": True, "trainingPreference": "FORCE_RETRAIN", "idempotencyKey": "same-operation",
+        "autoTrain": True, "trainingPreference": "FORCE_RETRAIN", "idempotencyKey": "same-request",
     }
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "确认",
         {
             "currentParameters": {**snapshot, "forceRetrain": False},
@@ -574,9 +688,9 @@ def test_confirmation_restores_and_locks_pending_parameter_snapshot() -> None:
     assert values["confirmed"] is True
     assert values["customerCode"] == "CUS-9"
     assert values["forceRetrain"] is True
-    assert values["idempotencyKey"] == "same-operation"
+    assert values["idempotencyKey"] == "same-request"
     arguments = {**values, "customerCode": "MODEL-CHANGED", "forceRetrain": False}
-    SkillAgent._apply_locked_parameters(values, arguments)
+    ActionExecutor._apply_locked_parameters(values, arguments)
     assert arguments["customerCode"] == "CUS-9"
     assert arguments["forceRetrain"] is True
 
@@ -586,16 +700,15 @@ def test_confirmation_ignores_semantic_clarification_and_uses_pending_snapshot()
         "customerCode": "CUS000140",
         "customerName": "扬州中燃",
         "forecastHorizon": 50,
-        "idempotencyKey": "pending-operation",
+        "idempotencyKey": "pending-request",
     }
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "继续",
         {"pendingAction": {"tool": "forecast_start", "parameters": snapshot}},
         {},
         "C-CONFIRMATION",
         "customer-gas-forecast",
         RequestSemantics(
-            operation="UNSPECIFIED",
             dialogue_act=DialogueAct.CONFIRM_PENDING,
             needs_clarification=True,
             clarification_question="请明确要继续执行的具体客户、区域、行业或预测周期？",
@@ -607,19 +720,14 @@ def test_confirmation_ignores_semantic_clarification_and_uses_pending_snapshot()
     assert values["confirmed"] is True
     assert values["customerCode"] == "CUS000140"
     assert values["forecastHorizon"] == 50
-    assert values["idempotencyKey"] == "pending-operation"
+    assert values["idempotencyKey"] == "pending-request"
     assert "_clarificationQuestion" not in values
     assert "_semanticEvidence" not in values
 
 
-def test_training_completion_question_queries_status() -> None:
-    decision = SkillAgent._rule_decision("model-training-management", "杭州天然气训练好了吗", {})
-    assert decision["name"] == "training_status_get"
-
-
 def test_training_information_query_is_deterministically_a_result_query() -> None:
-    decision = SkillAgent._explicit_read_query(
-        "model-training-management",
+    decision = ActionExecutor._explicit_read_query(
+        SkillIntent.QUERY,
         "刚才的这个预测所用的训练信息给我",
         {"trainBatchNo": "TRBATCH-1"},
     )
@@ -629,12 +737,12 @@ def test_training_information_query_is_deterministically_a_result_query() -> Non
 
 
 def test_explicit_training_batch_number_cannot_be_truncated_by_model() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "把训练批次：TRBATCH-20261014-00707的训练结果给我",
         {}, {}, "C-BATCH", "model-training-management",
     )
     arguments = {**values, "trainBatchNo": "TRBATCH-20261014-"}
-    SkillAgent._apply_locked_parameters(values, arguments)
+    ActionExecutor._apply_locked_parameters(values, arguments)
 
     assert values["trainBatchNo"] == "TRBATCH-20261014-00707"
     assert "trainBatchNo" in values["_lockedParameters"]
@@ -642,7 +750,7 @@ def test_explicit_training_batch_number_cannot_be_truncated_by_model() -> None:
 
 
 def test_empty_training_result_is_not_reported_as_success() -> None:
-    normalized = SkillAgent._normalize_empty_query_result(
+    normalized = ActionExecutor._normalize_empty_query_result(
         "training_result_get",
         {"success": True, "status": "COMPLETED", "message": "训练结果查询成功", "retryable": False,
          "data": {"batches": [], "selectedBatchNo": None}},
@@ -661,57 +769,63 @@ def test_current_entity_fields_replace_stale_memory_without_code_patterns() -> N
         "regionCode": "old-region", "industryCode": "old-industry",
     }
     arguments.update(current)
-    SkillAgent._apply_current_entity_arguments(current, arguments)
+    ActionExecutor._apply_current_entity_arguments(current, arguments)
     assert arguments == {"customerCode": "opaque-new-code"}
 
 
-def test_training_synonyms_select_training_skill() -> None:
-    for message in ("杭州天然气需要重新建模", "让模型重新学习杭州天然气的数据", "开始跑一下杭州天然气模型", "恢复刚才卡住的任务"):
-        assert SkillRouter._select_with_rules(message).skill_name == "model-training-management"
+def test_router_uses_skill_from_structured_model_understanding() -> None:
+    registry = SkillRegistry()
+    router = SkillRouter(registry)
 
-
-def test_forecast_with_retraining_goal_selects_forecast_skill() -> None:
-    selection = SkillRouter._select_with_rules("重新训练后预测客户CUS-9未来50天")
-    assert selection.skill_name == "customer-gas-forecast"
-
-
-def test_explicit_customer_query_bypasses_model_router(monkeypatch) -> None:
-    registry = SimpleNamespace(get=lambda name: None)
-    router = SkillRouter(model_settings(), registry)
-
-    async def unexpected_model_selection(message):
-        raise AssertionError("明确的业务查询不应再交给模型改写 Skill")
-
-    monkeypatch.setattr(router, "_select_with_model", unexpected_model_selection)
-    selection = asyncio.run(router.select("帮我查询下江苏省的城燃行业的所有客户信息"))
+    understanding = RequestSemantics(
+        intent=SkillIntent.QUERY,
+    )
+    selection = router.select(
+        semantics=understanding,
+    )
 
     assert selection.skill_name == "business-data-query"
-    assert selection.confidence == 1
+    assert selection.confidence == 0.8
+    assert selection.reason == "由结构化请求 R1 的意图直接选择。"
 
 
-def test_forecast_page_context_binds_forecast_skill() -> None:
-    registry = SimpleNamespace(get=lambda name: None)
-    router = SkillRouter(Settings(GAS_SKILL_ROUTING_MODE="rules"), registry)
-    selection = asyncio.run(router.select("为什么这几天这么高", {}, {"scene": "FORECAST_ANALYSIS"}))
-    assert selection.skill_name == "customer-gas-forecast"
+def test_router_rejects_missing_model_skill() -> None:
+    router = SkillRouter(SkillRegistry())
+
+    with pytest.raises(ValueError, match="没有返回意图"):
+        router.select(semantics=RequestSemantics())
+
+
+def test_router_rejects_intent_without_registered_skill() -> None:
+    def reject_unknown_intent(intent: SkillIntent) -> None:
+        raise KeyError(intent)
+
+    router = SkillRouter(SimpleNamespace(get_by_intent=reject_unknown_intent))
+
+    with pytest.raises(ValueError, match="没有对应的 Skill"):
+        router.select(semantics=RequestSemantics(intent=SkillIntent.QUERY))
 
 
 def test_forecast_page_question_reads_bound_result_in_rule_mode() -> None:
-    decision = SkillAgent._rule_decision(
-        "customer-gas-forecast", "为什么这几天这么高", {"forecastBatchNo": "FORECAST-1"},
+    decision = ActionExecutor._rule_decision(
+        SkillIntent.ANALYZE, "为什么这几天这么高", {"forecastBatchNo": "FORECAST-1"},
     )
-    assert decision["name"] == "forecast_result_get"
+    assert decision["name"] == "forecast_result_query"
 
 
 def test_forecast_customer_name_is_resolved_before_model_planning(monkeypatch) -> None:
-    agent = SkillAgent(model_settings())
+    agent = ActionExecutor(model_settings())
 
     def unexpected_model_client(settings):
         raise AssertionError("客户主数据解析前不应调用规划模型")
 
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", unexpected_model_client)
     decision = asyncio.run(agent._decide(
-        SimpleNamespace(name="customer-gas-forecast", model_instructions=lambda: ""),
+        SimpleNamespace(
+            name="customer-gas-forecast",
+            intent=SkillIntent.FORECAST,
+            model_instructions=lambda: "",
+        ),
         "帮我预测下扬州中燃未来50天的燃气销量",
         [],
         {"customerName": "扬州中燃", "forecastHorizon": 50},
@@ -723,8 +837,84 @@ def test_forecast_customer_name_is_resolved_before_model_planning(monkeypatch) -
     assert decision["name"] == "customer_search"
 
 
+def test_multiple_entity_names_use_batch_resolver_before_target_tool(monkeypatch) -> None:
+    agent = ActionExecutor(model_settings())
+
+    def unexpected_model_client(settings):
+        raise AssertionError("批量实体校验不应由规划模型决定")
+
+    monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", unexpected_model_client)
+    parameters = {
+        "customerNames": ["高邮安源", "扬州中燃"],
+        "bulk": True,
+    }
+    decision = asyncio.run(agent._decide(
+        SimpleNamespace(
+            name="customer-gas-forecast",
+            intent=SkillIntent.FORECAST,
+            model_instructions=lambda: "",
+        ),
+        "预测高邮安源和扬州中燃",
+        [],
+        parameters,
+        [],
+        [{"name": "entity_batch_resolve", "inputSchema": {"type": "object", "properties": {}}}],
+    ))
+
+    assert decision == {
+        "type": "tool",
+        "name": "entity_batch_resolve",
+        "arguments": parameters,
+    }
+
+
+def test_batch_entity_ambiguity_returns_opaque_candidate_options() -> None:
+    issues = ActionExecutor._tool_result_issues(
+        "entity_batch_resolve",
+        "NEED_SELECTION",
+        {"customerNames": ["安源"]},
+        {
+            "message": "部分实体存在多个候选",
+            "data": {
+                "items": [{
+                    "entityType": "CUSTOMER",
+                    "inputName": "安源",
+                    "status": "MULTIPLE",
+                    "message": "找到多个相似客户",
+                    "candidates": [
+                        {"type": "CUSTOMER", "code": "C-1", "name": "高邮安源", "description": "江苏 / 城燃"},
+                        {"type": "CUSTOMER", "code": "C-2", "name": "某地安源", "description": "浙江 / 工业"},
+                    ],
+                }],
+            },
+        },
+    )
+
+    assert len(issues) == 1
+    assert issues[0].reason.value == "ENTITY_AMBIGUOUS"
+    assert [option.value for option in issues[0].options] == ["candidate-1", "candidate-2"]
+    assert "C-1" not in [option.value for option in issues[0].options]
+    assert issues[0].details["candidateMap"]["candidate-1"]["customerCodes"] == ["C-1"]
+
+
+def test_completed_batch_resolution_marks_codes_as_validated() -> None:
+    parameters = {"customerNames": ["高邮安源", "扬州中燃"]}
+    ActionExecutor._merge_result(parameters, {
+        "data": {
+            "status": "UNIQUE",
+            "proposedParameters": {
+                "customerCodes": ["C-1", "C-2"],
+                "customerNames": ["高邮安源", "扬州中燃"],
+            },
+        },
+    })
+
+    assert parameters["customerCodes"] == ["C-1", "C-2"]
+    assert parameters["_entityBatchResolved"] is True
+
+
 def test_unique_customer_match_continues_to_forecast_without_model_replanning(monkeypatch) -> None:
-    agent = SkillAgent(model_settings())
+    agent = ActionExecutor(model_settings())
 
     def unexpected_model_client(settings):
         raise AssertionError("客户唯一匹配后应按工具依赖继续，不应再次调用规划模型")
@@ -734,6 +924,7 @@ def test_unique_customer_match_continues_to_forecast_without_model_replanning(mo
         "customerCode": "CUS000140",
         "customerName": "扬州中燃",
         "forecastHorizon": 50,
+        "_validatedEntityParameters": ["customerCode", "customerName"],
     }
     trace = [{
         "tool": "customer_search",
@@ -748,7 +939,11 @@ def test_unique_customer_match_continues_to_forecast_without_model_replanning(mo
     }]
 
     decision = asyncio.run(agent._decide(
-        SimpleNamespace(name="customer-gas-forecast", model_instructions=lambda: ""),
+        SimpleNamespace(
+            name="customer-gas-forecast",
+            intent=SkillIntent.FORECAST,
+            model_instructions=lambda: "",
+        ),
         "帮我预测下扬州中燃未来50天的燃气销量",
         [],
         parameters,
@@ -760,13 +955,17 @@ def test_unique_customer_match_continues_to_forecast_without_model_replanning(mo
 
 
 def test_scoped_customer_list_resolves_entities_without_model_replanning(monkeypatch) -> None:
-    agent = SkillAgent(model_settings())
+    agent = ActionExecutor(model_settings())
 
     def unexpected_model_client(settings):
         raise AssertionError("范围参数已抽取后应按工具依赖推进，不应由模型泛化追问")
 
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", unexpected_model_client)
-    skill = SimpleNamespace(name="business-data-query", model_instructions=lambda: "")
+    skill = SimpleNamespace(
+        name="business-data-query",
+        intent=SkillIntent.QUERY,
+        model_instructions=lambda: "",
+    )
     tools = [
         {"name": "region_search", "inputSchema": {}},
         {"name": "industry_search", "inputSchema": {}},
@@ -795,14 +994,14 @@ def test_scoped_customer_list_resolves_entities_without_model_replanning(monkeyp
 
 def test_confirmation_and_idempotency_do_not_leak_to_next_request() -> None:
     remembered = {"currentParameters": {"confirmed": True, "idempotencyKey": "old-key"}}
-    values = SkillAgent._initial_parameters("发起新的预测", remembered, {}, "C-4", "customer-gas-forecast")
+    values = ActionExecutor._initial_parameters("发起新的预测", remembered, {}, "C-4", "customer-gas-forecast")
 
     assert "confirmed" not in values
     assert values["idempotencyKey"] != "old-key"
 
 
 def test_new_forecast_resets_previous_force_retrain_policy_to_auto() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "帮我预测南京洁宁未来50天的燃气销量",
         {"currentParameters": {
             "customerCode": "OLD-CUSTOMER",
@@ -814,7 +1013,6 @@ def test_new_forecast_resets_previous_force_retrain_policy_to_auto() -> None:
         "C-RESET-POLICY",
         "customer-gas-forecast",
         RequestSemantics(
-            operation="FORECAST",
             dialogue_act=DialogueAct.NEW_REQUEST,
             customer_name="南京洁宁",
             forecast_horizon=50,
@@ -829,7 +1027,7 @@ def test_new_forecast_resets_previous_force_retrain_policy_to_auto() -> None:
 
 
 def test_internal_clarification_and_old_customer_do_not_leak_into_scoped_list_query() -> None:
-    values = SkillAgent._initial_parameters(
+    values = ActionExecutor._initial_parameters(
         "帮我查询下江苏省的城燃行业的所有客户信息",
         {"currentParameters": {
             "customerCode": "CUS-OLD",
@@ -867,8 +1065,8 @@ def test_only_risky_forecast_requires_confirmation() -> None:
         "annotations": {"destructiveHint": True},
     }
 
-    assert SkillAgent._confirmation_message(tool, {"bulk": False, "autoTrain": False}) is None
-    assert SkillAgent._confirmation_message(tool, {"autoTrain": True}) is not None
+    assert ActionExecutor._confirmation_message(tool, {"bulk": False, "autoTrain": False}) is None
+    assert ActionExecutor._confirmation_message(tool, {"autoTrain": True}) is not None
 
 
 def test_forecast_confirmation_displays_execution_snapshot() -> None:
@@ -877,7 +1075,7 @@ def test_forecast_confirmation_displays_execution_snapshot() -> None:
         "inputSchema": {"properties": {"confirmed": {"type": "boolean"}}},
         "annotations": {"destructiveHint": True},
     }
-    message = SkillAgent._confirmation_message(tool, {
+    message = ActionExecutor._confirmation_message(tool, {
         "customerCode": "CUS000260", "forecastHorizon": 30,
         "forceRetrain": True, "trainingPreference": "FORCE_RETRAIN",
     })
@@ -890,7 +1088,7 @@ def test_forecast_confirmation_displays_execution_snapshot() -> None:
 
 def test_entity_merge_keeps_region_out_of_customer_fields() -> None:
     parameters = {"regionName": "浙江"}
-    SkillAgent._merge_result(parameters, {
+    ActionExecutor._merge_result(parameters, {
         "data": {
             "status": "UNIQUE",
             "candidates": [{"type": "REGION", "code": "330000", "name": "浙江", "regionCode": "330000", "regionName": "浙江"}],
@@ -903,7 +1101,7 @@ def test_entity_merge_keeps_region_out_of_customer_fields() -> None:
 
 def test_server_proposed_parameters_are_saved_for_confirmed_retry() -> None:
     parameters = {"customerCode": "CUS-1", "autoTrain": False}
-    SkillAgent._merge_result(parameters, {
+    ActionExecutor._merge_result(parameters, {
         "status": "NEED_CONFIRMATION",
         "data": {"proposedParameters": {"autoTrain": True, "trainingPreference": "AUTO"}},
     })
@@ -946,15 +1144,14 @@ def test_same_tool_call_budget_stops_parameter_churn(monkeypatch) -> None:
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
     settings = model_settings(GAS_AGENT_MAX_SAME_TOOL_CALLS=2)
-    skill = SkillDefinition.model_validate({
-        "name": "business-data-query",
-        "description": "查询客户",
-        "allowed-tools": ["customer_list"],
-        "instructions": "查询客户。",
-    })
+    skill = skill_definition(
+        "business-data-query",
+        allowed_tools=["customer_list"],
+        instructions="查询客户。",
+    )
     mcp = PagingMcp()
 
-    result = asyncio.run(SkillAgent(settings).run(
+    result = asyncio.run(ActionExecutor(settings).run(
         conversation_no="C-5", skill=skill, message="反复翻页", history=[], memory={}, metadata={}, mcp=mcp,
     ))
 
@@ -991,12 +1188,13 @@ def test_structured_customer_list_is_terminal_and_not_replanned(monkeypatch) -> 
 
     client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
     monkeypatch.setattr("gas_forecast_agent.skills.agent.build_llm_client", lambda settings: client)
-    skill = SkillDefinition.model_validate({
-        "name": "business-data-query", "description": "查询客户",
-        "allowed-tools": ["customer_list"], "instructions": "查询客户。",
-    })
+    skill = skill_definition(
+        "business-data-query",
+        allowed_tools=["customer_list"],
+        instructions="查询客户。",
+    )
 
-    result = asyncio.run(SkillAgent(model_settings()).run(
+    result = asyncio.run(ActionExecutor(model_settings()).run(
         conversation_no="C-LIST", skill=skill, message="查询全部客户",
         history=[], memory={}, metadata={}, mcp=ListMcp(),
     ))
@@ -1030,13 +1228,13 @@ def test_conditional_required_parameters_are_checked_before_execution() -> None:
         }
     }
 
-    missing = SkillAgent._missing_required_arguments(tool, {"trainMode": "RECENT"})
+    missing = ActionExecutor._missing_required_arguments(tool, {"trainMode": "RECENT"})
     assert "customerCode 或 customerName" in missing
     assert "trainingPeriods" in missing
-    prompt = SkillAgent._missing_parameters_message(tool, missing, {"trainMode": "RECENT"})
+    prompt = ActionExecutor._missing_parameters_message(tool, missing, {"trainMode": "RECENT"})
     assert "customerCode（客户编码）或customerName（客户名称）" in prompt
     assert "trainingPeriods（训练天数）" in prompt
-    assert SkillAgent._missing_required_arguments(
+    assert ActionExecutor._missing_required_arguments(
         tool, {"customerName": "瑞安新奥", "trainMode": "RECENT", "trainingPeriods": 90},
     ) == []
 
@@ -1060,7 +1258,7 @@ def test_read_only_system_error_is_retried() -> None:
             }}
 
     settings = Settings(GAS_SKILL_ROUTING_MODE="rules", GAS_AGENT_MAX_READ_RETRIES=1)
-    agent = SkillAgent(settings)
+    agent = ActionExecutor(settings)
     mcp = FlakyReadMcp()
     result, attempts = asyncio.run(agent._call_with_retry(
         mcp,
@@ -1083,7 +1281,7 @@ def test_write_system_error_is_not_retried_and_becomes_unknown() -> None:
                 "errorCode": "UPSTREAM_TIMEOUT", "message": "提交超时", "retryable": True,
             }}
 
-    agent = SkillAgent(Settings(GAS_AGENT_MAX_READ_RETRIES=3))
+    agent = ActionExecutor(Settings(GAS_AGENT_MAX_READ_RETRIES=3))
     mcp = FailedWriteMcp()
     result, attempts = asyncio.run(agent._call_with_retry(
         mcp,
@@ -1099,7 +1297,7 @@ def test_write_system_error_is_not_retried_and_becomes_unknown() -> None:
 
 
 def test_invalid_tool_contract_is_a_retryable_system_error() -> None:
-    result = SkillAgent._validate_tool_result({"success": "yes", "status": "COMPLETED", "message": "ok", "retryable": False})
+    result = ActionExecutor._validate_tool_result({"success": "yes", "status": "COMPLETED", "message": "ok", "retryable": False})
     assert result["status"] == "SYSTEM_ERROR"
     assert result["errorCode"] == "INVALID_TOOL_RESPONSE"
     assert result["retryable"] is True

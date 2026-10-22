@@ -7,7 +7,7 @@ import sys
 
 import yaml
 
-from .models import SkillDefinition
+from .models import SkillDefinition, SkillIntent
 
 
 _PROJECT_DIR = Path(__file__).resolve().parents[3]
@@ -19,6 +19,7 @@ class SkillRegistry:
     def __init__(self, skill_dir: Path | None = None) -> None:
         self._root = skill_dir or self._default_skill_dir()
         self._skills = self._load(self._root)
+        self._skills_by_intent = self._index_by_intent(self._skills)
 
     def list_skills(self) -> list[SkillDefinition]:
         return list(self._skills.values())
@@ -28,6 +29,13 @@ class SkillRegistry:
             return self._skills[name]
         except KeyError as exc:
             raise KeyError(f"未知 Skill：{name}") from exc
+
+    def get_by_intent(self, intent: SkillIntent) -> SkillDefinition:
+        """根据统一语义意图取得唯一 Skill。"""
+        try:
+            return self._skills_by_intent[intent]
+        except KeyError as exc:
+            raise KeyError(f"意图 {intent.value} 没有对应的 Skill") from exc
 
     def summary(self) -> dict[str, object]:
         return {
@@ -73,6 +81,23 @@ class SkillRegistry:
         if not skills:
             raise ValueError(f"Skill 目录为空：{root}")
         return skills
+
+    @staticmethod
+    def _index_by_intent(skills: dict[str, SkillDefinition]) -> dict[SkillIntent, SkillDefinition]:
+        result: dict[SkillIntent, SkillDefinition] = {}
+        for skill in skills.values():
+            if skill.intent in result:
+                raise ValueError(
+                    f"一个意图只能对应一个 Skill：{skill.intent.value} 同时被 "
+                    f"{result[skill.intent].name} 和 {skill.name} 声明"
+                )
+            result[skill.intent] = skill
+
+        missing = set(SkillIntent) - set(result)
+        if missing:
+            names = "、".join(sorted(intent.value for intent in missing))
+            raise ValueError(f"Skill 定义不完整，缺少意图：{names}")
+        return result
 
     @staticmethod
     def _parse(path: Path) -> tuple[dict[str, object], str]:

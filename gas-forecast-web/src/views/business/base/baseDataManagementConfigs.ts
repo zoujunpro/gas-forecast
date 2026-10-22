@@ -10,9 +10,8 @@ const fileStatusOptions = [
 export const regionsDataConfig: BaseDataPageConfig = {
   title: '区域表管理',
   endpoint: '/base-region',
-  searchPlaceholder: '搜索区域编码、名称、备注',
+  searchPlaceholder: '搜索区域名称、备注',
   tableFields: [
-    { prop: 'regionCode', label: '区域编码', minWidth: 180 },
     { prop: 'regionName', label: '区域名称', minWidth: 140 },
     { prop: 'remark', label: '备注', minWidth: 180 },
     { prop: 'createdAt', label: '创建时间', minWidth: 170, displayType: 'datetime' },
@@ -126,7 +125,7 @@ export const dailyWeatherDataConfig: BaseDataPageConfig = {
 export const customersDataConfig: BaseDataPageConfig = {
   title: '客户表管理',
   endpoint: '/base-customer',
-  searchPlaceholder: '搜索客户编码、客户名称',
+  searchPlaceholder: '搜索客户名称',
   filterFields: [
     {
       prop: 'regionCode',
@@ -154,11 +153,8 @@ export const customersDataConfig: BaseDataPageConfig = {
     }
   ],
   tableFields: [
-    { prop: 'customerCode', label: '客户编码', minWidth: 180 },
     { prop: 'customerName', label: '客户名称', minWidth: 180 },
-    { prop: 'regionCode', label: '区域编码', minWidth: 180 },
     { prop: 'regionName', label: '区域名称', minWidth: 130 },
-    { prop: 'industryCode', label: '行业编码', minWidth: 180 },
     { prop: 'industryName', label: '行业名称', minWidth: 130 },
     { prop: 'createdAt', label: '创建时间', minWidth: 170, displayType: 'datetime' },
     { prop: 'updatedAt', label: '更新时间', minWidth: 170, displayType: 'datetime' }
@@ -173,8 +169,7 @@ export const customersDataConfig: BaseDataPageConfig = {
       optionSource: {
         endpoint: '/base-region',
         valueProp: 'regionCode',
-        labelProp: 'regionName',
-        labelTemplate: 'nameWithCode'
+        labelProp: 'regionName'
       },
       fillProps: { regionName: 'regionName' }
     },
@@ -186,8 +181,7 @@ export const customersDataConfig: BaseDataPageConfig = {
       optionSource: {
         endpoint: '/base-industry',
         valueProp: 'industryCode',
-        labelProp: 'industryName',
-        labelTemplate: 'nameWithCode'
+        labelProp: 'industryName'
       },
       fillProps: { industryName: 'industryName' }
     },
@@ -209,9 +203,8 @@ export const customersDataConfig: BaseDataPageConfig = {
 export const industriesDataConfig: BaseDataPageConfig = {
   title: '行业表管理',
   endpoint: '/base-industry',
-  searchPlaceholder: '搜索行业编码、名称',
+  searchPlaceholder: '搜索行业名称',
   tableFields: [
-    { prop: 'industryCode', label: '行业编码', minWidth: 180 },
     { prop: 'industryName', label: '行业名称', minWidth: 160 },
     { prop: 'createdAt', label: '创建时间', minWidth: 170, displayType: 'datetime' },
     { prop: 'updatedAt', label: '更新时间', minWidth: 170, displayType: 'datetime' }

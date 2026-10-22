@@ -50,7 +50,15 @@
             <span v-else>{{ field.label }}</span>
           </template>
           <template #default="{ row }">
-            <ManagementTableCell :field="field" :row="row" />
+            <el-tag
+              v-if="field.prop === 'enabled'"
+              class="enabled-toggle"
+              :type="row.enabled === 1 ? 'success' : 'info'"
+              effect="plain"
+              :disable-transitions="true"
+              @click.stop="toggleModelEnabled(row)"
+            >{{ togglingId === row.id ? '处理中' : row.enabled === 1 ? '启用' : '停用' }}</el-tag>
+            <ManagementTableCell v-else :field="field" :row="row" />
           </template>
         </el-table-column>
         <el-table-column
@@ -159,6 +167,9 @@
             <el-form-item label="模型版本" prop="modelVersion">
               <el-input v-model="form.modelVersion" clearable maxlength="32" placeholder="例如 V1.0" />
             </el-form-item>
+            <el-form-item label="启用状态" prop="enabled">
+              <el-switch v-model="form.enabled" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" />
+            </el-form-item>
             <el-form-item label="时间粒度" prop="timeGranularity">
               <el-select v-model="form.timeGranularity" class="form-control">
                 <el-option v-for="item in granularityOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -226,7 +237,8 @@
         <div class="model-title">
           <div class="model-title-row">
             <strong>{{ configForm.configName || '模型配置' }}</strong>
-            <el-tag type="success" effect="light">启用</el-tag>
+            <el-tag :type="configForm.enabled === 1 ? 'success' : 'info'" effect="light">{{ configForm.enabled === 1 ? '启用' : '停用' }}</el-tag>
+            <el-switch v-model="configForm.enabled" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="停用" />
           </div>
           <span>基于气象、能源价格等多源特征，预测冬季各地区天然气需求。</span>
         </div>
@@ -401,6 +413,7 @@ const formRef = ref<FormInstance>()
 const saving = ref(false)
 const configSaving = ref(false)
 const syncing = ref(false)
+const togglingId = ref<number | null>(null)
 const dialogVisible = ref(false)
 const configDialogVisible = ref(false)
 const editingId = ref<number | null>(null)
@@ -409,6 +422,7 @@ const form = reactive({
   configCode: '',
   configName: '',
   modelVersion: 'V1.0',
+  enabled: 1,
   agentCode: 'winter-supply',
   sceneCode: 'WINTER_SUPPLY',
   timeGranularity: 'TENDAY',
@@ -425,6 +439,7 @@ const configForm = reactive({
   configCode: '',
   configName: '',
   modelVersion: '',
+  enabled: 1,
   agentName: '',
   sceneCode: '',
   regionCodes: [] as string[],
@@ -563,6 +578,7 @@ const _resetForm = (row?: Record<string, any>) => {
   form.configCode = row?.configCode || ''
   form.configName = row?.configName || ''
   form.modelVersion = row?.modelVersion || 'V1.0'
+  form.enabled = row?.enabled ?? 1
   form.agentCode = row?.agentCode || 'winter-supply'
   form.sceneCode = row?.sceneCode || selectedAgent.value?.sceneCode || 'WINTER_SUPPLY'
   const defaults = capabilityDefaults(form.agentCode)
@@ -583,6 +599,7 @@ const resetConfigForm = (row: Record<string, any>) => {
   configForm.configCode = row.configCode || ''
   configForm.configName = row.configName || ''
   configForm.modelVersion = row.modelVersion || 'V1.0'
+  configForm.enabled = row.enabled ?? 1
   configForm.agentName = row.agentName || ''
   configForm.sceneCode = row.sceneCode || ''
   configForm.regionCodes = row.regionCodes?.length ? [...row.regionCodes] : []
@@ -702,6 +719,7 @@ const buildPayload = () => {
     configCode: form.configCode,
     configName: form.configName,
     modelVersion: form.modelVersion,
+    enabled: form.enabled,
     agentCode: form.agentCode,
     sceneCode: form.sceneCode,
     timeGranularity: form.timeGranularity,
@@ -773,6 +791,7 @@ const timeGranularityText = (value: string) => {
 const buildConfigPayload = () => {
   return {
     id: configuringId.value,
+    enabled: configForm.enabled,
     regionCodes: configForm.regionCodes,
     industryCodes: configForm.industryCodes,
     customerCodes: configForm.customerCodes,
@@ -805,6 +824,21 @@ const saveConfig = async () => {
     ElMessage.error(error instanceof Error ? error.message : '配置保存失败')
   } finally {
     configSaving.value = false
+  }
+}
+
+const toggleModelEnabled = async (row: Record<string, any>) => {
+  if (togglingId.value !== null) return
+  const enabled = row.enabled === 1 ? 0 : 1
+  togglingId.value = row.id
+  try {
+    await postJson(`${endpoint}/updateEnabled`, { id: row.id, enabled })
+    row.enabled = enabled
+    ElMessage.success(enabled === 1 ? '模型已启用' : '模型已停用')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '模型状态更新失败')
+  } finally {
+    togglingId.value = null
   }
 }
 
@@ -1235,6 +1269,11 @@ onMounted(() => {
   cursor: help;
   text-decoration: underline dotted;
   text-underline-offset: 3px;
+}
+
+.enabled-toggle {
+  cursor: pointer;
+  user-select: none;
 }
 
 @media (max-width: 760px) {

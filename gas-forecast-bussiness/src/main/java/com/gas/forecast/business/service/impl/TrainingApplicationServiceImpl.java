@@ -38,8 +38,8 @@ public class TrainingApplicationServiceImpl implements TrainingApplicationServic
             try {
                 AutoTrainRequest request = new AutoTrainRequest();
                 request.setAgentCode(command.agentCode());
-                request.setRegionCode(command.regionCode());
-                request.setIndustryCode(command.industryCode());
+                request.setRegionCode(singleScope(command.regionCodes(), command.regionCode()));
+                request.setIndustryCode(singleScope(command.industryCodes(), command.industryCode()));
                 request.setCustomerCode(customerCode);
                 request.setTrainMode(command.trainMode());
                 request.setRecentPeriods(command.trainingPeriods());
@@ -112,13 +112,23 @@ public class TrainingApplicationServiceImpl implements TrainingApplicationServic
         if (command.customerCodes() != null && !command.customerCodes().isEmpty())
             return command.customerCodes().stream().filter(TextUtils::hasText).distinct().toList();
         var query = Wrappers.<BaseCustomerTb>lambdaQuery();
-        if (TextUtils.hasText(command.regionCode()))
+        if (command.regionCodes() != null && !command.regionCodes().isEmpty())
+            query.in(BaseCustomerTb::getRegionCode, command.regionCodes());
+        else if (TextUtils.hasText(command.regionCode()))
             query.eq(BaseCustomerTb::getRegionCode, command.regionCode());
-        if (TextUtils.hasText(command.industryCode()))
+        if (command.industryCodes() != null && !command.industryCodes().isEmpty())
+            query.in(BaseCustomerTb::getIndustryCode, command.industryCodes());
+        else if (TextUtils.hasText(command.industryCode()))
             query.eq(BaseCustomerTb::getIndustryCode, command.industryCode());
         if (!command.bulk())
             throw new BusinessException("单客户训练必须提供customerCodes");
         return customerMapper.selectList(query.orderByAsc(BaseCustomerTb::getCustomerName)).stream().map(BaseCustomerTb::getCustomerCode).distinct().toList();
+    }
+
+    private String singleScope(List<String> values, String fallback) {
+        if (values == null || values.isEmpty())
+            return fallback;
+        return values.size() == 1 ? values.get(0) : null;
     }
 
     private void requireBatch(String batchNo) {

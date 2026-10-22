@@ -32,7 +32,8 @@ public class ModelForecastExecutionController {
     @RequirePermission("model:forecast:execute")
     public ResponseResult<Object> start(@Valid @RequestBody ScopedForecastStartRequest request) {
         var command = new ForecastApplicationService.ForecastCommand(
-                null, request.getAgentCode(), List.of(request.getCustomerCode()), request.getRegionCode(), request.getIndustryCode(), false,
+                null, request.getAgentCode(), List.of(request.getCustomerCode()), request.getRegionCode(), request.getIndustryCode(),
+                List.of(), List.of(), false,
                 null, null, request.getForecastHorizon(), request.getForecastFrequency(), "ALL", null, null, null,
                 false, Boolean.TRUE.equals(request.getAutoTrain()), request.getTrainingPreference(),
                 Boolean.TRUE.equals(request.getConfirmed()), request.getIdempotencyKey());

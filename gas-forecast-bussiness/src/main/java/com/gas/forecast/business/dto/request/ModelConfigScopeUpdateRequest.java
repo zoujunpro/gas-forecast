@@ -18,6 +18,9 @@ public class ModelConfigScopeUpdateRequest {
     @NotNull(message = "ID不能为空")
     private Long id;
 
+    @NotNull(message = "启用状态不能为空")
+    private Integer enabled;
+
     @Size(max = 32, message = "区域编码长度不能超过32个字符")
     private String regionCode;
 

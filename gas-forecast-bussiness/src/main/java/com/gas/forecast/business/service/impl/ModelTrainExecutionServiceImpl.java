@@ -125,6 +125,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         if (modelConfig == null) {
             throw new BusinessException("所属模型不存在");
         }
+        requireModelEnabled(modelConfig);
 
         // 队列在创建时已经分配批次号。首次执行准备数据；失败重试优先复用请求快照。
         if (TextUtils.hasText(reqDTO.getRetryBatchNo())) {
@@ -169,6 +170,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         if (modelConfig == null) {
             throw new BusinessException("所属模型不存在");
         }
+        requireModelEnabled(modelConfig);
         // 3. 使用与正式训练完全相同的特征和范围规则准备数据。
         List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
         List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig);
@@ -191,6 +193,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
                 if (modelConfig == null) {
                     throw new BusinessException("所属模型不存在");
                 }
+                requireModelEnabled(modelConfig);
                 resetFailedTrainDetail(trainConfig, batchNo, ModelTrainStatus.PENDING, payload);
                 submitPreparationAfterCommit(batchNo, trainConfig, modelConfig);
                 ObjectNode response = objectMapper.createObjectNode().put("message", "失败批次已重新进入后台数据准备流程。").put("model_code", modelConfig.getModelCode()).put("train_batch_no", batchNo);
@@ -946,6 +949,12 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             case "extreme_cold_days" -> row.getFeature005();
             default -> throw new BusinessException("特征来源字段不存在或不支持：" + sourceField);
         };
+    }
+
+    private void requireModelEnabled(ModelConfigTb modelConfig) {
+        if (!Integer.valueOf(1).equals(modelConfig.getEnabled())) {
+            throw new BusinessException("所属模型已停用，不能执行或校验训练任务");
+        }
     }
 
     @Data

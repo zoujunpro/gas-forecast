@@ -1,5 +1,6 @@
 from gas_model_platform.models.base import ModelHandler
 from gas_model_platform.models.contract import validate_model_handler
+from gas_model_platform.models.alpha_model import ModelAlphaAutoV1Handler
 from gas_model_platform.models.short_agent import (
     ModelChemicalGasV1Handler,
     ModelCityGasV1Handler,
@@ -41,6 +42,7 @@ class ModelRegistry:
 
 
 MODEL_REGISTRY: dict[str, ModelHandler] = {
+    "MODEL_ALPHA_AUTO_V1.0": ModelAlphaAutoV1Handler(),
     "WINTER_MODEL_V1.0": WinterAgentV1Handler(),
     "MODEL_POWER_GENERATION_V1.0": ModelPowerGenerationV1Handler(),
     "MODEL_CITY_GAS_V1.0": ModelCityGasV1Handler(),

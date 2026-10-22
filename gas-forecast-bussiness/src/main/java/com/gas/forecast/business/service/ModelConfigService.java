@@ -1,6 +1,7 @@
 package com.gas.forecast.business.service;
 
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
+import com.gas.forecast.business.dto.request.ModelConfigEnabledUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
@@ -18,6 +19,8 @@ public interface ModelConfigService {
     ModelConfigResponse update(ModelConfigUpdateRequest reqDTO);
 
     ModelConfigResponse updateScope(ModelConfigScopeUpdateRequest reqDTO);
+
+    ModelConfigResponse updateEnabled(ModelConfigEnabledUpdateRequest reqDTO);
 
     void delete(Long id);
 }

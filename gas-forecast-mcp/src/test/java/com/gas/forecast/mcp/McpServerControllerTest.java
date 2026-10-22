@@ -25,12 +25,12 @@ class McpServerControllerTest {
     }
 
     @Test
-    void listsElevenTools() {
+    void listsBusinessToolsWithoutSessionMemoryTools() {
         JsonRpcRequest request = new JsonRpcRequest("2.0", IntNode.valueOf(2), "tools/list", JsonNodeFactory.instance.objectNode());
         ResponseEntity<JsonRpcResponse<?>> response = controller.handle(request, "2025-03-26");
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(response.getBody()).asString().contains("memory_get", "forecast_result_get");
+        assertThat(response.getBody()).asString().contains("forecast_result_query").doesNotContain("memory_get", "memory_update");
     }
 
     @Test

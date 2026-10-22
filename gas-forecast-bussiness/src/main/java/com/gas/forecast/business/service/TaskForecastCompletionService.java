@@ -2,22 +2,22 @@ package com.gas.forecast.business.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.AgentExecutionTaskTb;
-import com.gas.forecast.dao.mapper.AgentExecutionBatchTbMapper;
-import com.gas.forecast.dao.mapper.AgentExecutionTaskTbMapper;
+import com.gas.forecast.dao.domain.ExecutionTaskTb;
+import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** 将预测批次的最终结果主动回写到用户任务，避免任务必须等到查询时才刷新。 */
+/** 将预测业务批次的最终结果回写到对应的统一预测任务和执行批次。 */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TaskForecastCompletionService {
-    private final AgentExecutionTaskTbMapper taskMapper;
-    private final AgentExecutionBatchTbMapper batchMapper;
+    private final ExecutionTaskTbMapper taskMapper;
+    private final ExecutionBatchProgressService batchProgressService;
 
     public void markSuccess(String forecastBatchNo) {
         finish(forecastBatchNo, "SUCCESS", null);
@@ -29,28 +29,35 @@ public class TaskForecastCompletionService {
 
     private void finish(String forecastBatchNo, String status, String message) {
         if (!TextUtils.hasText(forecastBatchNo)) return;
+        List<ExecutionTaskTb> tasks = taskMapper.selectList(
+                Wrappers.<ExecutionTaskTb>lambdaQuery()
+                        .eq(ExecutionTaskTb::getBusinessType, "FORECAST")
+                        .eq(ExecutionTaskTb::getBusinessNo, forecastBatchNo));
+        if (tasks.isEmpty()) return;
+
         Date now = new Date();
         boolean success = "SUCCESS".equals(status);
-        int updated = taskMapper.update(null, Wrappers.<AgentExecutionTaskTb>lambdaUpdate()
-                .eq(AgentExecutionTaskTb::getTaskType, "FORECAST")
-                .eq(AgentExecutionTaskTb::getLatestForecastBatchNo, forecastBatchNo)
-                .in(AgentExecutionTaskTb::getStatus, "EXECUTING", "WAITING_TRAINING")
-                .set(AgentExecutionTaskTb::getStatus, status)
-                .set(AgentExecutionTaskTb::getCurrentStage, success ? "COMPLETED" : "FORECASTING")
-                .set(AgentExecutionTaskTb::getCurrentStepCode, success ? "RESULT_EXPLANATION" : "WAIT_FORECAST_RESULT")
-                .set(AgentExecutionTaskTb::getProgressPercent, success ? BigDecimal.valueOf(100) : BigDecimal.valueOf(75))
-                .set(AgentExecutionTaskTb::getErrorCode, success ? null : "FORECAST_FAILED")
-                .set(AgentExecutionTaskTb::getErrorMessage, success ? null : message)
-                .set(AgentExecutionTaskTb::getRetryable, success ? 0 : 1)
-                .set(AgentExecutionTaskTb::getFinishedAt, now)
-                .set(AgentExecutionTaskTb::getUpdatedAt, now));
-        batchMapper.update(null, Wrappers.<com.gas.forecast.dao.domain.AgentExecutionBatchTb>lambdaUpdate()
-                .eq(com.gas.forecast.dao.domain.AgentExecutionBatchTb::getBatchType, "FORECAST")
-                .eq(com.gas.forecast.dao.domain.AgentExecutionBatchTb::getBatchNo, forecastBatchNo)
-                .set(com.gas.forecast.dao.domain.AgentExecutionBatchTb::getStatus, status)
-                .set(com.gas.forecast.dao.domain.AgentExecutionBatchTb::getErrorMessage, success ? null : message)
-                .set(com.gas.forecast.dao.domain.AgentExecutionBatchTb::getFinishedAt, now)
-                .set(com.gas.forecast.dao.domain.AgentExecutionBatchTb::getUpdatedAt, now));
-        if (updated > 0) log.info("预测批次已回写用户任务 forecastBatchNo={}, status={}, taskCount={}", forecastBatchNo, status, updated);
+        int updated = taskMapper.update(null,
+                Wrappers.<ExecutionTaskTb>lambdaUpdate()
+                        .eq(ExecutionTaskTb::getBusinessType, "FORECAST")
+                        .eq(ExecutionTaskTb::getBusinessNo, forecastBatchNo)
+                        .in(ExecutionTaskTb::getStatus, "PENDING", "WAITING", "RUNNING")
+                        .set(ExecutionTaskTb::getStatus, status)
+                        .set(ExecutionTaskTb::getCurrentStage, success ? "COMPLETED" : "FORECASTING")
+                        .set(ExecutionTaskTb::getCurrentStepCode,
+                                success ? "FORECAST_COMPLETED" : "WAIT_FORECAST_RESULT")
+                        .set(ExecutionTaskTb::getProgressPercent,
+                                success ? BigDecimal.valueOf(100) : BigDecimal.valueOf(75))
+                        .set(ExecutionTaskTb::getErrorCode, success ? null : "FORECAST_FAILED")
+                        .set(ExecutionTaskTb::getErrorMessage, success ? null : message)
+                        .set(ExecutionTaskTb::getFinishedAt, now)
+                        .set(ExecutionTaskTb::getUpdatedAt, now));
+
+        tasks.stream().map(ExecutionTaskTb::getBatchNo).distinct()
+                .forEach(batchProgressService::refresh);
+        if (updated > 0) {
+            log.info("预测批次已回写统一任务 forecastBatchNo={}, status={}, taskCount={}",
+                    forecastBatchNo, status, updated);
+        }
     }
 }

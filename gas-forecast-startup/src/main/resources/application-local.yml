@@ -25,6 +25,8 @@ spring:
 
 gas:
   agent:
+    chat-url: ${GAS_AGENT_CHAT_URL:http://127.0.0.1:8091/api/v1/internal/chat}
+    chat-timeout-seconds: ${GAS_AGENT_CHAT_TIMEOUT_SECONDS:120}
     forecast-analysis-url: ${GAS_AGENT_FORECAST_ANALYSIS_URL:http://127.0.0.1:8091/api/v1/forecast-analysis}
     llm-chat-url: ${GAS_AGENT_LLM_CHAT_URL:http://127.0.0.1:8091/api/v1/llm/chat-completions}
     train-url: ${GAS_AGENT_TRAIN_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/train}

@@ -121,6 +121,8 @@ public class AutoTrainServiceImpl implements AutoTrainService {
         ModelConfigTb model = modelMapper.selectById(config.getModelId());
         if (model == null)
             throw new BusinessException("所属模型不存在");
+        if (!Integer.valueOf(1).equals(model.getEnabled()))
+            throw new BusinessException("所属模型已停用");
         trainingDataQualityValidator.validate(trainingDatasetAssembler.assemble(config, model));
         if (!TextUtils.hasText(request.getRetryBatchNo()) && !Boolean.TRUE.equals(request.getForceTrain())) {
             ModelTrainRecordTb active = trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId())
@@ -213,7 +215,8 @@ public class AutoTrainServiceImpl implements AutoTrainService {
     }
 
     private ModelConfigTb resolveModel(String agentCode, Target target) {
-        List<ModelConfigTb> models = modelMapper.selectList(Wrappers.<ModelConfigTb>lambdaQuery().eq(ModelConfigTb::getAgentCode, agentCode));
+        List<ModelConfigTb> models = modelMapper.selectList(
+                Wrappers.<ModelConfigTb>lambdaQuery().eq(ModelConfigTb::getAgentCode, agentCode).eq(ModelConfigTb::getEnabled, 1));
         return models.stream().map(model -> new ModelMatch(model, scopeScore(model.getId(), target))).filter(match -> match.score() >= 0)
                 .max(Comparator.comparingInt(ModelMatch::score).thenComparing(match -> match.model().getId())).map(ModelMatch::model).orElseThrow(() -> new BusinessException("没有找到支持当前业务范围的模型"));
     }

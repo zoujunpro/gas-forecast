@@ -18,7 +18,7 @@ def test_records_result_without_page_type_is_presented_as_list() -> None:
 
 
 def test_forecast_result_generates_whitelisted_chart_and_ui_data() -> None:
-    planned = PresentationPlanner.plan("forecast_result_get", {
+    planned = PresentationPlanner.plan("forecast_result_query", {
         "resultType": "RESULT",
         "data": {
             "record": {"forecastBatchNo": "F-1", "customerName": "测试客户"},
@@ -35,7 +35,7 @@ def test_forecast_result_generates_whitelisted_chart_and_ui_data() -> None:
 
 
 def test_empty_forecast_does_not_create_fake_chart() -> None:
-    planned = PresentationPlanner.plan("forecast_result_get", {"resultType": "RESULT", "data": {"record": {}, "points": []}})
+    planned = PresentationPlanner.plan("forecast_result_query", {"resultType": "RESULT", "data": {"record": {}, "points": []}})
     assert planned["presentation"]["type"] == "TEXT"
     assert "forecast_result" not in planned
 
@@ -65,7 +65,7 @@ def test_successful_training_status_is_terminal_and_never_uses_forecast_steps() 
 
 
 def test_forecast_result_keeps_training_and_backtest_information() -> None:
-    planned = PresentationPlanner.plan("forecast_result_get", {
+    planned = PresentationPlanner.plan("forecast_result_query", {
         "resultType": "RESULT",
         "data": {
             "record": {"forecastBatchNo": "F-1"},
