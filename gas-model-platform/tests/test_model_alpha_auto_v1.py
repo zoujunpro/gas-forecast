@@ -37,20 +37,20 @@ def test_alpha_auto_model_is_registered() -> None:
     handler = registry.resolve("MODEL_ALPHA_AUTO_V1.0")
     assert isinstance(handler, ModelAlphaAutoV1Handler)
     assert handler.info.agent_code == "short-term"
-    assert handler.info.training_data_range.minimum == 30
+    assert handler.info.training_data_range.minimum == 365
 
 
 def test_alpha_auto_validates_daily_history() -> None:
     result = ModelAlphaAutoV1Handler().validate_training_data(
-        ModelContext(model_code="MODEL_ALPHA_AUTO_V1.0", dataset=_dataset())
+        ModelContext(model_code="MODEL_ALPHA_AUTO_V1.0", dataset=_dataset(365))
     )
     assert result.valid is True
-    assert result.summary["row_count"] == 40
+    assert result.summary["row_count"] == 365
     assert {warning.code for warning in result.warnings} == {"HISTORY_BELOW_RECOMMENDED"}
 
 
 def test_alpha_auto_rejects_missing_day() -> None:
-    rows = _dataset()
+    rows = _dataset(365)
     del rows[10]
     result = ModelAlphaAutoV1Handler().validate_training_data(
         ModelContext(model_code="MODEL_ALPHA_AUTO_V1.0", dataset=rows)

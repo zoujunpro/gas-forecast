@@ -27,24 +27,10 @@ gas:
   agent:
     chat-url: ${GAS_AGENT_CHAT_URL:http://127.0.0.1:8091/api/v1/internal/chat}
     chat-timeout-seconds: ${GAS_AGENT_CHAT_TIMEOUT_SECONDS:120}
-    forecast-analysis-url: ${GAS_AGENT_FORECAST_ANALYSIS_URL:http://127.0.0.1:8091/api/v1/forecast-analysis}
     llm-chat-url: ${GAS_AGENT_LLM_CHAT_URL:http://127.0.0.1:8091/api/v1/llm/chat-completions}
-    train-url: ${GAS_AGENT_TRAIN_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/train}
-    predict-url: ${GAS_AGENT_PREDICT_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/predict}
     models-url: ${GAS_AGENT_MODELS_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/models}
-    validate-training-url: ${GAS_AGENT_VALIDATE_TRAINING_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/models/validate-training-data}
-    training-capacity-url: ${GAS_AGENT_TRAINING_CAPACITY_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/training/capacity}
-    training-task-url: ${GAS_AGENT_TRAINING_TASK_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:8090}/api/v1/training/tasks}
     connect-timeout-ms: ${GAS_AGENT_CONNECT_TIMEOUT_MS:5000}
-    validation-timeout-ms: ${GAS_AGENT_VALIDATION_TIMEOUT_MS:30000}
     training-timeout-ms: ${GAS_AGENT_TRAINING_TIMEOUT_MS:1800000}
-    training-queue:
-      # 只消费已经由会话或人工操作创建的任务，不自行创建训练任务。
-      scheduler-enabled: ${GAS_TRAINING_QUEUE_SCHEDULER_ENABLED:true}
-      max-concurrency: ${GAS_TRAINING_QUEUE_MAX_CONCURRENCY:4}
-      dispatch-delay-ms: ${GAS_TRAINING_QUEUE_DISPATCH_DELAY_MS:5000}
-      reconcile-enabled: ${GAS_TRAINING_QUEUE_RECONCILE_ENABLED:true}
-      reconcile-delay-ms: ${GAS_TRAINING_QUEUE_RECONCILE_DELAY_MS:10000}
   analysis:
     mode: ${LLM_DEFAULT_MODE:api}
     local-base-url: ${LLM_LOCAL_BASE_URL:http://192.168.0.105:9997/v1}

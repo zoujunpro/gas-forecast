@@ -7,10 +7,10 @@ import com.gas.forecast.business.dto.request.ModelFeatureDefinitionCreateRequest
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionPageRequest;
 import com.gas.forecast.business.dto.request.ModelFeatureDefinitionUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelFeatureDefinitionResponse;
-import com.gas.forecast.business.enums.FeatureSourceType;
-import com.gas.forecast.business.enums.FeatureStatus;
+import com.gas.forecast.business.enums.FeatureSourceTypeEnum;
+import com.gas.forecast.business.enums.FeatureStatusEnum;
 import com.gas.forecast.business.service.ModelFeatureDefinitionService;
-import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
@@ -130,7 +130,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
 
     private String normalizeSourceType(String code) {
         try {
-            return FeatureSourceType.fromCode(code).name();
+            return FeatureSourceTypeEnum.fromCode(code).name();
         } catch (IllegalArgumentException exception) {
             throw new BusinessException(exception.getMessage());
         }
@@ -138,7 +138,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
 
     private String normalizeStatus(String code) {
         try {
-            return FeatureStatus.fromCode(code).name();
+            return FeatureStatusEnum.fromCode(code).name();
         } catch (IllegalArgumentException exception) {
             throw new BusinessException(exception.getMessage());
         }

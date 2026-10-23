@@ -221,26 +221,64 @@ const detailEntries = (step: Record<string, any>) => {
 const analysisText = computed(() => {
   const step = detailStep(singleTask.value?.detailNo, { stepCode: 'FORECAST_ANALYSIS' })
   const raw = parseJson(step?.metricsJson) || parseJson(step?.outputJson) || {}
-  return typeof raw === 'object' && raw ? String(raw.analysis || raw.content || raw.result || '') : ''
+  const saved = typeof raw === 'object' && raw ? String(raw.analysis || raw.content || raw.result || '') : ''
+  if (saved) return saved
+  // 兼容已完成的历史任务：当时第六步只保存“结果已整理”，没有 analysis 字段。
+  // 新任务由后端落库研判；旧任务根据已落库的同一份回测/预测结果补出简短客观说明。
+  const result = forecastResult.value
+  if (!result?.training?.bestModel) return ''
+  const mape = Number(result.training.mape)
+  const accuracy = !Number.isFinite(mape) ? '回测指标未返回，暂不对精度作判断'
+    : mape <= 10 ? '回测精度较好，可作为近期经营参考'
+    : mape <= 20 ? '回测精度可用，建议结合实际业务变化持续跟踪'
+    : '回测误差偏高，建议将本次结果作为趋势参考，并结合实际销量持续校正'
+  const points = Array.isArray(result.points) ? result.points : []
+  const average = points.length ? points.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0) / points.length : undefined
+  return `本次预测采用${result.training.bestModel}${Number.isFinite(mape) ? `，MAPE 为${mape.toFixed(2)}%` : ''}。${accuracy}。${average === undefined ? '' : `未来${points.length}天预测均值为${average.toFixed(2)}。`}`
 })
 const presentationFinished = computed(() => rawSteps.value.length === 6
   && rawSteps.value.every(step => succeeded(step.status))
   && presentedSteps.value.every(step => succeeded(step.status)))
 const normalizeResult = (data: Record<string, any>) => {
   const record = data.record || {}
-  const point = (item: any) => ({ date: item.date || item.forecastDate || item.trainDate, value: Number(item.value ?? item.forecastValue ?? item.predictedValue ?? 0) })
+  // 任务结果接口保留了模型平台三段原始 JSON 快照。这里是对话结果卡唯一的
+  // 适配层：先解析快照，再转换为卡片所需的统一点位和指标，不能把 JSON 字符串
+  // 当作已经展开的对象使用。
+  const asObject = (value: any): Record<string, any> => {
+    if (!value) return {}
+    if (typeof value === 'object') return value
+    try { return JSON.parse(value) } catch { return {} }
+  }
+  const training = asObject(data.training || record.trainingResultJson)
+  const backtest = asObject(data.backtest || record.backtestResultJson)
+  const forecast = asObject(data.forecast || record.forecastResultJson)
+  const trainingMetrics = asObject(training.metrics)
+  const point = (item: any) => ({
+    date: item.date || item.forecastDate || item.forecast_date || item.trainDate || item.statDate || item.stat_date,
+    value: Number(item.value ?? item.forecastValue ?? item.forecast_value ?? item.predictedValue ?? item.predicted_value ?? item.prediction ?? 0)
+  })
+  const backtestPoint = (item: any) => ({
+    date: item.date || item.trainDate || item.statDate || item.stat_date,
+    actualValue: Number(item.actualValue ?? item.actual_value ?? item.actual ?? 0),
+    predictedValue: Number(item.predictedValue ?? item.predicted_value ?? item.predicted ?? item.prediction ?? 0)
+  })
   return {
     ...record,
-    ...data,
-    batchNo: data.batchNo || record.batchNo || record.forecastBatchNo || singleTask.value?.forecastBatchNo,
+    // 不展开 data，避免 data.training/backtest/forecast 的原始字符串覆盖下方结构化结果。
+    batchNo: data.batchNo || record.forecastNo || record.batchNo || record.forecastBatchNo || singleTask.value?.forecastNo,
     customerName: data.customerName || data.customer?.customerName || singleTask.value?.targetName,
     regionName: data.regionName || data.customer?.regionName || record.regionName,
     industryName: data.industryName || data.customer?.industryName || record.industryName,
-    points: (data.points || []).map(point),
+    training: {
+      ...trainingMetrics,
+      ...training,
+      batchNo: record.forecastNo,
+      bestModel: record.bestModel || training.selected_model_name || training.best_model || training.model_name,
+      mape: record.mape ?? trainingMetrics.mape ?? training.mape
+    },
+    points: (Array.isArray(data.points) ? data.points : forecast.points || []).map(point),
     lastYearPoints: (data.lastYearPoints || []).map(point),
-    backtestPoints: (data.backtestPoints || []).map((item: any) => ({
-      date: item.date || item.trainDate, actualValue: Number(item.actualValue ?? 0), predictedValue: Number(item.predictedValue ?? 0)
-    }))
+    backtestPoints: (Array.isArray(data.backtestPoints) ? data.backtestPoints : backtest.points || backtest.rolling_backtest_results || []).map(backtestPoint)
   }
 }
 const clearAnalysisTyping = () => { if (analysisTimer) clearTimeout(analysisTimer); analysisTimer = undefined; analysisTyping.value = false }

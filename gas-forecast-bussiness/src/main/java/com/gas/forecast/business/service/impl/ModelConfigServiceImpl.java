@@ -5,15 +5,15 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.ModelConfigCreateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigEnabledUpdateRequest;
-import com.gas.forecast.business.component.ModelPlatformClient;
-import com.gas.forecast.business.component.dto.ModelInfoApiResponse;
+import com.gas.forecast.business.common.client.modelplatform.ModelPlatformClient;
+import com.gas.forecast.business.common.client.modelplatform.dto.ModelInfoApiResponse;
 import com.gas.forecast.business.dto.request.ModelConfigPageRequest;
 import com.gas.forecast.business.dto.request.ModelConfigScopeUpdateRequest;
 import com.gas.forecast.business.dto.request.ModelConfigUpdateRequest;
 import com.gas.forecast.business.dto.response.ModelConfigResponse;
 import com.gas.forecast.business.dto.response.ModelFeatureRefResponse;
 import com.gas.forecast.business.service.ModelConfigService;
-import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.BusinessResponseCode;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -27,7 +27,6 @@ import com.gas.forecast.dao.domain.ModelConfigScopeTb;
 import com.gas.forecast.dao.domain.ModelConfigTb;
 import com.gas.forecast.dao.domain.ModelFeatureDefinitionTb;
 import com.gas.forecast.dao.domain.ModelFeatureRef;
-import com.gas.forecast.dao.domain.ModelTrainConfigTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
@@ -35,7 +34,6 @@ import com.gas.forecast.dao.mapper.ModelConfigScopeTbMapper;
 import com.gas.forecast.dao.mapper.ModelConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
-import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -63,7 +61,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final ModelFeatureRefMapper modelFeatureRefMapper;
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
-    private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelPlatformClient modelPlatformClient;
 
     @Override
@@ -138,7 +135,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
                 modelConfigTbMapper.insert(entity);
             } else {
                 modelConfigTbMapper.updateById(entity);
-                syncTrainConfigModelDisplay(entity);
             }
             synchronizedCount++;
         }
@@ -192,7 +188,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfigTbMapper.updateById(modelConfig);
         ModelConfigTb updated = modelConfigTbMapper.selectById(reqDTO.id());
         syncScopeModelCode(updated);
-        syncTrainConfigModelDisplay(updated);
         return toResp(updated, loadScopeContext(List.of(updated)));
     }
 
@@ -240,10 +235,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         ModelConfigTb exists = modelConfigTbMapper.selectById(id);
         if (exists == null) {
             return;
-        }
-        long trainConfigCount = modelTrainConfigTbMapper.selectCount(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getModelId, exists.getId()));
-        if (trainConfigCount > 0) {
-            throw new BusinessException("模型已被训练配置使用，不能删除");
         }
         modelConfigScopeTbMapper.delete(Wrappers.<ModelConfigScopeTb>lambdaQuery().eq(ModelConfigScopeTb::getModelId, exists.getId()));
         modelFeatureRefMapper.delete(Wrappers.<ModelFeatureRef>lambdaQuery().eq(ModelFeatureRef::getModelId, exists.getId()));
@@ -466,19 +457,6 @@ public class ModelConfigServiceImpl implements ModelConfigService {
     private void validateCapability(Integer minimum, Integer maximum) {
         if (minimum != null && maximum != null && minimum > maximum) {
             throw new BusinessException("最小预测周期不能大于最大预测周期");
-        }
-    }
-
-    private void syncTrainConfigModelDisplay(ModelConfigTb modelConfig) {
-        if (modelConfig == null || modelConfig.getId() == null) {
-            return;
-        }
-        List<ModelTrainConfigTb> trainConfigs = modelTrainConfigTbMapper.selectList(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getModelId, modelConfig.getId()));
-        for (ModelTrainConfigTb trainConfig : trainConfigs) {
-            trainConfig.setModelCode(modelConfig.getModelCode());
-            trainConfig.setModelName(modelConfig.getModelName());
-            trainConfig.setUpdatedAt(new Date());
-            modelTrainConfigTbMapper.updateById(trainConfig);
         }
     }
 

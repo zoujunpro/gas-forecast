@@ -8,7 +8,7 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 旬度预测结果
+ * 预测结果明细。
  *
  * @TableName model_forecast_result_tb
  */
@@ -21,13 +21,11 @@ public class ModelForecastResultTb {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 预测批次
-     */
-    private String forecastBatchNo;
+    /** 统一预测编号。 */
+    private String forecastNo;
 
     /**
-     * 预测旬日期
+     * 预测日期
      */
     private String forecastDate;
 

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.DataSalesPageRequest;
 import com.gas.forecast.business.dto.response.DataSalesResponse;
 import com.gas.forecast.business.service.DataDailySalesService;
-import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.util.PageUtils;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.DataDailySalesTb;

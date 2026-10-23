@@ -1226,16 +1226,43 @@ const models = computed(() => {
   return base
 })
 
+/** 统一预测记录是三个智能体结果页唯一的数据来源，不再请求已删除的旧结果接口。 */
+const jsonValue = (value: unknown) => {
+  if (typeof value !== 'string') return value && typeof value === 'object' ? value : {}
+  try { return JSON.parse(value) } catch { return {} }
+}
+const latestExecuteRecord = async (agentCode: string, predicate: (row: any) => boolean = () => true) => {
+  const page = await listPage('/model-execute-record', { page: 1, size: 500, agentCode, status: 'SUCCESS' })
+  return page.records.find(predicate) || null
+}
+const resultFromExecuteRecord = (record: any) => {
+  const backtest = jsonValue(record?.backtestResultJson) as any
+  const forecast = jsonValue(record?.forecastResultJson) as any
+  const backtestPoints = Array.isArray(backtest?.points) ? backtest.points
+    : Array.isArray(backtest?.rolling_backtest_results) ? backtest.rolling_backtest_results : []
+  const forecastPoints = Array.isArray(forecast?.points) ? forecast.points : []
+  const dateOf = (point: any) => point?.date || point?.stat_date || point?.statDate || point?.forecast_date || point?.forecastDate
+  const actualOf = (point: any) => point?.actual_value ?? point?.actualValue ?? point?.actual
+  const predictedOf = (point: any) => point?.predicted_value ?? point?.predictedValue ?? point?.predicted
+  const valueOf = (point: any) => point?.forecast_value ?? point?.forecastValue ?? point?.prediction ?? point?.value
+  return {
+    dates: backtestPoints.map(dateOf).filter(Boolean), actual: backtestPoints.map(actualOf), predicted: backtestPoints.map(predictedOf),
+    history_dates: backtestPoints.map(dateOf).filter(Boolean), history_values: backtestPoints.map(actualOf),
+    future_dates: forecastPoints.map(dateOf).filter(Boolean), future_predicted: forecastPoints.map(valueOf),
+    metrics: { mape: record?.mape, wmape: record?.wmape, smape: record?.smape, rmse: record?.rmse, mae: record?.mae, r2: record?.r2 },
+    bestModel: record?.bestModel, forecastNo: record?.forecastNo, status: record?.status,
+    regionName: record?.regionName, industryName: record?.industryName, customerName: record?.customerName
+  }
+}
+
 // === 月度预测：加载结果 ===
 const loadProvinceMape = async () => {
   try {
-    const resp = await fetch('/monthly-results')
-    const data = await resp.json()
+    const records = (await listPage('/model-execute-record', { page: 1, size: 500, agentCode: 'monthly-sales', status: 'SUCCESS' })).records
     const mapeMap: Record<string, number> = {}
-    for (const r of data.results) {
-      if (r.province === selectedProvince.value) {
-        const indKey = r.industry === '化工' ? '天然气化工' : r.industry === '发电' ? '天然气发电' : r.industry
-        mapeMap[indKey] = r.metrics.mape
+    for (const r of records) {
+      if (r.regionName === selectedProvince.value && r.industryName) {
+        mapeMap[r.industryName] = r.mape
       }
     }
     provinceMape.value = mapeMap
@@ -1284,12 +1311,9 @@ const loadMonthlyResult = async () => {
   currentResult.value = null
   try {
     const industryKey = industryNameMap[selectedIndustry.value] || selectedIndustry.value
-    const resp = await fetch(
-      `/monthly-results/detail?${queryString({ province: selectedProvince.value, industry: industryKey })}`
-    )
-    const data = await resp.json()
-    if (!data.error) {
-      const monthlyData = normalizeMonthlyResult(data)
+    const record = await latestExecuteRecord('monthly-sales', row => row.regionName === selectedProvince.value && row.industryName === industryKey)
+    if (record) {
+      const monthlyData = normalizeMonthlyResult(resultFromExecuteRecord(record))
       currentResult.value = monthlyData
       nextTick(() => initMonthlyChart(monthlyData))
     }
@@ -1401,11 +1425,8 @@ const loadStDimensions = async () => {
 
 const loadStMape = async () => {
   try {
-    const resp = await fetch('/short-term-results')
-    if (!resp.ok) throw new Error(`短期预测列表加载失败：${resp.status}`)
-    const response = await resp.json()
-    const data = response?.data || response
-    stAllResults.value = Array.isArray(data?.results) ? data.results : []
+    const records = (await listPage('/model-execute-record', { page: 1, size: 500, agentCode: 'short-term', status: 'SUCCESS' })).records
+    stAllResults.value = records.map(row => ({ province: row.regionName, industry: row.industryName, customer: row.customerName, metrics: { mape: row.mape } }))
   } catch (e) {
     console.error('加载短期MAPE失败:', e)
     stAllResults.value = []
@@ -1422,15 +1443,18 @@ const loadStResult = async () => {
   loadingResult.value = true
   currentResult.value = null
   try {
-    const url = `/short-term-results/customer-detail?${queryString({
-      province: selectedStProvince.value,
-      industry: selectedStIndustry.value,
-      customer: selectedStCustomer.value
-    })}`
-    const resp = await fetch(url)
-    if (!resp.ok) return
-    const data = await resp.json()
-    if (requestSeq === stResultRequestSeq && !data.error) {
+    const customer = selectedShortTermCustomerRecord()
+    // 已确定客户时由后端按稳定编码过滤，避免整页记录受名称快照或分页影响。
+    const directPage = customer?.customerCode
+      ? await listPage('/model-execute-record', {
+          page: 1, size: 1, agentCode: 'short-term', status: 'SUCCESS', customerCode: customer.customerCode
+        })
+      : { records: [] as any[] }
+    const record = directPage.records[0] || await latestExecuteRecord('short-term', row =>
+      row.regionName === selectedStProvince.value
+      && row.industryName === selectedStIndustry.value && row.customerName === selectedStCustomer.value)
+    if (requestSeq === stResultRequestSeq && record) {
+      const data = resultFromExecuteRecord(record)
       currentResult.value = data
       nextTick(() => initMonthlyChart(data))
     }
@@ -1500,7 +1524,7 @@ const forecastResultMessage = (data: any, scope: ShortTermForecastScope) => {
   const lines = [
     '预测已完成',
     ...(scopeText ? [`- 预测范围：${scopeText}`] : []),
-    ...(data?.forecastBatchNo ? [`- 预测批次：${data.forecastBatchNo}`] : []),
+    ...(data?.forecastNo ? [`- 预测编号：${data.forecastNo}`] : []),
     ...(result.average !== undefined ? [`- 平均预测值：${result.average}`] : []),
     ...(result.minimum !== undefined ? [`- 最小预测值：${result.minimum}`] : []),
     ...(result.maximum !== undefined ? [`- 最大预测值：${result.maximum}`] : [])
@@ -1635,11 +1659,10 @@ const wsProvinceMape = ref<Record<string, number>>({})
 
 const loadWsMape = async () => {
   try {
-    const resp = await fetch('/winter-supply-results')
-    const data = await resp.json()
+    const records = (await listPage('/model-execute-record', { page: 1, size: 500, agentCode: 'winter-supply', status: 'SUCCESS' })).records
     const mapeMap: Record<string, number> = {}
-    for (const r of data.results) {
-      mapeMap[r.province] = r.metrics.mape
+    for (const r of records) {
+      if (r.regionName) mapeMap[r.regionName] = r.mape
     }
     wsProvinceMape.value = mapeMap
   } catch (e) {
@@ -1651,9 +1674,9 @@ const loadWsResult = async () => {
   loadingResult.value = true
   currentResult.value = null
   try {
-    const resp = await fetch(`/winter-supply-results/detail?${queryString({ province: selectedWsProvince.value })}`)
-    const data = await resp.json()
-    if (!data.error) {
+    const record = await latestExecuteRecord('winter-supply', row => row.regionName === selectedWsProvince.value)
+    if (record) {
+      const data = resultFromExecuteRecord(record)
       currentResult.value = data
       nextTick(() => initMonthlyChart(data))
     }
@@ -2099,11 +2122,6 @@ const activeBusinessContext = () => {
   }
 }
 
-const referencedBatch = (data: any, referenceType: 'TRAIN_BATCH' | 'FORECAST_BATCH') =>
-  Array.isArray(data?.references)
-    ? data.references.find((item: any) => item.referenceType === referenceType)?.referenceNo
-    : undefined
-
 interface AgentStructuredReply {
   source: ChatMessage
   inputType: 'CLARIFICATION_REPLY' | 'CONFIRMATION_REPLY' | 'REJECTION_REPLY'
@@ -2260,7 +2278,6 @@ const sendAnalysisMessage = async (analysisText: string) => {
 }
 
 const clearChat = async () => {
-  const forecastBatchNo = currentResult.value?.forecast_batch_no
   try {
     if (activeConversationNo.value) {
       await getJson(`/ai/conversations/delete?conversationNo=${encodeURIComponent(activeConversationNo.value)}`)
@@ -2269,15 +2286,13 @@ const clearChat = async () => {
     }
     messages.value = []
     saveChatToMemory(activeChatId.value)
-    if (!forecastBatchNo) {
-      messages.value = [{
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: renderMarkdown('对话已清空，请随时提问！'),
-        time: new Date().toLocaleTimeString()
-      }]
-      saveChatToMemory(activeChatId.value)
-    }
+    messages.value = [{
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: renderMarkdown('对话已清空，请随时提问！'),
+      time: new Date().toLocaleTimeString()
+    }]
+    saveChatToMemory(activeChatId.value)
     ElMessage.success('会话已清空')
   } catch (error) {
     const message = error instanceof Error ? error.message : '清空会话失败'

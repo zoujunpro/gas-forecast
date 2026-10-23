@@ -6,13 +6,13 @@
 
     <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelForecastResultTb">
             <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="forecastBatchNo" column="forecast_batch_no" jdbcType="VARCHAR"/>
+            <result property="forecastNo" column="forecast_no" jdbcType="VARCHAR"/>
             <result property="forecastDate" column="forecast_date" jdbcType="VARCHAR"/>
             <result property="forecastValue" column="forecast_value" jdbcType="DECIMAL"/>
             <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,forecast_batch_no,forecast_date,forecast_value,created_at
+        id,forecast_no,forecast_date,forecast_value,created_at
     </sql>
 </mapper>

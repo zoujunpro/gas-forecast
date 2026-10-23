@@ -87,20 +87,12 @@ class ReferenceType(StrEnum):
     引用只保存对象编号，不在会话响应中重复返回完整的任务或结果数据。
     """
 
-    # 统一执行批次；reference_no 对应 execution_batch_tb.batch_no。
-    # 一个执行批次可以组织一个或多个训练、预测任务。
-    EXECUTION_BATCH = "EXECUTION_BATCH"
-
     # 统一执行任务；reference_no 对应 execution_task_tb.task_no。
-    # 用于直接关联批次中的某个具体训练或预测任务。
+    # 一个任务包含其下所有预测任务明细。
     EXECUTION_TASK = "EXECUTION_TASK"
 
-    # 原有模型训练业务批次；reference_no 对应 model_train_record_tb.batch_no。
-    TRAIN_BATCH = "TRAIN_BATCH"
-
-    # 原有模型预测业务批次；reference_no 对应
-    # model_forecast_record_tb.forecast_batch_no。
-    FORECAST_BATCH = "FORECAST_BATCH"
+    # 一次预测执行编号；对应 model_execute_record_tb.forecast_no。
+    FORECAST = "FORECAST"
 
 
 class ReferenceRelation(StrEnum):

@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.AgentStrategyConfigPageRequest;
 import com.gas.forecast.business.dto.request.AgentStrategyConfigSaveRequest;
 import com.gas.forecast.business.service.AgentStrategyConfigService;
-import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.enums.ForecastAgentEnum;

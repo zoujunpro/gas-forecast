@@ -20,6 +20,8 @@ public class ExecutionStepTb {
 
     /** 所属任务明细业务编号，关联 execution_task_detail_tb.detail_no。 */
     private String taskDetailNo;
+    /** 所属稳定预测编号；任务明细首次被异步领取后回填。 */
+    private String forecastNo;
 
     /** 任务执行次数，首次为1。 */
     private Integer attemptNo;

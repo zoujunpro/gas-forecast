@@ -1,17 +1,21 @@
 package com.gas.forecast.business.dto.request;
 
+import com.gas.forecast.business.enums.ExecutionDimensionTypeEnum;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 /**
- * 页面按已选择的客户和预测场景发起预测。
+ * 页面或智能体按已确认范围发起预测。
  *
- * <p>该请求是明确的业务命令，直接进入统一预测业务流程。页面“开始预测”需要在缺少可用模型时
- * 自动训练并继续预测的，应传入 {@code trainingPreference=AUTO} 和 {@code confirmed=true}。</p>
+ * <p>该请求直接进入统一预测业务流程；系统会在同一任务内完成训练、回测和未来预测。</p>
  */
 @Data
 public class ScopedForecastStartRequest {
@@ -25,18 +29,22 @@ public class ScopedForecastStartRequest {
     @Size(max = 64)
     private String agentCode;
 
-    /** 需要预测的标准客户编码。 */
-    @NotBlank(message = "客户编码不能为空")
-    @Size(max = 64)
-    private String customerCode;
+    /** 预测最小执行维度：CUSTOMER、INDUSTRY、REGION。 */
+    @NotNull(message = "预测维度不能为空")
+    private ExecutionDimensionTypeEnum dimensionType;
 
-    /** 客户所属地区编码，用于记录和校验本次预测的业务范围。 */
-    @Size(max = 64)
-    private String regionCode;
+    /**
+     * 已消歧的预测范围组合；不同对象独立展开，不能相互做笛卡尔积。
+     */
+    @NotNull(message = "预测对象不能为空")
+    @Size(min = 1, message = "至少需要一个预测对象")
+    @Valid
+    private List<ExecutionTarget> targets = new ArrayList<>();
 
-    /** 客户所属行业编码，用于记录和校验本次预测的业务范围。 */
-    @Size(max = 64)
-    private String industryCode;
+    /**
+     * 预测起始日期；不传时执行层按预测单位补齐：day 为当天、month 为当月首日、tenday 为当旬首日。
+     */
+    private LocalDate forecastStartDate;
 
     /**
      * 预测周期数。
@@ -49,31 +57,23 @@ public class ScopedForecastStartRequest {
     private Integer forecastHorizon;
 
     /**
-     * 预测时间粒度。
-     *
-     * <p>支持 {@code DAILY}、{@code TENDAY} 和 {@code MONTHLY}，必须与预测场景及所用模型的
-     * 训练粒度一致；未传时由业务服务自动确定。</p>
+     * 预测时间单位：{@code day}、{@code tenday}、{@code month}。
      */
     @Size(max = 16)
     private String forecastFrequency;
 
     /**
-     * 缺少可用模型时的处理偏好。
-     *
-     * <p>{@code UNSPECIFIED} 表示未指定；{@code AUTO} 表示已授权自动训练；
-     * {@code USE_EXISTING_ONLY} 表示只允许使用已有成功模型。</p>
+     * 模型训练和回测使用的历史数据范围。
+     * 开始、结束日期均为空时，执行层使用该目标全部可用历史数据。
      */
-    @Pattern(regexp = "UNSPECIFIED|AUTO|USE_EXISTING_ONLY", message = "训练偏好不正确")
-    private String trainingPreference = "UNSPECIFIED";
+    @NotNull(message = "训练数据范围不能为空")
+    @Valid
+    private TrainingDataRange trainingRange;
 
-    /** 用户对本次自动训练或其他有副作用操作的明确确认。 */
-    private Boolean confirmed = false;
+    @Data
+    public static class TrainingDataRange {
+        private LocalDate historyStartDate;
+        private LocalDate historyEndDate;
+    }
 
-    /**
-     * 本次预测请求的幂等键。
-     *
-     * <p>调用方应为一次业务操作生成唯一值；同一次网络重试必须复用原值，避免重复创建预测任务。</p>
-     */
-    @Size(max = 36)
-    private String requestId;
 }

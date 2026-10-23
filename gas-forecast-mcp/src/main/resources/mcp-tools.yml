@@ -68,36 +68,17 @@ tools:
     outputSchema: *standardOutput
     annotations: *readOnly
 
-  - name: training_start
-    title: 发起模型训练
-    description: |
-      业务能力：按用户指定的训练范围发起模型训练。
-      targets 为智能体完成实体消歧后给出的目标组合数组；不得传名称或拆散为平铺范围。
-      每个目标内，同维度编码按“或”匹配；不同目标之间独立处理，绝不跨目标组合交叉匹配。
-      单个客户训练可直接发起；目标范围可能包含多个客户时，必须先展示训练范围并取得用户确认；
-      强制重新训练也必须取得用户确认。
-      数据范围：未指定时使用当前智能体默认训练数据范围；RECENT模式必须提供trainingPeriods；
-      RANGE模式必须同时提供trainingStartDate和trainingEndDate。
-      返回训练任务和训练批次信息。训练为异步执行，任务受理成功不代表训练已完成。
-    inputSchema: &executionInput
+  - name: forecast_start
+    title: 发起燃气预测
+    description: 根据智能体实体解析后的targets目标组合发起预测。组内条件取交集，组间独立处理；用户确认后，每个最小目标均执行训练、回测和未来预测。short-term按天预测，monthly-sales按月预测，winter-supply按旬预测。
+    inputSchema:
       type: object
-      required: [conversationNo, dimensionType, targets]
+      required: [conversationNo, agentCode, dimensionType, targets]
       additionalProperties: false
-      allOf: &executionRules
-        - if:
-            required: [trainMode]
-            properties: {trainMode: {const: RECENT}}
-          then:
-            required: [trainingPeriods]
-        - if:
-            required: [trainMode]
-            properties: {trainMode: {const: RANGE}}
-          then:
-            required: [trainingStartDate, trainingEndDate]
-      properties: &executionProperties
+      properties:
         conversationNo: {type: string, description: 会话编号}
-        agentCode: {type: string, description: 智能体编码，默认short-term, enum: [short-term, monthly-sales, winter-supply]}
-        dimensionType: {type: string, description: 本次训练最小执行维度, enum: [CUSTOMER, REGION, INDUSTRY]}
+        agentCode: {type: string, description: 预测智能体编码；short-term为短期客户预测，monthly-sales为月度销量预测，winter-supply为冬季保供预测, enum: [short-term, monthly-sales, winter-supply]}
+        dimensionType: {type: string, description: 本次预测最小执行维度, enum: [CUSTOMER, REGION, INDUSTRY]}
         targets: &targetsSchema
           type: array
           minItems: 1
@@ -110,55 +91,14 @@ tools:
               regionCodes: {type: array, uniqueItems: true, items: {type: string}}
               industryCodes: {type: array, uniqueItems: true, items: {type: string}}
               customerCodes: {type: array, uniqueItems: true, items: {type: string}}
-        confirmed: {type: boolean, description: 多客户范围、重新训练或自动训练已获得用户确认时为true}
-        trainMode: {type: string, description: 训练数据范围模式, enum: [ALL, RECENT, RANGE]}
-        trainingPeriods: {type: integer, description: RECENT模式最近周期数，此模式下必填, minimum: 1, maximum: 10000}
-        trainingStartDate: {type: string, format: date, description: 用户指定的训练开始日期；与结束日期同时提供时优先覆盖模型默认训练范围并按RANGE执行}
-        trainingEndDate: {type: string, format: date, description: 用户指定的训练结束日期；与开始日期同时提供时优先覆盖模型默认训练范围并按RANGE执行}
-        forceRetrain: {type: boolean, description: 是否忽略现有成功模型并强制重新训练}
+        forecastStartDate: {type: string, format: date, description: 预测开始日期；未传时按forecastUnit默认当前周期：day为当天、month为当月首日、tenday为当旬首日}
+        forecastHorizon: {type: integer, description: 预测周期；short-term单位为天，monthly-sales单位为月，winter-supply单位为旬。未传时分别默认30天、12个月、18旬, minimum: 1, maximum: 366}
+        forecastUnit: {type: string, description: 预测单位；未传时按智能体模型配置确定, enum: [day, tenday, month]}
+        historyStartDate: {type: string, format: date, description: 训练与回测的历史数据开始日期；与结束日期均未传时使用全部可用历史数据}
+        historyEndDate: {type: string, format: date, description: 训练与回测的历史数据结束日期；与开始日期均未传时使用全部可用历史数据}
+        confirmed: {type: boolean, description: AI会话中用户已明确确认执行时为true}
     outputSchema: *standardOutput
     annotations: &mutating {readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false}
-
-  - name: training_result_query
-    title: 查询训练结果
-    description: 根据客户、地区、行业的组合条件，查询该训练范围最新一次训练结果。至少提供客户、地区或行业之一；同一维度多个条件按或匹配，不同维度同时存在时按且取交集。返回最新训练的状态、训练时间和结果指标。
-    inputSchema:
-      type: object
-      additionalProperties: false
-      anyOf: [{required: [customerCode]}, {required: [regionCode]}, {required: [industryCode]}]
-      properties:
-        customerCode: {type: string, description: 已校验的客户编码}
-        regionCode: {type: string, description: 已校验的地区编码}
-        industryCode: {type: string, description: 已校验的行业编码}
-        agentCode: {type: string, description: 可选智能体编码, enum: [short-term, monthly-sales, winter-supply]}
-    outputSchema: *standardOutput
-    annotations: *readOnly
-
-  - name: forecast_start
-    title: 发起燃气预测
-    description: 根据智能体实体解析后的targets目标组合发起预测。组内条件取交集，组间独立处理；服务端按每个目标实际命中客户数校验确认。short-term按天预测，monthly-sales按月预测，winter-supply按旬预测。缺少可用模型时只返回原因并询问是否训练后预测，不得擅自训练。
-    inputSchema:
-      type: object
-      required: [conversationNo, agentCode, dimensionType, targets]
-      additionalProperties: false
-      properties:
-        conversationNo: {type: string, description: 会话编号}
-        agentCode: {type: string, description: 预测智能体编码；short-term为短期客户预测，monthly-sales为月度销量预测，winter-supply为冬季保供预测, enum: [short-term, monthly-sales, winter-supply]}
-        dimensionType: {type: string, description: 本次预测最小执行维度, enum: [CUSTOMER, REGION, INDUSTRY]}
-        targets: *targetsSchema
-        forecastStartDate: {type: string, format: date, description: 用户指定的预测开始日期；未传时默认为客户最新销量日期的下一天}
-        forecastEndDate: {type: string, format: date, description: 用户指定的预测结束日期；提供后按开始和结束日期计算周期，并优先于forecastHorizon}
-        forecastHorizon: {type: integer, description: 预测周期；short-term单位为天，monthly-sales单位为月，winter-supply单位为旬。未传时分别默认30天、12个月、18旬, minimum: 1, maximum: 366}
-        forecastFrequency: {type: string, description: 预测时间粒度；应与智能体匹配, enum: [DAILY, TENDAY, MONTHLY]}
-        trainMode: {type: string, description: 仅在用户确认需要训练时使用的训练数据范围模式, enum: [ALL, RECENT, RANGE]}
-        trainingPeriods: {type: integer, description: RECENT训练模式的最近周期数, minimum: 1, maximum: 10000}
-        trainingStartDate: {type: string, format: date, description: RANGE训练模式开始日期}
-        trainingEndDate: {type: string, format: date, description: RANGE训练模式结束日期}
-        forceRetrain: {type: boolean, description: 是否明确要求重新训练后预测}
-        trainingPreference: {type: string, description: 用户训练偏好；UNSPECIFIED不授权训练，AUTO仅在用户确认缺少模型后使用, enum: [FORCE_RETRAIN, USE_EXISTING_ONLY, UNSPECIFIED, AUTO]}
-        confirmed: {type: boolean, description: 用户已确认批量预测、自动训练或重新训练时为true}
-    outputSchema: *standardOutput
-    annotations: *mutating
 
   - name: forecast_result_query
     title: 查询预测进度与结果

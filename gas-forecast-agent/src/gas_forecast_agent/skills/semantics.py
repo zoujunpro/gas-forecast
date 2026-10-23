@@ -233,10 +233,8 @@ class SemanticRequest(SemanticModel):
             return {}
         aliases = {
             "forecast_horizon": "forecastHorizon",
-            "training_policy": "trainingPolicy",
-            "training_start_date": "trainingStartDate",
-            "training_end_date": "trainingEndDate",
-            "training_periods": "trainingPeriods",
+            "training_start_date": "historyStartDate",
+            "training_end_date": "historyEndDate",
         }
         blocked = {
             "customerCode", "customer_code",
@@ -589,7 +587,7 @@ class RequestSemanticExtractor:
             "\"references\":{},\"parameters\":{},\"dependsOn\":[]}]}."
             "一句话包含多个独立操作时拆成多个requests并按出现顺序编号；后一个请求依赖前一个结果时填写dependsOn。"
             "intent就是Skill分类，只能从skills提供的intent中选择；识别出intent即确定唯一Skill。"
-            "TRAIN和FORECAST只表示创建任务；查询训练或预测的状态、结果、最新记录、历史记录都属于QUERY。"
+            "TRAIN和FORECAST都创建统一预测任务；训练、回测和预测结果查询都属于QUERY。"
             "具体查询内容和工具调用由后续Skill根据原话、参数和工具结果决定，本层不得输出工具名称。"
             "contextRelation默认NEW：NEW不得继承历史业务过滤条件；仅当用户明确承接上一轮时用CONTINUE，"
             "明确替换或取消上一轮条件时用MODIFY。clearParameters只可填region、industry、customer，"
@@ -604,8 +602,7 @@ class RequestSemanticExtractor:
             "UNSPECIFIED表示原话没有表达选择方式。‘当前客户’‘这些客户’不是实体名称，应放入references。"
             "‘最新’是查询操作语义，不是上下文指代，不要把LATEST放入references。"
             "scenario仅在用户明确表达短期、月度销量或冬季保供时填写short-term、monthly-sales或winter-supply，否则为null。"
-            "parameters只保存用户明确表达的操作参数，例如forecastHorizon、trainingPolicy、trainingStartDate、trainingEndDate；"
-            "trainingPolicy只能为FORCE_RETRAIN、AUTO_IF_MISSING、USE_EXISTING、UNSPECIFIED。"
+            "parameters只保存用户明确表达的操作参数，例如forecastHorizon、historyStartDate、historyEndDate。"
             "仅当输入中确实包含pendingAction时，才能输出CONFIRM_PENDING、REJECT_PENDING或MODIFY_PENDING；"
             "否则新业务目标使用NEW_REQUEST，无法判断使用UNSPECIFIED。"
             "当inputType为CLARIFICATION_REPLY时，必须结合pendingInteraction中的原请求理解用户答案；"

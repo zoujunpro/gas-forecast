@@ -172,7 +172,7 @@ interface ForecastResult { batchNo: string; average: number; minimum: number; ma
 interface TrainingBacktestPoint { date: string; actualValue?: number; predictedValue?: number; absoluteError?: number; errorRate?: number }
 interface TrainingResult { batchNo: string; status?: string; customerName?: string; regionName?: string; industryName?: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; modelVersion?: string; trainDurationSeconds?: number; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number; backtestPoints?: TrainingBacktestPoint[] }
 interface Presentation { type: 'TEXT' | 'LIST' | 'PROGRESS' | 'FORECAST_CHART' | 'TRAINING_BACKTEST'; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
-interface BusinessReference { referenceType: 'EXECUTION_BATCH' | 'EXECUTION_TASK' | 'TRAIN_BATCH' | 'FORECAST_BATCH'; referenceNo: string; relationType: 'CREATED' | 'REFERENCED' | 'DISPLAYED'; title?: string; status?: string }
+interface BusinessReference { referenceType: 'EXECUTION_TASK' | 'FORECAST'; referenceNo: string; relationType: 'CREATED' | 'REFERENCED' | 'DISPLAYED'; title?: string; status?: string }
 interface ClarificationOption { value: string; label: string }
 interface ClarificationField { parameterCode: string; parameterName: string; reason: string; inputType: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'MULTI_SELECT' | 'CONFIRM'; required: boolean; options: ClarificationOption[] }
 interface Clarification { interactionId: string; interactionType: 'CLARIFICATION' | 'CONFIRMATION'; replyToTurnId: string; requestId?: string; reason: string; resumeFrom: string; prompt: string; fields: ClarificationField[] }

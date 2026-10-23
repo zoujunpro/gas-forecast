@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
 
-/** 一次训练或预测请求对应的一条统一执行任务。 */
+/** 一次预测请求对应的一条统一执行任务。 */
 @Data
 @TableName("execution_task_tb")
 public class ExecutionTaskTb {
@@ -22,9 +22,6 @@ public class ExecutionTaskTb {
     /** 所属会话编号。 */
     private String conversationNo;
 
-    /** 业务类型：TRAIN训练、FORECAST预测。 */
-    private String businessType;
-
     /** 执行维度：CUSTOMER客户、REGION地区、INDUSTRY行业。 */
     private String dimensionType;
 
@@ -33,6 +30,9 @@ public class ExecutionTaskTb {
 
     /** 目标组合范围快照；组内取交集、组间取并集。 */
     private String scopeConditionJson;
+
+    /** 发起预测时的完整参数快照，供异步执行器组装数据和调用模型平台。 */
+    private String requestParam;
 
     /** 任务状态：PENDING、RUNNING、COMPLETED、FAILED、CANCELLED。 */
     private String status;

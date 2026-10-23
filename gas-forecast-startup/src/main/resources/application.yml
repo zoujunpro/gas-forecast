@@ -17,6 +17,11 @@ mybatis-plus:
     map-underscore-to-camel-case: true
 
 gas:
+  agent:
+    forecast-queue:
+      # 任务明细由定时调度器异步执行；需要暂停时可通过环境变量显式关闭。
+      scheduler-enabled: ${FORECAST_QUEUE_SCHEDULER_ENABLED:true}
+      dispatch-delay-ms: ${FORECAST_QUEUE_DISPATCH_DELAY_MS:2000}
   forecast:
     mcp:
       enabled: ${MCP_ENABLED:true}

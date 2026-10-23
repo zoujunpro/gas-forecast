@@ -8,7 +8,7 @@ import com.gas.forecast.business.dto.request.DailyWeatherPageRequest;
 import com.gas.forecast.business.dto.request.DailyWeatherUpdateRequest;
 import com.gas.forecast.business.dto.response.DailyWeatherResponse;
 import com.gas.forecast.business.service.DailyWeatherService;
-import com.gas.forecast.business.util.PageUtils;
+import com.gas.forecast.common.util.PageUtils;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;

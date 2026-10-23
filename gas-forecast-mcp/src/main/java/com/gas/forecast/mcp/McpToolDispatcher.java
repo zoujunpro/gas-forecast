@@ -1,17 +1,14 @@
 package com.gas.forecast.mcp;
 
-import com.gas.forecast.business.service.AgentBusinessQueryService;
-import com.gas.forecast.business.service.AgentExecutionTaskService;
-import com.gas.forecast.business.service.ForecastApplicationService;
-import com.gas.forecast.business.service.ForecastApplicationService.ForecastCommand;
-import com.gas.forecast.business.service.ForecastApplicationService.ForecastOptions;
-import com.gas.forecast.business.service.TrainingApplicationService;
-import com.gas.forecast.business.service.TrainingApplicationService.ExecutionOptions;
-import com.gas.forecast.business.service.TrainingApplicationService.TrainingCommand;
-import com.gas.forecast.business.service.TrainingApplicationService.TrainingDataOptions;
-import com.gas.forecast.business.service.TrainingApplicationService.TrainingOptions;
+import com.gas.forecast.business.application.mcp.AgentBusinessQueryService;
+import com.gas.forecast.business.application.mcp.AgentExecutionTaskService;
+import com.gas.forecast.business.application.forecast.ForecastApplicationService;
+import com.gas.forecast.business.application.forecast.ForecastApplicationService.ForecastCommand;
+import com.gas.forecast.business.application.forecast.ForecastApplicationService.ForecastOptions;
+import com.gas.forecast.business.application.forecast.ForecastApplicationService.TrainingDataRange;
+import com.gas.forecast.business.application.forecast.ForecastApplicationService.ExecutionOptions;
 import com.gas.forecast.business.dto.request.ExecutionTarget;
-import com.gas.forecast.business.enums.ExecutionDimensionType;
+import com.gas.forecast.business.enums.ExecutionDimensionTypeEnum;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.TextUtils;
 import java.util.List;
@@ -26,7 +23,6 @@ import org.springframework.stereotype.Component;
 public class McpToolDispatcher {
     private final AgentBusinessQueryService queryService;
     private final AgentExecutionTaskService taskService;
-    private final TrainingApplicationService trainingService;
     private final ForecastApplicationService forecastService;
 
     /**
@@ -48,8 +44,6 @@ public class McpToolDispatcher {
                 case "industry_list" -> success(toolName, "行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "customer_list" -> success(toolName, "客户列表查询成功",
                         queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
-                case "training_start" -> success(toolName, "训练任务已受理", trainingService.start(trainingCommand(args)));
-                case "training_result_query" -> success(toolName, "训练结果查询成功", queryService.latestTraining(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode")));
                 case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args)));
                 case "forecast_result_query" -> success(toolName, "预测结果查询成功",
                         queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
@@ -67,18 +61,6 @@ public class McpToolDispatcher {
         }
     }
 
-    /** 将MCP训练参数转换成Business Service训练命令。 */
-    private TrainingCommand trainingCommand(Map<String, Object> args) {
-        List<ExecutionTarget> targets = targets(args);
-        return new TrainingCommand(
-                text(args, "conversationNo"),
-                defaultText(text(args, "agentCode"), "short-term"),
-                requiredDimension(args),
-                targets,
-                new TrainingOptions(new TrainingDataOptions(text(args, "trainMode"), integer(args, "trainingPeriods"), text(args, "trainingStartDate"), text(args, "trainingEndDate")), bool(args, "forceRetrain", false)),
-                new ExecutionOptions(bool(args, "confirmed", false)));
-    }
-
     /** 将MCP预测参数转换成Business Service预测命令。 */
     private ForecastCommand forecastCommand(Map<String, Object> args) {
         String dimensionType = requiredDimension(args);
@@ -86,17 +68,11 @@ public class McpToolDispatcher {
         return new ForecastCommand(
                 text(args, "conversationNo"),
                 defaultText(text(args, "agentCode"), "short-term"),
-                dimensionType,
+                ExecutionDimensionTypeEnum.fromCode(dimensionType).orElseThrow(),
                 targets,
-                new ForecastOptions(text(args, "forecastStartDate"), text(args, "forecastEndDate"), integer(args, "forecastHorizon"), text(args, "forecastFrequency")),
-                new TrainingDataOptions(text(args, "trainMode"), integer(args, "trainingPeriods"), text(args, "trainingStartDate"), text(args, "trainingEndDate")),
-                new ExecutionOptions(bool(args, "confirmed", false)),
-                defaultText(text(args, "trainingPreference"), "UNSPECIFIED"));
-    }
-
-    /** 工具只接收智能体实体解析后的标准编码，且保留每个目标组合的边界。 */
-    private List<ExecutionTarget> targets(Map<String, Object> args) {
-        return targets(args, requiredDimension(args));
+                new ForecastOptions(text(args, "forecastStartDate"), integer(args, "forecastHorizon"), defaultText(text(args, "forecastUnit"), text(args, "forecastFrequency"))),
+                new TrainingDataRange(text(args, "historyStartDate"), text(args, "historyEndDate")),
+                new ExecutionOptions(bool(args, "confirmed", false)));
     }
 
     private List<ExecutionTarget> targets(Map<String, Object> args, String dimension) {
@@ -115,19 +91,19 @@ public class McpToolDispatcher {
     }
 
     private void validateTarget(String dimension, List<String> regions, List<String> industries, List<String> customers) {
-        ExecutionDimensionType type = ExecutionDimensionType.fromCode(dimension)
+        ExecutionDimensionTypeEnum type = ExecutionDimensionTypeEnum.fromCode(dimension)
                 .orElseThrow(() -> new BusinessException("dimensionType必须是CUSTOMER、REGION或INDUSTRY"));
-        if (type == ExecutionDimensionType.REGION && regions.isEmpty())
+        if (type == ExecutionDimensionTypeEnum.REGION && regions.isEmpty())
             throw new BusinessException("REGION维度必须提供regionCodes");
-        if (type == ExecutionDimensionType.REGION && (!industries.isEmpty() || !customers.isEmpty()))
+        if (type == ExecutionDimensionTypeEnum.REGION && (!industries.isEmpty() || !customers.isEmpty()))
             throw new BusinessException("REGION维度只允许提供regionCodes");
-        if (type == ExecutionDimensionType.INDUSTRY && !customers.isEmpty())
+        if (type == ExecutionDimensionTypeEnum.INDUSTRY && !customers.isEmpty())
             throw new BusinessException("INDUSTRY维度不允许提供customerCodes");
     }
 
     private String requiredDimension(Map<String, Object> args) {
         String dimension = text(args, "dimensionType");
-        if (ExecutionDimensionType.fromCode(dimension).isEmpty())
+        if (ExecutionDimensionTypeEnum.fromCode(dimension).isEmpty())
             throw new BusinessException("dimensionType必须是CUSTOMER、REGION或INDUSTRY");
         return dimension;
     }

@@ -58,7 +58,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
       },
-      '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution|agent-strategy-config)/.*':
+      '^/(model-config|model-feature-definition|model-train-config|model-train-feature-data|model-train-execution|model-execute-record|agent-strategy-config)/.*':
         {
         target: localApiTarget,
           changeOrigin: true,

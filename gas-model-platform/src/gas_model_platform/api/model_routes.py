@@ -10,6 +10,8 @@ from gas_model_platform.models.registry import registry
 from gas_model_platform.schemas.modeling import (
     BacktestRequest,
     BacktestResult,
+    ForecastExecuteRequest,
+    ForecastExecuteResult,
     ModelInfo,
     PredictRequest,
     PredictResult,
@@ -126,4 +128,32 @@ def predict(request: PredictRequest) -> ApiResponse[PredictResult]:
     logger.info("model predict started model_code=%s region=%s", request.model_code, request.region_code or request.region_name)
     result = _execute(lambda: runtime.predict(request))
     logger.info("model predict completed model_code=%s batch_no=%s points=%d", result.model_code, result.forecast_batch_no, len(result.points))
+    return ApiResponse.success(result)
+
+
+@router.post("/execute", response_model=ApiResponse[ForecastExecuteResult])
+def execute_forecast(request: ForecastExecuteRequest) -> ApiResponse[ForecastExecuteResult]:
+    """用一个 forecast_no 完成训练、回测和未来预测。"""
+    if len(request.future_dataset) != request.forecast_horizon:
+        raise HTTPException(
+            status_code=422,
+            detail="future_dataset 条数必须与 forecast_horizon 一致",
+        )
+    logger.info(
+        "model execute started model_code=%s forecast_no=%s region=%s",
+        request.model_code, request.forecast_no, request.region_code or request.region_name,
+    )
+    try:
+        with training_registry.running(request.forecast_no, request.model_code):
+            result = _execute(lambda: runtime.execute_forecast(request))
+    except TrainingCapacityExceeded as exc:
+        raise HTTPException(
+            status_code=429,
+            detail=str(exc),
+            headers={"Retry-After": "5"},
+        ) from exc
+    logger.info(
+        "model execute completed model_code=%s forecast_no=%s points=%d",
+        result.model_code, result.forecast_no, len(result.forecast.points),
+    )
     return ApiResponse.success(result)

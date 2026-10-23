@@ -23,10 +23,8 @@ public class ExecutionTaskDetailTb {
     private String regionCode;
     private String industryCode;
     private String customerCode;
-    /** 该目标的训练批次号，训练发起后回填。 */
-    private String trainBatchNo;
-    /** 该目标的预测批次号，预测发起后回填。 */
-    private String forecastBatchNo;
+    /** 首次实际执行时生成的稳定预测编号；失败重试时保持不变。 */
+    private String forecastNo;
     /** 最小目标的执行状态。 */
     private String status;
     private Date createdAt;

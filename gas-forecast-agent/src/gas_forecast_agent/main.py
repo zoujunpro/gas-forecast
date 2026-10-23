@@ -15,7 +15,6 @@ if __name__ == "__main__" and not __package__:
     sys.path.insert(0, str(package_dir.parent))
 
 from fastapi import Depends, FastAPI, Header, HTTPException
-from gas_forecast_agent.analysis import ForecastAnalysisRequest, ForecastAnalysisResponse, ForecastResultAnalyzer
 from gas_forecast_agent.config import Settings, get_settings
 from gas_forecast_agent.llm import build_llm_client
 from gas_forecast_agent.internal_client import InternalAgentClient
@@ -74,22 +73,6 @@ def get_internal_agent_client(
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "UP"}
-
-
-@app.post("/api/v1/forecast-analysis", response_model=ForecastAnalysisResponse, response_model_by_alias=True)
-async def forecast_analysis(
-    request: ForecastAnalysisRequest,
-    settings: Annotated[Settings, Depends(get_settings)],
-) -> ForecastAnalysisResponse:
-    """供Java预测完成事件调用；模型解析统一在Python Agent内执行。"""
-    try:
-        return await ForecastResultAnalyzer(settings).analyze(request)
-    except ValueError as exc:
-        logger.exception("预测结果解析配置异常")
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:
-        logger.exception("预测结果 AI 解析失败")
-        raise HTTPException(status_code=502, detail=f"预测结果AI解析失败：{exc}") from exc
 
 
 @app.post("/api/v1/llm/chat-completions")
@@ -339,16 +322,14 @@ def _chat_references(
     """从本轮真实工具结果提取轻量业务引用，不回传完整执行数据。"""
     relation = (
         ReferenceRelation.CREATED
-        if executed_tool in {"training_start", "forecast_start"}
+        if executed_tool == "forecast_start"
         else ReferenceRelation.DISPLAYED
     )
     status = _find_text(execution_result, "status")
     references: list[MessageReferenceResponse] = []
     for field, reference_type in (
-        ("executionBatchNo", ReferenceType.EXECUTION_BATCH),
         ("taskNo", ReferenceType.EXECUTION_TASK),
-        ("trainBatchNo", ReferenceType.TRAIN_BATCH),
-        ("forecastBatchNo", ReferenceType.FORECAST_BATCH),
+        ("forecastNo", ReferenceType.FORECAST),
     ):
         for reference_no in _find_texts(execution_result, field):
             references.append(MessageReferenceResponse(
@@ -425,7 +406,7 @@ def _intent_code(reply: AgentRuntimeResponse) -> str:
         return reply.intent_code
 
     skill_intents = {
-        "model-training-management": "TRAIN",
+        "model-training-management": "FORECAST",
         "customer-gas-forecast": "FORECAST",
         "business-data-query": "QUERY",
         "forecast-analysis": "ANALYZE",
@@ -435,8 +416,6 @@ def _intent_code(reply: AgentRuntimeResponse) -> str:
         return skill_intents[reply.skill_name]
 
     tool = reply.executed_tool or ""
-    if tool.startswith("training_"):
-        return "TRAIN" if tool == "training_start" else "QUERY"
     if tool.startswith("forecast_"):
         return "FORECAST" if tool == "forecast_start" else "QUERY"
     if tool:

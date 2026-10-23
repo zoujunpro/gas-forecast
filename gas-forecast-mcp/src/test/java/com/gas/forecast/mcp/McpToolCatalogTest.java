@@ -14,16 +14,15 @@ class McpToolCatalogTest {
         Set<String> names = catalog.list().stream().map(McpToolCatalog.ToolDefinition::name).collect(Collectors.toSet());
 
         assertThat(names).containsExactlyInAnyOrder("region_list", "industry_list", "customer_list",
-                "training_start", "training_result_query", "forecast_start", "forecast_result_query", "task_status_get", "task_steps_get");
+                "forecast_start", "forecast_result_query", "task_status_get", "task_steps_get");
         assertThat(catalog.list()).allSatisfy(tool -> {
             assertThat(tool.description()).isNotBlank();
             assertThat(tool.inputSchema()).containsEntry("type", "object");
             assertThat(tool.outputSchema()).containsEntry("type", "object");
         });
-        McpToolCatalog.ToolDefinition training = catalog.require("training_start");
+        McpToolCatalog.ToolDefinition forecast = catalog.require("forecast_start");
         @SuppressWarnings("unchecked")
-        var properties = (java.util.Map<String, Object>) training.inputSchema().get("properties");
-        assertThat(properties).containsKeys("targets", "confirmed", "requestId");
-        assertThat(training.inputSchema()).containsKey("allOf");
+        var properties = (java.util.Map<String, Object>) forecast.inputSchema().get("properties");
+        assertThat(properties).containsKeys("targets", "confirmed", "historyStartDate", "historyEndDate");
     }
 }

@@ -7,6 +7,7 @@ import ast
 import asyncio
 import hashlib
 import json
+import logging
 import re
 import time
 from typing import Any
@@ -27,8 +28,10 @@ from .models import SkillDefinition, SkillIntent
 from .result_adapter import ToolResultAdapter
 from .semantics import ContextRelation, DialogueAct, RequestSemantics, TargetSelection
 
+logger = logging.getLogger(__name__)
 
-WRITE_TOOLS = {"forecast_start", "training_start"}
+
+WRITE_TOOLS = {"forecast_start"}
 ASYNC_TOOLS = WRITE_TOOLS
 BUSINESS_CONTEXT_KEYS = (
     "regionCode", "regionName", "industryCode", "industryName",
@@ -40,7 +43,6 @@ ENTITY_ARGUMENT_KEYS = (
     "industryCode", "industryName", "industryCodes", "industryNames",
 )
 DIRECT_RESULT_TOOLS = {
-    "training_result_query",
     "forecast_result_query",
     "task_status_get", "task_steps_get",
 }
@@ -411,11 +413,9 @@ class ActionExecutor:
         # 规划模型解释，否则“确认/继续”可能被误判成缺少业务参数。
         if parameters.get("_pendingTool") and parameters.get("confirmed") is True:
             return {"type": "tool", "name": parameters["_pendingTool"], "arguments": parameters}
-        # 训练和预测各只有一个固定写工具；不再由模型选择工具。Schema 校验会
+        # 所有写操作都创建统一预测任务；不再暴露独立训练工具。Schema 校验会
         # 在真正调用前把缺失的实体、时间范围等转成结构化澄清。
-        if skill.intent == SkillIntent.TRAIN:
-            return {"type": "tool", "name": "training_start", "arguments": parameters}
-        if skill.intent == SkillIntent.FORECAST:
+        if skill.intent in {SkillIntent.TRAIN, SkillIntent.FORECAST}:
             return {"type": "tool", "name": "forecast_start", "arguments": parameters}
         # 分析只围绕指定业务范围的最新预测，不使用预测批次号作为用户输入条件。
         if skill.intent == SkillIntent.ANALYZE and not trace:
@@ -547,7 +547,7 @@ class ActionExecutor:
             scope_keys = ("customerCode", "regionCode", "industryCode")
             result_terms = ("训练信息", "训练结果", "训练指标", "训练效果", "训练详情", "所用的训练", "使用的训练")
             if any(term in text for term in result_terms) and any(parameters.get(key) for key in scope_keys):
-                return {"type": "tool", "name": "training_result_query", "arguments": parameters}
+                return {"type": "tool", "name": "forecast_result_query", "arguments": parameters}
             forecast_terms = ("预测进度", "预测结果", "预测值", "预测信息", "预测情况", "预测完成")
             if any(term in text for term in forecast_terms) and any(parameters.get(key) for key in scope_keys):
                 return {"type": "tool", "name": "forecast_result_query", "arguments": parameters}
@@ -566,7 +566,7 @@ class ActionExecutor:
         if intent == SkillIntent.FORECAST:
             name = "forecast_start"
         elif intent == SkillIntent.TRAIN:
-            name = "training_start"
+            name = "forecast_start"
         elif intent == SkillIntent.ANALYZE:
             name = "forecast_result_query"
         elif intent == SkillIntent.CHAT:
@@ -635,7 +635,7 @@ class ActionExecutor:
         )
         keys = (
             "customerCode", "customerName", "regionCode", "regionName", "industryCode", "industryName",
-            "taskNo", "trainBatchNo", "forecastBatchNo", "forecastHorizon",
+            "taskNo", "forecastNo", "forecastHorizon",
         )
         # NEW 请求只能使用本轮条件；历史和页面上下文仅用于语义理解，不能
         # 自动成为 MCP 过滤参数。CONTINUE/MODIFY 才可继承最近兼容上下文。
@@ -733,8 +733,7 @@ class ActionExecutor:
             # 不能使用 \b：中文“的”等字符在 Python Unicode 正则中也属于 word，
             # 会让编号在最后一个连字符处回退截断。
             "taskNo": r"(?<![A-Za-z0-9_-])(TASK[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
-            "trainBatchNo": r"(?<![A-Za-z0-9_-])((?:TRBATCH|TRAIN)[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
-            "forecastBatchNo": r"(?<![A-Za-z0-9_-])(FORECAST[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
+            "forecastNo": r"(?<![A-Za-z0-9_-])(FORECAST[-_A-Za-z0-9]+)(?![A-Za-z0-9_-])",
         }.items():
             match = re.search(pattern, message, re.I)
             if match:
@@ -828,7 +827,7 @@ class ActionExecutor:
                     values.pop(key, None)
         pending_tool = {
             "customer-gas-forecast": "forecast_start",
-            "model-training-management": "training_start",
+            "model-training-management": "forecast_start",
         }.get(skill_name)
         current_focus = current_context or remembered_context
         if not current_focus:
@@ -1370,8 +1369,8 @@ class ActionExecutor:
                     return f"参数 {name} 不能小于 {rule['minimum']}。"
                 if rule.get("maximum") is not None and value > rule["maximum"]:
                     return f"参数 {name} 不能大于 {rule['maximum']}。"
-        start = arguments.get("trainingStartDate")
-        end = arguments.get("trainingEndDate")
+        start = arguments.get("historyStartDate")
+        end = arguments.get("historyEndDate")
         if isinstance(start, str) and isinstance(end, str) and start > end:
             return "训练开始日期不能晚于训练结束日期，请重新确认训练范围。"
         # 手工校验负责保留面向用户的中文提示；其余 JSON Schema 规则（类型、
@@ -1486,6 +1485,16 @@ class ActionExecutor:
             result = self._validate_tool_result(await self._call(mcp, name, arguments))
             if not self._is_retryable_system_error(result) or attempt >= max_attempts:
                 if name in WRITE_TOOLS and self._is_retryable_system_error(result):
+                    # 写操作不能盲目重试，但必须保留原始失败信息供本地/部署日志定位。
+                    # 页面只展示通用防重提示，避免把上游内部细节暴露给终端用户。
+                    logger.error(
+                        "event=forecast_submit_unknown tool=%s error_code=%s error_type=%s retryable=%s detail=%s arguments=%s",
+                        name, result.get("errorCode"), result.get("errorType"), result.get("retryable"),
+                        result.get("message"), {
+                            key: value for key, value in arguments.items()
+                            if key not in {"authorization", "token", "apiKey", "api_key"}
+                        },
+                    )
                     result = {
                         **result,
                         "status": "UNKNOWN",
@@ -1518,21 +1527,7 @@ class ActionExecutor:
 
     @staticmethod
     def _normalize_empty_query_result(name: str, result: dict[str, Any], arguments: dict[str, Any]) -> dict[str, Any]:
-        """训练查询返回空集合时不能伪装成查询成功。"""
-        data = result.get("data") if isinstance(result.get("data"), dict) else {}
-        if name == "training_result_query":
-            batches = data.get("batches")
-            if isinstance(batches, list) and not batches:
-                batch_no = arguments.get("trainBatchNo")
-                return {
-                    **result,
-                    "success": False,
-                    "status": "NOT_FOUND",
-                    "errorType": "BUSINESS",
-                    "errorCode": "TRAINING_RESULT_NOT_FOUND",
-                    "message": f"未找到训练批次：{batch_no}" if batch_no else "没有找到符合条件的训练结果",
-                    "retryable": False,
-                }
+        """保留模型平台返回的真实查询状态。"""
         return result
 
     @staticmethod
@@ -1596,6 +1591,6 @@ class ActionExecutor:
             validated = set(parameters.get("_validatedEntityParameters") or [])
             validated.update(key for key in keys if parameters.get(key) not in (None, ""))
             parameters["_validatedEntityParameters"] = sorted(validated)
-        for key in ("taskNo", "trainBatchNo", "forecastBatchNo"):
+        for key in ("taskNo", "forecastNo"):
             if data.get(key):
                 parameters[key] = data[key]

@@ -27,18 +27,17 @@ gas:
 ## Tools
 
 - `region_list`, `industry_list`, `customer_list`
-- `training_start`, `training_result_query`
 - `forecast_start`, `forecast_result_query`
 
 Conversation and message persistence is handled by the Java HTTP chat entry before
 and after Python execution, so it is intentionally not exposed as an MCP tool.
-Training and forecast tools call their corresponding deterministic business
-services. Java does not select Skills, parse user intent or plan tool order. The MCP
-adapter does not write model, training, forecast, customer, region or industry tables
-directly.
+Forecast tools call the unified deterministic prediction workflow, which performs
+training, backtesting and forecasting internally. Java does not select Skills, parse
+user intent or plan tool order. The MCP adapter does not write model, customer,
+region or industry tables directly.
 
-实体名称校验由 Java 的内部 Agent 接口完成，不出现在 MCP `tools/list`。Batch
-training and forecast calls require `bulk=true` and `confirmed=true`.
+实体名称校验由 Java 的内部 Agent 接口完成，不出现在 MCP `tools/list`。预测调用在
+创建任务前需要传入 `confirmed=true`。
 
 ## Example
 

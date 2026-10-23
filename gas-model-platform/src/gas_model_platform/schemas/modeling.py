@@ -101,6 +101,29 @@ class PredictRequest(ModelContext):
     dataset: list[PredictDatasetRow] = Field(min_length=1, max_length=366)
 
 
+class ForecastExecuteRequest(BaseModel):
+    """一次预测的完整模型执行请求。
+
+    ``forecast_no`` 是本次执行的唯一业务编号，同时也是模型产物目录名；不再区分
+    训练批次和预测批次。历史数据与未来特征必须显式分开，避免未来销量泄漏到训练。
+    """
+
+    agent_code: AgentCode | None = None
+    model_code: str = Field(min_length=1)
+    forecast_no: str = Field(min_length=1, max_length=65)
+    region_code: str | None = None
+    region_name: str | None = None
+    industry_code: str | None = None
+    industry_name: str | None = None
+    customer_code: str | None = None
+    customer_name: str | None = None
+    forecast_horizon: int = Field(ge=1, le=366)
+    forecast_unit: ForecastUnit
+    params: dict[str, Any] = Field(default_factory=dict)
+    history_dataset: list[TrainDatasetRow] = Field(min_length=1)
+    future_dataset: list[PredictDatasetRow] = Field(min_length=1, max_length=366)
+
+
 class FeatureComputeRequest(BaseModel):
     """单日期特征计算请求。
 
@@ -235,6 +258,43 @@ class PredictResult(BaseModel):
     forecast_batch_no: str
     points: list[ForecastPoint]
     metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
+class ForecastExecutionTrainingResult(BaseModel):
+    """统一预测执行中产生的训练结果，不暴露训练批次号。"""
+
+    metrics: MetricSet = Field(default_factory=MetricSet)
+    feature_names: list[str] = Field(default_factory=list)
+    selected_model_name: str | None = None
+    selection_reason: str | None = None
+    requested_candidate_count: int = 0
+    successful_candidate_count: int = 0
+    ranked_candidate_count: int = 0
+    selected_model_params: dict[str, Any] = Field(default_factory=dict)
+    candidate_evaluations: list[CandidateEvaluation] = Field(default_factory=list)
+    issues: list[ModelIssue] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ForecastExecutionBacktestResult(BaseModel):
+    metrics: MetricSet = Field(default_factory=MetricSet)
+    points: list[BacktestPoint] = Field(default_factory=list)
+    fold_metrics: list[RollingBacktestFoldMetric] = Field(default_factory=list)
+
+
+class ForecastExecutionForecastResult(BaseModel):
+    points: list[ForecastPoint] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ForecastExecuteResult(BaseModel):
+    forecast_no: str
+    agent_code: AgentCode
+    model_code: str
+    training: ForecastExecutionTrainingResult
+    backtest: ForecastExecutionBacktestResult
+    forecast: ForecastExecutionForecastResult
     created_at: datetime = Field(default_factory=datetime.now)
 
 

@@ -42,11 +42,9 @@ class SkillDefinition(BaseModel):
             raise ValueError(f"意图 {self.intent.value} 必须声明为非只读 Skill")
         if self.intent not in action_intents and not self.read_only:
             raise ValueError(f"意图 {self.intent.value} 必须声明为只读 Skill")
-        if self.intent == SkillIntent.TRAIN and "forecast_start" in self.allowed_tools:
-            raise ValueError("TRAIN Skill 不允许创建预测任务")
-        if self.intent == SkillIntent.FORECAST and "training_start" in self.allowed_tools:
-            raise ValueError("FORECAST Skill 不允许创建训练任务")
-        if self.read_only and {"training_start", "forecast_start"} & set(self.allowed_tools):
+        if "training_start" in self.allowed_tools:
+            raise ValueError("系统不再提供 training_start；请使用 forecast_start")
+        if self.read_only and "forecast_start" in self.allowed_tools:
             raise ValueError(f"只读 Skill {self.name} 不允许包含写工具")
         return self
 
