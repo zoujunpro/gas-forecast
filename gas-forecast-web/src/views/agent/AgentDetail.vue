@@ -851,7 +851,8 @@
         </div>
       </div>
       <div class="ai-messages" ref="messagesRef">
-        <div v-for="msg in messages" v-show="msg.role === 'user' || msg.content" :key="msg.id" class="msg" :class="msg.role">
+        <template v-for="msg in messages" :key="msg.id">
+        <div v-show="msg.role === 'user' || msg.content" class="msg" :class="[msg.role, { 'task-message': Boolean(msg.taskNo) }]">
           <div class="msg-avatar" :class="msg.role">
             <span v-if="msg.role === 'user'">我</span>
             <svg v-else viewBox="0 0 24 24" fill="none">
@@ -863,7 +864,7 @@
               />
             </svg>
           </div>
-          <div class="msg-body">
+          <div class="msg-body" :class="{ 'has-task-card': Boolean(msg.taskNo) }">
             <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ msg.content }}</div>
             <div v-else class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
             <section v-if="msg.role === 'assistant' && chatListRows(msg).length" class="chat-result-list">
@@ -914,6 +915,9 @@
             </div>
           </div>
         </div>
+        <!-- 执行任务不是普通消息气泡的一部分：独立占满聊天栏，避免图表和长文本被气泡宽度裁切。 -->
+        <AiExecutionTask v-if="msg.role === 'assistant' && msg.taskNo" class="task-execution-block" :task-no="msg.taskNo" @forecast-completed="showCompletedTaskForecast" />
+        </template>
         <div v-if="isStreaming" class="msg assistant">
           <div class="msg-avatar assistant">
             <svg viewBox="0 0 24 24" fill="none">
@@ -971,6 +975,7 @@ import {
   VideoPlay
 } from '@element-plus/icons-vue'
 import type { ChatMessage } from '@/types'
+import AiExecutionTask from '@/views/ai/AiExecutionTask.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -1286,7 +1291,6 @@ const loadMonthlyResult = async () => {
     if (!data.error) {
       const monthlyData = normalizeMonthlyResult(data)
       currentResult.value = monthlyData
-      void loadForecastAnalysis(monthlyData.forecast_batch_no)
       nextTick(() => initMonthlyChart(monthlyData))
     }
   } catch (e) {
@@ -1428,7 +1432,6 @@ const loadStResult = async () => {
     const data = await resp.json()
     if (requestSeq === stResultRequestSeq && !data.error) {
       currentResult.value = data
-      void loadForecastAnalysis(data.forecast_batch_no)
       nextTick(() => initMonthlyChart(data))
     }
   } catch (e) {
@@ -1535,84 +1538,16 @@ const refreshShortTermForecastResult = async () => {
   void loadStMape().then(syncShortTermMape)
 }
 
-const pollShortTermForecast = async (
-  conversationNo: string,
-  forecastBatchNo: string,
-  messageId: string,
-  chatId: string,
-  scope: ShortTermForecastScope = {}
-) => {
-  for (let count = 0; count < 240; count += 1) {
-    await wait(2000)
-    const response = await getJson<any>(
-      `/ai/conversations/forecast-progress?conversationNo=${encodeURIComponent(conversationNo)}&batchNo=${encodeURIComponent(forecastBatchNo)}`
-    )
-    const data = response.data || {}
-    if (data.status === 'EXECUTING') {
-      if (count % 5 === 0) setShortTermForecastMessage(messageId, `预测任务执行中，预测批次：${forecastBatchNo}`, chatId)
-      continue
-    }
-    const resultScope = {
-      ...scope,
-      ...Object.fromEntries(Object.entries(forecastScopeFromResponse(data)).filter(([, value]) => Boolean(value)))
-    }
-    const message = data.status === 'COMPLETED'
-      ? forecastResultMessage(data, resultScope)
-      : (data.answer || '预测执行失败')
-    setShortTermForecastMessage(messageId, message, chatId, data)
-    if (data.status === 'FAILED') throw new Error(data.answer || '预测执行失败')
-    await focusShortTermForecastScope(resultScope)
-    await refreshShortTermForecastResult()
-    return
-  }
-  throw new Error('页面等待预测结果超时，预测可能仍在后台执行')
-}
-
-const continueShortTermForecastAfterTraining = async (
-  conversationNo: string,
-  trainBatchNo: string,
-  messageId: string,
-  chatId: string,
-  scope: ShortTermForecastScope = {}
-) => {
-  const response = await postJson<any>('/ai/conversations/continue-forecast', {
-    conversationNo,
-    trainBatchNo
-  }, undefined, 60_000)
-  const data = response.data || {}
-  if (data.answer) setShortTermForecastMessage(messageId, data.answer, chatId)
-  if (data.forecastBatchNo && data.status === 'EXECUTING') {
-    await pollShortTermForecast(conversationNo, data.forecastBatchNo, messageId, chatId, scope)
-    return
-  }
-  if (data.status === 'FAILED') throw new Error(data.answer || '自动预测失败')
+/** 右侧任务流程完成后，左侧自动切到同一地区、行业、客户，并加载最新预测结果。 */
+const showCompletedTaskForecast = async (result: Record<string, any>) => {
+  if (!isShortTerm.value) return
+  const focused = await focusShortTermForecastScope({
+    regionName: result.regionName,
+    industryName: result.industryName,
+    customerName: result.customerName
+  })
+  if (!focused) return
   await refreshShortTermForecastResult()
-}
-
-const pollShortTermTraining = async (
-  conversationNo: string,
-  trainBatchNo: string,
-  messageId: string,
-  chatId: string,
-  scope: ShortTermForecastScope = {}
-) => {
-  for (let count = 0; count < 120; count += 1) {
-    await wait(3000)
-    const response = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(trainBatchNo)}`)
-    const batch = response.data
-    if (!batch) continue
-    const status = String(batch.status || '')
-    if (status === 'SUCCESS') {
-      setShortTermForecastMessage(messageId, `训练已完成，训练批次：${trainBatchNo}。正在继续执行预测。`, chatId)
-      await continueShortTermForecastAfterTraining(conversationNo, trainBatchNo, messageId, chatId, scope)
-      return
-    }
-    if (['FAILED', 'FAILED_FINAL', 'PREPARE_FAILED'].includes(status)) {
-      throw new Error(batch.message || '训练未能完成')
-    }
-    if (count % 5 === 0) setShortTermForecastMessage(messageId, `模型训练中，训练批次：${trainBatchNo}`, chatId)
-  }
-  throw new Error('页面等待训练结果超时，训练可能仍在后台执行')
 }
 
 const runShortTermForecast = async () => {
@@ -1720,7 +1655,6 @@ const loadWsResult = async () => {
     const data = await resp.json()
     if (!data.error) {
       currentResult.value = data
-      void loadForecastAnalysis(data.forecast_batch_no)
       nextTick(() => initMonthlyChart(data))
     }
   } catch (e) {
@@ -2124,6 +2058,7 @@ const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) =
         clarificationResolved: Boolean(item.clarification),
         presentation: item.presentation || item.resultData?.presentation || undefined,
         executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
+        taskNo: item.taskNo || (item.references || []).find((reference: any) => reference.referenceType === 'EXECUTION_TASK')?.referenceNo,
         time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()
       }))
       const latestMessage = messages.value[messages.value.length - 1]
@@ -2145,47 +2080,6 @@ const updateMsgInMemory = (id: string, msgId: string, content: string) => {
   if (msg) msg.content = content
 }
 
-const analysisRequests = new Set<string>()
-
-const removeOtherForecastAnalyses = (forecastBatchNo: string) => {
-  const currentMsgId = `forecast-analysis-${forecastBatchNo}`
-  messages.value = messages.value.filter(
-    (message) => !message.id.startsWith('forecast-analysis-') || message.id === currentMsgId
-  )
-}
-
-const loadForecastAnalysis = async (forecastBatchNo?: string, attempt = 0) => {
-  if (!forecastBatchNo || analysisRequests.has(forecastBatchNo)) return
-  analysisRequests.add(forecastBatchNo)
-  try {
-    const response = await fetch('/model-forecast-analysis/get', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ forecastBatchNo })
-    })
-    if (!response.ok) return
-    const payload = await response.json()
-    const analysis = payload?.data
-    if (!analysis) return
-    if (analysis.analysisStatus === 'SUCCESS' && analysis.analysisContent) {
-      if (currentResult.value?.forecast_batch_no !== forecastBatchNo) return
-      removeOtherForecastAnalyses(forecastBatchNo)
-      const msgId = `forecast-analysis-${forecastBatchNo}`
-      const content = renderMarkdown(analysis.analysisContent)
-      const existing = messages.value.find((message) => message.id === msgId)
-      if (existing) existing.content = content
-      else messages.value.push({ id: msgId, role: 'assistant', content, time: new Date().toLocaleTimeString() })
-      saveChatToMemory(activeChatId.value)
-      scrollToBottom()
-    } else if ((analysis.analysisStatus === 'PENDING' || analysis.analysisStatus === 'RUNNING') && attempt < 20) {
-      window.setTimeout(() => void loadForecastAnalysis(forecastBatchNo, attempt + 1), 3000)
-    }
-  } catch (error) {
-    console.error('加载预测分析失败:', error)
-  } finally {
-    analysisRequests.delete(forecastBatchNo)
-  }
-}
 
 /**
  * 发送消息时的当前业务焦点。
@@ -2304,6 +2198,7 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
         msg.clarification = data.clarification || undefined
         msg.presentation = data.presentation || data.resultData?.presentation || undefined
         msg.executionResult = data.executionResult || data.execution_result || data.resultData?.executionResult || undefined
+        msg.taskNo = data.taskNo || (data.references || []).find((item: any) => item.referenceType === 'EXECUTION_TASK')?.referenceNo
         if (msg.clarification) clarificationDraft[msg.id] = {}
       }
       saveChatToMemory(streamId)
@@ -2311,21 +2206,7 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
       updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
     }
 
-    const conversationNo = data.conversationNo || conversationMemory.get(streamId)
-    const trainBatchNo = referencedBatch(data, 'TRAIN_BATCH')
-    const forecastBatchNo = referencedBatch(data, 'FORECAST_BATCH')
-    // 只从 forecast_start 的真实工具结果读取范围；页面旧选择和训练任务都
-    // 不能触发左侧联动，避免聊天查询/训练污染当前展示。
-    const forecastScope = forecastScopeFromResponse(data)
-    // forecast_start 通常同时返回“复用的训练批次”和“新建预测批次”。预测批次
-    // 一旦存在，就表示无需再等待训练，必须优先轮询预测；否则会错误进入训练
-    // 续跑分支，导致预测结果、左侧联动和聊天回填全部丢失。左侧范围则必须
-    // 等预测真正完成后才由 pollShortTermForecast 切换，避免执行期间出现空页。
-    if (isShortTerm.value && conversationNo && forecastBatchNo) {
-      await pollShortTermForecast(conversationNo, forecastBatchNo, msgId, streamId, forecastScope)
-    } else if (isShortTerm.value && conversationNo && trainBatchNo) {
-      await pollShortTermTraining(conversationNo, trainBatchNo, msgId, streamId, forecastScope)
-    }
+    // 执行进度统一由执行任务卡片按 taskNo 展示；这里不再根据训练/预测批次轮询旧接口。
   } catch (e: any) {
     if (structured) structured.source.clarificationResolved = false
     if (e.name === 'AbortError') {
@@ -2388,10 +2269,7 @@ const clearChat = async () => {
     }
     messages.value = []
     saveChatToMemory(activeChatId.value)
-    // 自动解析属于预测公共数据，不属于任何用户会话；清空后仍从分析表重新展示。
-    if (forecastBatchNo) {
-      await loadForecastAnalysis(forecastBatchNo)
-    } else {
+    if (!forecastBatchNo) {
       messages.value = [{
         id: Date.now().toString(),
         role: 'assistant',
@@ -3789,7 +3667,9 @@ watch(futureChartType, () => {
 .ai-messages {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   padding: 20px;
@@ -3800,6 +3680,7 @@ watch(futureChartType, () => {
 .msg {
   display: flex;
   gap: 10px;
+  min-width: 0;
 }
 .msg.user {
   flex-direction: row-reverse;
@@ -3828,13 +3709,32 @@ watch(futureChartType, () => {
   height: 16px;
 }
 .msg-body {
+  min-width: 0;
   max-width: 80%;
 }
+.msg-body.has-task-card {
+  width: 100%;
+  max-width: 100%;
+}
+.msg.task-message .msg-avatar {
+  display: none;
+}
+.msg.task-message .msg-body {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.task-execution-block {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
 .msg-bubble {
-  padding: 10px 14px;
+  padding: 12px 15px;
   border-radius: 12px;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.7;
 }
 .msg-bubble-plain {
   white-space: pre-wrap;
@@ -3882,7 +3782,7 @@ watch(futureChartType, () => {
   flex: 1 1 100%;
   gap: 6px;
 }
-.msg-clarification-field label { font-size: 12px; font-weight: 600; color: #475569; }
+.msg-clarification-field label { font-size: 14px; font-weight: 600; color: #475569; }
 .msg-clarification button,.msg-clarification input,.msg-clarification select {
   min-height: 32px;
   padding: 5px 10px;
@@ -3890,16 +3790,17 @@ watch(futureChartType, () => {
   border-radius: 7px;
   background: white;
   color: #0369a1;
+  font-size: 14px;
 }
 .msg-clarification button { cursor: pointer; }
 .msg-clarification button:disabled { cursor: not-allowed; opacity: .55; }
 .msg-bubble :deep(h2) {
-  font-size: 15px;
+  font-size: 16px;
   margin: 0 0 8px;
   font-weight: 600;
 }
 .msg-bubble :deep(h3) {
-  font-size: 13px;
+  font-size: 14px;
   margin: 10px 0 6px;
   font-weight: 600;
 }
@@ -3921,7 +3822,7 @@ watch(futureChartType, () => {
   background: rgba(0, 0, 0, 0.06);
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .msg.user .msg-bubble :deep(code) {
   background: rgba(255, 255, 255, 0.2);

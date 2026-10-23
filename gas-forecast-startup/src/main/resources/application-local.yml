@@ -75,6 +75,8 @@ gas:
     index-timeout-seconds: ${MYSTEEL_INDEX_TIMEOUT_SECONDS:30}
     dynamic-features-enabled: ${MYSTEEL_DYNAMIC_FEATURES_ENABLED:true}
     dynamic-features-required: ${MYSTEEL_DYNAMIC_FEATURES_REQUIRED:false}
+    # 当前只展示动态指标步骤；设为 REAL 才调用钢联研报、指标检索和大模型。
+    dynamic-features-mode: ${MYSTEEL_DYNAMIC_FEATURES_MODE:MOCK}
     dynamic-max-features: ${MYSTEEL_DYNAMIC_MAX_FEATURES:10}
     dynamic-min-coverage: ${MYSTEEL_DYNAMIC_MIN_COVERAGE:0.7}
   cache:

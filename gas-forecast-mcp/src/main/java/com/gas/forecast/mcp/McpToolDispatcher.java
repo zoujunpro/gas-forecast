@@ -2,12 +2,16 @@ package com.gas.forecast.mcp;
 
 import com.gas.forecast.business.service.AgentBusinessQueryService;
 import com.gas.forecast.business.service.AgentExecutionTaskService;
-import com.gas.forecast.business.service.BusinessEntityResolutionService;
-import com.gas.forecast.business.service.BusinessEntityResolutionService.*;
 import com.gas.forecast.business.service.ForecastApplicationService;
 import com.gas.forecast.business.service.ForecastApplicationService.ForecastCommand;
+import com.gas.forecast.business.service.ForecastApplicationService.ForecastOptions;
 import com.gas.forecast.business.service.TrainingApplicationService;
+import com.gas.forecast.business.service.TrainingApplicationService.ExecutionOptions;
 import com.gas.forecast.business.service.TrainingApplicationService.TrainingCommand;
+import com.gas.forecast.business.service.TrainingApplicationService.TrainingDataOptions;
+import com.gas.forecast.business.service.TrainingApplicationService.TrainingOptions;
+import com.gas.forecast.business.dto.request.ExecutionTarget;
+import com.gas.forecast.business.enums.ExecutionDimensionType;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.TextUtils;
 import java.util.List;
@@ -22,7 +26,6 @@ import org.springframework.stereotype.Component;
 public class McpToolDispatcher {
     private final AgentBusinessQueryService queryService;
     private final AgentExecutionTaskService taskService;
-    private final BusinessEntityResolutionService entityService;
     private final TrainingApplicationService trainingService;
     private final ForecastApplicationService forecastService;
 
@@ -66,64 +69,78 @@ public class McpToolDispatcher {
 
     /** 将MCP训练参数转换成Business Service训练命令。 */
     private TrainingCommand trainingCommand(Map<String, Object> args) {
-        Scope scope = scope(args);
-        return new TrainingCommand(defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(),
-                scope.regionCodes(), scope.industryCodes(), bool(args, "bulk", false),
-                text(args, "trainMode"), integer(args, "trainingPeriods"), text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false),
-                bool(args, "confirmed", false), text(args, "idempotencyKey"));
+        List<ExecutionTarget> targets = targets(args);
+        return new TrainingCommand(
+                text(args, "conversationNo"),
+                defaultText(text(args, "agentCode"), "short-term"),
+                requiredDimension(args),
+                targets,
+                new TrainingOptions(new TrainingDataOptions(text(args, "trainMode"), integer(args, "trainingPeriods"), text(args, "trainingStartDate"), text(args, "trainingEndDate")), bool(args, "forceRetrain", false)),
+                new ExecutionOptions(bool(args, "confirmed", false)));
     }
 
     /** 将MCP预测参数转换成Business Service预测命令。 */
     private ForecastCommand forecastCommand(Map<String, Object> args) {
-        Scope scope = scope(args);
-        return new ForecastCommand(text(args, "conversationNo"), defaultText(text(args, "agentCode"), "short-term"), scope.customerCodes(), scope.regionCode(), scope.industryCode(),
-                scope.regionCodes(), scope.industryCodes(), bool(args, "bulk", false),
-                text(args, "forecastStartDate"), text(args, "forecastEndDate"), integer(args, "forecastHorizon"), text(args, "forecastFrequency"), text(args, "trainMode"), integer(args, "trainingPeriods"),
-                text(args, "trainingStartDate"), text(args, "trainingEndDate"), bool(args, "forceRetrain", false), bool(args, "autoTrain", false),
-                defaultText(text(args, "trainingPreference"), "UNSPECIFIED"), bool(args, "confirmed", false),
-                text(args, "idempotencyKey"));
+        String dimensionType = requiredDimension(args);
+        List<ExecutionTarget> targets = targets(args, dimensionType);
+        return new ForecastCommand(
+                text(args, "conversationNo"),
+                defaultText(text(args, "agentCode"), "short-term"),
+                dimensionType,
+                targets,
+                new ForecastOptions(text(args, "forecastStartDate"), text(args, "forecastEndDate"), integer(args, "forecastHorizon"), text(args, "forecastFrequency")),
+                new TrainingDataOptions(text(args, "trainMode"), integer(args, "trainingPeriods"), text(args, "trainingStartDate"), text(args, "trainingEndDate")),
+                new ExecutionOptions(bool(args, "confirmed", false)),
+                defaultText(text(args, "trainingPreference"), "UNSPECIFIED"));
     }
 
-    /**
-     * 解析训练或预测的业务范围。
-     * <p>优先使用编码；只传名称时调用实体服务换取唯一编码，并由客户档案补充地区和行业。</p>
-     */
-    private Scope scope(Map<String, Object> args) {
-        String customerCode = text(args, "customerCode");
-        List<String> customerCodes = texts(args, "customerCodes");
-        String regionCode = text(args, "regionCode");
-        String industryCode = text(args, "industryCode");
-        List<String> regionCodes = texts(args, "regionCodes");
-        List<String> industryCodes = texts(args, "industryCodes");
-        if (customerCodes.isEmpty() && !TextUtils.hasText(customerCode) && TextUtils.hasText(text(args, "customerName"))) {
-            EntityCandidate candidate = unique(entityService.resolveCustomer(query(args)));
-            customerCode = candidate.code();
-            regionCode = candidate.regionCode();
-            industryCode = candidate.industryCode();
+    /** 工具只接收智能体实体解析后的标准编码，且保留每个目标组合的边界。 */
+    private List<ExecutionTarget> targets(Map<String, Object> args) {
+        return targets(args, requiredDimension(args));
+    }
+
+    private List<ExecutionTarget> targets(Map<String, Object> args, String dimension) {
+        Object raw = args.get("targets");
+        if (!(raw instanceof List<?> items) || items.isEmpty()) throw new BusinessException("targets不能为空");
+        List<ExecutionTarget> result = new java.util.ArrayList<>();
+        for (Object item : items) {
+            if (!(item instanceof Map<?, ?> map)) throw new BusinessException("targets中的每项必须是对象");
+            List<String> regions = values(map, "regionCodes");
+            List<String> industries = values(map, "industryCodes");
+            List<String> customers = values(map, "customerCodes");
+            validateTarget(dimension, regions, industries, customers);
+            result.add(new ExecutionTarget(regions, industries, customers));
         }
-        if (!TextUtils.hasText(regionCode) && TextUtils.hasText(text(args, "regionName"))) regionCode = unique(entityService.resolveRegion(query(args))).code();
-        if (!TextUtils.hasText(industryCode) && TextUtils.hasText(text(args, "industryName"))) industryCode = unique(entityService.resolveIndustry(query(args))).code();
-        if (customerCodes.isEmpty() && TextUtils.hasText(customerCode))
-            customerCodes = List.of(customerCode);
-        if (regionCodes.isEmpty() && TextUtils.hasText(regionCode))
-            regionCodes = List.of(regionCode);
-        if (industryCodes.isEmpty() && TextUtils.hasText(industryCode))
-            industryCodes = List.of(industryCode);
-        return new Scope(customerCodes, regionCode, industryCode, regionCodes, industryCodes);
+        return result;
     }
 
-    /**
-     * 取得唯一实体候选；没有匹配或存在歧义时中止业务执行，避免智能体自行猜测。
-     */
-    private EntityCandidate unique(ResolutionResult result) {
-        if (!"UNIQUE".equals(result.status())) throw new BusinessException(result.message() + "，请先调用对应实体查询工具确认编码");
-        return result.candidates().get(0);
+    private void validateTarget(String dimension, List<String> regions, List<String> industries, List<String> customers) {
+        ExecutionDimensionType type = ExecutionDimensionType.fromCode(dimension)
+                .orElseThrow(() -> new BusinessException("dimensionType必须是CUSTOMER、REGION或INDUSTRY"));
+        if (type == ExecutionDimensionType.REGION && regions.isEmpty())
+            throw new BusinessException("REGION维度必须提供regionCodes");
+        if (type == ExecutionDimensionType.REGION && (!industries.isEmpty() || !customers.isEmpty()))
+            throw new BusinessException("REGION维度只允许提供regionCodes");
+        if (type == ExecutionDimensionType.INDUSTRY && !customers.isEmpty())
+            throw new BusinessException("INDUSTRY维度不允许提供customerCodes");
     }
 
-    /** 从通用Map参数构造实体查询对象。 */
-    private EntityQuery query(Map<String, Object> args) {
-        return new EntityQuery(text(args, "customerCode"), text(args, "customerName"), text(args, "regionCode"), text(args, "regionName"), text(args, "industryCode"),
-                text(args, "industryName"), integer(args, "limit"));
+    private String requiredDimension(Map<String, Object> args) {
+        String dimension = text(args, "dimensionType");
+        if (ExecutionDimensionType.fromCode(dimension).isEmpty())
+            throw new BusinessException("dimensionType必须是CUSTOMER、REGION或INDUSTRY");
+        return dimension;
+    }
+
+    private String value(Map<?, ?> map, String key) {
+        Object value = map.get(key);
+        return value == null ? null : String.valueOf(value).trim();
+    }
+
+    private List<String> values(Map<?, ?> map, String key) {
+        Object value = map.get(key);
+        if (!(value instanceof List<?> values)) return List.of();
+        return values.stream().filter(item -> item != null && TextUtils.hasText(String.valueOf(item))).map(item -> String.valueOf(item).trim()).distinct().toList();
     }
 
     /** 创建状态为COMPLETED的标准成功结果。 */
@@ -273,7 +290,4 @@ public class McpToolDispatcher {
         return TextUtils.hasText(exception.getMessage()) ? exception.getMessage() : "业务执行失败";
     }
 
-    /** 已完成名称到编码转换的业务范围。 */
-    private record Scope(List<String> customerCodes, String regionCode, String industryCode,
-                         List<String> regionCodes, List<String> industryCodes) {}
 }

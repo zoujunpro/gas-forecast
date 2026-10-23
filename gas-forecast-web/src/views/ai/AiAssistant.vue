@@ -113,6 +113,7 @@
             </details>
             <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
             <AiTrainingResult v-if="trainingResultOf(message)" :result="trainingResultOf(message)!" />
+            <AiExecutionTask v-for="taskNo in executionTaskNos(message)" :key="taskNo" :task-no="taskNo" />
             <section v-if="listRows(message).length" class="result-list">
               <div class="result-list-head">查询结果 <span>共 {{ listRows(message).length }} 条</span></div>
               <el-table :data="listRows(message)" height="420" stripe>
@@ -161,6 +162,7 @@ import { getJson, postJson } from '@/api/management'
 import { renderMarkdown, sanitizeHtml } from '@/utils/markdown'
 import AiForecastResult from './AiForecastResult.vue'
 import AiTrainingResult from './AiTrainingResult.vue'
+import AiExecutionTask from './AiExecutionTask.vue'
 
 type Role = 'user' | 'assistant'
 interface ProgressStep { index: number; name: string; status: 'SUCCESS' | 'RUNNING' | 'WAITING' | 'PARTIAL_FAILED' | 'FAILED' | 'SKIPPED'; detail?: string }
@@ -287,7 +289,6 @@ const switchSession = async (id: string) => {
         latest.clarificationResolved = false
         clarificationDraft[latest.id] = {}
       }
-      await reconcileTrainingMessages(session.messages)
       scrollBottom()
     }
   } catch (error: any) {
@@ -301,6 +302,9 @@ const listRows = (message: Message): Record<string, any>[] => {
   return Array.isArray(records) ? records : []
 }
 const trainingResultOf = (message: Message) => message.trainingResult || message.presentation?.trainingResult
+const executionTaskNos = (message: Message) => [...new Set((message.references || [])
+  .filter((item) => item.referenceType === 'EXECUTION_TASK' && Boolean(item.referenceNo))
+  .map((item) => item.referenceNo))]
 const listColumns = (message: Message) => {
   const first = listRows(message)[0] || {}
   const labels: Record<string, string> = {
@@ -391,6 +395,8 @@ const send = async (_contextualFollowUp = false, structured?: StructuredReply) =
   try {
     const response = await postJson<any>('/ai/conversations/chat', {
       conversationNo: session.conversationNo || null,
+      // 一次用户发送一个幂等键；请求重试时应复用这个值，避免重复创建训练/预测任务。
+      clientRequestId: `REQ-${crypto.randomUUID()}`,
       message: text,
       inputType: structured?.inputType || 'TEXT',
       interactionId: structured?.source.clarification?.interactionId || null,
@@ -412,213 +418,12 @@ const send = async (_contextualFollowUp = false, structured?: StructuredReply) =
     // 加载会话历史；否则用户会先看到“结果已展示”却没有任何表格。
     answer.presentation = data.presentation || undefined
     answer.executionResult = data.executionResult || undefined
-    const trainBatchNo = answer.references?.find((item) => item.referenceType === 'TRAIN_BATCH')?.referenceNo
-    const forecastBatchNo = answer.references?.find((item) => item.referenceType === 'FORECAST_BATCH')?.referenceNo
-    if (trainBatchNo) {
-      void watchTraining(trainBatchNo, answer)
-    }
-    if (forecastBatchNo) {
-      void watchForecast(forecastBatchNo, answer)
-    }
     await loadServerSessions(session)
   } catch (error: any) {
     if (structured) structured.source.clarificationResolved = false
     answer.content = renderMarkdown(error?.name === 'AbortError' ? '已停止处理。' : `⚠️ ${error?.message || '问答失败'}`)
   } finally {
     streaming.value = false; abortController.value = null; scrollBottom()
-  }
-}
-
-const watchingTrainings = new Set<string>()
-const watchTraining = async (batchNo: string, message: Message) => {
-  if (watchingTrainings.has(batchNo)) return
-  watchingTrainings.add(batchNo)
-  try {
-    for (let count = 0; count < 120; count += 1) {
-      await new Promise((resolve) => window.setTimeout(resolve, 3000))
-      try {
-        const response = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(batchNo)}`)
-        const batch = response.data
-        if (!batch) continue
-        if (applyTrainingStatus(message, batchNo, batch, true)) {
-          if (String(batch.status) === 'SUCCESS' && batch.continuationExpected) {
-            if (!batch.forecastBatchNo) continue
-            const predictStep = message.progress?.steps.find((item) => item.index === 3)
-            if (predictStep) { predictStep.status = 'RUNNING'; predictStep.detail = batch.forecastBatchNo }
-            void watchForecast(batch.forecastBatchNo, message)
-          }
-          return
-        }
-      } catch {
-        // 临时查询失败时继续下一轮，不中断当前对话。
-      }
-    }
-    const trainStep = message.progress?.steps.find((item) => item.index === 2)
-    if (trainStep?.status === 'RUNNING') {
-      trainStep.status = 'FAILED'
-      trainStep.detail = '页面等待超时，请刷新或查询训练状态'
-      message.content += renderMarkdown('\n\n⚠️ 页面等待训练结果超时，已停止自动轮询。任务可能仍在后台执行，可刷新会话或询问“训练到哪了”。')
-      scrollBottom()
-    }
-  } finally {
-    watchingTrainings.delete(batchNo)
-    scrollBottom()
-  }
-}
-
-const watchingForecasts = new Set<string>()
-const waitForecastAnalysis = async (batchNo: string, message: Message) => {
-  for (let count = 0; count < 40; count += 1) {
-    try {
-      const response = await postJson<any>('/model-forecast-analysis/get', { forecastBatchNo: batchNo })
-      const analysis = response.data
-      if (analysis?.analysisStatus === 'SUCCESS' && analysis.analysisContent) {
-        message.analysis = analysis.analysisContent
-        return
-      }
-      if (analysis?.analysisStatus === 'FAILED') return
-    } catch {
-      // 自动分析异步执行，暂时查询失败时继续等待。
-    }
-    await new Promise((resolve) => window.setTimeout(resolve, 1500))
-  }
-}
-
-const watchForecast = async (batchNo: string, message: Message) => {
-  const session = activeSession.value
-  if (!session?.conversationNo || watchingForecasts.has(batchNo)) return
-  watchingForecasts.add(batchNo)
-  try {
-    for (let count = 0; count < 240; count += 1) {
-      await new Promise((resolve) => window.setTimeout(resolve, 2000))
-      try {
-        const response = await getJson<any>(`/ai/conversations/forecast-progress?conversationNo=${encodeURIComponent(session.conversationNo!)}&batchNo=${encodeURIComponent(batchNo)}`)
-        const data = response.data || {}
-        if (data.progress) message.progress = data.progress
-        if (data.status === 'EXECUTING') { scrollBottom(); continue }
-        applyForecastTerminalStatus(message, data.status, batchNo)
-        const answer = data.answer || (data.status === 'FAILED' ? '预测执行失败' : '预测已完成')
-        if (!message.content.includes(answer)) message.content += renderMarkdown(`\n\n${data.status === 'FAILED' ? '⚠️ ' : ''}${answer}`)
-        message.forecastResult = data.forecastResult || undefined
-        message.analysis = data.analysis || undefined
-        message.suggestedQuestions = data.suggestedQuestions || undefined
-        if (data.status !== 'FAILED' && !message.analysis) await waitForecastAnalysis(batchNo, message)
-        await loadServerSessions(session)
-        scrollBottom()
-        return
-      } catch (error: any) {
-        // 短暂网络异常不改变后台任务状态，下一轮继续核对。
-        if (count < 239) continue
-        const step = message.progress?.steps.find((item) => item.index === 3)
-        if (step) { step.status = 'FAILED'; step.detail = error?.message || '无法获取预测状态' }
-      }
-    }
-    const step = message.progress?.steps.find((item) => item.index === 3)
-    if (step?.status === 'RUNNING') {
-      step.status = 'FAILED'
-      step.detail = '页面等待超时，预测可能仍在后台执行，请稍后刷新会话'
-    }
-  } finally {
-    watchingForecasts.delete(batchNo)
-    scrollBottom()
-  }
-}
-
-const applyForecastTerminalStatus = (message: Message, status: string, batchNo: string) => {
-  const progress = message.progress
-  if (!progress) return
-  const predictStep = progress.steps.find((item) => item.index === 3)
-  const saveStep = progress.steps.find((item) => item.index === 4)
-  if (status === 'FAILED') {
-    progress.currentStep = predictStep?.index || progress.currentStep
-    if (predictStep) predictStep.status = 'FAILED'
-    if (saveStep) {
-      saveStep.status = 'SKIPPED'
-      saveStep.detail = '因预测失败未执行'
-    }
-    return
-  }
-  if (predictStep) {
-    predictStep.status = 'SUCCESS'
-    predictStep.detail = batchNo
-  }
-  if (saveStep) {
-    saveStep.status = 'SUCCESS'
-    saveStep.detail = '预测结果已保存'
-    progress.currentStep = saveStep.index
-  }
-}
-
-const applyTrainingStatus = (message: Message, batchNo: string, batch: any, appendNotice: boolean) => {
-  const progress = message.progress
-  const status = String(batch.status || '')
-  const trainStep = progress?.steps.find((item) => item.index === 2)
-  const failed = ['FAILED', 'FAILED_FINAL', 'PREPARE_FAILED'].includes(status)
-  if (trainStep) {
-    trainStep.status = status === 'SUCCESS' ? 'SUCCESS' : failed ? 'FAILED' : 'RUNNING'
-    trainStep.detail = failed ? (batch.message || '训练未能完成') : batchNo
-  }
-  if (failed) {
-    if (progress) {
-      progress.currentStep = 2
-      progress.steps.filter((item) => item.index > 2 && item.status === 'WAITING').forEach((item) => {
-        item.status = 'SKIPPED'
-        item.detail = '因训练失败未执行'
-      })
-    }
-    if (appendNotice && !message.content.includes('本次训练未能完成'))
-      message.content += renderMarkdown(`\n\n⚠️ ${batch.message || '本次训练未能完成，请稍后重试或联系平台管理员。'}`)
-    scrollBottom()
-    return true
-  }
-  if (status === 'SUCCESS') {
-    if (progress?.totalSteps === 3) {
-      progress.currentStep = 3
-      const saveStep = progress.steps.find((item) => item.index === 3)
-      if (saveStep) { saveStep.status = 'SUCCESS'; saveStep.detail = '已完成' }
-    } else if (progress) {
-      // 用户已明确发起预测任务，训练完成后同一任务正在衔接预测阶段。
-      progress.currentStep = 3
-      const predictStep = progress.steps.find((item) => item.index === 3)
-      if (predictStep) {
-        predictStep.status = 'RUNNING'
-        predictStep.detail = '正在创建预测批次'
-      }
-    }
-    const completionNotice = batch.continuationExpected ? '训练已经完成，正在继续执行预测。' : '训练已经完成。'
-    if (!message.content.includes(completionNotice)) message.content += renderMarkdown(`\n\n${completionNotice}`)
-    scrollBottom()
-    return true
-  }
-  return false
-}
-
-const reconcileTrainingMessages = async (items: Message[]) => {
-  for (const message of items) {
-    const progress = message.progress
-    const predictStep = Array.isArray(progress?.steps) ? progress.steps.find((item) => item.index === 3) : undefined
-    if (predictStep?.status === 'RUNNING' && predictStep.detail?.startsWith('FORECAST-')) {
-      void watchForecast(predictStep.detail, message)
-      continue
-    }
-    const trainStep = Array.isArray(progress?.steps) ? progress.steps.find((item) => item.index === 2) : undefined
-    const batchNo = trainStep?.detail
-    if (!progress || !batchNo || trainStep.status !== 'RUNNING') continue
-    try {
-      const response = await getJson<any>(`/ai/conversations/training-progress?batchNo=${encodeURIComponent(batchNo)}`)
-      const terminal = response.data ? applyTrainingStatus(message, batchNo, response.data, false) : false
-      if (!terminal) void watchTraining(batchNo, message)
-      else if (String(response.data?.status) === 'SUCCESS' && response.data?.continuationExpected) {
-        if (response.data?.forecastBatchNo) {
-          const predictStep = message.progress?.steps.find((item) => item.index === 3)
-          if (predictStep) { predictStep.status = 'RUNNING'; predictStep.detail = response.data.forecastBatchNo }
-          void watchForecast(response.data.forecastBatchNo, message)
-        } else void watchTraining(batchNo, message)
-      }
-    } catch {
-      // 会话仍可正常展示，后续轮询会继续核对状态。
-      void watchTraining(batchNo, message)
-    }
   }
 }
 

@@ -298,7 +298,9 @@ class ActionExecutor:
             if name in ASYNC_TOOLS:
                 return SkillRunResult(
                     status=str(result.get("status") or "EXECUTING"),
-                    message=str(result.get("message") or "任务已提交。"),
+                    # 异步任务的首条回复是用户进入执行过程前的过渡文案；不暴露
+                    # 工具式“已受理”措辞，也不把后台尚未完成的结果说成已生成。
+                    message=self._async_submission_message(name),
                     parameters=parameters,
                     available_tools=list(tools),
                     executed_tool=name,
@@ -1095,6 +1097,32 @@ class ActionExecutor:
         schema = tool.get("inputSchema") if isinstance(tool.get("inputSchema"), dict) else {}
         properties, _ = ActionExecutor._schema_fields(schema)
         tool_name = str(tool.get("title") or tool.get("name") or "当前工具")
+        # 训练、预测工具不再接收扁平的 customerCodes/regionCodes/industryCodes。
+        # 消歧后保留的编码必须整体转换为一个目标组合，组内取交集；不能再按旧
+        # Schema 把客户条件判为不支持。已有 targets（多组合场景）保持原样。
+        if "targets" in properties:
+            if not isinstance(result.get("targets"), list):
+                def codes(plural: str, singular: str) -> list[Any]:
+                    values = result.get(plural)
+                    if values is None:
+                        values = [result[singular]] if result.get(singular) not in (None, "") else []
+                    if not isinstance(values, list):
+                        return []
+                    return [value for value in values if value not in (None, "")]
+
+                customer_codes = codes("customerCodes", "customerCode")
+                region_codes = codes("regionCodes", "regionCode")
+                industry_codes = codes("industryCodes", "industryCode")
+                result["targets"] = [{
+                    "customerCodes": customer_codes,
+                    "regionCodes": region_codes,
+                    "industryCodes": industry_codes,
+                }]
+            # 未明确指定维度时，地区、行业都是客户范围条件，默认按客户执行。
+            result["dimensionType"] = result.get("dimensionType") or "CUSTOMER"
+            for key in ENTITY_ARGUMENT_KEYS:
+                result.pop(key, None)
+
         for plural, singular in (
             ("customerCodes", "customerCode"),
             ("regionCodes", "regionCode"),
@@ -1425,6 +1453,19 @@ class ActionExecutor:
         if result.get("success") is False:
             return "FAILED"
         return status or "COMPLETED"
+
+    @staticmethod
+    def _async_submission_message(tool_name: str) -> str:
+        """确认执行后的会话过渡文案，真实状态仍以下方任务步骤为准。"""
+        if tool_name == "forecast_start":
+            return (
+                "已收到您的预测任务。我会依次核验历史销量、准备影响因素、完成模型评估并生成预测结果；"
+                "下方会持续同步任务执行情况。"
+            )
+        return (
+            "已收到您的训练任务。我会依次核验训练数据、准备特征并完成模型评估；"
+            "下方会持续同步任务执行情况。"
+        )
 
     @staticmethod
     def _can_model_decide(result: dict[str, Any]) -> bool:

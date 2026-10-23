@@ -2,11 +2,14 @@ package com.gas.forecast.business.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.AutoTrainRequest;
+import com.gas.forecast.business.dto.request.ExecutionTarget;
 import com.gas.forecast.business.dto.request.ModelForecastConfigSaveRequest;
 import com.gas.forecast.business.dto.request.ModelForecastExecuteRequest;
 import com.gas.forecast.business.enums.ModelForecastStatus;
+import com.gas.forecast.business.enums.ExecutionBusinessType;
+import com.gas.forecast.business.enums.ExecutionTargetStatus;
 import com.gas.forecast.business.service.AutoTrainService;
-import com.gas.forecast.business.service.ExecutionBatchProgressService;
+import com.gas.forecast.business.service.ExecutionTaskLifecycleService;
 import com.gas.forecast.business.service.ForecastApplicationService;
 import com.gas.forecast.business.service.ModelForecastManagementService;
 import com.gas.forecast.common.core.BusinessException;
@@ -15,8 +18,8 @@ import com.gas.forecast.common.util.TextUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.DataDailySalesTb;
-import com.gas.forecast.dao.domain.ExecutionBatchTb;
 import com.gas.forecast.dao.domain.ExecutionTaskTb;
+import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import com.gas.forecast.dao.domain.ModelForecastConfigTb;
 import com.gas.forecast.dao.domain.ModelForecastRecordTb;
 import com.gas.forecast.dao.domain.ModelForecastResultTb;
@@ -26,7 +29,6 @@ import com.gas.forecast.dao.domain.ModelTrainRecordTb;
 import com.gas.forecast.dao.domain.ModelTrainBacktestTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
-import com.gas.forecast.dao.mapper.ExecutionBatchTbMapper;
 import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastConfigTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastRecordTbMapper;
@@ -55,59 +57,135 @@ import org.springframework.stereotype.Service;
 public class ForecastApplicationServiceImpl implements ForecastApplicationService {
     private final AutoTrainService autoTrainService;
     private final ModelForecastManagementService forecastService;
-    private final BaseCustomerTbMapper customerMapper;
-    private final DataDailySalesTbMapper dailySalesMapper;
-    private final ModelTrainConfigTbMapper trainConfigMapper;
+    private final BaseCustomerTbMapper baseCustomerTbMapper;
+    private final DataDailySalesTbMapper dataDailySalesTbMapper;
+    private final ModelTrainConfigTbMapper modelTrainConfigTbMapper;
     private final ModelConfigTbMapper modelConfigMapper;
-    private final ModelTrainRecordTbMapper trainRecordMapper;
-    private final ModelTrainBacktestTbMapper trainBacktestMapper;
-    private final ModelForecastConfigTbMapper forecastConfigMapper;
-    private final ModelForecastRecordTbMapper forecastRecordMapper;
-    private final ModelForecastResultTbMapper forecastResultMapper;
+    private final ModelTrainRecordTbMapper modelTrainRecordTbMapper;
+    private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
+    private final ModelForecastConfigTbMapper modelForecastConfigTbMapper;
+    private final ModelForecastRecordTbMapper modelForecastRecordTbMapper;
+    private final ModelForecastResultTbMapper modelForecastResultTbMapper;
     private final ExecutionTaskTbMapper executionTaskMapper;
-    private final ExecutionBatchTbMapper executionBatchMapper;
-    private final ExecutionBatchProgressService batchProgressService;
     private final ObjectMapper objectMapper;
+    private final ExecutionTaskLifecycleService taskLifecycleService;
 
     @Override
     public Object start(ForecastCommand command) {
         validate(command);
-        ExecutionBatchTb existing = existingBatch(command);
-        if (existing != null) return existingResult(existing);
-        List<BaseCustomerTb> customers = customers(command);
-        if (customers.isEmpty())
-            throw new BusinessException("当前业务范围内没有找到可预测客户");
-        if (customers.size() > 1 && !command.confirmed())
-            return batchConfirmation(command, customers);
-        Map<String, Object> blocked = validateAvailableModels(command, customers);
-        if (blocked != null) return blocked;
-        ExecutionBatchTb batch = createExecutionBatch(command, customers);
+
+        // 确认前只解析和校验范围，不能落 execution_task_tb。确认动作会再次调用
+        // start；若此处先创建任务，就会得到一个待确认任务和一个实际执行任务。
+        if (!command.confirmed()) {
+            int targetCount = taskLifecycleService.previewTargetCount(
+                    command.agentCode(), command.dimensionType(), command.targets());
+            if (targetCount == 0) throw new BusinessException("当前范围内没有可执行目标");
+            return confirmation(targetCount);
+        }
+
+        var task = taskLifecycleService.create(command.conversationNo(), ExecutionBusinessType.FORECAST,
+                command.agentCode(), command.dimensionType(), command.targets(), "模型预测");
+        List<ExecutionTaskDetailTb> relations = taskLifecycleService.relations(task.getTaskNo());
         List<Map<String, Object>> tasks = new ArrayList<>();
         List<Map<String, String>> failures = new ArrayList<>();
-        for (BaseCustomerTb customer : customers) {
+        for (ExecutionTaskDetailTb relation : relations) {
+            if (TextUtils.hasText(relation.getTrainBatchNo()) || TextUtils.hasText(relation.getForecastBatchNo())) {
+                tasks.add(relationResult(relation));
+                continue;
+            }
             try {
-                tasks.add(startOne(command, customer, batch.getBatchNo()));
+                tasks.add(startRelation(command, relation));
             } catch (RuntimeException exception) {
                 String message = safeMessage(exception);
-                ExecutionTaskTb failedTask = createFailedTask(command, customer, batch.getBatchNo(), message);
-                failures.add(Map.of("taskNo", failedTask.getTaskNo(), "customerCode", customer.getCustomerCode(),
-                        "customerName", customer.getCustomerName(), "message", message));
+                taskLifecycleService.updateBatch(relation.getId(), null, null, ExecutionTargetStatus.FAILED);
+                failures.add(Map.of("relationId", String.valueOf(relation.getId()), "message", message));
             }
         }
-        ExecutionBatchTb currentBatch = batchProgressService.refresh(batch.getBatchNo());
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("executionBatchNo", batch.getBatchNo());
-        if (tasks.size() == 1) result.put("taskNo", tasks.get(0).get("taskNo"));
-        result.put("total", customers.size());
+        result.put("taskNo", task.getTaskNo());
+        result.put("total", relations.size());
         result.put("submitted", tasks.size());
         result.put("failed", failures.size());
         result.put("tasks", tasks);
         result.put("failures", failures);
         String status = aggregateSubmissionStatus(tasks);
         result.put("status", status);
-        result.put("batchStatus", currentBatch == null ? null : currentBatch.getStatus());
         result.put("message", submissionMessage("预测", status, tasks.size(), failures));
         return result;
+    }
+
+    private Map<String, Object> confirmation(int total) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("status", "NEED_CONFIRMATION");
+        result.put("affectedCount", total);
+        result.put("message", "本次预测将执行" + total + "个目标，确认后开始。");
+        result.put("proposedParameters", Map.of("confirmed", true));
+        return result;
+    }
+
+    private Map<String, Object> startRelation(ForecastCommand command, ExecutionTaskDetailTb relation) {
+        if (!TextUtils.hasText(relation.getCustomerCode()))
+            throw new BusinessException("当前预测智能体仅支持客户维度目标");
+        BaseCustomerTb customer = baseCustomerTbMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery()
+                .eq(BaseCustomerTb::getCustomerCode, relation.getCustomerCode()).last("limit 1"));
+        if (customer == null) throw new BusinessException("预测客户不存在：" + relation.getCustomerCode());
+
+        // 预测是“训练完成后预测”的完整工作流：不查询、不复用历史成功训练记录。
+        // forceTrain 只表示本次预测必须创建自己的训练批次，不暴露为预测入口的用户选项。
+        AutoTrainRequest trainRequest = new AutoTrainRequest();
+        trainRequest.setAgentCode(command.agentCode());
+        trainRequest.setCustomerCode(customer.getCustomerCode());
+        trainRequest.setTrainMode(command.trainMode());
+        trainRequest.setRecentPeriods(command.trainingPeriods());
+        trainRequest.setTrainStartDate(command.trainingStartDate());
+        trainRequest.setTrainEndDate(command.trainingEndDate());
+        trainRequest.setForceTrain(true);
+        trainRequest.setTriggerSource("MCP");
+        var trainResponse = autoTrainService.execute(trainRequest);
+        ModelTrainConfigTb trainConfig = modelTrainConfigTbMapper.selectById(trainResponse.getTrainConfigId());
+        if (trainConfig == null) throw new BusinessException("预测前训练配置不存在");
+
+        // 提前保存预测配置；训练成功后 TaskForecastContinuationService 使用它续跑预测。
+        saveForecastConfig(command, customer, trainConfig, "预测前训练成功后自动继续预测");
+        taskLifecycleService.updateBatch(relation.getId(), trainResponse.getTrainBatchNo(), null,
+                ExecutionTargetStatus.TRAINING);
+        return relationResult(taskLifecycleService.relations(relation.getTaskNo()).stream()
+                .filter(item -> item.getId().equals(relation.getId())).findFirst().orElse(relation));
+    }
+
+    private Map<String, Object> relationResult(ExecutionTaskDetailTb relation) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("relationId", relation.getId()); result.put("status", relation.getStatus());
+        result.put("regionCode", relation.getRegionCode()); result.put("industryCode", relation.getIndustryCode());
+        result.put("customerCode", relation.getCustomerCode()); result.put("trainBatchNo", relation.getTrainBatchNo());
+        result.put("forecastBatchNo", relation.getForecastBatchNo());
+        return result;
+    }
+
+    /** 目标组合逐个处理，避免地区/行业/客户条件跨组合交叉匹配。 */
+    private Object startTargets(ForecastCommand command) {
+        List<Object> results = new ArrayList<>();
+        for (int index = 0; index < command.targets().size(); index++) {
+            ExecutionTarget target = command.targets().get(index);
+            ForecastCommand one = new ForecastCommand(command.conversationNo(), command.agentCode(), command.dimensionType(), List.of(target), command.forecast(),
+                    command.trainingDataOptions(), new com.gas.forecast.business.service.TrainingApplicationService.ExecutionOptions(command.confirmed()),
+                    command.trainingPreference());
+            results.add(start(one));
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("status", "EXECUTING");
+        result.put("targetCount", results.size());
+        result.put("targetResults", results);
+        result.put("message", "预测目标已按组合分别受理");
+        return result;
+    }
+
+    private String first(List<String> values) {
+        return values == null || values.isEmpty() ? null : values.get(0);
+    }
+
+    private String scopedRequestId(String key, int index) {
+        return TextUtils.hasText(key) ? key + "-T" + index : null;
     }
 
     private String submissionMessage(String action, String status, int submitted, List<Map<String, String>> failures) {
@@ -140,11 +218,11 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         List<Map<String, String>> unavailable = new ArrayList<>();
         List<Map<String, String>> incompatible = new ArrayList<>();
         for (BaseCustomerTb customer : customers) {
-            ModelTrainConfigTb config = trainConfigMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, command.agentCode())
+            ModelTrainConfigTb config = modelTrainConfigTbMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, command.agentCode())
                     .eq(ModelTrainConfigTb::getCustomerCode, customer.getCustomerCode()).eq(ModelTrainConfigTb::getEnabled, 1).orderByDesc(ModelTrainConfigTb::getUpdatedAt)
                     .orderByDesc(ModelTrainConfigTb::getId).last("limit 1"));
             ModelTrainRecordTb trained = config == null ? null
-                    : trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId())
+                    : modelTrainRecordTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId())
                             .eq(ModelTrainRecordTb::getStatus, "SUCCESS").orderByDesc(ModelTrainRecordTb::getUpdatedAt).last("limit 1"));
             if (trained == null) {
                 unavailable.add(Map.of("customerCode", customer.getCustomerCode(), "customerName", customer.getCustomerName(), "reason", "未找到该客户状态为SUCCESS的训练记录"));
@@ -172,7 +250,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         result.put("affectedCount", unavailable.size() + incompatible.size());
         result.put("nextAction", "ASK_USER");
         result.put("allowedActions", List.of("ASK_USER", "FAIL"));
-        if (!hasMismatch) result.put("proposedParameters", Map.of("trainingPreference", "AUTO", "autoTrain", true));
+        if (!hasMismatch) result.put("proposedParameters", Map.of("trainingPreference", "AUTO"));
         return result;
     }
 
@@ -185,7 +263,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     @Override
     public Object status(String forecastBatchNo) {
         ModelForecastRecordTb record = record(forecastBatchNo);
-        long points = forecastResultMapper.selectCount(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo));
+        long points = modelForecastResultTbMapper.selectCount(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo));
         String status = statusName(record.getStatus());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("forecastBatchNo", forecastBatchNo);
@@ -210,12 +288,12 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         ModelTrainRecordTb training = resolveTraining(record);
         if (training != null) {
             result.put("training", trainingSummary(training));
-            result.put("backtestPoints", trainBacktestMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
+            result.put("backtestPoints", modelTrainBacktestTbMapper.selectList(Wrappers.<ModelTrainBacktestTb>lambdaQuery()
                     .eq(ModelTrainBacktestTb::getTrainBatchNo, training.getBatchNo()).orderByAsc(ModelTrainBacktestTb::getTrainDate)).stream()
                     .map(this::backtestPoint).toList());
         }
         if (includePoints) {
-            List<ModelForecastResultTb> points = forecastResultMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
+            List<ModelForecastResultTb> points = modelForecastResultTbMapper.selectList(Wrappers.<ModelForecastResultTb>lambdaQuery()
                     .eq(ModelForecastResultTb::getForecastBatchNo, forecastBatchNo).orderByAsc(ModelForecastResultTb::getForecastDate));
             result.put("points", points);
             result.put("lastYearPoints", lastYearPoints(record, points));
@@ -238,7 +316,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         if (TextUtils.hasText(record.getCustomerCode())) query.eq("customer_code", record.getCustomerCode());
         query.groupBy("stat_date");
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Map<String, Object> row : dailySalesMapper.selectMaps(query)) {
+        for (Map<String, Object> row : dataDailySalesTbMapper.selectMaps(query)) {
             Object sourceDate = mapValue(row, "stat_date");
             Object value = mapValue(row, "gas_sales");
             String forecastDate = sourceDate == null ? null : previousToForecastDate.get(String.valueOf(sourceDate));
@@ -253,35 +331,14 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
                 .map(Map.Entry::getValue).findFirst().orElse(null);
     }
 
-    /** 优先使用同一统一执行批次中的训练任务，再按预测配置和发生时间回退匹配。 */
+    /** 预测结果关联训练记录只按预测配置及发生时间回退匹配。 */
     private ModelTrainRecordTb resolveTraining(ModelForecastRecordTb forecast) {
-        ExecutionTaskTb forecastTask = executionTaskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
-                .eq(ExecutionTaskTb::getBusinessType, "FORECAST")
-                .eq(ExecutionTaskTb::getBusinessNo, forecast.getForecastBatchNo())
-                .orderByDesc(ExecutionTaskTb::getUpdatedAt).last("limit 1"));
-        if (forecastTask != null) {
-            var trainQuery = Wrappers.<ExecutionTaskTb>lambdaQuery()
-                    .eq(ExecutionTaskTb::getBatchNo, forecastTask.getBatchNo())
-                    .eq(ExecutionTaskTb::getBusinessType, "TRAIN")
-                    .eq(ExecutionTaskTb::getStatus, "SUCCESS");
-            if (TextUtils.hasText(forecastTask.getCustomerCode())) {
-                trainQuery.eq(ExecutionTaskTb::getCustomerCode, forecastTask.getCustomerCode());
-            }
-            ExecutionTaskTb trainTask = executionTaskMapper.selectOne(
-                    trainQuery.orderByDesc(ExecutionTaskTb::getUpdatedAt).last("limit 1"));
-            String trainBatchNo = trainTask == null ? null : trainTask.getBusinessNo();
-            if (TextUtils.hasText(trainBatchNo)) {
-                ModelTrainRecordTb exact = trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery()
-                        .eq(ModelTrainRecordTb::getBatchNo, trainBatchNo).last("limit 1"));
-                if (exact != null) return exact;
-            }
-        }
-        ModelForecastConfigTb config = forecastConfigMapper.selectById(forecast.getForecastId());
+        ModelForecastConfigTb config = modelForecastConfigTbMapper.selectById(forecast.getForecastId());
         if (config == null || config.getTrainConfigId() == null) return null;
         var query = Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getTrainConfigId())
                 .eq(ModelTrainRecordTb::getStatus, "SUCCESS");
         if (forecast.getCreatedAt() != null) query.le(ModelTrainRecordTb::getCreatedAt, forecast.getCreatedAt());
-        return trainRecordMapper.selectOne(query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
+        return modelTrainRecordTbMapper.selectOne(query.orderByDesc(ModelTrainRecordTb::getUpdatedAt).orderByDesc(ModelTrainRecordTb::getId).last("limit 1"));
     }
 
     private Map<String, Object> trainingSummary(ModelTrainRecordTb training) {
@@ -301,16 +358,17 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     }
 
     /** 为一个客户提交训练或预测，并建立对应的统一执行任务。 */
+    /*
     private Map<String, Object> startOne(ForecastCommand command, BaseCustomerTb customer, String executionBatchNo) {
-        ModelTrainConfigTb config = trainConfigMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, command.agentCode())
+        ModelTrainConfigTb config = modelTrainConfigTbMapper.selectOne(Wrappers.<ModelTrainConfigTb>lambdaQuery().eq(ModelTrainConfigTb::getAgentCode, command.agentCode())
                 .eq(ModelTrainConfigTb::getCustomerCode, customer.getCustomerCode()).eq(ModelTrainConfigTb::getEnabled, 1).orderByDesc(ModelTrainConfigTb::getUpdatedAt)
                 .orderByDesc(ModelTrainConfigTb::getId).last("limit 1"));
         ModelTrainRecordTb trained = config == null ? null
-                : trainRecordMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId()).eq(ModelTrainRecordTb::getStatus, "SUCCESS")
+                : modelTrainRecordTbMapper.selectOne(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getTrainConfigId, config.getId()).eq(ModelTrainRecordTb::getStatus, "SUCCESS")
                         .orderByDesc(ModelTrainRecordTb::getUpdatedAt).last("limit 1"));
         if (command.forceRetrain() || trained == null) {
             if (!command.autoTrain())
-                throw new BusinessException("客户没有可用训练结果，请先训练或设置autoTrain=true");
+                throw new BusinessException("客户没有可用训练结果，请先训练或将trainingPreference设置为AUTO");
             AutoTrainRequest train = new AutoTrainRequest();
             train.setAgentCode(command.agentCode());
             train.setCustomerCode(customer.getCustomerCode());
@@ -321,7 +379,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
             train.setForceTrain(command.forceRetrain());
             train.setTriggerSource("MCP");
             var response = autoTrainService.execute(train);
-            ModelTrainConfigTb pendingConfig = trainConfigMapper.selectById(response.getTrainConfigId());
+            ModelTrainConfigTb pendingConfig = modelTrainConfigTbMapper.selectById(response.getTrainConfigId());
             if (pendingConfig != null)
                 saveForecastConfig(command, customer, pendingConfig, "用户已发起预测任务；训练成功后继续执行同一任务的预测阶段");
             ExecutionTaskTb task = createTask(command, customer, executionBatchNo, "TRAIN",
@@ -349,13 +407,13 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         return result;
     }
 
-    /** 查找同一用户以相同幂等键发起的统一执行批次。 */
+    // 历史批次查找。
     private ExecutionBatchTb existingBatch(ForecastCommand command) {
-        if (!TextUtils.hasText(command.idempotencyKey())) return null;
+        if (!TextUtils.hasText(command.requestId())) return null;
         return executionBatchMapper.selectOne(Wrappers.<ExecutionBatchTb>lambdaQuery()
                 .eq(ExecutionBatchTb::getCreatedBy, currentUserId())
                 .eq(ExecutionBatchTb::getTriggerSource, "AGENT")
-                .eq(ExecutionBatchTb::getIdempotencyKey, command.idempotencyKey()).last("limit 1"));
+                .eq(ExecutionBatchTb::getIdempotencyKey, command.requestId()).last("limit 1"));
     }
 
     private Map<String, Object> existingResult(ExecutionBatchTb batch) {
@@ -372,7 +430,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         return result;
     }
 
-    /** 创建一次用户操作对应的统一执行批次。 */
+    // 历史批次创建。
     private ExecutionBatchTb createExecutionBatch(ForecastCommand command, List<BaseCustomerTb> customers) {
         BaseCustomerTb only = customers.size() == 1 ? customers.get(0) : null;
         Date now = new Date();
@@ -400,7 +458,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         batch.setFailedCount(0);
         batch.setCancelledCount(0);
         batch.setRequestJson(requestJson(command));
-        batch.setIdempotencyKey(command.idempotencyKey());
+        batch.setIdempotencyKey(command.requestId());
         batch.setCreatedBy(currentUserId());
         batch.setCreatedAt(now);
         batch.setUpdatedAt(now);
@@ -408,7 +466,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         return batch;
     }
 
-    /** 创建一个具体训练或预测任务；真实业务批次号保存在businessNo。 */
+    // 历史任务创建。
     private ExecutionTaskTb createTask(ForecastCommand command, BaseCustomerTb customer,
             String executionBatchNo, String businessType, String businessNo,
             String stage, String stepCode, int progress) {
@@ -465,7 +523,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         // 预测任务的展示范围必须以任务实际客户主数据为准。前端只允许在
         // forecast_start 创建成功后据此切换左侧范围，不能猜测或沿用旧页面选择。
         BaseCustomerTb customer = TextUtils.hasText(task.getCustomerCode())
-                ? customerMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery()
+                ? baseCustomerTbMapper.selectOne(Wrappers.<BaseCustomerTb>lambdaQuery()
                         .eq(BaseCustomerTb::getCustomerCode, task.getCustomerCode()).last("limit 1")) : null;
         if (customer != null) {
             result.put("regionCode", customer.getRegionCode());
@@ -477,6 +535,8 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         result.put("businessNo", task.getBusinessNo());
         return result;
     }
+    */
+
 
     private String currentUserId() { return String.valueOf(SecurityContextHolder.getUserId()); }
 
@@ -498,7 +558,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         int maximumHorizon = maximumHorizon(model, command.agentCode());
         String startDate = forecastStartDate(command.forecastStartDate(), customer.getCustomerCode());
         int horizon = forecastHorizon(command.forecastHorizon(), command.forecastEndDate(), startDate, frequency, maximumHorizon, command.agentCode());
-        ModelForecastConfigTb existing = forecastConfigMapper.selectOne(Wrappers.<ModelForecastConfigTb>lambdaQuery().eq(ModelForecastConfigTb::getTrainConfigId, trainConfig.getId())
+        ModelForecastConfigTb existing = modelForecastConfigTbMapper.selectOne(Wrappers.<ModelForecastConfigTb>lambdaQuery().eq(ModelForecastConfigTb::getTrainConfigId, trainConfig.getId())
                 .eq(ModelForecastConfigTb::getCustomerCode, customer.getCustomerCode()).eq(ModelForecastConfigTb::getEnabled, 1).orderByDesc(ModelForecastConfigTb::getUpdatedAt).last("limit 1"));
         ModelForecastConfigSaveRequest request = new ModelForecastConfigSaveRequest();
         request.setId(existing == null ? null : existing.getId());
@@ -595,7 +655,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
             else if (TextUtils.hasText(command.industryCode()))
                 query.eq(BaseCustomerTb::getIndustryCode, command.industryCode());
         }
-        return customerMapper.selectList(query.orderByAsc(BaseCustomerTb::getCustomerName));
+        return baseCustomerTbMapper.selectList(query.orderByAsc(BaseCustomerTb::getCustomerName));
     }
 
     private String singleScope(List<String> values, String fallback) {
@@ -604,7 +664,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
     }
 
     private String forecastStartDate(String requested, String customerCode) {
-        DataDailySalesTb latest = dailySalesMapper.selectOne(Wrappers.<DataDailySalesTb>lambdaQuery().select(DataDailySalesTb::getStatDate).eq(DataDailySalesTb::getCustomerCode, customerCode)
+        DataDailySalesTb latest = dataDailySalesTbMapper.selectOne(Wrappers.<DataDailySalesTb>lambdaQuery().select(DataDailySalesTb::getStatDate).eq(DataDailySalesTb::getCustomerCode, customerCode)
                 .isNotNull(DataDailySalesTb::getGasSales).orderByDesc(DataDailySalesTb::getStatDate).last("limit 1"));
         String minimum = latest == null || !TextUtils.hasText(latest.getStatDate()) ? LocalDate.now().toString() : LocalDate.parse(latest.getStatDate()).plusDays(1).toString();
         if (!TextUtils.hasText(requested))
@@ -621,15 +681,14 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
 
     private ModelForecastRecordTb record(String batchNo) {
         if (!TextUtils.hasText(batchNo)) throw new BusinessException("预测批次号不能为空");
-        ModelForecastRecordTb record = forecastRecordMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery().eq(ModelForecastRecordTb::getForecastBatchNo, batchNo).last("limit 1"));
+        ModelForecastRecordTb record = modelForecastRecordTbMapper.selectOne(Wrappers.<ModelForecastRecordTb>lambdaQuery().eq(ModelForecastRecordTb::getForecastBatchNo, batchNo).last("limit 1"));
         if (record == null) throw new BusinessException("没有找到预测批次" + batchNo);
         return record;
     }
 
     private void validate(ForecastCommand command) {
         if (command == null || !TextUtils.hasText(command.agentCode())) throw new BusinessException("agentCode不能为空");
-        if ((command.autoTrain() || command.forceRetrain()) && !command.confirmed())
-            throw new BusinessException("自动训练或重新训练必须先获得用户确认");
+        if (command.targets() == null || command.targets().isEmpty()) throw new BusinessException("targets不能为空");
     }
 
     private String statusName(Integer status) {

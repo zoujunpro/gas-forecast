@@ -4,12 +4,8 @@ import com.gas.forecast.business.ai.dto.AiChatRequest;
 import com.gas.forecast.business.ai.dto.AiChatResponse;
 import com.gas.forecast.business.ai.dto.AiConversationResponse;
 import com.gas.forecast.business.ai.dto.AiConversationRenameRequest;
-import com.gas.forecast.business.ai.dto.AiContinueForecastRequest;
-import com.gas.forecast.business.ai.dto.AiTaskProgressResponse;
-import com.gas.forecast.business.ai.dto.AiTrainingProgressResponse;
 import com.gas.forecast.business.ai.service.AiChatService;
 import com.gas.forecast.business.ai.service.AiConversationService;
-import com.gas.forecast.business.service.AgentTaskProgressService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
@@ -38,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiConversationController {
     private final AiConversationService conversationService;
     private final AiChatService chatService;
-    private final AgentTaskProgressService taskProgressService;
 
     /**
      * 发送一条智能体会话消息。
@@ -129,51 +124,4 @@ public class AiConversationController {
         return ResponseResult.success(null);
     }
 
-    /**
-     * 查询模型训练批次的当前进度和结果摘要。
-     *
-     * <p>这是现有训练业务的过渡查询接口，返回的是训练任务状态，不是 Agent Run 状态。</p>
-     *
-     * @param batchNo 模型训练业务批次编号
-     * @return 训练进度、步骤状态及可用的训练结果摘要
-     */
-    @GetMapping("/training-progress")
-    @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiTrainingProgressResponse> trainingProgress(@RequestParam String batchNo) {
-        return ResponseResult.success(taskProgressService.trainingProgress(batchNo));
-    }
-
-    /**
-     * 查询模型预测批次的当前进度和结果摘要。
-     *
-     * <p>conversationNo 用于校验和恢复会话关联，batchNo 用于定位真实预测任务。</p>
-     *
-     * @param conversationNo 预测任务关联的会话编号
-     * @param batchNo 模型预测业务批次编号
-     * @return 预测任务的当前状态、进度及可用结果
-     */
-    @GetMapping("/forecast-progress")
-    @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiTaskProgressResponse> forecastProgress(
-            @RequestParam String conversationNo,
-            @RequestParam String batchNo) {
-        return ResponseResult.success(taskProgressService.forecastProgress(conversationNo, batchNo));
-    }
-
-    /**
-     * 在指定训练批次成功后继续创建预测任务。
-     *
-     * <p>用于现有“先训练、再预测”的前端衔接流程。返回状态属于后台预测任务，
-     * 不表示新的 Agent 对话轮次。</p>
-     *
-     * @param request 会话编号和已经完成的训练批次编号
-     * @return 后续预测任务的状态及预测批次信息
-     */
-    @PostMapping("/continue-forecast")
-    @WebLog("训练完成后自动继续预测")
-    @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiTaskProgressResponse> continueForecast(@Valid @RequestBody AiContinueForecastRequest request) {
-        return ResponseResult.success(taskProgressService.continueForecast(
-                request.conversationNo(), request.trainBatchNo()));
-    }
 }

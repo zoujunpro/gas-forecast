@@ -1,16 +1,17 @@
 package com.gas.forecast.business.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.gas.forecast.business.dto.request.AutoTrainRequest;
 import com.gas.forecast.business.dto.request.ModelTrainResultRequest;
 import com.gas.forecast.business.dto.response.ModelTrainResultResponse;
+import com.gas.forecast.business.enums.ExecutionTargetStatus;
+import com.gas.forecast.business.enums.ExecutionBusinessType;
 import com.gas.forecast.business.service.AutoTrainService;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
 import com.gas.forecast.business.service.TrainingApplicationService;
+import com.gas.forecast.business.service.ExecutionTaskLifecycleService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.BaseCustomerTb;
-import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
+import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,36 +25,41 @@ import org.springframework.stereotype.Service;
 public class TrainingApplicationServiceImpl implements TrainingApplicationService {
     private final AutoTrainService autoTrainService;
     private final ModelTrainExecutionService trainExecutionService;
-    private final BaseCustomerTbMapper customerMapper;
+    private final ExecutionTaskLifecycleService taskLifecycleService;
 
     @Override
     public Object start(TrainingCommand command) {
         validate(command);
-        List<String> customers = customerCodes(command);
-        if (customers.isEmpty())
-            throw new BusinessException("当前业务范围内没有找到可训练客户");
+        var task = taskLifecycleService.create(command.conversationNo(), ExecutionBusinessType.TRAIN,
+                command.agentCode(), command.dimensionType(), command.targets(), "模型训练");
+        List<ExecutionTaskDetailTb> relations = taskLifecycleService.relations(task.getTaskNo());
         List<Object> tasks = new ArrayList<>();
         List<Map<String, String>> failures = new ArrayList<>();
-        for (String customerCode : customers) {
+        for (ExecutionTaskDetailTb relation : relations) {
             try {
                 AutoTrainRequest request = new AutoTrainRequest();
                 request.setAgentCode(command.agentCode());
-                request.setRegionCode(singleScope(command.regionCodes(), command.regionCode()));
-                request.setIndustryCode(singleScope(command.industryCodes(), command.industryCode()));
-                request.setCustomerCode(customerCode);
-                request.setTrainMode(command.trainMode());
-                request.setRecentPeriods(command.trainingPeriods());
-                request.setTrainStartDate(command.trainingStartDate());
-                request.setTrainEndDate(command.trainingEndDate());
-                request.setForceTrain(command.forceRetrain());
+                request.setRegionCode(emptyToNull(relation.getRegionCode()));
+                request.setIndustryCode(emptyToNull(relation.getIndustryCode()));
+                request.setCustomerCode(emptyToNull(relation.getCustomerCode()));
+                request.setTrainMode(command.training().dataOptions().trainMode());
+                request.setRecentPeriods(command.training().dataOptions().trainingPeriods());
+                request.setTrainStartDate(command.training().dataOptions().trainingStartDate());
+                request.setTrainEndDate(command.training().dataOptions().trainingEndDate());
+                request.setForceTrain(command.training().forceRetrain());
                 request.setTriggerSource("MCP");
-                tasks.add(autoTrainService.execute(request));
+                var response = autoTrainService.execute(request);
+                taskLifecycleService.updateBatch(relation.getId(), response.getTrainBatchNo(), null,
+                        ExecutionTargetStatus.TRAINING);
+                tasks.add(response);
             } catch (RuntimeException exception) {
-                failures.add(Map.of("customerCode", customerCode, "message", safeMessage(exception)));
+                taskLifecycleService.updateBatch(relation.getId(), null, null, ExecutionTargetStatus.FAILED);
+                failures.add(Map.of("relationId", String.valueOf(relation.getId()), "message", safeMessage(exception)));
             }
         }
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("total", customers.size());
+        result.put("taskNo", task.getTaskNo());
+        result.put("total", relations.size());
         result.put("submitted", tasks.size());
         result.put("failed", failures.size());
         result.put("tasks", tasks);
@@ -104,32 +110,15 @@ public class TrainingApplicationServiceImpl implements TrainingApplicationServic
     private void validate(TrainingCommand command) {
         if (command == null || !TextUtils.hasText(command.agentCode()))
             throw new BusinessException("agentCode不能为空");
-        if (command.bulk() && !command.confirmed())
+        if (command.targets() == null || command.targets().isEmpty())
+            throw new BusinessException("targets不能为空");
+        boolean bulk = command.targets().size() > 1 || command.targets().stream()
+                .anyMatch(target -> target.customerCodes() == null || target.customerCodes().isEmpty());
+        if (bulk && !command.execution().confirmed())
             throw new BusinessException("批量训练必须先获得用户确认");
     }
 
-    private List<String> customerCodes(TrainingCommand command) {
-        if (command.customerCodes() != null && !command.customerCodes().isEmpty())
-            return command.customerCodes().stream().filter(TextUtils::hasText).distinct().toList();
-        var query = Wrappers.<BaseCustomerTb>lambdaQuery();
-        if (command.regionCodes() != null && !command.regionCodes().isEmpty())
-            query.in(BaseCustomerTb::getRegionCode, command.regionCodes());
-        else if (TextUtils.hasText(command.regionCode()))
-            query.eq(BaseCustomerTb::getRegionCode, command.regionCode());
-        if (command.industryCodes() != null && !command.industryCodes().isEmpty())
-            query.in(BaseCustomerTb::getIndustryCode, command.industryCodes());
-        else if (TextUtils.hasText(command.industryCode()))
-            query.eq(BaseCustomerTb::getIndustryCode, command.industryCode());
-        if (!command.bulk())
-            throw new BusinessException("单客户训练必须提供customerCodes");
-        return customerMapper.selectList(query.orderByAsc(BaseCustomerTb::getCustomerName)).stream().map(BaseCustomerTb::getCustomerCode).distinct().toList();
-    }
-
-    private String singleScope(List<String> values, String fallback) {
-        if (values == null || values.isEmpty())
-            return fallback;
-        return values.size() == 1 ? values.get(0) : null;
-    }
+    private String emptyToNull(String value) { return TextUtils.hasText(value) ? value : null; }
 
     private void requireBatch(String batchNo) {
         if (!TextUtils.hasText(batchNo))

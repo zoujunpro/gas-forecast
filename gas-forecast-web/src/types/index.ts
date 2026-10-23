@@ -28,6 +28,8 @@ export interface ChatMessage {
   presentation?: Record<string, any>
   /** 工具执行的原始结果；查询列表从其中的 records 渲染。 */
   executionResult?: Record<string, any>
+  /** 统一执行任务编号；页面据此展示任务明细和步骤。 */
+  taskNo?: string
 }
 
 export interface ChatClarificationOption {

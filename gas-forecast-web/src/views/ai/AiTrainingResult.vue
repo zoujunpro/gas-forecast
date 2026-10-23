@@ -53,7 +53,7 @@ const renderChart = () => nextTick(() => {
     tooltip: { trigger: 'axis' },
     legend: { top: 4, data: ['实际值', '预测值', '绝对误差'], textStyle: { color: '#64748b' } },
     grid: { top: 40, right: 24, bottom: 48, left: 52 },
-    xAxis: { type: 'category', data: points.map((point) => point.date), axisLabel: { color: '#64748b', rotate: 30 }, axisTick: { show: false } },
+    xAxis: { type: 'category', data: points.map((point) => point.date), axisLabel: { color: '#64748b', rotate: 30, formatter: (value: string) => value.slice(5), interval: Math.max(0, Math.ceil(points.length / 6) - 1) }, axisTick: { show: false } },
     yAxis: { type: 'value', name: '用量', axisLabel: { color: '#64748b' }, splitLine: { lineStyle: { color: '#edf1f6' } } },
     series: [
       { name: '实际值', type: 'line', smooth: true, symbolSize: 5, data: points.map((point) => point.actualValue ?? null), itemStyle: { color: '#2563eb' }, lineStyle: { width: 2.5 } },
@@ -64,8 +64,13 @@ const renderChart = () => nextTick(() => {
   chart.resize()
 })
 const resize = () => chart?.resize()
-onMounted(() => { renderChart(); window.addEventListener('resize', resize) })
-onBeforeUnmount(() => { window.removeEventListener('resize', resize); chart?.dispose(); chart = null })
+let resizeObserver: ResizeObserver | undefined
+onMounted(() => {
+  renderChart()
+  window.addEventListener('resize', resize)
+  if (chartRef.value) { resizeObserver = new ResizeObserver(resize); resizeObserver.observe(chartRef.value) }
+})
+onBeforeUnmount(() => { window.removeEventListener('resize', resize); resizeObserver?.disconnect(); chart?.dispose(); chart = null })
 watch(() => props.result, renderChart, { deep: true })
 </script>
 

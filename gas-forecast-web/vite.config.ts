@@ -103,6 +103,11 @@ export default defineConfig({
         target: localApiTarget,
         changeOrigin: true,
         rewrite: (path) => `/gas-forecast${path}`
+      },
+      '^/execution-tasks/.*': {
+        target: localApiTarget,
+        changeOrigin: true,
+        rewrite: (path) => `/gas-forecast${path}`
       }
     }
   },

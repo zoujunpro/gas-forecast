@@ -23,7 +23,6 @@ public class ForecastConversationService {
     private final AiConversationTbMapper conversationMapper;
     private final AiConversationMessageTbMapper messageMapper;
     private final ModelForecastRecordTbMapper forecastRecordMapper;
-    private final ForecastAnalysisService forecastAnalysisService;
 
     public AiConversationTb require(String forecastBatchNo, String conversationNo) {
         if (!TextUtils.hasText(forecastBatchNo)) throw new BusinessException("预测批次号不能为空");
@@ -41,7 +40,6 @@ public class ForecastConversationService {
             try { existing = create(forecast); }
             catch (DuplicateKeyException exception) { existing = findByBatch(forecastBatchNo); }
         }
-        archiveAutomaticAnalysis(existing);
         return existing;
     }
 
@@ -58,17 +56,6 @@ public class ForecastConversationService {
         value.setAgentCode(forecast.getAgentCode()); value.setScene("FORECAST_ANALYSIS"); value.setBusinessType("FORECAST");
         value.setBusinessNo(forecast.getForecastBatchNo()); value.setLastForecastBatchNo(forecast.getForecastBatchNo()); value.setStatus("ACTIVE");
         value.setCreatedBy(currentUserId()); value.setCreatedAt(now); value.setUpdatedAt(now); conversationMapper.insert(value); return value;
-    }
-
-    private void archiveAutomaticAnalysis(AiConversationTb conversation) {
-        long count = messageMapper.selectCount(Wrappers.<AiConversationMessageTb>lambdaQuery()
-                .eq(AiConversationMessageTb::getConversationId, conversation.getId()).eq(AiConversationMessageTb::getMessageType, "FORECAST_AUTO_ANALYSIS"));
-        if (count > 0) return;
-        var analysis = forecastAnalysisService.get(conversation.getBusinessNo());
-        if (analysis == null || !"SUCCESS".equals(analysis.analysisStatus()) || !TextUtils.hasText(analysis.analysisContent())) return;
-        AiConversationMessageTb message = new AiConversationMessageTb();
-        message.setConversationId(conversation.getId()); message.setRole("assistant"); message.setContent(analysis.analysisContent());
-        message.setMessageType("FORECAST_AUTO_ANALYSIS"); message.setCreatedAt(new Date()); messageMapper.insert(message);
     }
 
     private AiConversationTb findOwned(String conversationNo) {

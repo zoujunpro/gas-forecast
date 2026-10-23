@@ -21,7 +21,9 @@ import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.service.BaseCodeGenerateService;
 import com.gas.forecast.business.service.DynamicFeatureResult;
 import com.gas.forecast.business.service.DynamicTrainingFeatureService;
+import com.gas.forecast.business.service.ExecutionStepRecorder;
 import com.gas.forecast.business.service.ModelTrainExecutionService;
+import com.gas.forecast.business.service.ExecutionTaskLifecycleService;
 import com.gas.forecast.business.service.ModelTrainStepRecorder;
 import com.gas.forecast.business.service.TrainingDatasetAssembler;
 import com.gas.forecast.business.service.TrainingDataQualityValidator;
@@ -42,7 +44,8 @@ import com.gas.forecast.dao.mapper.ModelFeatureDefinitionTbMapper;
 import com.gas.forecast.dao.mapper.ModelFeatureRefMapper;
 import com.gas.forecast.dao.mapper.ModelTrainBacktestTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainConfigTbMapper;
-import com.gas.forecast.dao.mapper.ModelTrainExecutionStepTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionStepTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionTaskDetailTbMapper;
 import com.gas.forecast.dao.mapper.ModelTrainRecordTbMapper;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -80,7 +83,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private final ModelFeatureDefinitionTbMapper modelFeatureDefinitionTbMapper;
     private final ModelTrainBacktestTbMapper modelTrainBacktestTbMapper;
     private final ModelTrainRecordTbMapper modelTrainDetailTbMapper;
-    private final ModelTrainExecutionStepTbMapper modelTrainExecutionStepTbMapper;
+    private final ExecutionStepTbMapper executionStepTbMapper;
+    private final ExecutionTaskDetailTbMapper executionTaskDetailTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
     private final ObjectMapper objectMapper;
     private final Executor modelTrainTaskExecutor;
@@ -88,22 +92,26 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
     private final ModelPlatformClient modelPlatformClient;
     private final DynamicTrainingFeatureService dynamicTrainingFeatureService;
     private final ModelTrainStepRecorder trainStepRecorder;
+    private final ExecutionStepRecorder executionStepRecorder;
     private final TrainingDatasetAssembler trainingDatasetAssembler;
     private final TrainingDataQualityValidator trainingDataQualityValidator;
     private final TaskForecastContinuationService taskForecastContinuationService;
+    private final ExecutionTaskLifecycleService taskLifecycleService;
 
     @Override
     @Transactional(readOnly = true)
     public List<ModelTrainExecutionStepResponse> getExecutionSteps(String batchNo) {
         if (!TextUtils.hasText(batchNo))
             throw new BusinessException("训练批次号不能为空");
-        return modelTrainExecutionStepTbMapper
-                .selectList(Wrappers.<com.gas.forecast.dao.domain.ModelTrainExecutionStepTb>lambdaQuery().eq(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getTrainBatchNo, batchNo)
-                        .orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getAttemptNo).orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getStepLevel)
-                        .orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getStepOrder).orderByAsc(com.gas.forecast.dao.domain.ModelTrainExecutionStepTb::getId))
+        var detail = executionTaskDetailTbMapper.selectOne(Wrappers.<com.gas.forecast.dao.domain.ExecutionTaskDetailTb>lambdaQuery()
+                .eq(com.gas.forecast.dao.domain.ExecutionTaskDetailTb::getTrainBatchNo, batchNo).orderByAsc(com.gas.forecast.dao.domain.ExecutionTaskDetailTb::getId).last("limit 1"));
+        if (detail == null) return List.of();
+        return executionStepTbMapper.selectList(Wrappers.<com.gas.forecast.dao.domain.ExecutionStepTb>lambdaQuery()
+                        .eq(com.gas.forecast.dao.domain.ExecutionStepTb::getTaskDetailNo, detail.getDetailNo()).orderByAsc(com.gas.forecast.dao.domain.ExecutionStepTb::getAttemptNo)
+                        .orderByAsc(com.gas.forecast.dao.domain.ExecutionStepTb::getStepOrder).orderByAsc(com.gas.forecast.dao.domain.ExecutionStepTb::getId))
                 .stream()
-                .map(step -> new ModelTrainExecutionStepResponse(step.getId(), step.getTrainBatchNo(), step.getAttemptNo(), step.getParentStepId(), step.getStepLevel(), step.getStepCode(),
-                        step.getStepName(), step.getStepOrder(), step.getStatus(), step.getInputSummary(), step.getOutputSummary(), step.getProducedCount(), step.getErrorMessage(),
+                .map(step -> new ModelTrainExecutionStepResponse(step.getId(), batchNo, step.getAttemptNo(), null, 1, step.getStepCode(),
+                        step.getStepName(), step.getStepOrder(), step.getStatus(), step.getInputJson(), step.getMessage(), null, step.getErrorMessage(),
                         step.getStartedAt(), step.getFinishedAt(), step.getDurationMs()))
                 .toList();
     }
@@ -262,6 +270,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         modelTrainDetailTbMapper.update(null,
                 Wrappers.<ModelTrainRecordTb>lambdaUpdate().eq(ModelTrainRecordTb::getBatchNo, batchNo).set(ModelTrainRecordTb::getStatus, "SUCCESS").set(ModelTrainRecordTb::getActiveDedupKey, null)
                         .set(ModelTrainRecordTb::getErrorMessage, null).set(ModelTrainRecordTb::getFinishedAt, now).set(ModelTrainRecordTb::getUpdatedAt, now));
+        taskLifecycleService.markTrainingCompleted(batchNo, true);
     }
 
     @Override
@@ -448,11 +457,19 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         int attemptNo = currentAttemptNo(batchNo);
         Long currentStep = null;
         try {
-            currentStep = startStep(batchNo, attemptNo, "LOAD_DATA", "加载训练数据", 1, "trainConfigId=" + trainConfig.getId());
-            List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
+            currentStep = startStep(batchNo, attemptNo, "LOAD_DATA", "加载销量数据", 1, "读取历史销量数据");
             List<ModelTrainFeatureDataTb> trainData = loadTrainData(trainConfig, modelConfig);
             trainingDataQualityValidator.validate(trainData);
-            trainStepRecorder.success(currentStep, "基础特征=" + features.size() + "，训练数据=" + trainData.size(), trainData.size());
+            trainStepRecorder.success(currentStep, salesSummary(trainData), trainData.size());
+            executionStepRecorder.successWithDetailsByTrainBatch(batchNo, com.gas.forecast.business.enums.ExecutionStepCode.SALES_DATA_PREPARE,
+                    salesSummary(trainData), salesDetail(trainData));
+            currentStep = null;
+
+            currentStep = startStep(batchNo, attemptNo, "FEATURE_PREPARE", "加载基础特征", 2, "读取天气等基础特征");
+            List<FeatureMapping> features = loadFeatureMappings(modelConfig.getId());
+            trainStepRecorder.success(currentStep, featureSummary(features), features.size());
+            executionStepRecorder.successWithDetailsByTrainBatch(batchNo, com.gas.forecast.business.enums.ExecutionStepCode.FACTOR_DATA_PREPARE,
+                    featureSummary(features), featureDetail(features));
             currentStep = null;
 
             currentStep = startStep(batchNo, attemptNo, "DYNAMIC_FEATURE", "计算动态特征", 2, "基础训练数据=" + trainData.size());
@@ -460,12 +477,15 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             DynamicFeatureResult dynamicFeatures = dynamicTrainingFeatureService.prepare(trainConfig, trainData, batchNo, attemptNo, currentStep);
             LOGGER.info("后台动态指标计算完成: batchNo={}, status={}, featureCodes={}, valueCount={}", batchNo, dynamicFeatures.snapshot().path("status").asText(), dynamicFeatures.featureCodes(),
                     dynamicFeatures.valueCount());
-            trainStepRecorder.success(currentStep, dynamicFeatures.snapshot().toString(), dynamicFeatures.valueCount());
+            String dynamicSummary = dynamicSummary(dynamicFeatures.snapshot());
+            trainStepRecorder.success(currentStep, dynamicSummary, dynamicFeatures.valueCount());
+            executionStepRecorder.successWithDetailsByTrainBatch(batchNo, com.gas.forecast.business.enums.ExecutionStepCode.DYNAMIC_INDICATOR,
+                    dynamicSummary, dynamicFeatures.snapshot().toString());
             currentStep = null;
 
             currentStep = startStep(batchNo, attemptNo, "BUILD_REQUEST", "组装训练请求", 3, "模型=" + modelConfig.getModelCode());
             ModelTrainApiRequest trainRequest = buildTrainRequest(trainConfig, modelConfig, batchNo, trainData, features, dynamicFeatures);
-            trainStepRecorder.success(currentStep, "dataset=" + trainRequest.getDataset().size(), trainRequest.getDataset().size());
+            trainStepRecorder.success(currentStep, "训练请求已组装", trainRequest.getDataset().size());
             currentStep = null;
             validateAndTrain(batchNo, trainConfig, trainRequest, attemptNo);
         } catch (RuntimeException exception) {
@@ -541,6 +561,78 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         return TextUtils.hasText(warnings) ? "模型平台校验通过，提示：" + warnings : "模型平台校验通过";
     }
 
+    private String salesSummary(List<ModelTrainFeatureDataTb> rows) {
+        long valid = rows.stream().filter(row -> row.getGasSales() != null).count();
+        return "有效销量数据 " + valid + " 条";
+    }
+
+    private String salesDetail(List<ModelTrainFeatureDataTb> rows) {
+        ObjectNode detail = objectMapper.createObjectNode();
+        long valid = rows.stream().filter(row -> row.getGasSales() != null).count();
+        detail.put("salesCount", valid);
+        rows.stream().map(ModelTrainFeatureDataTb::getStatDate).filter(TextUtils::hasText).min(String::compareTo).ifPresent(value -> detail.put("startDate", value));
+        rows.stream().map(ModelTrainFeatureDataTb::getStatDate).filter(TextUtils::hasText).max(String::compareTo).ifPresent(value -> detail.put("endDate", value));
+        detail.put("missingSalesCount", Math.max(0, rows.size() - valid));
+        return detail.toString();
+    }
+
+    private String featureSummary(List<FeatureMapping> features) {
+        long weather = features.stream().filter(this::weatherFeature).count();
+        return "基础特征 " + features.size() + " 项，其中天气特征 " + weather + " 项";
+    }
+
+    private String featureDetail(List<FeatureMapping> features) {
+        ObjectNode detail = objectMapper.createObjectNode();
+        detail.put("featureCount", features.size());
+        detail.put("weatherFeatureCount", features.stream().filter(this::weatherFeature).count());
+        var list = detail.putArray("features");
+        features.forEach(feature -> list.add(feature.getPayloadKey()));
+        return detail.toString();
+    }
+
+    private boolean weatherFeature(FeatureMapping feature) {
+        String source = (String.valueOf(feature.getSourceField()) + " " + String.valueOf(feature.getPayloadKey())).toLowerCase();
+        return source.contains("temp") || source.contains("weather") || source.contains("rain") || source.contains("wind")
+                || source.contains("humidity") || source.contains("hdd") || source.contains("cold") || source.contains("heat");
+    }
+
+    private String dynamicSummary(JsonNode snapshot) {
+        int candidates = intValue(snapshot, "candidate_count", "candidateCount", "candidate_groups");
+        int selected = arraySize(snapshot, "selected_indexes", "selectedIndexes", "selected_features", "selectedFeatures");
+        int available = intValue(snapshot, "available_count", "availableCount");
+        if (available <= 0) available = selected;
+        return "候选指标 " + candidates + " 个，可用 " + available + " 个，已选 " + selected + " 个";
+    }
+
+    private String modelSummary(JsonNode result) {
+        String model = textValue(result, "selected_model_name", "best_model", "bestModel");
+        JsonNode metrics = result.path("metrics");
+        double mape = numberValue(metrics, "mape", "MAPE", "backtest_MAPE");
+        if (mape < 0) mape = numberValue(result, "mape", "MAPE", "backtest_MAPE");
+        String mapeText = mape < 0 ? "" : "；MAPE " + String.format(java.util.Locale.ROOT, "%.2f%%", mape);
+        return "最佳模型：" + (TextUtils.hasText(model) ? model : "已完成筛选") + mapeText;
+    }
+
+    private int intValue(JsonNode node, String... names) {
+        for (String name : names) if (node != null && node.path(name).isNumber()) return node.path(name).asInt();
+        return 0;
+    }
+
+    private int arraySize(JsonNode node, String... names) {
+        for (String name : names) if (node != null && node.path(name).isArray()) return node.path(name).size();
+        return 0;
+    }
+
+    private String textValue(JsonNode node, String... names) {
+        for (String name : names) if (node != null && TextUtils.hasText(node.path(name).asText())) return node.path(name).asText();
+        return null;
+    }
+
+    private double numberValue(JsonNode node, String... names) {
+        for (String name : names) if (node != null && node.path(name).isNumber()) return node.path(name).asDouble();
+        return -1D;
+    }
+
     private void markPreparationFailed(String batchNo, RuntimeException exception) {
         LOGGER.error("model train preparation failed batchNo={}", batchNo, exception);
         String message = modelPlatformClient.extractErrorMessage(exception, "训练数据准备失败");
@@ -548,6 +640,7 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
         if (modelTrainDetailTbMapper.selectCount(Wrappers.<ModelTrainRecordTb>lambdaQuery().eq(ModelTrainRecordTb::getBatchNo, batchNo)) > 0) {
             ObjectNode failedResult = objectMapper.createObjectNode().put("train_batch_no", batchNo).put("status", ModelTrainStatus.FAILED.getCode()).put("message", message);
             transactionTemplate.executeWithoutResult(tx -> updateTrainDetailAfterSubmit(batchNo, ModelTrainStatus.FAILED, failedResult, message));
+            taskLifecycleService.markTrainingCompleted(batchNo, false);
         }
     }
 
@@ -557,14 +650,17 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             // 1. 调用平台并将标准响应信封转换为训练结果数据。
             ModelTrainApiResponse agentResponse = callTrainAgent(trainRequest);
             JsonNode trainResult = normalizeTrainResult(batchNo, agentResponse);
-            trainStepRecorder.success(trainStep, "模型平台训练完成", null);
-            trainStep = null;
             Long persistStep = startStep(batchNo, attemptNo, "PERSIST_RESULT", "保存训练结果", 6, "保存指标及回测明细");
             // 2. 异步线程不继承原事务，使用独立事务保存成功结果和回测明细。
             try {
                 transactionTemplate.executeWithoutResult(status -> updateTrainResult(trainResult));
                 int count = trainResult.path("rolling_backtest_results").isArray() ? trainResult.path("rolling_backtest_results").size() : 0;
-                trainStepRecorder.success(persistStep, "训练指标和回测结果已入库", count);
+                String summary = modelSummary(trainResult);
+                trainStepRecorder.success(trainStep, summary, count);
+                executionStepRecorder.successWithDetailsByTrainBatch(batchNo, com.gas.forecast.business.enums.ExecutionStepCode.MODEL_SELECT,
+                        summary, trainResult.toString());
+                trainStep = null;
+                trainStepRecorder.success(persistStep, "训练结果已保存", count);
             } catch (RuntimeException persistException) {
                 trainStepRecorder.fail(persistStep, persistException);
                 throw persistException;
@@ -576,6 +672,8 @@ public class ModelTrainExecutionServiceImpl implements ModelTrainExecutionServic
             String message = modelPlatformClient.extractErrorMessage(e, "模型训练失败");
             ObjectNode failedResult = objectMapper.createObjectNode().put("train_batch_no", batchNo).put("status", ModelTrainStatus.FAILED.getCode()).put("message", message);
             transactionTemplate.executeWithoutResult(status -> updateTrainDetailAfterSubmit(batchNo, ModelTrainStatus.FAILED, failedResult, message));
+            // 训练批次失败同样必须回写任务明细，否则任务页面会永久停留在“训练中”。
+            taskLifecycleService.markTrainingCompleted(batchNo, false);
         }
     }
 

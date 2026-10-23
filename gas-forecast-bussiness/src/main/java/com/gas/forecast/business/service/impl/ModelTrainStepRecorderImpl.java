@@ -1,83 +1,55 @@
 package com.gas.forecast.business.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.gas.forecast.business.enums.ExecutionStepCode;
+import com.gas.forecast.business.service.ExecutionStepRecorder;
 import com.gas.forecast.business.service.ModelTrainStepRecorder;
-import com.gas.forecast.dao.domain.ModelTrainExecutionStepTb;
-import com.gas.forecast.dao.mapper.ModelTrainExecutionStepTbMapper;
-import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
+/** 将训练引擎的细粒度事件归并写入统一的 execution_step_tb 六步流程。 */
 @Service
 @RequiredArgsConstructor
 public class ModelTrainStepRecorderImpl implements ModelTrainStepRecorder {
-    private final ModelTrainExecutionStepTbMapper mapper;
+    private final ExecutionStepRecorder executionStepRecorder;
+    private final AtomicLong handles = new AtomicLong();
+    private final ConcurrentHashMap<Long, Handle> activeHandles = new ConcurrentHashMap<>();
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Long start(String batchNo, int attemptNo, Long parentStepId, int stepLevel, String stepCode, String stepName, int stepOrder, String inputSummary) {
-        Date now = new Date();
-        ModelTrainExecutionStepTb existing = mapper.selectOne(Wrappers.<ModelTrainExecutionStepTb>lambdaQuery().eq(ModelTrainExecutionStepTb::getTrainBatchNo, batchNo)
-                .eq(ModelTrainExecutionStepTb::getAttemptNo, attemptNo).eq(ModelTrainExecutionStepTb::getStepCode, stepCode).last("limit 1"));
-        ModelTrainExecutionStepTb step = existing == null ? new ModelTrainExecutionStepTb() : existing;
-        step.setTrainBatchNo(batchNo);
-        step.setAttemptNo(attemptNo);
-        step.setParentStepId(parentStepId);
-        step.setStepLevel(stepLevel);
-        step.setStepCode(stepCode);
-        step.setStepName(stepName);
-        step.setStepOrder(stepOrder);
-        step.setStatus("RUNNING");
-        step.setInputSummary(abbreviate(inputSummary, 4000));
-        step.setOutputSummary(null);
-        step.setProducedCount(null);
-        step.setErrorMessage(null);
-        step.setStartedAt(now);
-        step.setFinishedAt(null);
-        step.setDurationMs(null);
-        step.setUpdatedAt(now);
-        if (existing == null) {
-            step.setCreatedAt(now);
-            mapper.insert(step);
-        } else
-            mapper.updateById(step);
-        return step.getId();
+        ExecutionStepCode target = target(stepCode);
+        if (target == null) return null;
+        executionStepRecorder.startByTrainBatch(batchNo, target, inputSummary);
+        long id = handles.incrementAndGet();
+        activeHandles.put(id, new Handle(batchNo, target));
+        return id;
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void success(Long stepId, String outputSummary, Integer producedCount) {
-        finish(stepId, "SUCCESS", outputSummary, producedCount, null);
+        Handle handle = remove(stepId);
+        if (handle != null) executionStepRecorder.successByTrainBatch(handle.batchNo(), handle.stepCode(), outputSummary, null);
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fail(Long stepId, Throwable error) {
-        finish(stepId, "FAILED", null, null, error == null ? "未知错误" : error.getMessage());
+        Handle handle = remove(stepId);
+        if (handle != null) executionStepRecorder.failByTrainBatch(handle.batchNo(), handle.stepCode(), "TRAINING_FAILED", error);
     }
 
-    private void finish(Long stepId, String status, String outputSummary, Integer producedCount, String errorMessage) {
-        if (stepId == null)
-            return;
-        ModelTrainExecutionStepTb step = mapper.selectById(stepId);
-        if (step == null)
-            return;
-        Date now = new Date();
-        step.setStatus(status);
-        step.setOutputSummary(abbreviate(outputSummary, 20000));
-        step.setProducedCount(producedCount);
-        step.setErrorMessage(abbreviate(errorMessage, 4000));
-        step.setFinishedAt(now);
-        step.setDurationMs(Math.max(0, now.getTime() - step.getStartedAt().getTime()));
-        step.setUpdatedAt(now);
-        mapper.updateById(step);
+    private Handle remove(Long id) { return id == null ? null : activeHandles.remove(id); }
+
+    private ExecutionStepCode target(String stepCode) {
+        if (stepCode == null) return null;
+        if (stepCode.startsWith("DYNAMIC_")) return ExecutionStepCode.DYNAMIC_INDICATOR;
+        return switch (stepCode) {
+            case "LOAD_DATA" -> ExecutionStepCode.SALES_DATA_PREPARE;
+            case "FEATURE_PREPARE" -> ExecutionStepCode.FACTOR_DATA_PREPARE;
+            case "MODEL_TRAIN" -> ExecutionStepCode.MODEL_SELECT;
+            default -> null;
+        };
     }
 
-    private String abbreviate(String value, int max) {
-        if (value == null || value.length() <= max)
-            return value;
-        return value.substring(0, max);
-    }
+    private record Handle(String batchNo, ExecutionStepCode stepCode) {}
 }

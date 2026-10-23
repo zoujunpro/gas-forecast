@@ -11,8 +11,7 @@ import lombok.Data;
  * 页面按已选择的客户和预测场景发起预测。
  *
  * <p>该请求是明确的业务命令，直接进入统一预测业务流程。页面“开始预测”需要在缺少可用模型时
- * 自动训练并继续预测的，应同时传入 {@code autoTrain=true}、{@code trainingPreference=AUTO} 和
- * {@code confirmed=true}。</p>
+ * 自动训练并继续预测的，应传入 {@code trainingPreference=AUTO} 和 {@code confirmed=true}。</p>
  */
 @Data
 public class ScopedForecastStartRequest {
@@ -58,9 +57,6 @@ public class ScopedForecastStartRequest {
     @Size(max = 16)
     private String forecastFrequency;
 
-    /** 用户明确同意在缺少模型时先训练。默认不授权。 */
-    private Boolean autoTrain = false;
-
     /**
      * 缺少可用模型时的处理偏好。
      *
@@ -79,5 +75,5 @@ public class ScopedForecastStartRequest {
      * <p>调用方应为一次业务操作生成唯一值；同一次网络重试必须复用原值，避免重复创建预测任务。</p>
      */
     @Size(max = 36)
-    private String idempotencyKey;
+    private String requestId;
 }

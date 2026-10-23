@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.gas.forecast.business.component.ForecastAnalysisAgentClient;
 import com.gas.forecast.business.component.ModelPlatformClient;
 import com.gas.forecast.business.component.dto.ModelPredictApiRequest;
 import com.gas.forecast.business.component.dto.ModelPredictApiResponse;
@@ -23,6 +24,7 @@ import com.gas.forecast.business.dto.request.ModelForecastResultPageRequest;
 import com.gas.forecast.business.dto.response.ModelForecastExecuteResponse;
 import com.gas.forecast.business.dto.response.ModelForecastHistoryPointResponse;
 import com.gas.forecast.business.enums.ModelForecastStatus;
+import com.gas.forecast.business.enums.ExecutionStepCode;
 import com.gas.forecast.business.enums.ModelTrainTimeGranularity;
 import com.gas.forecast.business.enums.ModelTrainStatus;
 import com.gas.forecast.business.util.PageUtils;
@@ -89,9 +91,10 @@ public class ModelForecastManagementService {
     private final DataDailySalesTbMapper dailySalesMapper;
     private final BaseCustomerTbMapper customerMapper;
     private final TaskForecastCompletionService taskForecastCompletionService;
+    private final ExecutionStepRecorder executionStepRecorder;
+    private final ForecastAnalysisAgentClient forecastAnalysisAgentClient;
     private final ObjectMapper objectMapper;
     private final ModelPlatformClient modelPlatformClient;
-    private final ForecastAnalysisService forecastAnalysisService;
     private final @Qualifier("modelForecastTaskExecutor") Executor modelForecastTaskExecutor;
 
     public PageInfoDTO<ModelForecastConfigTb> listConfigs(ModelForecastConfigPageRequest request) {
@@ -346,6 +349,8 @@ public class ModelForecastManagementService {
         ModelForecastRecordTb record = prepared.record();
         String forecastBatchNo = record.getForecastBatchNo();
         try {
+            executionStepRecorder.startByForecastBatch(forecastBatchNo, ExecutionStepCode.FORECAST,
+                    "预测周期=" + config.getForecastHorizon() + "天，开始调用模型平台");
             ModelPredictApiResponse response = modelPlatformClient.predict(prepared.payload());
             if (response.getPoints() == null || !response.getPoints().isArray())
                 throw new BusinessException("模型平台预测响应缺少 points");
@@ -355,19 +360,61 @@ public class ModelForecastManagementService {
             record.setForecastEndTime(java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
             record.setUpdatedAt(new Date());
             recordMapper.updateById(record);
-            taskForecastCompletionService.markSuccess(forecastBatchNo);
-            try {
-                forecastAnalysisService.submit(forecastBatchNo);
-            } catch (RuntimeException analysisException) {
-                // 分析属于预测后的附加能力，提交失败不能把已成功的预测改成失败。
-                log.error("预测批次 {} 的大模型分析任务提交失败", forecastBatchNo, analysisException);
-            }
+            executionStepRecorder.successByForecastBatch(forecastBatchNo, ExecutionStepCode.FORECAST,
+                    "预测结果已生成，共" + response.getPoints().size() + "个数据点", null);
+
+            // 第六步是预测任务的一部分，不能以“暂未启用”跳过后仍把任务显示为100%。
+            // 分析内容不再写旧的 model_forecast_analysis_tb，而是作为步骤详情留存在
+            // execution_step_tb，供任务卡片展开查看。
+            analyzeForecast(forecastBatchNo, config, response.getPoints());
             return new ModelForecastExecuteResponse(config.getId(), forecastBatchNo, response.getPoints().size());
         } catch (RuntimeException exception) {
+            executionStepRecorder.failByForecastBatch(forecastBatchNo, ExecutionStepCode.FORECAST, "FORECAST_FAILED", exception);
             markForecastFailed(record, safeMessage(exception));
             taskForecastCompletionService.markFailed(forecastBatchNo, safeMessage(exception));
             throw exception;
         }
+    }
+
+    /** 预测完成后的大模型解读；失败仅标记分析步骤和任务失败，不篡改已成功的预测结果。 */
+    private void analyzeForecast(String forecastBatchNo, ModelForecastConfigTb config, JsonNode points) {
+        executionStepRecorder.startByForecastBatch(forecastBatchNo, ExecutionStepCode.FORECAST_ANALYSIS,
+                "预测完成，正在生成结果解读");
+        try {
+            ForecastAnalysisAgentClient.AnalysisResult analysis = forecastAnalysisAgentClient.analyze(
+                    forecastBatchNo, config.getAgentCode(), analysisPrompt(forecastBatchNo, config, points));
+            ObjectNode detail = objectMapper.createObjectNode();
+            detail.put("analysis", analysis.content());
+            detail.put("model", analysis.model());
+            detail.put("forecastBatchNo", forecastBatchNo);
+            executionStepRecorder.successByForecastBatch(forecastBatchNo, ExecutionStepCode.FORECAST_ANALYSIS,
+                    "预测结果智能解读已生成", detail.toString());
+            taskForecastCompletionService.markSuccess(forecastBatchNo);
+        } catch (RuntimeException exception) {
+            executionStepRecorder.failByForecastBatch(forecastBatchNo, ExecutionStepCode.FORECAST_ANALYSIS,
+                    "FORECAST_ANALYSIS_FAILED", exception);
+            taskForecastCompletionService.markFailed(forecastBatchNo, safeMessage(exception));
+            log.error("预测结果智能分析失败, forecastBatchNo={}", forecastBatchNo, exception);
+        }
+    }
+
+    /** 先以可追溯的原始预测点作为临时上下文；后续只需调整此处提示词，不影响任务流程。 */
+    private String analysisPrompt(String forecastBatchNo, ModelForecastConfigTb config, JsonNode points) {
+        ObjectNode context = objectMapper.createObjectNode();
+        context.put("forecastBatchNo", forecastBatchNo);
+        context.put("agentCode", config.getAgentCode());
+        context.put("regionCode", config.getRegionCode());
+        context.put("industryCode", config.getIndustryCode());
+        context.put("customerCode", config.getCustomerCode());
+        context.put("forecastStartDate", config.getForecastStartDate());
+        context.put("forecastHorizon", config.getForecastHorizon());
+        context.set("forecastPoints", points == null ? objectMapper.createArrayNode() : points);
+        return "请对以下本次预测结果做简短、客观的评价。\n"
+                + "输出一个不超过120个汉字的连续短段落，依次自然说明预测区间与趋势、"
+                + "波动或异常、数据局限；没有实际值时需说明不能评价预测准确性。\n"
+                + "不得推断天气、市场、客户行为等外部原因；不得给出业务建议；不得重新生成预测值；"
+                + "没有依据的结论直接省略；不得使用标题、编号、列表、Markdown或换行。\n"
+                + context;
     }
 
     private void markForecastFailed(ModelForecastRecordTb record, String message) {

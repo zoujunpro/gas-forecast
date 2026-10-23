@@ -4,6 +4,10 @@ import com.gas.forecast.business.dto.request.ModelForecastExecuteRequest;
 import com.gas.forecast.business.dto.request.ScopedForecastStartRequest;
 import com.gas.forecast.business.dto.response.ModelForecastExecuteResponse;
 import com.gas.forecast.business.service.ForecastApplicationService;
+import com.gas.forecast.business.dto.request.ExecutionTarget;
+import com.gas.forecast.business.service.ForecastApplicationService.ForecastOptions;
+import com.gas.forecast.business.service.TrainingApplicationService.ExecutionOptions;
+import com.gas.forecast.business.service.TrainingApplicationService.TrainingDataOptions;
 import com.gas.forecast.business.service.ModelForecastManagementService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
@@ -32,11 +36,12 @@ public class ModelForecastExecutionController {
     @RequirePermission("model:forecast:execute")
     public ResponseResult<Object> start(@Valid @RequestBody ScopedForecastStartRequest request) {
         var command = new ForecastApplicationService.ForecastCommand(
-                null, request.getAgentCode(), List.of(request.getCustomerCode()), request.getRegionCode(), request.getIndustryCode(),
-                List.of(), List.of(), false,
-                null, null, request.getForecastHorizon(), request.getForecastFrequency(), "ALL", null, null, null,
-                false, Boolean.TRUE.equals(request.getAutoTrain()), request.getTrainingPreference(),
-                Boolean.TRUE.equals(request.getConfirmed()), request.getIdempotencyKey());
+                null, request.getAgentCode(), "CUSTOMER",
+                List.of(new ExecutionTarget(List.of(request.getRegionCode()), List.of(request.getIndustryCode()), List.of(request.getCustomerCode()))),
+                new ForecastOptions(null, null, request.getForecastHorizon(), request.getForecastFrequency()),
+                new TrainingDataOptions("ALL", null, null, null),
+                new ExecutionOptions(Boolean.TRUE.equals(request.getConfirmed())),
+                request.getTrainingPreference());
         return ResponseResult.success(forecastApplicationService.start(command));
     }
 

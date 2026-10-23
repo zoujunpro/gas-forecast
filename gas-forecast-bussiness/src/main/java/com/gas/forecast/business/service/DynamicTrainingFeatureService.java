@@ -35,8 +35,7 @@ import org.springframework.stereotype.Service;
  * 调用时机：基础训练数据加载完成之后、训练请求提交到模型平台之前。
  * </p>
  * <p>
- * 固定流程：获取研报 -> 提取指标定义 -> 搜索钢联候选指标 -> 大模型选择指标 -> 查询历史值 -> 按训练粒度聚合 -> 质量过滤 ->
- * 生成动态特征及训练快照。
+ * 当前默认以模拟模式生成动态指标展示信息；切换为 REAL 后才执行研报、指标检索和历史值获取。
  * </p>
  */
 @Service
@@ -55,6 +54,9 @@ public class DynamicTrainingFeatureService {
     private boolean enabled;
     @Value("${gas.mysteel.dynamic-features-required:false}")
     private boolean required;
+    /** MOCK：仅生成步骤展示信息，不调用外部服务且不向模型传入模拟值；REAL：执行真实动态指标链路。 */
+    @Value("${gas.mysteel.dynamic-features-mode:MOCK}")
+    private String dynamicFeaturesMode;
     @Value("${gas.mysteel.dynamic-max-features:10}")
     private int maxFeatures;
     @Value("${gas.mysteel.dynamic-min-coverage:0.7}")
@@ -94,6 +96,9 @@ public class DynamicTrainingFeatureService {
             log.info("[动态特征-跳过] trainCode={}, reason=dynamic-features-enabled=false", config.getTrainCode());
             return empty("DISABLED", null);
         }
+        if (!"REAL".equalsIgnoreCase(dynamicFeaturesMode)) {
+            return simulate(config, batchNo, attemptNo, parentStepId);
+        }
         try {
             DynamicFeatureResult result = prepareEnabled(config, baseRows, batchNo, attemptNo, parentStepId, activeStep);
             log.info("[动态特征-结束] trainCode={}, status={}, totalElapsedMs={}", config.getTrainCode(), result.snapshot().path("status").asText(), elapsedMs(totalStartedAt));
@@ -108,6 +113,32 @@ public class DynamicTrainingFeatureService {
             }
             return empty("FAILED", exception.getMessage());
         }
+    }
+
+    /**
+     * 当前阶段仅保留动态指标步骤的可视化结果，不依赖钢联研报、指标接口或大模型。
+     * 模拟指标绝不写入训练数据，避免用伪造数值影响模型效果。
+     */
+    private DynamicFeatureResult simulate(ModelTrainConfigTb config, String batchNo, int attemptNo, Long parentStepId) {
+        Long childStepId = startChild(batchNo, attemptNo, parentStepId, "DYNAMIC_INDICATOR_SIMULATE", "模拟动态指标识别", 1, "模拟候选指标数=20");
+        List<String> indicatorNames = List.of("天然气市场价格", "LNG市场价格", "工业用气景气指数", "气温偏离度", "节假日影响指数");
+        ObjectNode snapshot = objectMapper.createObjectNode();
+        snapshot.put("status", "SIMULATED");
+        snapshot.put("mode", "MOCK");
+        snapshot.put("message", "动态指标当前为模拟展示，未调用外部接口，未参与模型训练");
+        snapshot.put("candidate_count", 20);
+        snapshot.put("selected_count", indicatorNames.size());
+        snapshot.put("data_fetched", false);
+        ArrayNode selectedIndexes = snapshot.putArray("selected_indexes");
+        for (int index = 0; index < indicatorNames.size(); index++) {
+            selectedIndexes.addObject().put("runtime_code", String.format("dynamic_%03d", index + 1)).put("indicator_name", indicatorNames.get(index))
+                    .put("simulated", true);
+        }
+        if (childStepId != null) {
+            stepRecorder.success(childStepId, snapshot.toString(), indicatorNames.size());
+        }
+        log.info("[动态特征-模拟完成] trainCode={}, candidates={}, selected={}, externalCall=false", config.getTrainCode(), 20, indicatorNames.size());
+        return new DynamicFeatureResult(Map.of(), snapshot);
     }
 
     private DynamicFeatureResult prepareEnabled(ModelTrainConfigTb config, List<ModelTrainFeatureDataTb> baseRows, String batchNo, int attemptNo, Long parentStepId, Long[] activeStep) {

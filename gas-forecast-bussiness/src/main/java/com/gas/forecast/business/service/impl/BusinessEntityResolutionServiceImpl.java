@@ -97,6 +97,66 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
         return new BatchResolutionResult(status, message, List.copyOf(items), proposed);
     }
 
+    /**
+     * 新协议按目标组分别消歧，确保“江苏城燃”和“浙江电力”不会在后续被展开成交叉组合。
+     */
+    @Override
+    public IntentResolutionResult resolveIntent(IntentEntityQuery query) {
+        if (query == null || query.targets() == null || query.targets().isEmpty())
+            throw new IllegalArgumentException("至少提供一个实体目标组合");
+        List<ResolvedTarget> targets = query.targets().stream().map(target -> resolveTarget(target, query.limit())).toList();
+        boolean missing = targets.stream().anyMatch(target -> "NOT_FOUND".equals(target.status()));
+        boolean multiple = targets.stream().anyMatch(target -> "MULTIPLE".equals(target.status()));
+        String status = missing ? "NOT_FOUND" : multiple ? "MULTIPLE" : "UNIQUE";
+        String message = switch (status) {
+            case "UNIQUE" -> "目标组合实体解析成功";
+            case "MULTIPLE" -> "部分实体存在多个候选，请逐项选择";
+            default -> "部分实体没有找到，请修正名称后重试";
+        };
+        Map<String, Object> proposed = "UNIQUE".equals(status) ? intentParameters(query, targets) : Map.of();
+        return new IntentResolutionResult(query.intent(), query.dimensionType(), status, message, targets, proposed);
+    }
+
+    private ResolvedTarget resolveTarget(EntityTargetQuery target, Integer limit) {
+        if (target == null) throw new IllegalArgumentException("实体目标组合不能为空");
+        List<BatchResolutionItem> items = new ArrayList<>();
+        resolveNames(distinctNames(target.customerNames()), "CUSTOMER", limit, items);
+        resolveNames(distinctNames(target.regionNames()), "REGION", limit, items);
+        resolveNames(distinctNames(target.industryNames()), "INDUSTRY", limit, items);
+        if (items.isEmpty()) throw new IllegalArgumentException("每个目标组合至少提供一个客户、地区或行业名称");
+        boolean missing = items.stream().anyMatch(item -> "NOT_FOUND".equals(item.status()));
+        boolean multiple = items.stream().anyMatch(item -> "MULTIPLE".equals(item.status()));
+        String status = missing ? "NOT_FOUND" : multiple ? "MULTIPLE" : "UNIQUE";
+        List<String> customers = codes(items, "CUSTOMER");
+        List<String> regions = codes(items, "REGION");
+        List<String> industries = codes(items, "INDUSTRY");
+        String message = "UNIQUE".equals(status) ? "目标组合解析成功"
+                : "MULTIPLE".equals(status) ? "目标组合存在多个候选" : "目标组合存在未命中实体";
+        return new ResolvedTarget(status, message, customers, regions, industries, List.copyOf(items));
+    }
+
+    private List<String> codes(List<BatchResolutionItem> items, String type) {
+        return items.stream().filter(item -> type.equals(item.entityType()))
+                .filter(item -> "UNIQUE".equals(item.status()))
+                .map(item -> item.candidates().get(0).code()).distinct().toList();
+    }
+
+    /** 返回意图层可直接消费的范围；执行类意图附带维度，查询类意图只保留组合筛选条件。 */
+    private Map<String, Object> intentParameters(IntentEntityQuery query, List<ResolvedTarget> targets) {
+        List<Map<String, Object>> scopes = targets.stream().map(target -> {
+            Map<String, Object> scope = new LinkedHashMap<>();
+            scope.put("customerCodes", target.customerCodes());
+            scope.put("regionCodes", target.regionCodes());
+            scope.put("industryCodes", target.industryCodes());
+            return scope;
+        }).toList();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("targets", scopes);
+        if ("TRAIN".equals(query.intent()) || "FORECAST".equals(query.intent()))
+            result.put("dimensionType", query.dimensionType());
+        return result;
+    }
+
     private void resolveNames(List<String> names, String type, Integer limit,
                               List<BatchResolutionItem> target) {
         for (String name : names) {

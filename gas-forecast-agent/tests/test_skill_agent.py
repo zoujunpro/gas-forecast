@@ -427,6 +427,22 @@ def test_entity_adapter_keeps_unfiltered_query_unmodified() -> None:
     assert arguments == {"conversationNo": "C-no-filter"}
 
 
+def test_execution_tool_adapts_resolved_entities_to_target_group() -> None:
+    tool = {"name": "forecast_start", "inputSchema": {"properties": {
+        "dimensionType": {"type": "string"}, "targets": {"type": "array"},
+    }}}
+
+    arguments, error = ActionExecutor._adapt_tool_parameters(tool, {
+        "regionCodes": ["REG000012"], "industryCodes": ["IND000001"], "customerCodes": ["CUS000163"],
+        "regionNames": ["江苏"], "industryNames": ["城燃"], "customerNames": ["江宁华润"],
+    })
+
+    assert error is None
+    assert arguments == {"dimensionType": "CUSTOMER", "targets": [{
+        "customerCodes": ["CUS000163"], "regionCodes": ["REG000012"], "industryCodes": ["IND000001"],
+    }]}
+
+
 def test_direct_model_question_is_not_marked_completed() -> None:
     decision = ActionExecutor._message_decision("请提供具体客户名称。")
     assert decision["status"] == "NEED_INFORMATION"

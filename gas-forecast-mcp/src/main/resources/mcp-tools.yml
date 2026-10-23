@@ -72,11 +72,8 @@ tools:
     title: 发起模型训练
     description: |
       业务能力：按用户指定的训练范围发起模型训练。
-      训练范围由客户、地区、行业三个维度组合确定：可指定一个或多个客户、地区或行业；
-      可只指定地区（例如“训练江苏省每个客户”）、只指定行业（例如“训练城燃行业所有客户”）、
-      同时指定地区和行业（例如“训练江苏城燃行业所有客户”），或直接指定客户。
-      范围计算规则：同一维度中的多个值按“或”匹配；不同维度同时存在时按“且”取交集。
-      未指定客户、地区或行业时不得发起训练，必须向用户澄清训练对象范围。
+      targets 为智能体完成实体消歧后给出的目标组合数组；不得传名称或拆散为平铺范围。
+      每个目标内，同维度编码按“或”匹配；不同目标之间独立处理，绝不跨目标组合交叉匹配。
       单个客户训练可直接发起；目标范围可能包含多个客户时，必须先展示训练范围并取得用户确认；
       强制重新训练也必须取得用户确认。
       数据范围：未指定时使用当前智能体默认训练数据范围；RECENT模式必须提供trainingPeriods；
@@ -84,7 +81,7 @@ tools:
       返回训练任务和训练批次信息。训练为异步执行，任务受理成功不代表训练已完成。
     inputSchema: &executionInput
       type: object
-      required: [conversationNo]
+      required: [conversationNo, dimensionType, targets]
       additionalProperties: false
       allOf: &executionRules
         - if:
@@ -97,64 +94,28 @@ tools:
             properties: {trainMode: {const: RANGE}}
           then:
             required: [trainingStartDate, trainingEndDate]
-        - if:
-            required: [bulk]
-            properties: {bulk: {const: true}}
-          then:
-            required: [confirmed]
-            properties: {confirmed: {const: true}}
-            anyOf:
-              - required: [customerCodes]
-              - required: [regionCodes]
-              - required: [regionCode]
-              - required: [regionName]
-              - required: [industryCodes]
-              - required: [industryCode]
-              - required: [industryName]
-        - if:
-            properties: {bulk: {const: false}}
-          then:
-            anyOf:
-              - required: [customerCode]
-              - required: [customerName]
       properties: &executionProperties
         conversationNo: {type: string, description: 会话编号}
         agentCode: {type: string, description: 智能体编码，默认short-term, enum: [short-term, monthly-sales, winter-supply]}
-        customerCode: {type: string, description: 单客户标准编码}
-        customerCodes:
+        dimensionType: {type: string, description: 本次训练最小执行维度, enum: [CUSTOMER, REGION, INDUSTRY]}
+        targets: &targetsSchema
           type: array
           minItems: 1
           maxItems: 5000
-          uniqueItems: true
-          items: {type: string}
-          description: 批量实体校验后得到的标准客户编码集合
-        customerName: {type: string, description: 客户名称，服务端解析成唯一编码}
-        regionCode: {type: string, description: 批量范围的标准地区编码}
-        regionCodes:
-          type: array
-          minItems: 1
-          maxItems: 100
-          uniqueItems: true
-          items: {type: string}
-          description: 批量实体校验后得到的标准地区编码集合，同类地区按或关系筛选
-        regionName: {type: string, description: 批量范围地区名称，服务端解析成唯一编码}
-        industryCode: {type: string, description: 批量范围的标准行业编码}
-        industryCodes:
-          type: array
-          minItems: 1
-          maxItems: 100
-          uniqueItems: true
-          items: {type: string}
-          description: 批量实体校验后得到的标准行业编码集合，同类行业按或关系筛选
-        industryName: {type: string, description: 批量范围行业名称或别名，服务端解析成唯一编码}
-        bulk: {type: boolean, description: 是否批量执行，默认false}
-        confirmed: {type: boolean, description: bulk=true时必须为true，表示用户已明确确认}
+          description: 已消歧的目标组合；组内交集，组间独立
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              regionCodes: {type: array, uniqueItems: true, items: {type: string}}
+              industryCodes: {type: array, uniqueItems: true, items: {type: string}}
+              customerCodes: {type: array, uniqueItems: true, items: {type: string}}
+        confirmed: {type: boolean, description: 多客户范围、重新训练或自动训练已获得用户确认时为true}
         trainMode: {type: string, description: 训练数据范围模式, enum: [ALL, RECENT, RANGE]}
         trainingPeriods: {type: integer, description: RECENT模式最近周期数，此模式下必填, minimum: 1, maximum: 10000}
         trainingStartDate: {type: string, format: date, description: 用户指定的训练开始日期；与结束日期同时提供时优先覆盖模型默认训练范围并按RANGE执行}
         trainingEndDate: {type: string, format: date, description: 用户指定的训练结束日期；与开始日期同时提供时优先覆盖模型默认训练范围并按RANGE执行}
         forceRetrain: {type: boolean, description: 是否忽略现有成功模型并强制重新训练}
-        idempotencyKey: {type: string, description: 调用方生成的唯一幂等键，同一次网络重试必须复用}
     outputSchema: *standardOutput
     annotations: &mutating {readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false}
 
@@ -175,32 +136,16 @@ tools:
 
   - name: forecast_start
     title: 发起燃气预测
-    description: 根据客户、地区、行业的组合范围，为匹配到的一个或多个客户发起指定智能体的燃气预测。至少提供客户、地区或行业之一；同时提供多个维度时按且取交集。服务端根据实际命中客户数自动判定单客户或批量预测：命中多个客户时先返回客户范围并要求确认，不能由模型自行指定批量模式，也不得从历史会话补充范围。short-term按天预测，默认30天；monthly-sales按月预测，默认12个月；winter-supply按旬预测，默认18旬。缺少可用模型时只返回原因并询问是否训练后预测，不得擅自训练。
+    description: 根据智能体实体解析后的targets目标组合发起预测。组内条件取交集，组间独立处理；服务端按每个目标实际命中客户数校验确认。short-term按天预测，monthly-sales按月预测，winter-supply按旬预测。缺少可用模型时只返回原因并询问是否训练后预测，不得擅自训练。
     inputSchema:
       type: object
-      required: [conversationNo, agentCode]
+      required: [conversationNo, agentCode, dimensionType, targets]
       additionalProperties: false
-      anyOf:
-        - required: [customerCode]
-        - required: [customerCodes]
-        - required: [regionCode]
-        - required: [regionCodes]
-        - required: [regionName]
-        - required: [industryCode]
-        - required: [industryCodes]
-        - required: [industryName]
       properties:
         conversationNo: {type: string, description: 会话编号}
         agentCode: {type: string, description: 预测智能体编码；short-term为短期客户预测，monthly-sales为月度销量预测，winter-supply为冬季保供预测, enum: [short-term, monthly-sales, winter-supply]}
-        customerCode: {type: string, description: 单个标准客户编码}
-        customerCodes: {type: array, minItems: 1, maxItems: 5000, uniqueItems: true, items: {type: string}, description: 已确认的标准客户编码集合}
-        customerName: {type: string, description: 单个客户名称，由服务端解析为唯一编码}
-        regionCode: {type: string, description: 标准地区编码}
-        regionCodes: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: string}, description: 标准地区编码集合}
-        regionName: {type: string, description: 地区名称，由服务端解析为唯一编码}
-        industryCode: {type: string, description: 标准行业编码}
-        industryCodes: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: string}, description: 标准行业编码集合}
-        industryName: {type: string, description: 行业名称，由服务端解析为唯一编码}
+        dimensionType: {type: string, description: 本次预测最小执行维度, enum: [CUSTOMER, REGION, INDUSTRY]}
+        targets: *targetsSchema
         forecastStartDate: {type: string, format: date, description: 用户指定的预测开始日期；未传时默认为客户最新销量日期的下一天}
         forecastEndDate: {type: string, format: date, description: 用户指定的预测结束日期；提供后按开始和结束日期计算周期，并优先于forecastHorizon}
         forecastHorizon: {type: integer, description: 预测周期；short-term单位为天，monthly-sales单位为月，winter-supply单位为旬。未传时分别默认30天、12个月、18旬, minimum: 1, maximum: 366}
@@ -211,9 +156,7 @@ tools:
         trainingEndDate: {type: string, format: date, description: RANGE训练模式结束日期}
         forceRetrain: {type: boolean, description: 是否明确要求重新训练后预测}
         trainingPreference: {type: string, description: 用户训练偏好；UNSPECIFIED不授权训练，AUTO仅在用户确认缺少模型后使用, enum: [FORCE_RETRAIN, USE_EXISTING_ONLY, UNSPECIFIED, AUTO]}
-        autoTrain: {type: boolean, description: 是否已获得用户授权在缺少模型时训练，默认false}
         confirmed: {type: boolean, description: 用户已确认批量预测、自动训练或重新训练时为true}
-        idempotencyKey: {type: string, description: 调用方生成的唯一幂等键，同一次网络重试必须复用}
     outputSchema: *standardOutput
     annotations: *mutating
 

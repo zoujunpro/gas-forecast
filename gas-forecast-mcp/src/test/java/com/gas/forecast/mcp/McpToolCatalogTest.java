@@ -23,7 +23,7 @@ class McpToolCatalogTest {
         McpToolCatalog.ToolDefinition training = catalog.require("training_start");
         @SuppressWarnings("unchecked")
         var properties = (java.util.Map<String, Object>) training.inputSchema().get("properties");
-        assertThat(properties).containsKeys("customerCodes", "regionCode", "regionName", "industryCode", "industryName", "confirmed", "idempotencyKey");
+        assertThat(properties).containsKeys("targets", "confirmed", "requestId");
         assertThat(training.inputSchema()).containsKey("allOf");
     }
 }
