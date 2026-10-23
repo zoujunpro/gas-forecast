@@ -4,7 +4,7 @@
     <transition name="content-reveal"><div v-if="revealStage >= 2" class="metrics">
       <div><small>最佳模型</small><b>{{ result.training?.bestModel || '-' }}</b></div>
       <div><small>MAPE</small><b class="accuracy-value">{{ formatPercent(result.training?.mape) }}</b></div>
-      <div><small>预测周期</small><b>{{ result.points.length }}天</b></div>
+      <div><small>回测天数</small><b>{{ backtestDays }}</b></div>
     </div></transition>
     <transition name="content-reveal"><section v-if="revealStage >= 3 && backtestPoints.length" class="result-section backtest-section">
       <h4>历史回测 · 实际销量与预测值</h4>
@@ -22,10 +22,10 @@
       </div>
     </div>
     </section></transition>
-    <details><summary>查看每日明细</summary><div class="values">
+    <section class="daily-detail"><h4>每日预测明细</h4><div class="values">
       <div class="values-head"><span>日期</span><span>去年同期</span><span>最新预测</span><span>同比变化率</span></div>
-      <div v-for="point in result.points" :key="point.date" class="values-row"><span>{{ point.date }}</span><span>{{ formatNullable(lastYearValue(point.date)) }}</span><b>{{ format(point.value) }}</b><span :class="dailyChangeClass(point)">{{ dailyChangeText(point) }}</span></div>
-    </div></details>
+      <div v-for="point in result.points" :key="point.date" class="values-row"><span>{{ displayDate(point.date) }}</span><span>{{ formatNullable(lastYearValue(point.date)) }}</span><b>{{ format(point.value) }}</b><span :class="dailyChangeClass(point)">{{ dailyChangeText(point) }}</span></div>
+    </div></section>
     <div class="batch">预测批次：{{ result.batchNo }}</div>
   </div>
 </template>
@@ -49,8 +49,18 @@ let backtestChart: echarts.ECharts | null = null
 const format = (value: number) => Number(value).toFixed(2)
 const formatNullable = (value?: number) => value == null || !Number.isFinite(Number(value)) ? '-' : format(Number(value))
 const formatPercent = (value?: number) => value == null || !Number.isFinite(Number(value)) ? '-' : `${format(Number(value))}%`
+/** 模型接口中的 UTC 时间戳统一转成业务侧的中国时区日期，避免前一天 16:00 直接出现在图上。 */
+const displayDate = (value?: string) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  const fields = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date)
+  const part = (type: string) => fields.find(item => item.type === type)?.value || ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
 const needsAccuracyAttention = computed(() => Number(props.result.training?.mape) >= 20)
 const backtestPoints = computed(() => props.result.backtestPoints || [])
+const backtestDays = computed(() => backtestPoints.value.length ? `${backtestPoints.value.length}天` : '-')
 const forecastTotal = computed(() => props.result.points.reduce((sum, point) => sum + Number(point.value || 0), 0))
 const lastYearValueByDate = computed(() => new Map((props.result.lastYearPoints || []).map((point) => [point.date, point.value])))
 const lastYearValue = (date: string) => lastYearValueByDate.value.get(date)
@@ -117,7 +127,7 @@ const renderChart = () => nextTick(() => {
       textStyle: { color: '#64748b', fontSize: 11 }
     },
     grid: { top: 38, right: 18, bottom: 52, left: 48 },
-    xAxis: { type: 'category', data: trendPoints.value.map((point) => point.date), axisLabel: { color: '#64748b', fontSize: 10, rotate: 35, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
+    xAxis: { type: 'category', data: trendPoints.value.map((point) => displayDate(point.date)), axisLabel: { color: '#64748b', fontSize: 10, rotate: 35, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
     yAxis: { type: 'value', name: '用量', nameTextStyle: { color: '#94a3b8', fontSize: 10 }, axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f6' } } },
     series: [
       { name: '去年同期', type: chartType.value, data: trendPoints.value.map((point) => lastYearValue(point.date) ?? null), barMaxWidth: 22, smooth: isLine, connectNulls: false, symbolSize: 6, lineStyle: { width: 2 }, itemStyle: { color: '#9ca3af' } },
@@ -135,7 +145,7 @@ const renderBacktestChart = () => nextTick(() => {
     legend: { top: 4, left: 'center', icon: 'circle', itemWidth: 7, itemHeight: 7, itemGap: 28, selectedMode: false,
       data: ['实际销量', '回测预测值'], textStyle: { color: '#64748b', fontSize: 11 } },
     grid: { top: 40, right: 18, bottom: 34, left: 48 },
-    xAxis: { type: 'category', data: backtestPoints.value.map(point => point.date), axisLabel: { color: '#64748b', fontSize: 10, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
+    xAxis: { type: 'category', data: backtestPoints.value.map(point => displayDate(point.date)), axisLabel: { color: '#64748b', fontSize: 10, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
     yAxis: { type: 'value', axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f6' } } },
     series: [
       { name: '实际销量', type: 'line', data: backtestPoints.value.map(point => point.actualValue), smooth: true, symbolSize: 6, lineStyle: { width: 2.5 }, itemStyle: { color: '#1687f8' } },
@@ -183,5 +193,5 @@ watch(() => props.revealStage, () => { void nextTick(() => { fitToView(); render
 .metrics{grid-template-columns:repeat(4,1fr)}.trend-up{color:#ef4444!important}.trend-down{color:#16a34a!important}.training-summary{margin:4px 0 14px;padding:12px;border:1px solid #e8edf5;border-radius:10px;background:#fbfcff}.sub-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.sub-title span,.training-meta{font-size:11px;color:#94a3b8}.reuse-note{margin-top:8px;padding:7px 9px;border-radius:7px;background:#eef5ff;color:#4169a8;font-size:11px;line-height:1.6}.training-meta{display:flex;gap:18px;margin-top:6px}.training-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.training-metrics>div{padding:8px;background:#fff;border-radius:7px}.training-metrics small,.training-metrics b{display:block}.training-metrics small{color:#94a3b8}.training-metrics b{margin-top:3px;color:#334155}@media(max-width:760px){.metrics,.training-metrics{grid-template-columns:1fr 1fr}.training-meta{flex-direction:column;gap:3px}}
 .chart-actions,.chart-type-switch{display:flex;align-items:center;gap:5px}.chart-tools button{display:inline-flex;align-items:center;justify-content:center;gap:4px}.chart-tools button.active{border-color:#4776ef;color:#4776ef;background:#f3f7ff}.chart-type-switch{padding-right:6px;margin-right:2px;border-right:1px solid #e5eaf1}.download-button{color:#315ecc!important}.chart{height:270px}@media(max-width:760px){.chart-tools{align-items:flex-start;flex-direction:column}.chart-actions{width:100%;flex-wrap:wrap}}
 .result-title>div{min-width:0}.result-title strong{display:block;color:#1e293b;font-size:17px}.result-title span{display:block;margin-top:5px;font-size:13px;color:#64748b}.result-title em{flex:0 0 auto;padding:4px 8px;border-radius:99px;background:#fff1e8;color:#f97316;font-size:12px;font-style:normal}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics>div{background:#fff}.metrics b{font-size:17px}.metrics .accuracy-value{color:#ef4444}.result-section h4{margin:18px 0 10px;color:#1e293b;font-size:14px}.backtest-section{margin-top:2px;padding-top:0;border-top:0}.backtest-chart{height:290px;padding:8px;border:1px solid #e5eaf1;border-radius:12px;background:#fff}.forecast-section{margin-top:4px}.forecast-section .chart-scroll{padding:8px;border:1px solid #e5eaf1;border-radius:12px;background:#fff}.forecast-section .chart-tools{margin-bottom:8px}.training-summary{display:none}
-.content-reveal-enter-active{transition:opacity .32s ease,transform .32s ease}.content-reveal-enter-from{opacity:0;transform:translateY(8px)}
+.content-reveal-enter-active{transition:opacity .32s ease,transform .32s ease}.content-reveal-enter-from{opacity:0;transform:translateY(8px)}.daily-detail h4{margin:18px 0 8px;color:#1e293b;font-size:14px}
 </style>
