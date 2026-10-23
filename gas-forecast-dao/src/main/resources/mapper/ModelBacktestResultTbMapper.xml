@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelBacktestResultTbMapper">
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelBacktestResultTb">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="forecastNo" column="forecast_no" jdbcType="VARCHAR"/>
+        <result property="trainDate" column="train_date" jdbcType="VARCHAR"/>
+        <result property="actualValue" column="actual_value" jdbcType="DECIMAL"/>
+        <result property="predictedValue" column="predicted_value" jdbcType="DECIMAL"/>
+        <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+</mapper>

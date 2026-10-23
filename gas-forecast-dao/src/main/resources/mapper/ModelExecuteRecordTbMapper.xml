@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gas.forecast.dao.mapper.ModelExecuteRecordTbMapper">
+    <resultMap id="BaseResultMap" type="com.gas.forecast.dao.domain.ModelExecuteRecordTb">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="forecastNo" column="forecast_no" jdbcType="VARCHAR"/>
+        <result property="taskDetailId" column="task_detail_id" jdbcType="BIGINT"/>
+        <result property="agentCode" column="agent_code" jdbcType="VARCHAR"/>
+        <result property="modelCode" column="model_code" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="trainingResultJson" column="training_result_json" jdbcType="LONGVARCHAR"/>
+        <result property="backtestResultJson" column="backtest_result_json" jdbcType="LONGVARCHAR"/>
+        <result property="forecastResultJson" column="forecast_result_json" jdbcType="LONGVARCHAR"/>
+        <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+        <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, forecast_no, task_detail_id, agent_code, model_code, model_version,
+        region_code, region_name, industry_code, industry_name, customer_code, customer_name,
+        history_start_date, history_end_date, history_rows, forecast_start_date, forecast_horizon, forecast_unit,
+        status, best_model, candidate_count, successful_candidate_count,
+        mape, wmape, smape, rmse, mae, r2, execute_duration_seconds,
+        request_param, training_result_json, backtest_result_json, forecast_result_json, error_message,
+        created_by, created_by_name, started_at, finished_at, created_at, updated_at
+    </sql>
+</mapper>
