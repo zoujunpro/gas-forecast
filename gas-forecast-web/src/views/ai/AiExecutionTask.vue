@@ -1,7 +1,24 @@
 <template>
   <div class="task-presentation">
   <section v-loading="loading && !hasLoaded" class="task-card">
-    <template v-if="singleTask">
+    <template v-if="isBatchTask">
+      <div class="task-head"><div><strong>批量预测任务</strong><small>{{ overview.taskNo }} · 共 {{ batchTotal }} 个{{ executionTargetLabel }}</small></div><el-tag :type="statusType(overview.status)">{{ statusText(overview.status) }}</el-tag></div>
+      <div class="task-metrics batch-metrics">
+        <div><small>{{ executionTargetLabel }}总数</small><b>{{ batchTotal }}</b></div><div><small>已完成</small><b class="success-value">{{ overview.completed || 0 }}</b></div>
+        <div><small>执行中</small><b class="running-value">{{ overview.running || 0 }}</b></div><div><small>待执行</small><b>{{ overview.pending || 0 }}</b></div>
+        <div><small>失败</small><b :class="{ danger: Number(overview.failed || 0) > 0 }">{{ overview.failed || 0 }}</b></div>
+      </div>
+      <el-progress class="task-progress" :percentage="batchProgressPercent" :stroke-width="6" :show-text="false" :status="overview.status === 'FAILED' ? 'exception' : overview.status === 'SUCCESS' || overview.status === 'COMPLETED' ? 'success' : undefined" />
+      <div class="list-title"><strong>{{ executionTargetLabel }}执行明细</strong><small>展示 {{ records.length }} 条，共 {{ batchTotal }} 个{{ executionTargetLabel }}</small></div>
+      <div class="batch-detail-list">
+        <div v-for="item in records" :key="item.detailNo" :class="['batch-detail-row', batchDetailClass(item)]">
+          <div><strong>{{ item.targetName || '-' }}</strong><small>{{ [item.regionName, item.industryName].filter(Boolean).join(' · ') || '—' }}</small></div>
+          <span>{{ detailProgressText(item) }} · {{ detailCompletedSteps(item) }} / {{ (item.steps || []).length || 6 }} 步</span>
+          <el-tag size="small" :class="['batch-status', batchDetailClass(item)]" :type="statusType(item.status)">{{ statusText(item.status) }}</el-tag>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="singleTask">
       <div class="task-head"><div><strong>任务执行情况</strong><small>{{ singleTask.targetName }} · {{ overview.taskNo }}</small></div><el-tag :type="statusType(displayStatus)">{{ statusText(displayStatus) }}</el-tag></div>
       <div class="task-metrics">
         <div><small>预测周期</small><b>{{ forecastPeriods }} 天</b></div><div><small>执行进度</small><b>{{ completedSteps }} / 6</b></div>
@@ -49,10 +66,11 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getJson } from '@/api/management'
 import AiForecastResult from './AiForecastResult.vue'
 const props = defineProps<{ taskNo: string }>()
-const emit = defineEmits<{ (event: 'forecast-completed', result: Record<string, any>): void }>()
+const emit = defineEmits<{ (event: 'forecast-completed', result: Record<string, any>): void; (event: 'content-rendered'): void }>()
 const loading = ref(false), hasLoaded = ref(false), loadError = ref(''), overview = ref<Record<string, any>>({}), records = ref<Record<string, any>[]>([]), total = ref(0), pageNo = ref(1)
 const expandedStepKeys = ref<Record<string, boolean>>({}), detailSteps = ref<Record<string, Record<string, any>[]>>({}), detailLoading = ref<Record<string, boolean>>({})
-const pageSize = 10
+// 服务端单页最多返回 100 条；批量任务前端会继续读取后续页，列表内滚动展示全部客户。
+const pageSize = 100
 // 快任务也需要让用户看清过程；慢任务始终以真实完成时间为准。
 const MIN_STEP_DISPLAY_MS = 5_000
 const presentationNow = ref(Date.now())
@@ -66,12 +84,37 @@ const resultRevealStage = ref(0)
 const typedAnalysis = ref('')
 const analysisTyping = ref(false)
 const singleTask = computed(() => records.value[0])
+const isBatchTask = computed(() => Number(overview.value.total || total.value || 0) > 1)
+const batchTotal = computed(() => Number(overview.value.total || total.value || 0))
+const batchProgressPercent = computed(() => Math.max(0, Math.min(100, Number(overview.value.progressPercent || 0))))
+const executionTargetLabel = computed(() => {
+  const dimension = String(overview.value.dimensionType || records.value[0]?.dimensionType || '').toUpperCase()
+  return ({ CUSTOMER: '客户', REGION: '地区', INDUSTRY: '行业' }[dimension] || '对象')
+})
 const terminalStep = (status?: string) => ['SUCCESS', 'COMPLETED', 'FAILED', 'CANCELLED', 'SKIPPED'].includes(String(status || '').toUpperCase())
 const statusText = (status?: string) => ({ PENDING: '待执行', WAITING: '待执行', RUNNING: '执行中', TRAINING: '训练中', FORECASTING: '预测中', SUCCESS: '已完成', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已取消', SKIPPED: '已跳过' }[String(status || '').toUpperCase()] || status || '待执行')
 const statusType = (status?: string) => ({ SUCCESS: 'success', COMPLETED: 'success', FAILED: 'danger', CANCELLED: 'info', RUNNING: 'primary', TRAINING: 'primary', FORECASTING: 'primary' }[String(status || '').toUpperCase()] || 'info') as any
 const currentText = (item: Record<string, any>) => item.status === 'PENDING' || item.status === 'WAITING' ? '等待执行' : item.status === 'FAILED' ? '任务执行失败' : item.status === 'SUCCESS' ? '预测任务已完成' : '正在处理，请稍候'
 const rawSteps = computed<Record<string, any>[]>(() => singleTask.value?.steps || [])
 const succeeded = (status?: string) => ['SUCCESS', 'COMPLETED'].includes(String(status || '').toUpperCase())
+const detailCompletedSteps = (item: Record<string, any>) => (item.steps || []).filter((step: Record<string, any>) => succeeded(step.status)).length
+const detailProgressText = (item: Record<string, any>) => {
+  const steps = item.steps || []
+  const active = steps.find((step: Record<string, any>) => ['RUNNING', 'TRAINING', 'FORECASTING'].includes(String(step.status || '').toUpperCase()))
+  if (active) return `执行：${active.stepName || '处理中'}`
+  const failed = steps.find((step: Record<string, any>) => ['FAILED', 'CANCELLED'].includes(String(step.status || '').toUpperCase()))
+  if (failed) return `停在：${failed.stepName || '任务失败'}`
+  if (steps.length && steps.every((step: Record<string, any>) => succeeded(step.status))) return '已完成'
+  const next = steps.find((step: Record<string, any>) => !succeeded(step.status))
+  return next ? `等待：${next.stepName || '执行'}` : '等待执行'
+}
+const batchDetailClass = (item: Record<string, any>) => {
+  const status = String(item.status || '').toUpperCase()
+  if (succeeded(status)) return 'completed'
+  if (['FAILED', 'CANCELLED'].includes(status)) return 'failed'
+  if (['RUNNING', 'TRAINING', 'FORECASTING'].includes(status)) return 'running'
+  return 'pending'
+}
 const stepTime = (value: any) => {
   const time = value ? new Date(value).getTime() : NaN
   return Number.isFinite(time) ? time : undefined
@@ -257,7 +300,7 @@ const analysisText = computed(() => {
   const average = points.length ? points.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0) / points.length : undefined
   return `本次预测采用${result.training.bestModel}${Number.isFinite(mape) ? `，MAPE 为${mape.toFixed(2)}%` : ''}。${accuracy}。${average === undefined ? '' : `未来${points.length}天预测均值为${average.toFixed(2)}。`}`
 })
-const presentationFinished = computed(() => rawSteps.value.length === 6
+const presentationFinished = computed(() => !isBatchTask.value && rawSteps.value.length === 6
   && rawSteps.value.every(step => succeeded(step.status))
   && presentedSteps.value.every(step => succeeded(step.status)))
 const normalizeResult = (data: Record<string, any>) => {
@@ -383,6 +426,9 @@ const applyStepEvent = (payload: Record<string, any>) => {
     }
   }
   schedulePresentationTick()
+  if (isBatchTask.value) {
+    void fetchOverview(props.taskNo).then(result => { overview.value = result.data || overview.value }).catch(() => undefined)
+  }
   if (incoming.stepCode === 'FORECAST_ANALYSIS' && terminalStep(incoming.status)) closeEventStream()
 }
 const openEventStream = () => {
@@ -394,27 +440,40 @@ const openEventStream = () => {
 }
 const fetchOverview = (taskNo: string) => getJson(`/execution-tasks/${encodeURIComponent(taskNo)}`)
 const fetchDetails = (taskNo: string, currentPage: number) => getJson(`/execution-tasks/${encodeURIComponent(taskNo)}/details?pageNo=${currentPage}&pageSize=${pageSize}`)
+const fetchAllDetails = async (taskNo: string) => {
+  const all: Record<string, any>[] = []
+  let currentPage = 1
+  let expectedTotal = 0
+  while (true) {
+    const result = await fetchDetails(taskNo, currentPage)
+    const data = result.data || {}
+    const pageRecords = data.records || []
+    all.push(...pageRecords)
+    expectedTotal = Number(data.total || expectedTotal)
+    if (!pageRecords.length || all.length >= expectedTotal || pageRecords.length < pageSize) return { records: all, total: expectedTotal }
+    currentPage++
+  }
+}
 const refresh = async () => {
   const taskNo = props.taskNo
-  const currentPage = pageNo.value
   const sequence = ++refreshSequence
   // 首次加载需要遮罩；后续静默刷新，避免每 5 秒遮住内容、触发页面明显重排。
   if (!hasLoaded.value) loading.value = true
   loadError.value = ''
   try {
-    const [overviewResult, detailsResult] = await Promise.all([
-      fetchOverview(taskNo),
-      fetchDetails(taskNo, currentPage)
-    ])
+    const overviewResult = await fetchOverview(taskNo)
+    const detailsData = await fetchAllDetails(taskNo)
     // 请求已经过期：例如从任务 A 切换到任务 B 后，任务 A 的轮询才返回。
     if (sequence !== refreshSequence || taskNo !== props.taskNo) return
     overview.value = overviewResult.data || {}
-    const data = detailsResult.data || {}
-    records.value = data.records || []
-    total.value = Number(data.total || 0)
+    records.value = detailsData.records
+    total.value = detailsData.total
     presentationStartAt.value = stepTime(records.value[0]?.createdAt) || Date.now()
     presentationNow.value = Date.now()
     hasLoaded.value = true
+    // 任务明细异步加载会增高消息卡；通知父聊天容器重新定位到最新内容。
+    await nextTick()
+    emit('content-rendered')
     openEventStream()
     schedulePresentationTick()
   } catch (error) {
@@ -452,4 +511,6 @@ watch(() => props.taskNo, () => {
 .task-presentation{width:100%;max-width:100%;overflow-anchor:none}.task-card{box-sizing:border-box;width:100%;max-width:100%;margin-top:10px;padding:18px;border:1px solid #dfe7f2;border-radius:12px;background:#fff;font-size:14px}.task-head,.list-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.task-head strong{display:block;color:#1e293b;font-size:16px}.task-head small,.list-title small{display:block;margin-top:5px;color:#94a3b8;font-size:13px}.task-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0 9px;padding:12px;border-radius:8px;background:#f7f9fc}.task-metrics>div{min-width:0}.task-metrics small,.task-metrics b{display:block}.task-metrics small{color:#94a3b8;font-size:13px}.task-metrics b{margin-top:5px;color:#334155;font-size:18px;line-height:1.25;overflow-wrap:anywhere;word-break:break-word}.task-progress{display:block;margin:0 2px}.danger,.error{color:#dc2626!important}.list-title{margin-top:16px;padding-top:14px;border-top:1px solid #edf1f6;font-size:14px}.inline-steps{display:grid;grid-template-columns:minmax(0,1fr);margin-top:9px}.step{min-width:0;border-bottom:1px solid #edf1f6}.step:last-child{border-bottom:0}.step-head{display:flex;align-items:center;width:100%;min-width:0;gap:9px;min-height:56px;padding:10px 4px;border:0;background:transparent;text-align:left;cursor:pointer}.step.running{margin:2px -8px;padding:0 8px;border-bottom-color:transparent;border-left:3px solid #2563eb;border-radius:7px;background:#eff6ff}.step i{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#94a3b8}.step.success i{background:#22c55e}.step.running i,.step.training i,.step.forecasting i{background:#2563eb;box-shadow:0 0 0 0 rgba(37,99,235,.45);animation:step-pulse 1.4s infinite}.step.failed i{background:#ef4444}.step.running .step-head strong{color:#1d4ed8}.step.running .step-summary{color:#2563eb;font-weight:500}.step-head strong{flex:0 0 auto;color:#334155;font-size:14px}.step-summary{overflow:hidden;min-width:0;flex:1;color:#64748b;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.chevron{color:#94a3b8;font-size:18px}.step p{margin:0 4px 9px;font-size:14px}.step-detail{box-sizing:border-box;width:100%;min-width:0;margin:0 0 10px;padding:11px 12px;border-radius:6px;background:#f8fafc}.detail-entry{display:grid;grid-template-columns:100px minmax(0,1fr);gap:12px;padding:5px 0;font-size:14px;line-height:22px}.detail-entry span{color:#94a3b8}.detail-entry b{min-width:0;color:#334155;font-weight:500;overflow-wrap:anywhere;word-break:break-word;white-space:normal}.task-model{display:flex;align-items:baseline;gap:9px;margin-top:14px;padding-top:13px;border-top:1px solid #edf1f6}.task-model small{color:#94a3b8;font-size:13px}.task-model b{color:#334155;font-size:14px}.empty-detail{font-size:14px;color:#94a3b8}.load-error{margin-top:12px}.task-result,.task-analysis{margin-top:14px}.task-analysis{padding:18px 20px;border:1px solid #dfe7f2;border-radius:12px;background:#fff}.analysis-title{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#1e293b;font-size:16px}.analysis-title small{padding:3px 8px;border-radius:99px;background:#ecfdf3;color:#15803d;font-size:12px}.task-analysis p{margin:12px 0 0;color:#475569;font-size:14px;line-height:1.8;white-space:pre-wrap}.result-reveal-enter-active{transition:opacity .36s ease,transform .36s ease}.result-reveal-enter-from{opacity:0;transform:translateY(8px)}@keyframes step-pulse{70%{box-shadow:0 0 0 7px rgba(37,99,235,0)}}@media(max-width:680px){.task-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:9px}.task-metrics b{font-size:16px}.step-summary{display:none}}
 .task-card{container-type:inline-size}
 @container (max-width:560px){.task-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.task-metrics b{font-size:16px;overflow-wrap:normal;word-break:normal}.step-summary{display:none}}
+.batch-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}.success-value{color:#16a34a!important}.running-value{color:#2563eb!important}.batch-detail-list{display:grid;max-height:420px;margin-top:9px;overflow-y:auto;overscroll-behavior:contain}.batch-detail-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;min-height:58px;padding:9px 4px;border-bottom:1px solid #edf1f6}.batch-detail-row:last-child{border-bottom:0}.batch-detail-row strong,.batch-detail-row small{display:block}.batch-detail-row strong{color:#334155;font-size:14px}.batch-detail-row small{margin-top:4px;color:#94a3b8;font-size:13px}.batch-detail-row>span{color:#64748b;font-size:13px;white-space:nowrap}@container (max-width:560px){.batch-metrics{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:9px 7px}.batch-metrics small{font-size:11px}.batch-metrics b{font-size:15px}.batch-detail-row{grid-template-columns:minmax(0,1fr) auto auto;gap:7px}.batch-detail-row>span{font-size:11px}}
+.batch-status.completed{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.batch-status.failed{border-color:#fecaca;background:#fef2f2;color:#dc2626}.batch-status.running,.batch-status.pending{border-color:#e2e8f0;background:#f8fafc;color:#64748b}.batch-status.running{display:inline-flex;align-items:center;gap:4px;animation:batch-status-breathe 1.5s ease-in-out infinite}.batch-status.running::before{width:6px;height:6px;border-radius:50%;background:#94a3b8;content:"";animation:batch-status-dot .9s ease-in-out infinite}@keyframes batch-status-breathe{50%{border-color:#94a3b8;background:#f1f5f9}}@keyframes batch-status-dot{50%{background:#475569;transform:scale(1.55)}}
 </style>

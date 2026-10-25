@@ -173,6 +173,10 @@ class ActionExecutor:
             self._apply_locked_parameters(parameters, arguments)
             self._apply_current_entity_arguments(current_arguments, arguments)
             self._apply_trusted_entity_arguments(parameters, arguments)
+            # 工具适配会把 region/industry/customer 的名称数组转换为 targets 中
+            # 的编码并移除名称；在此之前记录展示范围，后续补周期和二次确认都应
+            # 使用同一份用户已确认的范围事实。
+            display_scope = self._forecast_scope(arguments) if name == "forecast_start" else None
             # confirmed 只能来自用户明确回复，模型生成的同名参数不能绕过确认。
             if parameters.get("confirmed") is True:
                 arguments["confirmed"] = True
@@ -231,18 +235,28 @@ class ActionExecutor:
             if business_missing:
                 return SkillRunResult(
                     status="NEED_INFORMATION",
-                    message=self._missing_parameters_message(tools[name], business_missing, arguments),
+                    message=self._missing_parameters_message(
+                        tools[name], business_missing, arguments, display_scope=display_scope,
+                    ),
                     parameters=parameters,
                     available_tools=list(tools),
                     tool_trace=trace,
                     resolution_issues=self._missing_issues(tools[name], business_missing, arguments),
                 )
-            confirmation = self._confirmation_message(tools[name], arguments)
+            confirmation = self._confirmation_message(
+                tools[name], arguments, display_scope=display_scope,
+            )
             if confirmation:
+                pending_parameters = dict(parameters)
+                # 会话恢复仍需保留已构造的执行目标（既有契约）；同时 parameters
+                # 中的 resolvedScope 保留中文范围，二者不再互相替代。
+                for key in ("targets", "dimensionType"):
+                    if key in arguments:
+                        pending_parameters[key] = arguments[key]
                 return SkillRunResult(
                     status="NEED_CONFIRMATION",
                     message=confirmation,
-                    parameters=arguments,
+                    parameters=pending_parameters,
                     available_tools=list(tools),
                     pending_tool=name,
                     tool_trace=trace,
@@ -859,6 +873,10 @@ class ActionExecutor:
             # 不属于当前请求，必须清除，避免列表被历史客户错误收窄。
             values.pop("customerCode", None)
             values.pop("customerName", None)
+        if skill_name in {"customer-gas-forecast", "model-training-management"}:
+            scope = ActionExecutor._resolved_scope(values, semantics)
+            if scope:
+                values["resolvedScope"] = scope
         if locked_parameters:
             values["_lockedParameters"] = sorted(locked_parameters)
         return values
@@ -1178,7 +1196,9 @@ class ActionExecutor:
         return name
 
     @staticmethod
-    def _confirmation_message(tool: dict[str, Any], arguments: dict[str, Any]) -> str | None:
+    def _confirmation_message(
+        tool: dict[str, Any], arguments: dict[str, Any], *, display_scope: str | None = None,
+    ) -> str | None:
         annotations = tool.get("annotations") if isinstance(tool.get("annotations"), dict) else {}
         if annotations.get("readOnlyHint") is True:
             return None
@@ -1199,7 +1219,7 @@ class ActionExecutor:
             title = tool.get("title") or tool.get("name")
             if tool.get("name") == "forecast_start":
                 forecast_name, unit, default, _ = ActionExecutor._forecast_period_config(arguments)
-                scope = ActionExecutor._forecast_scope(arguments)
+                scope = display_scope or ActionExecutor._forecast_scope(arguments)
                 horizon = arguments.get("forecastHorizon")
                 horizon_text = f"未来{horizon}{unit}" if horizon else f"推荐默认{default}{unit}"
                 preference = arguments.get("trainingPreference")
@@ -1302,11 +1322,13 @@ class ActionExecutor:
         return True
 
     @staticmethod
-    def _missing_parameters_message(tool: dict[str, Any], missing: list[str], arguments: dict[str, Any]) -> str:
+    def _missing_parameters_message(
+        tool: dict[str, Any], missing: list[str], arguments: dict[str, Any], *, display_scope: str | None = None,
+    ) -> str:
         if tool.get("name") == "forecast_start" and missing == ["forecastHorizon"]:
             forecast_name, unit, default, _ = ActionExecutor._forecast_period_config(arguments)
             return (
-                f"已确认将为{ActionExecutor._forecast_scope(arguments)}发起{forecast_name}。\n"
+                f"已确认将为{display_scope or ActionExecutor._forecast_scope(arguments)}发起{forecast_name}。\n"
                 f"推荐预测周期为{default}{unit}，请直接回复本次要预测的天数。"
             )
         schema = tool.get("inputSchema") if isinstance(tool.get("inputSchema"), dict) else {}
@@ -1340,12 +1362,70 @@ class ActionExecutor:
 
     @staticmethod
     def _forecast_scope(arguments: dict[str, Any]) -> str:
-        values = [
-            arguments.get("regionName"),
-            arguments.get("industryName"),
-            arguments.get("customerName") or arguments.get("customerCode"),
-        ]
-        return " / ".join(str(value) for value in values if value not in (None, "")) or "当前客户"
+        resolved_scope = arguments.get("resolvedScope")
+        if isinstance(resolved_scope, dict):
+            scoped_values = [
+                *(str(value) for value in resolved_scope.get("regionNames") or [] if value not in (None, "")),
+                *(str(value) for value in resolved_scope.get("industryNames") or [] if value not in (None, "")),
+                *(str(value) for value in resolved_scope.get("customerNames") or [] if value not in (None, "")),
+            ]
+            if scoped_values:
+                suffix = "范围内全部匹配客户" if (
+                    resolved_scope.get("allMatched") is True
+                    and not resolved_scope.get("customerNames")
+                ) else ""
+                return " / ".join(scoped_values) + suffix
+
+        def names(single: str, plural: str) -> list[str]:
+            value = arguments.get(single)
+            if value not in (None, ""):
+                return [str(value)]
+            values = arguments.get(plural)
+            if not isinstance(values, list):
+                return []
+            return [str(item) for item in values if item not in (None, "")]
+
+        regions = names("regionName", "regionNames")
+        industries = names("industryName", "industryNames")
+        customers = names("customerName", "customerNames") or names("customerCode", "customerCodes")
+        values = [*regions, *industries, *customers]
+        if values:
+            suffix = "范围内全部匹配客户" if not customers and (regions or industries) else ""
+            return " / ".join(values) + suffix
+        return "当前客户"
+
+    @staticmethod
+    def _resolved_scope(
+        values: dict[str, Any], semantics: RequestSemantics | None,
+    ) -> dict[str, Any] | None:
+        """从已验证实体建立展示/恢复范围，独立于 MCP 的 targets。"""
+        existing = values.get("resolvedScope")
+        if not isinstance(existing, dict):
+            existing = {}
+
+        def names(single: str, plural: str, field: str) -> list[str]:
+            current = values.get(plural)
+            if isinstance(current, list) and current:
+                return [str(item) for item in current if item not in (None, "")]
+            if values.get(single) not in (None, ""):
+                return [str(values[single])]
+            previous = existing.get(field)
+            return [str(item) for item in previous if item not in (None, "")] if isinstance(previous, list) else []
+
+        regions = names("regionName", "regionNames", "regionNames")
+        industries = names("industryName", "industryNames", "industryNames")
+        customers = names("customerName", "customerNames", "customerNames")
+        if not (regions or industries or customers):
+            return None
+        all_matched = bool(existing.get("allMatched")) or bool(
+            semantics and semantics.target_selection == TargetSelection.ALL_MATCHED
+        )
+        return {
+            "regionNames": regions,
+            "industryNames": industries,
+            "customerNames": customers,
+            "allMatched": all_matched,
+        }
 
     @staticmethod
     def _argument_validation_error(tool: dict[str, Any], arguments: dict[str, Any]) -> str | None:

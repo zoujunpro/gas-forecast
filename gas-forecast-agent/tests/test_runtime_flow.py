@@ -172,6 +172,19 @@ def test_batch_targets_and_rejection_remain_supported(conversation):
     assert "pendingOperation" not in chat.memory
 
 
+def test_cancel_during_parameter_clarification_abandons_operation(conversation):
+    chat, tools, _ = conversation
+    chat.send("预测高邮安源")
+    assert chat.pending.issues[0].field == "forecastHorizon"
+
+    reply = chat.send("取消", "CLARIFICATION_REPLY")
+
+    assert reply["status"] == "SUCCESS"
+    assert reply["message"] == "已取消本次待确认操作。"
+    assert "pendingOperation" not in chat.memory
+    assert not tools.created
+
+
 def test_ambiguous_confirmation_reply_keeps_pending_operation(conversation):
     chat, tools, _ = conversation
     chat.send("预测两个客户30天")

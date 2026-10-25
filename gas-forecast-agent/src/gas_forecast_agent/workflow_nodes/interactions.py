@@ -59,6 +59,14 @@ def _interaction_details(
             ),
         ))
     primary_issue = result.resolution_issues[0]
+    # 所有澄清均允许用户放弃当前操作。该选项是对话回复值，不依赖页面按钮；
+    # 后端会优先将“取消”等撤销表达识别为 REJECT_PENDING。
+    if status != "NEED_CONFIRMATION" and not any(
+        option.value == "cancel" for option in primary_issue.options
+    ):
+        primary_issue.options.append(
+            ClarificationOption(value="cancel", label="取消本次操作")
+        )
     # 页面只有一个普通输入框；每个待处理问题都必须告诉用户该输入什么，并给出
     # 可直接照着回复的示例，不能依赖下拉框、按钮或字段名。
     result.message = _conversation_prompt(result.message, primary_issue)
@@ -125,5 +133,6 @@ def _conversation_prompt(message: str, issue: ResolutionIssue) -> str:
             issue.field.split(":", 1)[0],
             "请直接在输入框补充所需信息，例如客户名称、地区、时间或预测周期。",
         )
+        guidance = f"{guidance} 如不继续本次操作，请回复 **取消**。"
     content = str(message or "请补充必要信息。").strip()
     return content if guidance in content else f"{content}\n\n{guidance}"

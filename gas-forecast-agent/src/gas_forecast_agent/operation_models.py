@@ -52,6 +52,15 @@ class ExecutionTarget(RuntimeModel):
     customer_codes: list[str] = Field(default_factory=list)
 
 
+class ResolvedScope(RuntimeModel):
+    """已确认的业务范围，用于会话恢复、展示与审计，不作为 MCP 执行参数。"""
+
+    region_names: list[str] = Field(default_factory=list)
+    industry_names: list[str] = Field(default_factory=list)
+    customer_names: list[str] = Field(default_factory=list)
+    all_matched: bool = False
+
+
 class SemanticParameters(RuntimeModel):
     """用户本轮明确表达的时间、周期、查询条件；不接收模型编造的实体编码。"""
 
@@ -98,6 +107,7 @@ class OperationParameters(EntityParameters, SemanticParameters):
     agent_code: str | None = None
     dimension_type: str | None = None
     targets: list[ExecutionTarget] = Field(default_factory=list)
+    resolved_scope: ResolvedScope | None = None
     confirmed: bool | None = None
     idempotency_key: str | None = None
     force_retrain: bool | None = None

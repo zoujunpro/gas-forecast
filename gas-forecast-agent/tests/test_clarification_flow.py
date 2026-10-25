@@ -2,6 +2,7 @@ from gas_forecast_agent.workflow_nodes.understand_request import (
     _allows_explicit_batch_scope,
     _collect_clarification_parameters,
     _has_resolved_pending_entities,
+    _is_complete_new_business_request,
     _pending_requires_entity_resolution,
 )
 from gas_forecast_agent.skills import RequestSemantics
@@ -51,3 +52,9 @@ def test_second_answer_is_kept_while_waiting_for_first_entity_answer(make_pendin
         semantics,
         EntityParameters(),
     ).forecast_horizon == 34
+
+
+def test_complete_batch_forecast_request_interrupts_old_clarification() -> None:
+    assert _is_complete_new_business_request("帮我对江苏所有城燃客户进行预测")
+    assert not _is_complete_new_business_request("30天")
+    assert not _is_complete_new_business_request("取消")

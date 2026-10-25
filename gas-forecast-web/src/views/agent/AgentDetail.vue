@@ -879,7 +879,7 @@
           </div>
         </div>
         <!-- 执行任务不是普通消息气泡的一部分：独立占满聊天栏，避免图表和长文本被气泡宽度裁切。 -->
-        <AiExecutionTask v-if="msg.role === 'assistant' && msg.taskNo" class="task-execution-block" :task-no="msg.taskNo" @forecast-completed="(result) => showCompletedTaskForecast(msg, result)" />
+        <AiExecutionTask v-if="msg.role === 'assistant' && msg.taskNo" class="task-execution-block" :task-no="msg.taskNo" @forecast-completed="(result) => showCompletedTaskForecast(msg, result)" @content-rendered="scrollToBottom" />
         </template>
         <div v-if="isStreaming && !messages[messages.length - 1]?.content" class="msg assistant">
           <div class="msg-avatar assistant">

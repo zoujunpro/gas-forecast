@@ -1,6 +1,6 @@
 <template>
   <el-config-provider :locale="zhCn">
-    <router-view v-if="isLoginPage || isStandalonePage" />
+    <router-view v-if="isLoginPage || isStandalonePage" :key="route.fullPath" />
     <div v-else-if="isForecastPage" class="forecast-shell">
       <header class="forecast-header">
         <button class="forecast-brand" type="button" @click="goHome">
@@ -28,7 +28,7 @@
         </div>
       </header>
       <div class="forecast-body">
-        <main class="forecast-content"><router-view /></main>
+        <main class="forecast-content"><router-view :key="route.fullPath" /></main>
       </div>
     </div>
     <div v-else class="app-shell">
@@ -86,7 +86,7 @@
           <PageTabs v-if="!isImmersivePage" />
 
           <main :class="['content', { immersive: isImmersivePage }]">
-            <router-view />
+            <router-view :key="route.fullPath" />
           </main>
 
           <footer v-if="!isImmersivePage" class="footerbar">

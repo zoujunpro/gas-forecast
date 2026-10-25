@@ -618,6 +618,34 @@ def test_scope_clarification_uses_range_specific_labels() -> None:
     assert [option.label for option in issue.options] == ["确认使用该范围", "重新选择范围"]
 
 
+def test_forecast_scope_renders_batch_range_instead_of_current_customer() -> None:
+    assert ActionExecutor._forecast_scope({
+        "regionNames": ["江苏"], "industryNames": ["城燃"],
+    }) == "江苏 / 城燃范围内全部匹配客户"
+
+
+def test_forecast_scope_prefers_resolved_scope_over_execution_targets() -> None:
+    assert ActionExecutor._forecast_scope({
+        "targets": [{"regionCodes": ["REG000012"], "industryCodes": ["IND000001"]}],
+        "resolvedScope": {
+            "regionNames": ["江苏"], "industryNames": ["城燃"],
+            "customerNames": [], "allMatched": True,
+        },
+    }) == "江苏 / 城燃范围内全部匹配客户"
+
+
+def test_forecast_horizon_prompt_keeps_batch_scope_after_tool_adaptation() -> None:
+    message = ActionExecutor._missing_parameters_message(
+        {"name": "forecast_start", "inputSchema": {"properties": {}}},
+        ["forecastHorizon"],
+        {"targets": [{"regionCodes": ["REG000012"], "industryCodes": ["IND000001"]}]},
+        display_scope="江苏 / 城燃范围内全部匹配客户",
+    )
+
+    assert "江苏 / 城燃范围内全部匹配客户" in message
+    assert "当前客户" not in message
+
+
 def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> None:
     values = ActionExecutor._initial_parameters(
         "查询江苏省城市燃气行业的所有客户信息", empty_memory(), {}, "C-REGION", "business-data-query",

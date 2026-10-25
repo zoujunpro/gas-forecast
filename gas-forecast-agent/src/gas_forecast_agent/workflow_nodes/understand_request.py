@@ -39,15 +39,23 @@ async def understand_request(
     request = state.request
     # 1. 普通新消息从空操作开始；交互回复必须匹配服务端保存的轮次和编号。
     pending = _pending_interaction(request, request.memory)
+    # 页面可能仍带着上一条澄清的交互编号；若用户已输入一个目标完整的新业务
+    # 请求，不能把它与旧操作合并。先做轻量、可解释的判定，实际意图仍由语义
+    # 提取器重新识别。
+    starts_new_operation = pending is not None and _is_complete_new_business_request(request.message)
+    active_pending = None if starts_new_operation else pending
     # 2. 确认/拒绝直接恢复原语义；澄清回复只补入本轮有效字段。
-    semantics = await _understand_turn(request, request.memory, pending, runtime)
+    semantics = await _understand_turn(
+        request, request.memory, active_pending, runtime,
+        treat_as_new=starts_new_operation,
+    )
     # 3. 将名称/候选编号解析成主数据编码，未确认的名称不能成为执行参数。
     resolution = await _resolve_turn_entities(
-        request, pending, semantics, runtime.context.internal_client,
+        request, active_pending, semantics, runtime.context.internal_client,
     )
     # 4. 选择原有 Skill，并合并已经确认的参数；缺失项由原执行器继续校验。
     skill, selection, intent_issues = _select_skill(semantics, runtime)
-    parameters = _collect_clarification_parameters(pending, semantics, resolution.parameters)
+    parameters = _collect_clarification_parameters(active_pending, semantics, resolution.parameters)
     return {
         "understanding": RequestUnderstanding(
             semantics=semantics,
@@ -56,7 +64,7 @@ async def understand_request(
             parameters=parameters,
             entity_resolution=resolution,
             issues=[*resolution.issues, *intent_issues],
-            continuing_operation=pending is not None,
+            continuing_operation=active_pending is not None,
         ),
         "timing": state.timing.model_copy(update={
             "semantics_ms": elapsed_ms(started_at), "routing_ms": 0,
@@ -69,9 +77,24 @@ async def _understand_turn(
     memory: ConversationMemory,
     pending: PendingOperation | None,
     runtime: Runtime[AgentGraphContext],
+    *,
+    treat_as_new: bool = False,
 ) -> RequestSemantics:
+    if treat_as_new:
+        return await RequestSemanticExtractor(runtime.context.settings).extract(
+            message=request.message,
+            pending_operation=None,
+            input_type=UserInputType.TEXT.value,
+            available_skills=[skill.summary() for skill in runtime.context.skills.list_skills()],
+            conversation_context=_conversation_context(request, memory),
+        )
+    # “取消”是所有待处理交互的公共出口，不因当前正在补周期、选实体还是确认写
+    # 操作而改变含义。必须在澄清参数合并及模型调用前处理，否则会被错误当作
+    # 对当前字段的修改，造成同一问题反复追问。
+    explicit_act = _explicit_interaction_act(request.message)
+    if pending is not None and explicit_act == DialogueAct.REJECT_PENDING:
+        return _pending_semantics(pending).model_copy(update={"dialogue_act": explicit_act})
     if request.input_type == UserInputType.INTERACTION_REPLY:
-        explicit_act = _explicit_interaction_act(request.message)
         if explicit_act is not None:
             return _pending_semantics(pending).model_copy(update={"dialogue_act": explicit_act})
         # 模糊回复不由前端或Java猜测。把完整待确认操作交给模型，由模型判断是
@@ -300,6 +323,19 @@ def _explicit_interaction_act(message: str) -> DialogueAct | None:
     if normalized in {"拒绝", "取消", "不执行", "不要", "停止", "否", "no", "n"}:
         return DialogueAct.REJECT_PENDING
     return None
+
+
+def _is_complete_new_business_request(message: str) -> bool:
+    """识别能安全打断旧交互的完整业务请求。
+
+    这里只判断用户是否重新发起了明确业务动作并写出了目标信息；具体是预测、
+    查询还是训练仍交由语义模型处理，避免用关键词替代业务语义。
+    """
+    text = re.sub(r"\s+", "", message or "")
+    has_action = bool(re.search(r"预测|训练|查询|分析", text))
+    # 仅有“30天”通常正是在回答当前的预测周期，不能误判成新请求。
+    has_target = bool(re.search(r"客户|地区|省|行业|城燃|江苏|浙江|全部|所有", text))
+    return has_action and has_target
 
 
 def _pending_semantics(pending: PendingOperation | None) -> RequestSemantics:

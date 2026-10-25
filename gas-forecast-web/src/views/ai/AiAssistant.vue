@@ -70,7 +70,7 @@
             </details>
             <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
             <AiTrainingResult v-if="trainingResultOf(message)" :result="trainingResultOf(message)!" />
-            <AiExecutionTask v-for="taskNo in executionTaskNos(message)" :key="taskNo" :task-no="taskNo" />
+            <AiExecutionTask v-for="taskNo in executionTaskNos(message)" :key="taskNo" :task-no="taskNo" @content-rendered="scrollBottom" />
             <section v-if="listRows(message).length" class="result-list">
               <div class="result-list-head">查询结果 <span>共 {{ listRows(message).length }} 条</span></div>
               <el-table :data="listRows(message)" height="420" stripe>
