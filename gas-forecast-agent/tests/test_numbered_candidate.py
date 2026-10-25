@@ -1,5 +1,5 @@
 from gas_forecast_agent.workflow_nodes.understand_request import (
-    _numbered_candidate_parameters,
+    _numbered_candidate_resolution,
 )
 from gas_forecast_agent.entity_models import EntityLookupResponse
 
@@ -27,28 +27,33 @@ def test_entity_resolution_exposes_typed_candidate_and_parameters() -> None:
 
 
 def test_numbered_candidate_ignores_null_candidate_map(make_pending) -> None:
-    assert _numbered_candidate_parameters(
+    assert _numbered_candidate_resolution(
         "2",
         make_pending(issues=[{"field": "customerNames", "details": {"candidateMap": None}}]),
-    ).to_payload() == {}
+    ) is None
 
 
 def test_numbered_candidate_restores_selected_entity(make_pending) -> None:
-    assert _numbered_candidate_parameters(
+    resolution = _numbered_candidate_resolution(
         "2",
         make_pending(issues=[{"field": "customerNames", "details": {"candidateMap": {
             "candidate-2": {"customerCode": "CUS-2", "customerName": "海安新奥（新奥天津）"},
         }}}]),
-    ).to_payload() == {"customerCode": "CUS-2", "customerName": "海安新奥（新奥天津）"}
+    )
+    assert resolution is not None
+    assert resolution.parameters.to_payload() == {"customerCode": "CUS-2", "customerName": "海安新奥（新奥天津）"}
+    assert resolution.issues == []
 
 
 def test_numbered_candidate_can_be_combined_with_forecast_horizon(make_pending) -> None:
-    assert _numbered_candidate_parameters(
+    resolution = _numbered_candidate_resolution(
         "选择 2，预测34天",
         make_pending(issues=[{"field": "customerNames", "details": {"candidateMap": {
             "candidate-2": {"customerCodes": ["CUS-2"], "customerNames": ["海安新奥（新奥天津）"]},
         }}}]),
-    ).to_payload() == {"customerCodes": ["CUS-2"], "customerNames": ["海安新奥（新奥天津）"]}
+    )
+    assert resolution is not None
+    assert resolution.parameters.to_payload() == {"customerCodes": ["CUS-2"], "customerNames": ["海安新奥（新奥天津）"]}
 
 
 def test_forecast_horizon_is_not_mistaken_for_a_candidate_number(make_pending) -> None:
@@ -59,4 +64,4 @@ def test_forecast_horizon_is_not_mistaken_for_a_candidate_number(make_pending) -
         }},
     }])
 
-    assert _numbered_candidate_parameters("预测30天", pending).to_payload() == {}
+    assert _numbered_candidate_resolution("预测30天", pending) is None
