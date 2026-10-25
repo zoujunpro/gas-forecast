@@ -5,6 +5,7 @@ import com.gas.forecast.business.dto.AiChatResponse;
 import com.gas.forecast.business.dto.AiConversationResponse;
 import com.gas.forecast.business.dto.AiConversationRenameRequest;
 import com.gas.forecast.business.service.AiChatService;
+import com.gas.forecast.business.service.AiChatStreamService;
 import com.gas.forecast.business.service.AiConversationService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * AI 会话及会话关联任务查询接口。
@@ -34,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiConversationController {
     private final AiConversationService conversationService;
     private final AiChatService chatService;
+    private final AiChatStreamService chatStreamService;
 
     /**
      * 发送一条智能体会话消息。
@@ -52,6 +56,13 @@ public class AiConversationController {
         return ResponseResult.success(chatService.chat(request));
     }
 
+    /** SSE 展示接口：最终结果先完整落库，再按短句推送，避免持久化半截回复。 */
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequirePermission("ai:assistant:use")
+    public SseEmitter chatStream(@Valid @RequestBody AiChatRequest request) {
+        return chatStreamService.chat(request);
+    }
+
     /**
      * 查询当前登录用户最近的会话列表。
      *
@@ -68,16 +79,18 @@ public class AiConversationController {
     /**
      * 查询一个会话的完整详情。
      *
-     * <p>返回历史消息、每轮 Agent Run 状态以及每条消息关联的训练批次、
-     * 预测批次或统一执行对象引用。</p>
+     * <p>返回历史消息、每轮 Agent Run 状态以及每条消息关联的执行任务、
+     * 预测结果引用。</p>
      *
      * @param conversationNo 会话唯一编号
      * @return 当前用户有权访问的会话详情
      */
     @GetMapping("/detail")
     @RequirePermission("ai:assistant:use")
-    public ResponseResult<AiConversationResponse> detail(@RequestParam String conversationNo) {
-        return ResponseResult.success(conversationService.detail(conversationNo));
+    public ResponseResult<AiConversationResponse> detail(@RequestParam String conversationNo,
+            @RequestParam(required = false) Long beforeMessageId,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        return ResponseResult.success(conversationService.detail(conversationNo, beforeMessageId, pageSize));
     }
 
     /**

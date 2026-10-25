@@ -23,7 +23,6 @@ create table if not exists ai_conversation_message_tb (
     role varchar(16) not null comment '消息角色：USER用户、ASSISTANT助手、SYSTEM系统、TOOL工具',
     turn_id varchar(64) default null comment '对话轮次ID，同一轮用户与助手消息使用相同值',
     content text not null comment '消息正文',
-    message_type varchar(64) default null comment '消息分类或来源Skill编码，与业务绑定类型无关',
     structured_json json default null comment '消息附带的结构化数据JSON',
     created_at datetime not null comment '消息创建时间',
     primary key (id),

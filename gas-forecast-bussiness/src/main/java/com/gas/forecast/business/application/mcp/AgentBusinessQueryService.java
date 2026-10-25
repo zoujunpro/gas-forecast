@@ -10,6 +10,9 @@ public interface AgentBusinessQueryService {
 
     Object latestForecast(String customerCode, String regionCode, String industryCode, String agentCode, boolean includePoints);
 
+    /** 按稳定预测编号查询同一条训练、回测和预测结果。 */
+    Object forecastByNo(String forecastNo, boolean includePoints);
+
     /** 查询编号实际对应的预测执行记录或智能体任务。 */
     Object resolveBusinessReference(String reference);
 }

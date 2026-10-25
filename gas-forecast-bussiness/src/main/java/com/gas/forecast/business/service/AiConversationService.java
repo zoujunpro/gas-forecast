@@ -43,13 +43,13 @@ public class AiConversationService {
                         .orderByDesc(AiConversationTb::getUpdatedAt)
                         .last("limit 50"))
                 .stream()
-                .map(item -> toResponse(item, false))
+                .map(item -> toResponse(item, null, 0))
                 .toList();
     }
 
-    /** 按会话编号加载会话、消息、Agent Run 状态和所有业务对象引用。 */
-    public AiConversationResponse detail(String conversationNo) {
-        return toResponse(findOwned(conversationNo), true);
+    /** 按会话编号向前分页加载消息；首次请求不传游标，返回最新消息。 */
+    public AiConversationResponse detail(String conversationNo, Long beforeMessageId, int pageSize) {
+        return toResponse(findOwned(conversationNo), beforeMessageId, Math.min(Math.max(pageSize, 1), 100));
     }
 
     public void rename(String conversationNo, String title) {
@@ -77,9 +77,10 @@ public class AiConversationService {
         conversationMapper.deleteById(conversation.getId());
     }
 
-    private AiConversationResponse toResponse(AiConversationTb conversation, boolean includeMessages) {
-        List<AiConversationResponse.Message> items = includeMessages
-                ? messageResponses(conversation.getId()) : List.of();
+    private AiConversationResponse toResponse(AiConversationTb conversation, Long beforeMessageId, int pageSize) {
+        MessagePage page = pageSize > 0
+                ? messageResponses(conversation.getId(), beforeMessageId, pageSize)
+                : new MessagePage(List.of(), false);
         return new AiConversationResponse(
                 conversation.getConversationNo(),
                 conversation.getTitle(),
@@ -88,7 +89,8 @@ public class AiConversationService {
                 conversation.getStatus(),
                 conversation.getLastMessageAt(),
                 conversation.getUpdatedAt(),
-                items);
+                page.messages(),
+                page.hasMore());
     }
 
     /** 从可变会话记忆中读取最近一次已经确认或实际使用的业务焦点。 */
@@ -107,11 +109,18 @@ public class AiConversationService {
         }
     }
 
-    private List<AiConversationResponse.Message> messageResponses(Long conversationId) {
-        List<AiConversationMessageTb> messages = messages(conversationId);
+    private MessagePage messageResponses(Long conversationId, Long beforeMessageId, int pageSize) {
+        List<AiConversationMessageTb> messages = messageMapper.selectList(Wrappers.<AiConversationMessageTb>lambdaQuery()
+                .eq(AiConversationMessageTb::getConversationId, conversationId)
+                .lt(beforeMessageId != null, AiConversationMessageTb::getId, beforeMessageId)
+                .orderByDesc(AiConversationMessageTb::getId)
+                .last("limit " + (pageSize + 1)));
         if (messages.isEmpty()) {
-            return List.of();
+            return new MessagePage(List.of(), false);
         }
+        boolean hasMore = messages.size() > pageSize;
+        if (hasMore) messages.remove(messages.size() - 1);
+        java.util.Collections.reverse(messages);
         List<Long> messageIds = messages.stream().map(AiConversationMessageTb::getId).toList();
         Map<Long, List<AiChatResponse.Reference>> references = referenceMapper.selectList(
                         Wrappers.<AiMessageRefTb>lambdaQuery()
@@ -141,7 +150,7 @@ public class AiConversationService {
             }
         }
 
-        return messages.stream().map(message -> {
+        List<AiConversationResponse.Message> items = messages.stream().map(message -> {
             AgentRunTb run = runsByTurn.get(message.getTurnId());
             AiChatResponse stored = readStoredResponse(message.getStructuredJson());
             List<AiChatResponse.Reference> messageReferences = references.getOrDefault(
@@ -154,7 +163,6 @@ public class AiConversationService {
                     message.getTurnId(),
                     normalizeRole(message.getRole()),
                     message.getContent(),
-                    message.getMessageType(),
                     run == null ? null : run.getRunNo(),
                     run == null ? null : run.getStatus(),
                     stored == null ? null : stored.clarification(),
@@ -163,6 +171,7 @@ public class AiConversationService {
                     messageReferences,
                     message.getCreatedAt());
         }).toList();
+        return new MessagePage(items, hasMore);
     }
 
     private List<AiChatResponse.Reference> mergeReferenceDisplay(
@@ -209,6 +218,8 @@ public class AiConversationService {
                 .eq(AiConversationMessageTb::getConversationId, conversationId)
                 .orderByAsc(AiConversationMessageTb::getId));
     }
+
+    private record MessagePage(List<AiConversationResponse.Message> messages, boolean hasMore) { }
 
     private AiConversationTb findOwned(String conversationNo) {
         if (!TextUtils.hasText(conversationNo)) {

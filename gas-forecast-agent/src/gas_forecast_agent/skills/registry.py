@@ -37,18 +37,6 @@ class SkillRegistry:
         except KeyError as exc:
             raise KeyError(f"意图 {intent.value} 没有对应的 Skill") from exc
 
-    def summary(self) -> dict[str, object]:
-        return {
-            "total": len(self._skills),
-            "skills": [
-                {
-                    **skill.summary(),
-                    "allowed_tools": skill.allowed_tools,
-                }
-                for skill in self._skills.values()
-            ],
-        }
-
     @staticmethod
     def _default_skill_dir() -> Path:
         source_tree = _PROJECT_DIR / "skills"
@@ -64,10 +52,10 @@ class SkillRegistry:
         skills: dict[str, SkillDefinition] = {}
         for path in sorted(root.glob("*/SKILL.md")):
             metadata, instructions = SkillRegistry._parse(path)
-            references = {
-                reference.name: reference.read_text(encoding="utf-8").strip()
+            references = [
+                {"name": reference.name, "content": reference.read_text(encoding="utf-8").strip()}
                 for reference in sorted((path.parent / "references").glob("*.md"))
-            }
+            ]
             skill = SkillDefinition.model_validate({
                 **metadata,
                 "instructions": instructions,

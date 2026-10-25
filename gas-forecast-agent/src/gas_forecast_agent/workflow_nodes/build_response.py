@@ -10,12 +10,13 @@ from gas_forecast_agent.schemas import (
     AgentRuntimeRequest,
     AgentRuntimeResponse,
     AgentType,
-    ClarificationReason,
-    InteractionType,
+    PresentationResponse,
+    SkillSelectionResponse,
 )
 from gas_forecast_agent.skills import SkillDefinition
 from gas_forecast_agent.workflow_nodes.common import elapsed_ms
 from gas_forecast_agent.workflow_nodes.interactions import _interaction_details
+from gas_forecast_agent.workflow_nodes.memory_patch import memory_patch_for
 from gas_forecast_agent.workflow_nodes.state import AgentGraphState
 
 
@@ -43,23 +44,24 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
 
     本节点只进行内存中的响应转换，不调用模型、不调用 MCP，也不写数据库。
     """
-    request = state["request"]
-    result = state["result"]
-    selection = state["selection"]
-    skill = state["skill"]
+    request = state.request
+    result = state.require_result()
+    understanding = state.require_understanding()
+    selection = understanding.selection
+    skill = understanding.skill
 
     presentation = PresentationPlanner.plan(
         result.executed_tool,
-        result.execution_result or {},
+        result.execution_result.to_payload() if result.execution_result else {},
     )
     training_result = presentation.get("training_result")
-    interaction = _interaction_details(request, result, state["semantics"])
+    interaction = _interaction_details(request, result, understanding.semantics)
     response = AgentRuntimeResponse(
         conversation_no=request.conversation_no,
         agent_type=resolve_agent_type(request, skill),
         intent_code=(
-            state["semantics"].intent.value
-            if state["semantics"].intent is not None
+            understanding.semantics.intent.value
+            if understanding.semantics.intent is not None
             else None
         ),
         status=result.status,
@@ -69,39 +71,33 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
             else result.message
         ),
         skill_name=skill.name,
-        skill_selection={
-            "skill_name": skill.name,
-            "confidence": selection.confidence,
-            "reason": selection.reason,
-        },
+        skill_selection=SkillSelectionResponse(
+            skill_name=skill.name, confidence=selection.confidence, reason=selection.reason),
         parameters=result.parameters,
-        entity_resolution=state["semantics"].model_dump(mode="json", by_alias=True),
+        entity_resolution=understanding.semantics,
         missing_parameters=[issue.field for issue in result.resolution_issues if issue.required],
         resolution_issues=result.resolution_issues,
-        interaction_id=interaction.get("interactionId") if interaction else None,
+        interaction_id=interaction.interaction_id if interaction else None,
         interaction_type=(
-            InteractionType(interaction["interactionType"])
+            interaction.interaction_type
             if interaction
             else None
         ),
-        reply_to_turn_id=interaction.get("sourceTurnId") if interaction else None,
-        request_id=interaction.get("requestId") if interaction else None,
+        reply_to_turn_id=interaction.source_turn_id if interaction else None,
+        request_id=interaction.request_id if interaction else None,
         clarification_reason=(
-            ClarificationReason(interaction["reason"])
+            interaction.reason
             if interaction
             else None
         ),
-        resume_from=interaction.get("resumeFrom") if interaction else None,
+        resume_from=interaction.resume_from if interaction else None,
         memory_loaded=True,
         available_tools=result.available_tools,
         executed_tool=result.executed_tool,
         execution_result=result.execution_result,
-        presentation=presentation.get("presentation"),
-        progress=presentation.get("progress"),
-        forecast_result=presentation.get("forecast_result"),
-        training_result=training_result,
+        presentation=PresentationResponse.model_validate(presentation["presentation"]),
         decision_reason=selection.reason,
-        memory_patch=state.get("memory_patch", {}),
+        memory_patch=memory_patch_for(state),
     )
 
     logger.info(
@@ -110,10 +106,10 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
         request.conversation_no,
         skill.name,
         result.executed_tool or "-",
-        state.get("semantics_ms", 0),
-        state.get("routing_ms", 0),
-        state.get("agent_ms", 0),
-        elapsed_ms(state["started_at"]),
+        state.timing.semantics_ms,
+        state.timing.routing_ms,
+        state.timing.agent_ms,
+        elapsed_ms(state.timing.started_at),
     )
     return {"response": response}
 
@@ -185,4 +181,3 @@ def training_result_summary(training: dict[str, Any]) -> str:
     else:
         lines.append("回测明细：暂无")
     return "\n".join(lines)
-

@@ -115,23 +115,34 @@ Skill 路由配置：
 
 ## 澄清与确认协议
 
-用户请求增加 `inputType`：普通消息为 `TEXT`，结构化回复为 `CLARIFICATION_REPLY`、`CONFIRMATION_REPLY` 或 `REJECTION_REPLY`。结构化回复还必须携带服务端上一轮返回的 `interactionId`、`replyToTurnId` 和 `answers`；Java 会在调用 Python 前校验它们是否匹配当前会话的最新待处理交互。
+用户始终通过普通对话输入。`inputType` 区分新消息 `TEXT`、澄清回复 `CLARIFICATION_REPLY` 和待确认操作回复 `INTERACTION_REPLY`。后两类回复携带上一轮返回的 `interactionId`、`replyToTurnId`，答案就在 `message` 中，不再提交表单 `answers`；Java 和 Python 都校验交互身份。对于 `INTERACTION_REPLY`，Python 先识别明确确认/取消词，其余原话再交给模型判断确认、取消、修改或继续澄清。
 
-等待状态统一返回 `clarification`，包含稳定的 `reason`、`resumeFrom` 和字段列表。实体不存在/歧义、参数缺失/冲突、业务范围不明确或意图歧义都属于 `CLARIFICATION`；真正有副作用的工具执行批准属于 `CONFIRMATION`。会话记忆分别保存：
+等待状态统一返回 `clarification`。实体和参数问题属于 `CLARIFICATION`，写操作批准属于 `CONFIRMATION`。会话记忆只保存两个字段：
 
-- `pendingInteraction`：任何待澄清或待确认交互，包含原始语义、问题、候选 token 和恢复位置；
-- `pendingAction`：仅保存已经完成解析、正在等待批准的写工具及参数快照。
+- `pendingOperation`：唯一未完成操作，包含 `interaction`（编号、类型、来源轮次）、`semantics`（原请求语义）、`parameters`（已确认参数）、`issues`（待回答问题及候选）和 `pendingTool`。
+- `currentBusinessContext`：Java 维护的页面焦点，只供明确指代使用，不自动补入新预测。
 
-候选项提交的是 `candidate-1` 这类不透明 token。真实客户、地区和行业编码只从服务端保存的工具结果恢复，客户端不能通过 `answers` 注入编码。若用户针对 `ENTITY_NOT_FOUND` 或 `ENTITY_MISSING` 输入新的实体名称，该名称仍是未校验文本，必须重新调用实体解析工具；只有选择服务端候选项时才能直接恢复为已校验实体。
+用户可输入候选序号或完整实体名称。序号只能从服务端保存的候选对象恢复编码；新名称必须经过主数据校验。同一澄清链只覆盖本轮有效参数；新 `TEXT` 请求不恢复上一操作快照。
+
+Python 返回的 `memoryPatch.pendingOperation` 替换当前操作，值为 `null` 表示完成或取消；整个 `memoryPatch` 为 `null` 表示本轮失败、保留原记忆。Java 与助手消息同事务保存。旧记忆字段不再读取或双写；升级前未结束的澄清需重新发起，不需要修改数据库表结构。
+
+## 运行时对象
+
+`AgentGraphState` 有 7 个顶层字段：`request`、`timing`、`memory`、`understanding`、`result`、`response`、`memory_patch`。内部嵌套字段均为明确模型或标量/列表，不使用任意字典承载状态。
+
+- 参数及指代：`operation_models.py` 中的 `OperationParameters`、`SemanticParameters`、`ReferenceMentions`。
+- 实体校验：`entity_models.py` 中的 `EntityResolution`、`EntityResolutionItem`、`EntityCandidate`。
+- 工具结果：`tool_results.py` 中的分页、任务、步骤、预测结果模型。
+- 会话记忆：`schemas.py` 中的 `ConversationMemory`、`PendingOperation`、`MemoryPatch`。
+
+例如调试时可直接查看 `state.understanding.entity_resolution.items[0].candidates` 和 `state.memory.pending_operation.parameters.forecast_horizon`。字典仅用于模型/MCP/JSON 适配及 LangGraph 节点更新；模型平台原始产物仍保留 Java 接口的文本快照，不改变业务结果协议。
 
 ## 记忆边界
 
-- 短期记忆：保存在Java `ai_conversation_tb.memory_json`，仅作用于当前会话，记录可变化的当前业务焦点、当前 Skill、操作参数、`pendingInteraction` 和必要时的 `pendingAction`。会话本身不绑定地区、行业或客户；任务的最终业务范围由执行批次和执行任务保存。
+- 短期记忆：保存在 Java `ai_conversation_tb.memory_json`，只记录未完成操作和页面焦点。每次 HTTP 请求创建新的图状态，不引入第二套 Checkpointer 持久化。
 - 长期记忆：当前不启用。跨会话用户偏好、常用客户等信息以后应使用独立用户记忆表和MCP工具，并支持查看、修改和删除，不能把全部聊天内容永久保存。
 
 ## 当前接口
 
 - `GET /health`：Python 服务健康检查
-- `GET /api/v1/mcp/tools`：连接 Java MCP 并读取工具目录
-- `GET /api/v1/skills`：读取 Skill 名称、描述和工具白名单
 - `POST /api/v1/internal/chat`：仅供 Java 会话服务调用的 Agent 编排接口；要求 Java 已生成 `conversationNo`、`turnId` 和 `runNo`

@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from gas_forecast_agent.config import Settings
 from gas_forecast_agent.internal_client import InternalAgentClient
 from gas_forecast_agent.mcp import StreamableHttpMcpClient
-from gas_forecast_agent.schemas import AgentRuntimeRequest, AgentRuntimeResponse, ResolutionIssue
+from gas_forecast_agent.schemas import (
+    AgentRuntimeRequest,
+    AgentRuntimeResponse,
+    ResolutionIssue,
+)
+from gas_forecast_agent.operation_models import OperationParameters
+from gas_forecast_agent.entity_models import EntityResolution
 from gas_forecast_agent.skills import (
     RequestSemantics,
     SkillDefinition,
@@ -18,75 +25,71 @@ from gas_forecast_agent.skills import (
 )
 
 
-class AgentGraphState(TypedDict, total=False):
+class RequestUnderstanding(BaseModel):
+    """本轮请求理解的完整结果，禁止再拆成多个 State 顶层字段。"""
+
+    semantics: RequestSemantics
+    skill: SkillDefinition
+    selection: SkillSelection
+    parameters: OperationParameters = Field(default_factory=OperationParameters)
+    entity_resolution: EntityResolution = Field(default_factory=EntityResolution)
+    issues: list[ResolutionIssue] = Field(default_factory=list)
+    continuing_operation: bool = False
+
+
+class AgentTiming(BaseModel):
+    """单次 Agent Run 的阶段耗时，不混入业务状态。"""
+
+    started_at: float
+    semantics_ms: int = 0
+    routing_ms: int = 0
+    agent_ms: int = 0
+
+
+class AgentGraphState(BaseModel):
     """
     单次 LangGraph 执行期间由所有节点共享的状态。
 
-    ``total=False`` 表示字段可以分阶段写入：图启动时只需要 request 和
-    started_at，后续节点返回的部分字典会合并到同一个 State 中。节点不需要、
-    也不应该复制整个 State；前面节点已经产生的字段会一直保留到本次图执行结束。
+    LangGraph 支持 Pydantic State：图启动时只需要 request 和 timing；每个节点
+    返回局部字段更新，框架将其合并为下一节点可读取的状态。节点不应直接修改
+    传入的 state。这样调试器看到的是明确对象，而不是不断变化的大字典。
 
     该 State 只属于一次 Agent Run，不负责跨请求持久化。下一轮会话仍由 Java
     从数据库加载会话、记忆和历史消息，再创建一个新的 AgentGraphState。
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     # Java 内部会话接口传入的本轮原始请求。
     # 包含会话编号、轮次编号、用户消息、压缩摘要、近期消息、会话记忆和业务参数。
     # 该字段在 run_agent_graph 创建初始 State 时写入，所有后续节点都可以读取。
     request: AgentRuntimeRequest
 
-    # 本次图开始执行时的单调时钟时间点。
-    # 只用于计算总耗时，不是业务时间，也不能保存到数据库作为创建时间。
-    started_at: float
+    # 本次图的性能时间线，不是业务时间，也不能保存到数据库作为创建时间。
+    timing: AgentTiming
 
-    # Java 随请求传入的当前会话结构化记忆副本。
-    # 由 load_memory 节点写入，可能包含已确认参数、上次工具结果和待确认动作。
-    memory: dict[str, Any]
-
-    # 对用户本轮原话的结构化语义识别结果。
-    # 由 understand_request 节点写入，供 Skill 路由和 Skill 执行阶段共同使用。
-    semantics: RequestSemantics
-
-    # 意图识别产生的 Skill 决策，包含 Skill 编码、置信度和选择原因。
-    # 由 understand_request 写入，最终也会用于生成 Agent Run 的审计信息。
-    selection: SkillSelection
-
-    # 根据 selection 从 SkillRegistry 取得的完整 Skill 定义。
-    # 包含 Skill 说明、模型指令和允许调用的 MCP 工具白名单。
-    skill: SkillDefinition
+    # 请求理解阶段的完整对象：意图、Skill、实体解析结果、累计参数和待澄清问题。
+    understanding: RequestUnderstanding | None = None
 
     # 公共动作执行器对本轮请求的实际执行结果。
     # 包含 Agent 状态、回复文本、已解析参数、调用工具和工具返回摘要；它表示
     # Agent 本轮是否处理成功，不等同于异步训练或预测任务的最终执行状态。
-    result: SkillRunResult
+    result: SkillRunResult | None = None
 
     # 根据 Skill 执行结果组装出的 Python 内部响应。
     # 由 build_response 节点写入，run_agent_graph 从最终 State 中取出并返回给 Java。
-    response: AgentRuntimeResponse
+    response: AgentRuntimeResponse | None = None
 
-    # Python 仅计算本轮应更新或删除的会话记忆字段；由 Java 与助手消息同事务落库。
-    memory_patch: dict[str, Any]
+    def require_understanding(self) -> RequestUnderstanding:
+        if self.understanding is None:
+            raise RuntimeError("understand_request 节点尚未完成")
+        return self.understanding
 
-    # understand_request 节点耗时，单位为毫秒，仅用于日志和性能分析。
-    semantics_ms: int
+    def require_result(self) -> SkillRunResult:
+        if self.result is None:
+            raise RuntimeError("execute_action 节点尚未完成")
+        return self.result
 
-    # Skill 确定耗时，单位为毫秒，仅用于日志和性能分析。
-    routing_ms: int
-
-    # execute_action 节点耗时，单位为毫秒，仅用于日志和性能分析。
-    agent_ms: int
-
-    # 结构化澄清回复从上一轮候选项恢复出的可信参数，例如候选 token 对应的
-    # customerCode。该字段只在本轮内使用，不接受客户端直接提交业务编码。
-    clarification_parameters: dict[str, Any]
-
-    # understand_request 通过主数据校验后产生的标准实体参数（例如 customerCodes）。
-    # 只在当前请求中传递给 Skill，不由客户端提交，也不跨轮直接复用。
-    resolved_entity_parameters: dict[str, Any]
-
-    # 在 Skill 路由前发现的意图、实体或引用问题。存在必需问题时执行节点不会
-    # 调用任何业务工具，而是生成结构化澄清交互。
-    preflight_issues: list[ResolutionIssue]
 
 
 @dataclass(frozen=True)
@@ -107,3 +110,7 @@ class AgentGraphContext:
 
     # 进程内 Skill 注册表，用于根据路由结果读取对应的 Skill 定义。
     skills: SkillRegistry
+
+
+# 让前向注解或类型拼写错误在服务导入阶段立即失败，不能等到用户发送消息才暴露。
+AgentGraphState.model_rebuild()

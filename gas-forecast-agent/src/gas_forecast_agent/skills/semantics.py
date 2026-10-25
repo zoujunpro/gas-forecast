@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from gas_forecast_agent.config import Settings
 from gas_forecast_agent.llm import build_llm_client
+from gas_forecast_agent.operation_models import ReferenceMentions, SemanticParameters
 
 from .models import SkillIntent
 
@@ -163,12 +164,12 @@ class SemanticRequest(SemanticModel):
         description="MODIFY 时明确取消的业务过滤维度：region、industry、customer",
     )
     entities: RequestEntities = Field(default_factory=RequestEntities)
-    references: dict[str, Any] = Field(
-        default_factory=dict,
+    references: ReferenceMentions = Field(
+        default_factory=ReferenceMentions,
         description="刚才、上次、这些客户等尚未解析的上下文指代",
     )
-    parameters: dict[str, Any] = Field(
-        default_factory=dict,
+    parameters: SemanticParameters = Field(
+        default_factory=SemanticParameters,
         description="用户明确给出的时间、周期和训练策略等操作参数",
     )
     depends_on: list[str] = Field(default_factory=list, description="本请求依赖的同轮requestId")
@@ -224,11 +225,13 @@ class SemanticRequest(SemanticModel):
     @field_validator("references", mode="before")
     @classmethod
     def normalize_references(cls, value: object) -> dict[str, Any]:
-        return dict(value) if isinstance(value, dict) else {}
+        return value if isinstance(value, (dict, ReferenceMentions)) else {}
 
     @field_validator("parameters", mode="before")
     @classmethod
     def normalize_parameters(cls, value: object) -> dict[str, Any]:
+        if isinstance(value, SemanticParameters):
+            return value
         if not isinstance(value, dict):
             return {}
         aliases = {
@@ -280,7 +283,7 @@ class SemanticRequest(SemanticModel):
 
     @property
     def training_policy(self) -> TrainingPolicy:
-        raw = self.parameters.get("trainingPolicy", TrainingPolicy.UNSPECIFIED)
+        raw = self.parameters.training_policy or TrainingPolicy.UNSPECIFIED
         try:
             return TrainingPolicy(str(raw).upper())
         except ValueError:
@@ -288,14 +291,14 @@ class SemanticRequest(SemanticModel):
 
     @property
     def forecast_horizon(self) -> int | None:
-        value = self.parameters.get("forecastHorizon")
+        value = self.parameters.forecast_horizon
         return value if isinstance(value, int) and 1 <= value <= 365 else None
 
     def parameter_overrides(self) -> dict[str, object]:
         """把单请求语义适配为现有执行规划器的候选参数。"""
         values = {
             key: value
-            for key, value in self.parameters.items()
+            for key, value in self.parameters.to_payload().items()
             if value not in (None, "", TrainingPolicy.UNSPECIFIED.value)
         }
         if len(self.entities.customers) == 1:
@@ -499,10 +502,8 @@ class RequestSemanticExtractor:
     async def extract(
         self,
         message: str,
-        pending_action: dict[str, object] | None = None,
-        pending_interaction: dict[str, object] | None = None,
+        pending_operation: dict[str, object] | None = None,
         input_type: str = "TEXT",
-        answers: dict[str, object] | None = None,
         available_skills: list[dict[str, object]] | None = None,
         conversation_context: dict[str, object] | None = None,
     ) -> RequestSemantics:
@@ -515,9 +516,14 @@ class RequestSemanticExtractor:
                     intent=SkillIntent.CHAT,
                 )],
             )
+        fallback = self._deterministic_semantics(message)
         if self._settings.skill_routing_mode == "rules":
+            if fallback is not None:
+                return fallback
             raise SemanticExtractionError("当前配置未启用语义识别模型")
         if not self._settings.llm_api_key or not self._settings.llm_model:
+            if fallback is not None:
+                return fallback
             raise SemanticExtractionError("语义识别模型配置不完整")
         try:
             response = await build_llm_client(self._settings).chat.completions.create(
@@ -533,9 +539,7 @@ class RequestSemanticExtractor:
                                 "skills": available_skills or [],
                                 "message": message,
                                 "inputType": input_type,
-                                "answers": answers or {},
-                                "pendingAction": pending_action,
-                                "pendingInteraction": pending_interaction,
+                                "pendingOperation": pending_operation,
                                 "conversationContext": conversation_context or {},
                             },
                             ensure_ascii=False,
@@ -547,8 +551,7 @@ class RequestSemanticExtractor:
             normalized = self._normalize(
                 extracted,
                 message,
-                pending_action,
-                pending_interaction,
+                pending_operation,
                 available_skills or [],
             )
             if not normalized.requests:
@@ -570,7 +573,24 @@ class RequestSemanticExtractor:
             raise
         except Exception as exc:
             logger.exception("event=request_semantics_extract_failed")
+            # 明确的分析诉求不应因为语义模型暂时不可用而中断；后续仍由
+            # forecast-analysis 从可信会话引用取得 forecastNo，不能凭规则伪造对象。
+            if fallback is not None:
+                logger.warning("event=request_semantics_fallback intent=%s", fallback.intent)
+                return fallback
             raise SemanticExtractionError("语义识别模型调用或结果解析失败") from exc
+
+    @staticmethod
+    def _deterministic_semantics(message: str) -> RequestSemantics | None:
+        """仅兜底高确定性的只读分析，不替代正常的语义模型抽取。"""
+        text = re.sub(r"\s+", "", message).lower()
+        analysis_terms = ("分析", "研判", "误差", "趋势", "波动", "同比", "环比", "为什么", "原因")
+        if any(term in text for term in analysis_terms):
+            return RequestSemantics(
+                dialogue_act=DialogueAct.NEW_REQUEST,
+                requests=[SemanticRequest(intent=SkillIntent.ANALYZE)],
+            )
+        return None
 
     @staticmethod
     def _system_prompt() -> str:
@@ -603,10 +623,12 @@ class RequestSemanticExtractor:
             "‘最新’是查询操作语义，不是上下文指代，不要把LATEST放入references。"
             "scenario仅在用户明确表达短期、月度销量或冬季保供时填写short-term、monthly-sales或winter-supply，否则为null。"
             "parameters只保存用户明确表达的操作参数，例如forecastHorizon、historyStartDate、historyEndDate。"
-            "仅当输入中确实包含pendingAction时，才能输出CONFIRM_PENDING、REJECT_PENDING或MODIFY_PENDING；"
+            "仅当输入中确实包含pendingOperation时，才能输出CONFIRM_PENDING、REJECT_PENDING或MODIFY_PENDING；"
             "否则新业务目标使用NEW_REQUEST，无法判断使用UNSPECIFIED。"
-            "当inputType为CLARIFICATION_REPLY时，必须结合pendingInteraction中的原请求理解用户答案；"
+            "当inputType为CLARIFICATION_REPLY时，必须结合pendingOperation中的原请求理解用户答案；"
             "实体、参数或范围澄清只修正原请求，输出MODIFY_PENDING，不得因为答案很短而改成问候或新请求；"
+            "当inputType为INTERACTION_REPLY时，必须结合pendingOperation判断原话是确认执行、取消、修改条件，还是无法判断；"
+            "无法判断时输出UNSPECIFIED，不得把模糊词语默认解释为确认。"
             "只有原问题的reason是INTENT_AMBIGUOUS时，才重新判断最终intent。"
             "普通TEXT如果是‘那客户呢’‘再预测15天’等承接表达，可结合conversationContext恢复intent；"
             "省略的目标必须使用CONTEXT和references表示，不得伪装成本轮逐字出现的entities。"
@@ -627,8 +649,7 @@ class RequestSemanticExtractor:
         self,
         semantics: RequestSemantics,
         message: str,
-        pending_action: dict[str, object] | None,
-        pending_interaction: dict[str, object] | None,
+        pending_operation: dict[str, object] | None,
         available_skills: list[dict[str, object]],
     ) -> RequestSemantics:
         dialogue_act = semantics.dialogue_act
@@ -636,7 +657,7 @@ class RequestSemanticExtractor:
             DialogueAct.CONFIRM_PENDING,
             DialogueAct.REJECT_PENDING,
             DialogueAct.MODIFY_PENDING,
-        } and not pending_action and not pending_interaction:
+        } and not pending_operation:
             dialogue_act = DialogueAct.UNSPECIFIED
 
         allowed_intents = {
@@ -661,12 +682,12 @@ class RequestSemanticExtractor:
                 regions=self._verified_mentions(request.entities.regions, message, "region"),
                 industries=self._verified_mentions(request.entities.industries, message, "industry"),
             )
-            parameters = dict(request.parameters)
+            parameters = request.parameters.to_payload()
             policy = self._training_policy(parameters)
             if policy != TrainingPolicy.UNSPECIFIED and not self._valid_training_policy(policy, message):
                 parameters["trainingPolicy"] = TrainingPolicy.UNSPECIFIED.value
 
-            references = dict(request.references)
+            references = request.references
 
             context_relation = request.context_relation
             # 防止模型仅因历史存在实体就伪造承接关系；承接必须有本轮文本证据。
@@ -680,7 +701,7 @@ class RequestSemanticExtractor:
             target_selection = request.target_selection
             if entities.customers:
                 target_selection = TargetSelection.EXPLICIT
-            elif references and target_selection == TargetSelection.UNSPECIFIED:
+            elif references.is_explicit and target_selection == TargetSelection.UNSPECIFIED:
                 target_selection = TargetSelection.CONTEXT
 
             scenario = request.scenario
@@ -696,7 +717,7 @@ class RequestSemanticExtractor:
                 "clear_parameters": clear_parameters,
                 "entities": entities,
                 "references": references,
-                "parameters": parameters,
+                "parameters": SemanticParameters.model_validate(parameters),
             }))
 
         valid_ids = {request.request_id for request in normalized_requests}

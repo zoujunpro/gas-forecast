@@ -3,6 +3,8 @@ package com.gas.forecast.business.application.mcp;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.business.application.mcp.AgentBusinessQueryService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
@@ -37,6 +39,7 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     private final BaseCustomerTbMapper customerMapper;
     private final ModelExecuteRecordTbMapper executeRecordMapper;
     private final ExecutionTaskTbMapper taskMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public Object regions(String keyword, Integer pageNo, Integer pageSize, boolean fetchAll) {
@@ -73,13 +76,34 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     @Override
     public Object latestForecast(String customerCode, String regionCode, String industryCode, String agentCode, boolean includePoints) {
         ModelExecuteRecordTb record = latestExecution(customerCode, regionCode, industryCode, agentCode);
+        return forecastResult(record);
+    }
+
+    @Override
+    public Object forecastByNo(String forecastNo, boolean includePoints) {
+        if (!TextUtils.hasText(forecastNo)) throw new BusinessException("forecastNo不能为空");
+        ModelExecuteRecordTb record = executeRecordMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery()
+                .eq(ModelExecuteRecordTb::getForecastNo, forecastNo.trim()).last("limit 1"));
+        if (record == null) throw new BusinessException("没有找到预测编号对应的执行记录：" + forecastNo);
+        return forecastResult(record);
+    }
+
+    private Map<String, Object> forecastResult(ModelExecuteRecordTb record) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("record", record);
-        result.put("training", record.getTrainingResultJson());
-        result.put("backtest", record.getBacktestResultJson());
-        result.put("forecast", record.getForecastResultJson());
+        // 原始快照转为结构化对象，避免 Python 侧将长 JSON 当普通字符串截断。
+        result.put("training", json(record.getTrainingResultJson()));
+        result.put("backtest", json(record.getBacktestResultJson()));
+        result.put("forecast", json(record.getForecastResultJson()));
         return result;
     }
+
+    private Object json(String value) {
+        if (!TextUtils.hasText(value)) return Map.of();
+        try { return objectMapper.readValue(value, Object.class); }
+        catch (Exception ignored) { return Map.of("raw", value); }
+    }
+
 
     @Override
     public Object resolveBusinessReference(String reference) {

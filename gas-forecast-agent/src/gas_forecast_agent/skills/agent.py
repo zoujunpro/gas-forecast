@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import ast
 import asyncio
 import hashlib
@@ -13,6 +12,7 @@ import time
 from typing import Any
 
 from jsonschema import Draft202012Validator
+from pydantic import BaseModel, Field, field_validator
 
 from gas_forecast_agent.config import Settings
 from gas_forecast_agent.llm import build_llm_client
@@ -22,7 +22,10 @@ from gas_forecast_agent.schemas import (
     ClarificationOption,
     ClarificationReason,
     ResolutionIssue,
+    ConversationMemory,
 )
+from gas_forecast_agent.operation_models import OperationParameters
+from gas_forecast_agent.tool_results import ToolCallTrace, ToolExecutionResult
 
 from .models import SkillDefinition, SkillIntent
 from .result_adapter import ToolResultAdapter
@@ -43,21 +46,25 @@ ENTITY_ARGUMENT_KEYS = (
     "industryCode", "industryName", "industryCodes", "industryNames",
 )
 DIRECT_RESULT_TOOLS = {
-    "forecast_result_query",
+    "forecast_result_query", "forecast_result_by_no",
     "task_status_get", "task_steps_get",
 }
 STRUCTURED_LIST_TOOLS = {"customer_list", "region_list", "industry_list"}
-@dataclass
-class SkillRunResult:
+class SkillRunResult(BaseModel):
     status: str
     message: str
-    parameters: dict[str, Any]
+    parameters: OperationParameters
     available_tools: list[str]
     executed_tool: str | None = None
-    execution_result: dict[str, Any] | None = None
+    execution_result: ToolExecutionResult | None = None
     pending_tool: str | None = None
-    tool_trace: list[dict[str, Any]] = field(default_factory=list)
-    resolution_issues: list[ResolutionIssue] = field(default_factory=list)
+    tool_trace: list[ToolCallTrace] = Field(default_factory=list)
+    resolution_issues: list[ResolutionIssue] = Field(default_factory=list)
+
+    @field_validator("parameters", mode="before")
+    @classmethod
+    def typed_parameters(cls, value: object) -> OperationParameters:
+        return OperationParameters.from_execution(value)
 
 
 class ActionExecutor:
@@ -73,7 +80,7 @@ class ActionExecutor:
         skill: SkillDefinition,
         message: str,
         history: list[dict[str, str]],
-        memory: dict[str, Any],
+        memory: ConversationMemory,
         metadata: dict[str, Any],
         mcp: StreamableHttpMcpClient,
         semantics: RequestSemantics | None = None,
@@ -83,7 +90,7 @@ class ActionExecutor:
         tools = {item["name"]: item for item in tool_catalog if item.get("name") in skill.allowed_tools}
         parameters = self._initial_parameters(message, memory, metadata, conversation_no, skill.name, semantics)
         trace: list[dict[str, Any]] = []
-        if semantics and semantics.dialogue_act == DialogueAct.REJECT_PENDING and memory.get("pendingAction"):
+        if semantics and semantics.dialogue_act == DialogueAct.REJECT_PENDING and memory.pending_operation:
             return SkillRunResult(
                 status="COMPLETED",
                 message="已取消本次待确认操作。",
@@ -417,8 +424,10 @@ class ActionExecutor:
         # 在真正调用前把缺失的实体、时间范围等转成结构化澄清。
         if skill.intent in {SkillIntent.TRAIN, SkillIntent.FORECAST}:
             return {"type": "tool", "name": "forecast_start", "arguments": parameters}
-        # 分析只围绕指定业务范围的最新预测，不使用预测批次号作为用户输入条件。
+        # 分析优先锁定本会话最近一次预测；没有会话引用时才按业务范围兜底。
         if skill.intent == SkillIntent.ANALYZE and not trace:
+            if parameters.get("forecastNo"):
+                return {"type": "tool", "name": "forecast_result_by_no", "arguments": parameters}
             if any(parameters.get(key) for key in ("customerCode", "customerName", "regionCode", "regionName", "industryCode", "industryName")):
                 return {"type": "tool", "name": "forecast_result_query", "arguments": parameters}
             return {
@@ -568,7 +577,7 @@ class ActionExecutor:
         elif intent == SkillIntent.TRAIN:
             name = "forecast_start"
         elif intent == SkillIntent.ANALYZE:
-            name = "forecast_result_query"
+            name = "forecast_result_by_no" if parameters.get("forecastNo") else "forecast_result_query"
         elif intent == SkillIntent.CHAT:
             return {
                 "type": "message",
@@ -601,7 +610,7 @@ class ActionExecutor:
     @staticmethod
     def _initial_parameters(
         message: str,
-        memory: dict[str, Any],
+        memory: ConversationMemory,
         metadata: dict[str, Any],
         conversation_no: str,
         skill_name: str,
@@ -609,7 +618,7 @@ class ActionExecutor:
     ) -> dict[str, Any]:
         if skill_name == "general-chat":
             # 非业务对话只能使用当前原话和聊天历史，不能继承客户、预测周期、
-            # pendingAction 等业务状态，否则一次问候也可能被旧预测参数污染。
+            # pendingOperation 等业务状态，否则一次问候也可能被旧预测参数污染。
             values: dict[str, Any] = {"conversationNo": conversation_no}
             if semantics and semantics.intent is not None:
                 values["_intent"] = semantics.intent.value
@@ -619,116 +628,63 @@ class ActionExecutor:
             semantics and semantics.dialogue_act == DialogueAct.CONFIRM_PENDING
         )
         clarification_reply = str(metadata.get("inputType") or "").upper() == "CLARIFICATION_REPLY"
-        clarification_values = metadata.get("clarificationResolvedParameters")
-        if not isinstance(clarification_values, dict):
-            clarification_values = {}
-        resumable_controls = {"_entityBatchResolved", "_validatedEntityParameters"}
+        clarification_values = metadata.get("clarificationResolvedParameters") or {}
         relation = (
             semantics.primary_request.context_relation
-            if semantics and semantics.primary_request
-            else ContextRelation.NEW
+            if semantics and semantics.primary_request else ContextRelation.NEW
         )
+        # 只有本次尚未完成的交互可恢复操作快照；已完成操作不再缓存参数。
+        pending = memory.pending_operation
+        has_pending_action = pending is not None and bool(pending.pending_tool)
+        values = pending.parameters.to_payload() if pending else {}
+        values.pop("confirmed", None)
+        # 页面焦点只用于明确的上下文指代，不为普通新预测填入客户或天数。
+        references = semantics.primary_request.references if semantics and semantics.primary_request else None
         inherit_context = (
-            relation in {ContextRelation.CONTINUE, ContextRelation.MODIFY}
-            and not clarification_reply
-            and not explicit_confirmation
-        )
-        keys = (
-            "customerCode", "customerName", "regionCode", "regionName", "industryCode", "industryName",
-            "taskNo", "forecastNo", "forecastHorizon",
-        )
-        # NEW 请求只能使用本轮条件；历史和页面上下文仅用于语义理解，不能
-        # 自动成为 MCP 过滤参数。CONTINUE/MODIFY 才可继承最近兼容上下文。
-        values = (
-            {key: memory[key] for key in keys if memory.get(key) not in (None, "")}
-            if inherit_context else {}
+            pending is None
+            and relation in {ContextRelation.CONTINUE, ContextRelation.MODIFY}
+            and bool(references and references.is_explicit)
         )
         remembered_context = ActionExecutor._business_context_values(
-            memory.get("currentBusinessContext")
+            memory.current_business_context.model_dump(by_alias=True, exclude_none=True)
+            if memory.current_business_context else None
         ) if inherit_context else {}
-        values.update(remembered_context)
-        remembered = memory.get("currentParameters")
-        if inherit_context and isinstance(remembered, dict):
-            values.update({
-                key: value for key, value in remembered.items()
-                # 下划线开头的是单轮控制字段（澄清、锁定、待执行工具等），
-                # 绝不能跨轮恢复，否则一次追问会永久劫持后续所有请求。
-                if value not in (None, "")
-                and key != "confirmed"
-                and key not in BUSINESS_CONTEXT_KEYS
-                and not key.startswith("_")
-            })
         current_context = ActionExecutor._business_context_values(
             metadata.get("currentBusinessContext")
         ) if inherit_context else {}
+        values.update(remembered_context)
         values.update(current_context)
-        values.update({
-            key: value for key, value in metadata.items()
-            if value not in (None, "")
-            and key not in {"confirmed", "currentBusinessContext"}
-            and key not in BUSINESS_CONTEXT_KEYS
-            and not key.startswith("_")
-        })
         values["conversationNo"] = conversation_no
-        if semantics is not None:
-            if semantics.intent is not None:
-                values["_intent"] = semantics.intent.value
-            if relation == ContextRelation.MODIFY and semantics.primary_request:
-                groups = {
-                    "region": ("regionCode", "regionName", "regionCodes", "regionNames"),
-                    "industry": ("industryCode", "industryName", "industryCodes", "industryNames"),
-                    "customer": ("customerCode", "customerName", "customerCodes", "customerNames"),
-                }
-                for group in semantics.primary_request.clear_parameters:
-                    for key in groups.get(group, ()):
-                        values.pop(key, None)
-        locked_parameters = set(values.get("_lockedParameters") or [])
-        resolved_entities = metadata.get("resolvedEntityParameters")
-        if isinstance(resolved_entities, dict):
-            # 这些值只可能来自 understand_request 的实体主数据校验，优先于
-            # 本轮名称抽取，且锁定标准编码避免后续语义合并把它覆盖回名称。
-            values.update({key: value for key, value in resolved_entities.items() if value not in (None, "", [])})
-            locked_parameters.update(
-                key for key in resolved_entities if not key.startswith("_")
-            )
-        pending = memory.get("pendingAction")
-        has_pending_action = isinstance(pending, dict) and bool(pending.get("tool"))
-        pending_interaction = memory.get("pendingInteraction")
-        if clarification_reply and isinstance(pending_interaction, dict):
-            snapshot = pending_interaction.get("parameters")
-            if isinstance(snapshot, dict):
-                values.update({
-                    key: value
-                    for key, value in snapshot.items()
-                    if value not in (None, "") and key != "confirmed"
-                    and (not key.startswith("_") or key in resumable_controls)
-                })
-        if skill_name == "customer-gas-forecast" and not explicit_confirmation:
-            # 训练策略属于本次预测操作，不能从上一轮继承。新请求默认优先
-            # 复用已有结果，仅在没有可用结果时自动训练；本轮明确语义随后覆盖。
-            values.update(
-                forceRetrain=False,
-                autoTrain=True,
-                trainingPreference="AUTO",
-            )
-        if explicit_confirmation and has_pending_action and isinstance(pending.get("parameters"), dict):
-            snapshot = {
-                key: value for key, value in pending["parameters"].items()
-                if value not in (None, "") and key != "confirmed"
-                and (not key.startswith("_") or key in resumable_controls)
+        if metadata.get("agentCode"):
+            values["agentCode"] = metadata["agentCode"]
+        if skill_name == "forecast-analysis" and not values.get("forecastNo"):
+            forecast_no = ActionExecutor._latest_forecast_reference(metadata.get("historyReferences"))
+            if forecast_no:
+                values["forecastNo"] = forecast_no
+        if semantics and semantics.intent is not None:
+            values["_intent"] = semantics.intent.value
+        if relation == ContextRelation.MODIFY and semantics and semantics.primary_request:
+            groups = {
+                "region": ("regionCode", "regionName", "regionCodes", "regionNames"),
+                "industry": ("industryCode", "industryName", "industryCodes", "industryNames"),
+                "customer": ("customerCode", "customerName", "customerCodes", "customerNames"),
             }
-            values.update(snapshot)
-            values["conversationNo"] = conversation_no
-            locked_parameters.update(key for key in snapshot if not key.startswith("_"))
+            for group in semantics.primary_request.clear_parameters:
+                for key in groups.get(group, ()):
+                    values.pop(key, None)
+        locked_parameters = set(values.get("_lockedParameters") or [])
+        resolved_entities = metadata.get("resolvedEntityParameters") or {}
+        values.update({key: value for key, value in resolved_entities.items() if value not in (None, "", [])})
+        locked_parameters.update(key for key in resolved_entities if not key.startswith("_"))
+        if skill_name == "customer-gas-forecast" and not explicit_confirmation:
+            values.update(forceRetrain=False, autoTrain=True, trainingPreference="AUTO")
+        if explicit_confirmation and has_pending_action:
+            locked_parameters.update(key for key in values if not key.startswith("_"))
+            values["_pendingTool"] = pending.pending_tool
+            values["confirmed"] = True
         if not (explicit_confirmation and has_pending_action and values.get("idempotencyKey")):
             seed = str(metadata.get("turnId") or f"{conversation_no}:{skill_name}:{message.strip()}")
             values["idempotencyKey"] = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:32]
-        # 待确认动作只在用户给出纯确认回复时恢复。用户输入新的业务要求时，
-        # 必须重新规划，不能让上一轮 pendingTool 把新请求带回旧参数。
-        if explicit_confirmation and has_pending_action:
-            values["_pendingTool"] = pending["tool"]
-        if explicit_confirmation and has_pending_action:
-            values["confirmed"] = True
         for key, pattern in {
             # 不能使用 \b：中文“的”等字符在 Python Unicode 正则中也属于 word，
             # 会让编号在最后一个连字符处回退截断。
@@ -762,7 +718,7 @@ class ActionExecutor:
             values["trainingPreference"] = "FORCE_RETRAIN"
             locked_parameters.update(("forceRetrain", "autoTrain", "trainingPreference"))
         # “继续/确认”等纯确认回复只负责批准上一轮已经解析完成的动作。
-        # 此时 pendingAction 中的参数快照是唯一可信输入，不能再把确认词当成
+        # 此时 pendingOperation 中的参数快照是唯一可信输入，不能再把确认词当成
         # 新业务请求交给语义模型，否则模型很容易因为文本里没有客户和周期而
         # 生成一次错误的补充提问。
         explicit_business_context = bool(
@@ -782,6 +738,17 @@ class ActionExecutor:
             accepted_semantic_values = {
                 key: value for key, value in semantic_values.items() if key not in locked_parameters
             }
+            # 澄清链路已把实体解析为标准编码后，后续只是在补充别的参数（如
+            # 预测天数）。此时语义提取器为理解上下文带回的客户/地区/行业名称
+            # 不能替换已校验的实体；否则下一轮会丢失编码而重新变成未解析名称。
+            for entity_keys in (
+                ("customerCode", "customerName", "customerCodes", "customerNames"),
+                ("regionCode", "regionName", "regionCodes", "regionNames"),
+                ("industryCode", "industryName", "industryCodes", "industryNames"),
+            ):
+                if any(key in locked_parameters for key in entity_keys):
+                    for key in entity_keys:
+                        accepted_semantic_values.pop(key, None)
             # 多实体必须保持为集合，不能因为前面的兼容规则恰好抽到第一个名称，
             # 就悄悄降级成单实体执行。
             for plural_key, singular_keys in (
@@ -805,7 +772,7 @@ class ActionExecutor:
         if (
             skill_name == "business-data-query"
             and not (semantics and semantics.customer_names)
-            and not (semantics and semantics.primary_request and semantics.primary_request.references)
+            and not (semantics and semantics.primary_request and semantics.primary_request.references.is_explicit)
             and not re.search(r"当前|这个|该客户|这些客户", message)
             and re.search(r"客户(?:列表|清单|有哪些|信息|详情)?|有哪些客户", message)
             and not re.search(r"训练|预测|任务|状态|结果|历史|最新", message)
@@ -815,7 +782,7 @@ class ActionExecutor:
             values.pop("customerName", None)
         if clarification_reply:
             # 候选值由上一轮实体查询结果生成。客户端只回传不透明 token，真正
-            # 的业务编码从 pendingInteraction 恢复，不能信任用户直接提交编码。
+            # 的业务编码从 pendingOperation 恢复，不能信任用户直接提交编码。
             values.update(clarification_values)
             locked_parameters.update(
                 key for key in clarification_values if not key.startswith("_")
@@ -894,6 +861,26 @@ class ActionExecutor:
         return values
 
     @staticmethod
+    def _latest_forecast_reference(history_references: Any) -> str | None:
+        """从可信会话引用中反向获取当前分析对象，不依赖自然语言猜测。"""
+        if not isinstance(history_references, list):
+            return None
+        for message in reversed(history_references):
+            if not isinstance(message, dict):
+                continue
+            references = message.get("references")
+            if not isinstance(references, list):
+                continue
+            for reference in reversed(references):
+                if not isinstance(reference, dict):
+                    continue
+                ref_type = reference.get("referenceType") or reference.get("reference_type")
+                ref_no = reference.get("referenceNo") or reference.get("reference_no")
+                if str(ref_type or "").upper() == "FORECAST" and isinstance(ref_no, str) and ref_no.strip():
+                    return ref_no.strip()
+        return None
+
+    @staticmethod
     def _business_context_values(value: object) -> dict[str, Any]:
         """只提取地区、行业和客户字段，避免把整个页面对象混入工具参数。"""
         if not isinstance(value, dict):
@@ -969,7 +956,7 @@ class ActionExecutor:
                 issues.append(ResolutionIssue(
                     reason=ClarificationReason.PARAMETER_MISSING,
                     field="forecastHorizon",
-                    message=f"请选择预测周期（单位：{unit}）。",
+                    message=f"还需要本次预测周期（单位：{unit}）。",
                     input_type=ClarificationInputType.SELECT,
                     options=[
                         ClarificationOption(value=str(value), label=f"{value}{unit}")
@@ -1008,7 +995,7 @@ class ActionExecutor:
                     else ClarificationReason.PARAMETER_MISSING
                 ),
                 field=field_name,
-                message=f"请提供{label}。",
+                message=f"还需要{label}。",
                 input_type=input_type,
                 options=[
                     ClarificationOption(value=str(value), label=str(value))
@@ -1224,9 +1211,13 @@ class ActionExecutor:
                     f"- 预测范围：{scope}\n"
                     f"- 预测周期：{horizon_text}\n"
                     f"- 训练策略：{training_text}\n"
-                    "该操作会创建业务任务，是否确认继续？"
+                    "该操作会创建业务任务。请在输入框回复 **确认** 以创建任务；"
+                    "回复 **拒绝** 或 **取消** 则放弃本次任务。"
                 )
-            return f"即将执行“{title}”，该操作会写入业务数据或改变任务状态，是否确认继续？"
+            return (
+                f"即将执行“{title}”，该操作会写入业务数据或改变任务状态。"
+                "请回复 **确认** 继续；回复 **拒绝** 或 **取消** 放弃本次操作。"
+            )
         return None
 
     @staticmethod
@@ -1313,7 +1304,7 @@ class ActionExecutor:
             forecast_name, unit, default, _ = ActionExecutor._forecast_period_config(arguments)
             return (
                 f"已确认将为{ActionExecutor._forecast_scope(arguments)}发起{forecast_name}。\n"
-                f"推荐预测周期为{default}{unit}，请选择本次要预测的周期。"
+                f"推荐预测周期为{default}{unit}，请直接回复本次要预测的天数。"
             )
         schema = tool.get("inputSchema") if isinstance(tool.get("inputSchema"), dict) else {}
         properties, _ = ActionExecutor._schema_fields(schema)

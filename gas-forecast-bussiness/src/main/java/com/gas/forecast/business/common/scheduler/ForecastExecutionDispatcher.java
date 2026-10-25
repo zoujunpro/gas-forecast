@@ -12,9 +12,6 @@ import com.gas.forecast.business.application.task.ExecutionTaskLifecycleService;
 import com.gas.forecast.business.application.forecast.ForecastExecutionPayloadFactory;
 import com.gas.forecast.business.application.forecast.ForecastExecutionRecordService;
 import com.gas.forecast.business.application.forecast.ForecastExecutionResultPersistenceService;
-import com.gas.forecast.common.threadpool.ThreadPoolConfig;
-import com.gas.forecast.common.threadpool.ThreadPoolUtils;
-import com.gas.forecast.common.threadpool.TraceableThreadPoolExecutor;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import com.gas.forecast.dao.domain.ExecutionTaskTb;
@@ -26,15 +23,10 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /** 以任务明细为队列项执行统一模型预测。 */
@@ -54,43 +46,6 @@ public class ForecastExecutionDispatcher {
     private final ExecutionStepRecorder executionStepRecorder;
     private final ObjectMapper objectMapper;
 
-    @Value("${gas.agent.forecast-queue.worker.core-pool-size:2}")
-    private int workerCorePoolSize;
-    @Value("${gas.agent.forecast-queue.worker.maximum-pool-size:4}")
-    private int workerMaximumPoolSize;
-    @Value("${gas.agent.forecast-queue.worker.queue-capacity:100}")
-    private int workerQueueCapacity;
-    @Value("${gas.agent.forecast-queue.worker.shutdown-await-seconds:30}")
-    private long workerShutdownAwaitSeconds;
-
-    private TraceableThreadPoolExecutor forecastExecutionWorkerExecutor;
-
-    @PostConstruct
-    void initializeWorkerExecutor() {
-        forecastExecutionWorkerExecutor = ThreadPoolUtils.create(ThreadPoolConfig.of(
-                "forecast-executor", workerCorePoolSize, workerMaximumPoolSize, workerQueueCapacity));
-        log.info("预测执行线程池已初始化：corePoolSize={}, maximumPoolSize={}, queueCapacity={}",
-                workerCorePoolSize, workerMaximumPoolSize, workerQueueCapacity);
-    }
-
-    @PreDestroy
-    void shutdownWorkerExecutor() {
-        if (forecastExecutionWorkerExecutor == null) {
-            return;
-        }
-        forecastExecutionWorkerExecutor.shutdown();
-        try {
-            if (!forecastExecutionWorkerExecutor.awaitTermination(workerShutdownAwaitSeconds, TimeUnit.SECONDS)) {
-                List<Runnable> pendingForecastExecutionTasks = forecastExecutionWorkerExecutor.shutdownNow();
-                log.warn("预测执行线程池未在规定时间内停止，已强制关闭，未执行任务数={}", pendingForecastExecutionTasks.size());
-            }
-        } catch (InterruptedException exception) {
-            forecastExecutionWorkerExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-            log.warn("等待预测执行线程池关闭时被中断，已强制关闭", exception);
-        }
-    }
-
     @Scheduled(fixedDelayString = "${gas.agent.forecast-queue.dispatch-delay-ms:2000}")
     public void dispatch() {
         List<ExecutionTaskDetailTb> pendingExecutionTaskDetails = executionTaskDetailMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery()
@@ -101,19 +56,7 @@ public class ForecastExecutionDispatcher {
             ExecutionTaskTb executionTask = executionTaskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery().eq(ExecutionTaskTb::getTaskNo, pendingExecutionTaskDetail.getTaskNo()).last("limit 1"));
             if (executionTask == null) continue;
             ExecutionTaskDetailTb executionTaskDetail = executionTaskLifecycleService.claimForecastDetail(pendingExecutionTaskDetail.getId());
-            if (executionTaskDetail != null) submitForecastExecution(executionTask, executionTaskDetail);
-        }
-    }
-
-    private void submitForecastExecution(ExecutionTaskTb executionTask, ExecutionTaskDetailTb executionTaskDetail) {
-        String executionTraceId = "forecast-" + executionTask.getTaskNo() + "-detail-" + executionTaskDetail.getId();
-        try {
-            forecastExecutionWorkerExecutor.executeTracked("forecast-execute", executionTraceId,
-                    () -> executeForecast(executionTask, executionTaskDetail));
-        } catch (RejectedExecutionException exception) {
-            executionTaskLifecycleService.completeForecastDetail(executionTaskDetail.getId(), false);
-            log.error("预测任务投递到线程池被拒绝，已标记执行失败：taskNo={}, detailId={}",
-                    executionTask.getTaskNo(), executionTaskDetail.getId(), exception);
+            if (executionTaskDetail != null) executeForecast(executionTask, executionTaskDetail);
         }
     }
 
@@ -148,8 +91,10 @@ public class ForecastExecutionDispatcher {
                     "预测完成，共" + forecastExecutionResult.path("forecast").path("points").size() + "个数据点", forecastExecutionResult.path("forecast").toString());
             executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FORECAST_ANALYSIS,
                     "正在整理回测与预测结果");
+            String forecastAnalysis = buildForecastAnalysisMetrics(modelExecuteRecord, forecastExecutionResult);
+            modelExecuteRecordMapper.updateById(modelExecuteRecord);
             executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FORECAST_ANALYSIS,
-                    "预测结果研判已生成", buildForecastAnalysisMetrics(modelExecuteRecord, forecastExecutionResult));
+                    "预测结果研判已生成", forecastAnalysis);
             executionTaskLifecycleService.completeForecastDetail(executionTaskDetail.getId(), true);
         } catch (RuntimeException exception) {
             if (modelExecuteRecord != null) {
@@ -199,6 +144,7 @@ public class ForecastExecutionDispatcher {
             analysisContent.append("未来").append(forecastDays).append("天预测均值为")
                     .append(String.format(Locale.ROOT, "%.2f", totalForecastValue / forecastDays)).append("。");
         }
+        modelExecuteRecord.setAnalysisContent(analysisContent.toString());
         ObjectNode forecastAnalysisMetrics = objectMapper.createObjectNode();
         forecastAnalysisMetrics.put("analysis", analysisContent.toString());
         forecastAnalysisMetrics.put("model", textOf(modelExecuteRecord.getBestModel(), "默认模型"));

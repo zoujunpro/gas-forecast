@@ -15,6 +15,13 @@ class SkillIntent(StrEnum):
     CHAT = "CHAT"
 
 
+class SkillReference(BaseModel):
+    """一份 Skill 参考文档。"""
+
+    name: str
+    content: str
+
+
 class SkillDefinition(BaseModel):
     """Skill 只声明能力边界，不实现语义解析或业务流程。"""
 
@@ -32,7 +39,7 @@ class SkillDefinition(BaseModel):
         description="是否禁止创建或修改业务对象",
     )
     instructions: str = Field(description="该能力的业务约束和结果处理说明")
-    references: dict[str, str] = Field(default_factory=dict)
+    references: list[SkillReference] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_intent_boundary(self) -> "SkillDefinition":
@@ -50,7 +57,7 @@ class SkillDefinition(BaseModel):
 
     def model_instructions(self) -> str:
         sections = [self.instructions]
-        sections.extend(f"# 参考：{name}\n\n{content}" for name, content in self.references.items())
+        sections.extend(f"# 参考：{item.name}\n\n{item.content}" for item in self.references)
         return "\n\n".join(sections)
 
     def summary(self) -> dict[str, object]:

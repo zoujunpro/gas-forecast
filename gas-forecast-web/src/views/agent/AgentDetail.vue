@@ -249,7 +249,7 @@
               <span class="section-badge">01</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">选择分析范围</h2>
+                  <h2 class="section-title"><el-icon><DataAnalysis /></el-icon>选择分析范围</h2>
                   <p class="section-hint">默认选中一个客户，点击预测后发起客户级预测</p>
                 </div>
               </div>
@@ -305,13 +305,13 @@
             <div class="section-head">
               <span class="section-badge">02</span>
               <div>
-                <h2 class="section-title">推荐模型</h2>
+                <h2 class="section-title"><el-icon><Cpu /></el-icon>推荐模型</h2>
                 <p class="section-hint">基于回测精度自动推荐最优模型</p>
               </div>
             </div>
             <div class="model-info-card short-term-model-card">
               <div class="model-info-header">
-                <div class="model-info-name">{{ currentResult.model_name }}</div>
+                <div class="model-info-name">{{ currentResult.bestModel || currentResult.model_name || '-' }}</div>
                 <div class="model-info-tag">最佳模型</div>
               </div>
               <div class="metrics-grid">
@@ -342,7 +342,7 @@
               <span class="section-badge">03</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">模型评估（滚动回测结果）</h2>
+                  <h2 class="section-title"><el-icon><TrendCharts /></el-icon>模型评估（滚动回测结果）</h2>
                   <p class="section-hint">实际值与预测值对比及模型精度</p>
                 </div>
                 <div class="chart-toggle">
@@ -365,7 +365,18 @@
             </div>
             <div class="short-term-evaluation">
               <section class="result-chart-panel compact-chart-panel">
-                <div ref="chartRefTop" class="chart" v-if="currentResult.dates?.length"></div>
+                <ForecastComparisonChart
+                  v-if="currentResult.dates?.length"
+                  class="chart"
+                  :dates="currentResult.dates"
+                  :reference-values="currentResult.actual || []"
+                  :forecast-values="currentResult.predicted || []"
+                  :chart-type="chartType === 'bar' ? 'bar' : 'line'"
+                  reference-name="实际值"
+                  forecast-name="预测值"
+                  reference-color="#10b981"
+                  forecast-color="#3b82f6"
+                />
                 <el-empty v-else description="暂无滚动回测数据" :image-size="64" />
               </section>
             </div>
@@ -376,7 +387,7 @@
               <span class="section-badge">04</span>
               <div class="section-head-right">
                 <div>
-                  <h2 class="section-title">未来预测结果</h2>
+                  <h2 class="section-title"><el-icon><Histogram /></el-icon>未来预测结果</h2>
                   <p class="section-hint">去年同期、最新预测及每日预测明细</p>
                 </div>
                 <div class="chart-toggle">
@@ -413,7 +424,7 @@
             </div>
             <div class="short-term-future-grid">
               <section v-if="futureChartType !== 'table'" class="result-chart-panel compact-chart-panel">
-                <div ref="chartRefBottom" class="chart" v-if="currentResult.future_dates?.length"></div>
+                <ForecastComparisonChart v-if="currentResult.future_dates?.length" class="chart" :dates="currentResult.future_dates" :reference-values="currentResult.last_year_values || []" :forecast-values="currentResult.future_predicted || []" :chart-type="futureChartType === 'line' ? 'line' : 'bar'" />
                 <el-empty v-else description="暂无未来预测数据" :image-size="64" />
               </section>
               <div v-else class="future-table-wrap">
@@ -434,21 +445,13 @@
                 </el-table>
               </div>
             </div>
-          </section>
-
-          <section v-if="currentResult" class="section-block compact-section related-section">
-            <div class="section-head">
-              <span class="section-badge">05</span>
-              <div>
-                <h2 class="section-title">相关信息</h2>
-                <p class="section-hint">本次训练与预测任务的追溯信息</p>
-              </div>
+            <div class="forecast-meta-info">
+              <span>预测起始时间：{{ shortTermForecastStart }}</span>
+              <span>预测天数：{{ shortTermFutureValues.length }} 天</span>
             </div>
-            <div class="related-info-grid">
-              <div v-for="item in shortTermRelatedItems" :key="item.label">
-                <span>{{ item.label }}</span
-                ><strong :title="item.value">{{ item.value }}</strong>
-              </div>
+            <div v-if="currentResult.analysisContent" class="forecast-analysis">
+              <strong>AI 预测解析</strong>
+              <p>{{ currentResult.analysisContent }}</p>
             </div>
           </section>
 
@@ -850,7 +853,7 @@
           <button class="ai-clear" @click="clearChat">清空</button>
         </div>
       </div>
-      <div class="ai-messages" ref="messagesRef">
+      <div class="ai-messages" ref="messagesRef" @scroll="loadOlderMessagesOnScroll">
         <template v-for="msg in messages" :key="msg.id">
         <div v-show="msg.role === 'user' || msg.content" class="msg" :class="[msg.role, { 'task-message': Boolean(msg.taskNo) }]">
           <div class="msg-avatar" :class="msg.role">
@@ -873,52 +876,12 @@
                 <el-table-column v-for="column in chatListColumns(msg)" :key="column.key" :prop="column.key" :label="column.label" min-width="130" show-overflow-tooltip />
               </el-table>
             </section>
-            <div v-if="msg.role === 'assistant' && msg.clarification && !msg.clarificationResolved" class="msg-clarification">
-              <template v-if="msg.clarification.interactionType === 'CONFIRMATION'">
-                <button type="button" :disabled="isStreaming" @click="replyConfirmation(msg, true)">确认执行</button>
-                <button type="button" :disabled="isStreaming" @click="replyConfirmation(msg, false)">取消</button>
-              </template>
-              <template v-else>
-                <div v-for="field in msg.clarification.fields" :key="field.parameterCode" class="msg-clarification-field">
-                  <label>{{ field.parameterName }}</label>
-                  <div v-if="field.inputType === 'CONFIRM'">
-                    <button
-                      v-for="option in field.options"
-                      :key="option.value"
-                      type="button"
-                      :disabled="isStreaming"
-                      @click="replyClarification(msg, { [field.parameterCode]: option.value }, option.label)"
-                    >{{ option.label }}</button>
-                  </div>
-                  <select
-                    v-else-if="field.options.length"
-                    :value="clarificationDraft[msg.id]?.[field.parameterCode] || ''"
-                    @change="setAgentClarificationEvent(msg.id, field.parameterCode, $event)"
-                  >
-                    <option value="" disabled>请选择</option>
-                    <option v-for="option in field.options" :key="option.value" :value="option.value">{{ option.label }}</option>
-                  </select>
-                  <input
-                    v-else
-                    :type="field.inputType === 'NUMBER' ? 'number' : 'text'"
-                    :value="clarificationDraft[msg.id]?.[field.parameterCode] || ''"
-                    @input="setAgentClarificationEvent(msg.id, field.parameterCode, $event)"
-                  />
-                </div>
-                <button
-                  v-if="msg.clarification.fields.some((field) => field.inputType !== 'CONFIRM')"
-                  type="button"
-                  :disabled="isStreaming"
-                  @click="replyClarification(msg)"
-                >提交并继续</button>
-              </template>
-            </div>
           </div>
         </div>
         <!-- 执行任务不是普通消息气泡的一部分：独立占满聊天栏，避免图表和长文本被气泡宽度裁切。 -->
-        <AiExecutionTask v-if="msg.role === 'assistant' && msg.taskNo" class="task-execution-block" :task-no="msg.taskNo" @forecast-completed="showCompletedTaskForecast" />
+        <AiExecutionTask v-if="msg.role === 'assistant' && msg.taskNo" class="task-execution-block" :task-no="msg.taskNo" @forecast-completed="(result) => showCompletedTaskForecast(msg, result)" />
         </template>
-        <div v-if="isStreaming" class="msg assistant">
+        <div v-if="isStreaming && !messages[messages.length - 1]?.content" class="msg assistant">
           <div class="msg-avatar assistant">
             <svg viewBox="0 0 24 24" fill="none">
               <path
@@ -955,10 +918,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import echarts from '@/utils/echarts'
-import { getJson, listPage, postJson } from '@/api/management'
+import { getJson, listPage, postJson, postSse } from '@/api/management'
 import { renderMarkdown, sanitizeHtml } from '@/utils/markdown'
 import { ElMessage } from 'element-plus'
 import {
@@ -976,6 +939,7 @@ import {
 } from '@element-plus/icons-vue'
 import type { ChatMessage } from '@/types'
 import AiExecutionTask from '@/views/ai/AiExecutionTask.vue'
+import ForecastComparisonChart from '@/components/ForecastComparisonChart.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -1186,16 +1150,7 @@ const shortTermFutureRows = computed(() => {
     }
   })
 })
-const shortTermRelatedItems = computed(() => {
-  const dates = currentResult.value?.dates || []
-  const futureDates = currentResult.value?.future_dates || []
-  return [
-    { label: '训练批次号', value: String(currentResult.value?.batch_no || '-').toUpperCase() },
-    { label: '回测天数', value: `${dates.length} 天` },
-    { label: '预测批次号', value: String(currentResult.value?.forecast_batch_no || '-').toUpperCase() },
-    { label: '预测天数', value: `${futureDates.length} 天` }
-  ]
-})
+const shortTermForecastStart = computed(() => currentResult.value?.future_dates?.[0] || '-')
 
 const mapeClass = (mape: number) => {
   if (mape <= 10) return 'metric-good'
@@ -1235,6 +1190,24 @@ const latestExecuteRecord = async (agentCode: string, predicate: (row: any) => b
   const page = await listPage('/model-execute-record', { page: 1, size: 500, agentCode, status: 'SUCCESS' })
   return page.records.find(predicate) || null
 }
+/** 当前会话优先：从最后一个预测任务反查它实际产出的预测记录。没有预测任务时才回退到任意历史成功记录。 */
+const latestConversationExecuteRecord = async () => {
+  const taskMessages = [...messages.value].reverse().filter((message) => Boolean(message.taskNo))
+  for (const message of taskMessages) {
+    try {
+      const detailsResponse = await getJson<any>(`/execution-tasks/${encodeURIComponent(message.taskNo!)}/details?pageNo=1&pageSize=100&status=SUCCESS`)
+      const details = detailsResponse.data?.records || []
+      const detail = [...details].reverse().find((item: any) => item.forecastNo)
+      if (!detail?.forecastNo) continue
+      const recordResponse = await getJson<any>(`/model-execute-record/${encodeURIComponent(detail.forecastNo)}`)
+      const record = recordResponse.data
+      if (record?.status === 'SUCCESS' && record.agentCode === agentId.value) return record
+    } catch (error) {
+      console.warn('读取当前会话预测结果失败，将尝试下一条任务：', error)
+    }
+  }
+  return null
+}
 const resultFromExecuteRecord = (record: any) => {
   const backtest = jsonValue(record?.backtestResultJson) as any
   const forecast = jsonValue(record?.forecastResultJson) as any
@@ -1245,12 +1218,16 @@ const resultFromExecuteRecord = (record: any) => {
   const actualOf = (point: any) => point?.actual_value ?? point?.actualValue ?? point?.actual
   const predictedOf = (point: any) => point?.predicted_value ?? point?.predictedValue ?? point?.predicted
   const valueOf = (point: any) => point?.forecast_value ?? point?.forecastValue ?? point?.prediction ?? point?.value
+  const lastYearValueByDate = new Map((Array.isArray(record?.lastYearPoints) ? record.lastYearPoints : [])
+    .map((point: any) => [dateOf(point), valueOf(point)]))
   return {
     dates: backtestPoints.map(dateOf).filter(Boolean), actual: backtestPoints.map(actualOf), predicted: backtestPoints.map(predictedOf),
     history_dates: backtestPoints.map(dateOf).filter(Boolean), history_values: backtestPoints.map(actualOf),
     future_dates: forecastPoints.map(dateOf).filter(Boolean), future_predicted: forecastPoints.map(valueOf),
+    last_year_values: forecastPoints.map((point: any) => lastYearValueByDate.get(dateOf(point)) ?? null),
     metrics: { mape: record?.mape, wmape: record?.wmape, smape: record?.smape, rmse: record?.rmse, mae: record?.mae, r2: record?.r2 },
     bestModel: record?.bestModel, forecastNo: record?.forecastNo, status: record?.status,
+    analysisContent: record?.analysisContent,
     regionName: record?.regionName, industryName: record?.industryName, customerName: record?.customerName
   }
 }
@@ -1311,8 +1288,14 @@ const loadMonthlyResult = async () => {
   currentResult.value = null
   try {
     const industryKey = industryNameMap[selectedIndustry.value] || selectedIndustry.value
-    const record = await latestExecuteRecord('monthly-sales', row => row.regionName === selectedProvince.value && row.industryName === industryKey)
+    const conversationRecord = await latestConversationExecuteRecord()
+    const record = conversationRecord || await latestExecuteRecord('monthly-sales', row => row.regionName === selectedProvince.value && row.industryName === industryKey)
     if (record) {
+      if (conversationRecord) {
+        selectedProvince.value = record.regionName || selectedProvince.value
+        const matchedIndustry = Object.entries(industryNameMap).find(([, value]) => value === record.industryName)?.[0]
+        selectedIndustry.value = matchedIndustry || record.industryName || selectedIndustry.value
+      }
       const monthlyData = normalizeMonthlyResult(resultFromExecuteRecord(record))
       currentResult.value = monthlyData
       nextTick(() => initMonthlyChart(monthlyData))
@@ -1433,7 +1416,12 @@ const loadStMape = async () => {
   }
 }
 
-const loadStResult = async () => {
+/**
+ * 加载左侧当前筛选范围的结果。
+ * 仅首次进入页面时允许按当前会话最新任务自动聚焦；用户手动切换筛选后，
+ * 绝不能再用右侧任务范围覆盖用户刚刚选择的地区、行业或客户。
+ */
+const loadStResult = async (preferConversation = false) => {
   if (!selectedStProvince.value || !selectedStIndustry.value || !selectedStCustomer.value) {
     currentResult.value = null
     return
@@ -1443,6 +1431,19 @@ const loadStResult = async () => {
   loadingResult.value = true
   currentResult.value = null
   try {
+    const conversationRecord = preferConversation ? await latestConversationExecuteRecord() : null
+    if (conversationRecord) {
+      await focusShortTermForecastScope({
+        regionName: conversationRecord.regionName,
+        industryName: conversationRecord.industryName,
+        customerName: conversationRecord.customerName
+      })
+      if (requestSeq !== stResultRequestSeq) return
+      const data = resultFromExecuteRecord(conversationRecord)
+      currentResult.value = data
+      nextTick(() => initMonthlyChart(data))
+      return
+    }
     const customer = selectedShortTermCustomerRecord()
     // 已确定客户时由后端按稳定编码过滤，避免整页记录受名称快照或分页影响。
     const directPage = customer?.customerCode
@@ -1557,13 +1558,22 @@ const focusShortTermForecastScope = async (scope: ShortTermForecastScope) => {
 }
 
 const refreshShortTermForecastResult = async () => {
-  await loadStResult()
+  await loadStResult(false)
   // 汇总指标不应阻塞客户预测结果展示，也不能让已完成任务一直保持“预测中”。
   void loadStMape().then(syncShortTermMape)
 }
 
 /** 右侧任务流程完成后，左侧自动切到同一地区、行业、客户，并加载最新预测结果。 */
-const showCompletedTaskForecast = async (result: Record<string, any>) => {
+const showCompletedTaskForecast = async (message: ChatMessage, result: Record<string, any>) => {
+  // 结果属于创建该任务的同一轮会话消息，避免用户必须滚动到任务卡片才能获知结论。
+  message.executionResult = result
+  const model = result.bestModel || result.modelName
+  const mape = result.mape ?? result.metrics?.mape
+  const summary = `预测已完成${model ? `，最佳模型为 **${model}**` : ''}${mape !== undefined && mape !== null ? `，回测 MAPE 为 **${mape}%**` : ''}。详细回测曲线和未来预测结果已展示在本消息下方。`
+  message.content = `${message.content}<br/><br/>${renderMarkdown(summary)}`
+  scrollToBottom()
+  window.setTimeout(scrollToBottom, 150)
+  window.setTimeout(scrollToBottom, 800)
   if (!isShortTerm.value) return
   const focused = await focusShortTermForecastScope({
     regionName: result.regionName,
@@ -1600,7 +1610,7 @@ const loadShortTermDashboard = async () => {
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
   syncShortTermMape()
-  await loadStResult()
+  await loadStResult(true)
 }
 
 const switchStProvince = (province: string) => {
@@ -1611,7 +1621,7 @@ const switchStProvince = (province: string) => {
   syncShortTermMape()
   currentResult.value = null
   stFilterDirty.value = true
-  void loadStResult()
+  void loadStResult(false)
 }
 
 const switchStIndustry = (industry: string) => {
@@ -1621,7 +1631,7 @@ const switchStIndustry = (industry: string) => {
   selectDefaultShortTermCustomer()
   currentResult.value = null
   stFilterDirty.value = true
-  void loadStResult()
+  void loadStResult(false)
 }
 
 const switchStCustomer = (customer: string) => {
@@ -1637,7 +1647,7 @@ const switchStCustomer = (customer: string) => {
   }
   currentResult.value = null
   stFilterDirty.value = true
-  void loadStResult()
+  void loadStResult(false)
 }
 
 const resetShortTermFilters = () => {
@@ -1649,7 +1659,7 @@ const resetShortTermFilters = () => {
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
   syncShortTermMape()
-  loadStResult()
+  loadStResult(false)
 }
 
 // === 冬供保供预测专用状态 ===
@@ -1674,8 +1684,10 @@ const loadWsResult = async () => {
   loadingResult.value = true
   currentResult.value = null
   try {
-    const record = await latestExecuteRecord('winter-supply', row => row.regionName === selectedWsProvince.value)
+    const conversationRecord = await latestConversationExecuteRecord()
+    const record = conversationRecord || await latestExecuteRecord('winter-supply', row => row.regionName === selectedWsProvince.value)
     if (record) {
+      if (conversationRecord) selectedWsProvince.value = record.regionName || selectedWsProvince.value
       const data = resultFromExecuteRecord(record)
       currentResult.value = data
       nextTick(() => initMonthlyChart(data))
@@ -1701,7 +1713,7 @@ const refreshLatestResult = async () => {
   }
   if (isShortTerm.value) {
     await loadStMape()
-    await loadStResult()
+    await loadStResult(false)
     return
   }
   if (isWinterSupply.value) {
@@ -1713,6 +1725,8 @@ const refreshLatestResult = async () => {
 const initMonthlyChart = (data: any) => {
   // === 上图：滚动回测结果 ===
   if (chartRefTop.value) {
+    const previous = echarts.getInstanceByDom(chartRefTop.value)
+    previous?.dispose()
     const chart = echarts.init(chartRefTop.value)
     const series: any[] = [
       {
@@ -1778,6 +1792,8 @@ const initMonthlyChart = (data: any) => {
 
   // === 下图：去年同期与最新预测 ===
   if (chartRefBottom.value && data.future_dates) {
+    const previous = echarts.getInstanceByDom(chartRefBottom.value)
+    previous?.dispose()
     const chartB = echarts.init(chartRefBottom.value)
     // 与预测批次页保持同一口径：同一预测批次下的参考值与预测值。
     const futureDates = data.future_dates || []
@@ -1947,6 +1963,7 @@ const runModel = async () => {
 
 const initChart = (data: any) => {
   if (!chartRef.value) return
+  echarts.getInstanceByDom(chartRef.value)?.dispose()
   const chart = echarts.init(chartRef.value)
   const isShort = agentId.value === 'short-term' && data.type_chart_data
 
@@ -2054,6 +2071,21 @@ const chatMemory = new Map<string, ChatMessage[]>()
 const clarificationDraft = reactive<Record<string, Record<string, any>>>({})
 /** 当前智能体右侧面板正在使用的服务端会话；切换业务对象不会改变它。 */
 const activeConversationNo = ref<string | null>(null)
+const hasMoreHistoryMessages = ref(false)
+const loadingOlderMessages = ref(false)
+const oldestHistoryMessageId = ref<number | null>(null)
+
+const conversationMessage = (item: any): ChatMessage => ({
+  id: String(item.id),
+  role: item.role,
+  content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+  clarification: item.clarification || undefined,
+  clarificationResolved: Boolean(item.clarification),
+  presentation: item.presentation || item.resultData?.presentation || undefined,
+  executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
+  taskNo: item.taskNo || (item.references || []).find((reference: any) => reference.referenceType === 'EXECUTION_TASK')?.referenceNo,
+  time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()
+})
 
 /** 页面重新打开时恢复当前智能体最近的会话，而不是按预测批次替换聊天记录。 */
 const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) => {
@@ -2064,7 +2096,7 @@ const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) =
     )
     if (!latest || agentId.value !== targetAgentCode) return
     const detailResponse = await getJson<any>(
-      `/ai/conversations/detail?conversationNo=${encodeURIComponent(latest.conversationNo)}`
+      `/ai/conversations/detail?conversationNo=${encodeURIComponent(latest.conversationNo)}&pageSize=20`
     )
     const detail = detailResponse.data
     if (!detail || agentId.value !== targetAgentCode) return
@@ -2073,17 +2105,9 @@ const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) =
       conversationMemory.set(targetAgentCode, activeConversationNo.value)
     }
     if (Array.isArray(detail.messages) && detail.messages.length) {
-      messages.value = detail.messages.map((item: any) => ({
-        id: String(item.id),
-        role: item.role,
-        content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
-        clarification: item.clarification || undefined,
-        clarificationResolved: Boolean(item.clarification),
-        presentation: item.presentation || item.resultData?.presentation || undefined,
-        executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
-        taskNo: item.taskNo || (item.references || []).find((reference: any) => reference.referenceType === 'EXECUTION_TASK')?.referenceNo,
-        time: item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()
-      }))
+      messages.value = detail.messages.map(conversationMessage)
+      hasMoreHistoryMessages.value = Boolean(detail.hasMoreMessages)
+      oldestHistoryMessageId.value = Number(detail.messages[0]?.id) || null
       const latestMessage = messages.value[messages.value.length - 1]
       if (latestMessage?.role === 'assistant' && latestMessage.clarification) {
         latestMessage.clarificationResolved = false
@@ -2094,6 +2118,31 @@ const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) =
     }
   } catch (error) {
     console.error('恢复智能体最近会话失败:', error)
+  }
+}
+
+const loadOlderMessagesOnScroll = async () => {
+  const container = messagesRef.value
+  if (!container || container.scrollTop > 24 || loadingOlderMessages.value || !hasMoreHistoryMessages.value
+      || !activeConversationNo.value || !oldestHistoryMessageId.value) return
+  loadingOlderMessages.value = true
+  const previousHeight = container.scrollHeight
+  try {
+    const response = await getJson<any>(`/ai/conversations/detail?conversationNo=${encodeURIComponent(activeConversationNo.value)}&beforeMessageId=${oldestHistoryMessageId.value}&pageSize=20`)
+    const detail = response.data
+    const older = Array.isArray(detail?.messages) ? detail.messages : []
+    if (older.length) {
+      messages.value.unshift(...older.map(conversationMessage))
+      oldestHistoryMessageId.value = Number(older[0].id) || oldestHistoryMessageId.value
+      saveChatToMemory(activeChatId.value)
+      await nextTick()
+      container.scrollTop += container.scrollHeight - previousHeight
+    }
+    hasMoreHistoryMessages.value = Boolean(detail?.hasMoreMessages)
+  } catch (error) {
+    console.error('加载更早会话消息失败:', error)
+  } finally {
+    loadingOlderMessages.value = false
   }
 }
 
@@ -2124,7 +2173,7 @@ const activeBusinessContext = () => {
 
 interface AgentStructuredReply {
   source: ChatMessage
-  inputType: 'CLARIFICATION_REPLY' | 'CONFIRMATION_REPLY' | 'REJECTION_REPLY'
+  inputType: 'CLARIFICATION_REPLY' | 'INTERACTION_REPLY'
   answers: Record<string, any>
   displayText: string
 }
@@ -2156,20 +2205,25 @@ const replyClarification = (
   }).filter(Boolean).join('；') || '补充信息'
   void sendMessage({ source: message, inputType: 'CLARIFICATION_REPLY', answers, displayText })
 }
-const replyConfirmation = (message: ChatMessage, confirmed: boolean) => {
-  void sendMessage({
-    source: message,
-    inputType: confirmed ? 'CONFIRMATION_REPLY' : 'REJECTION_REPLY',
-    answers: {},
-    displayText: confirmed ? '确认执行' : '取消',
-  })
-}
-
 const sendMessage = async (structured?: AgentStructuredReply) => {
-  if ((!structured && !inputMessage.value.trim()) || isStreaming.value) return
-  const userMessage = structured?.displayText || inputMessage.value
+  // 用户始终通过同一个输入框对话。若上一轮正在等补充信息，则把这句自然语言
+  // 自动作为该问题的回答提交，页面不再显示下拉框、表单或确认按钮。
+  // 只允许最后一条助手消息等待回答，历史遗留的澄清不能劫持新的普通对话。
+  const latestMessage = messages.value[messages.value.length - 1]
+  const pending = latestMessage?.role === 'assistant' && latestMessage.clarification
+    && !latestMessage.clarificationResolved ? latestMessage : undefined
+  const effectiveReply = structured || (pending ? {
+    source: pending,
+    inputType: pending.clarification!.interactionType === 'CONFIRMATION'
+      ? 'INTERACTION_REPLY'
+      : 'CLARIFICATION_REPLY',
+    answers: {},
+    displayText: inputMessage.value.trim()
+  } as AgentStructuredReply : undefined)
+  if ((!effectiveReply && !inputMessage.value.trim()) || isStreaming.value) return
+  const userMessage = effectiveReply?.displayText || inputMessage.value
   if (!structured) inputMessage.value = ''
-  if (structured) structured.source.clarificationResolved = true
+  if (effectiveReply) effectiveReply.source.clarificationResolved = true
   const streamId = activeChatId.value
   messages.value.push({
     id: Date.now().toString(),
@@ -2186,24 +2240,49 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
   const controller = new AbortController()
   abortControllers.set(streamId, controller)
   let fullResponse = ''
+  let staleInteraction = false
+  const expiredInteraction = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error || '')
+    return /当前会话没有等待处理|澄清交互已过期|回复类型与当前待处理交互不匹配/.test(message)
+  }
+  const requestBody = (reply?: AgentStructuredReply) => ({
+    conversationNo: activeConversationNo.value || conversationMemory.get(streamId) || null,
+    message: userMessage,
+    inputType: reply?.inputType || 'TEXT',
+    interactionId: reply?.source.clarification?.interactionId || null,
+    replyToTurnId: reply?.source.clarification?.replyToTurnId || null,
+    agentCode: agentId.value,
+    businessContext: activeBusinessContext()
+  })
+  const requestStream = (reply?: AgentStructuredReply) => postSse<any>(
+    '/ai/conversations/chat/stream', requestBody(reply),
+    (event, value) => {
+      if (activeChatId.value !== streamId) return
+      const msg = messages.value.find((item) => item.id === msgId)
+      if (!msg) return
+      if (event === 'progress') {
+        msg.content = renderMarkdown(String(value))
+      } else if (event === 'delta') {
+        fullResponse += String(value)
+        msg.content = renderMarkdown(fullResponse)
+      }
+      scrollToBottom()
+    }, controller.signal
+  )
 
   try {
-    const response = await postJson<any>(
-      '/ai/conversations/chat',
-      {
-        conversationNo: activeConversationNo.value || conversationMemory.get(streamId) || null,
-        message: userMessage,
-        inputType: structured?.inputType || 'TEXT',
-        interactionId: structured?.source.clarification?.interactionId || null,
-        replyToTurnId: structured?.source.clarification?.replyToTurnId || null,
-        answers: structured?.answers || {},
-        agentCode: agentId.value,
-        businessContext: activeBusinessContext()
-      },
-      controller.signal,
-      120_000
-    )
-    const data = response.data || {}
+    let data: any
+    try {
+      data = await requestStream(effectiveReply)
+    } catch (error) {
+      // Java 是 pendingOperation 的唯一权威。过期澄清在 Java 校验阶段被拒绝，
+      // 尚未创建用户消息或任务，因此可安全地用同一段文字按 TEXT 重发。
+      if (effectiveReply?.inputType !== 'CLARIFICATION_REPLY' || !expiredInteraction(error)) throw error
+      staleInteraction = true
+      effectiveReply.source.clarificationResolved = true
+      fullResponse = ''
+      data = await requestStream()
+    }
     if (data.conversationNo) {
       conversationMemory.set(streamId, data.conversationNo)
       activeConversationNo.value = data.conversationNo
@@ -2220,13 +2299,16 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
         if (msg.clarification) clarificationDraft[msg.id] = {}
       }
       saveChatToMemory(streamId)
+      scrollToBottom()
+      window.setTimeout(scrollToBottom, 120)
+      window.setTimeout(scrollToBottom, 500)
     } else {
       updateMsgInMemory(streamId, msgId, renderMarkdown(fullResponse))
     }
 
     // 执行进度统一由执行任务卡片按 taskNo 展示；这里不再根据训练/预测批次轮询旧接口。
   } catch (e: any) {
-    if (structured) structured.source.clarificationResolved = false
+    if (effectiveReply && !staleInteraction) effectiveReply.source.clarificationResolved = false
     if (e.name === 'AbortError') {
       const content = renderMarkdown(fullResponse || '（已停止）')
       if (activeChatId.value === streamId) {
@@ -2323,6 +2405,8 @@ const getGreeting = (id: string): string => {
 
 const initOrRestoreChat = (id: string) => {
   inputMessage.value = ''
+  hasMoreHistoryMessages.value = false
+  oldestHistoryMessageId.value = null
   if (!loadChatFromMemory(id)) {
     messages.value = [
       { id: '1', role: 'assistant', content: renderMarkdown(getGreeting(id)), time: new Date().toLocaleTimeString() }
@@ -2332,7 +2416,11 @@ const initOrRestoreChat = (id: string) => {
 
 const scrollToBottom = () => {
   nextTick(() => {
-    if (messagesRef.value) messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+    const container = messagesRef.value
+    if (!container) return
+    requestAnimationFrame(() => {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    })
   })
 }
 
@@ -2347,28 +2435,42 @@ const messages = ref<ChatMessage[]>([
   }
 ])
 
+/** 会话恢复完成后再加载左侧，保证当前会话的最后一次预测优先。 */
+const loadCurrentAgentResult = async () => {
+  if (isMonthlySales.value) {
+    await loadProvinceMape()
+    await loadMonthlyResult()
+  } else if (isShortTerm.value) {
+    await loadShortTermDashboard()
+  } else if (isWinterSupply.value) {
+    await loadWsMape()
+    await loadWsResult()
+  } else {
+    await loadAgentConfig()
+  }
+}
+
 let resizeHandler: (() => void) | null = null
 onMounted(() => {
   activeChatId.value = agentId.value
   initOrRestoreChat(activeChatId.value)
-  void restoreLatestAgentConversation(agentId.value)
-  if (isMonthlySales.value) {
-    loadProvinceMape()
-    loadMonthlyResult()
-  } else if (isShortTerm.value) {
-    void loadShortTermDashboard()
-  } else if (isWinterSupply.value) {
-    loadWsMape()
-    loadWsResult()
-  } else {
-    loadAgentConfig()
-  }
+  void (async () => {
+    await restoreLatestAgentConversation(agentId.value)
+    await loadCurrentAgentResult()
+  })()
   resizeHandler = () => {
     ;[chartRef, chartRefTop, chartRefBottom].forEach((ref) => {
       if (ref.value && (ref.value as any)._echarts) (ref.value as any)._echarts.resize()
     })
   }
   window.addEventListener('resize', resizeHandler)
+})
+
+onBeforeUnmount(() => {
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler)
+  ;[chartRef, chartRefTop, chartRefBottom].forEach((ref) => {
+    if (ref.value) echarts.getInstanceByDom(ref.value)?.dispose()
+  })
 })
 
 // 切换智能体时重新加载
@@ -2380,22 +2482,17 @@ watch(agentId, (newId, oldId) => {
   modelResult.value = null
   currentResult.value = null
   initOrRestoreChat(activeChatId.value)
-  void restoreLatestAgentConversation(newId)
-  if (isMonthlySales.value) {
-    loadProvinceMape()
-    loadMonthlyResult()
-  } else if (isShortTerm.value) {
+  if (isShortTerm.value) {
     selectedStProvince.value = ''
     selectedStIndustry.value = ''
     selectedStCustomer.value = ''
-    void loadShortTermDashboard()
   } else if (isWinterSupply.value) {
     selectedWsProvince.value = '江苏'
-    loadWsMape()
-    loadWsResult()
-  } else {
-    loadAgentConfig()
   }
+  void (async () => {
+    await restoreLatestAgentConversation(newId)
+    await loadCurrentAgentResult()
+  })()
 })
 
 // 图表类型切换时重绘
@@ -2792,12 +2889,14 @@ watch(futureChartType, () => {
 .compact-section .section-title {
   margin: 0 0 2px;
   color: #1f2937;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
 }
 .compact-section .section-hint {
-  color: #98a2b3;
-  font-weight: 400;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 500;
 }
 .short-term-filter-grid {
   display: grid;
@@ -3011,30 +3110,21 @@ watch(futureChartType, () => {
   color: #12b76a;
   font-weight: 600;
 }
-.related-info-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  padding-left: 38px;
-}
-.related-info-grid > div {
+.forecast-meta-info {
   display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-.related-info-grid span {
+  gap: 18px;
+  margin-top: 10px;
   color: #667085;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.6;
 }
-.related-info-grid strong {
-  overflow: hidden;
-  color: #101828;
-  font-size: 13px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.forecast-analysis {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #eef2f6;
 }
+.forecast-analysis strong { color: #1e3a5f; font-size: 14px; }
+.forecast-analysis p { margin: 7px 0 0; color: #475467; font-size: 14px; line-height: 1.75; }
 
 /* 模型信息卡片 */
 .model-info-card {
@@ -3533,6 +3623,9 @@ watch(futureChartType, () => {
   padding: 16px;
 }
 .result-chart-panel {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   min-height: 330px;
   padding: 12px 14px 6px;
   border: 1px solid #edf1f7;
@@ -3551,7 +3644,10 @@ watch(futureChartType, () => {
 }
 .chart {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 /* 拖动分隔条 */
@@ -3943,8 +4039,7 @@ watch(futureChartType, () => {
   }
   .short-term-filter-grid,
   .short-term-summary-grid,
-  .future-comparison-summary,
-  .related-info-grid {
+  .future-comparison-summary {
     grid-template-columns: 1fr;
     padding-left: 0;
   }

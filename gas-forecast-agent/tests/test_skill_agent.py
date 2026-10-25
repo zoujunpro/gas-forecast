@@ -5,6 +5,13 @@ from typing import Any
 import pytest
 
 from gas_forecast_agent.config import Settings
+from gas_forecast_agent.schemas import (
+    ClarificationReason,
+    ConversationMemory,
+    InteractionType,
+    PendingInteraction,
+    PendingOperation,
+)
 from gas_forecast_agent.skills import (
     ActionExecutor,
     DialogueAct,
@@ -15,6 +22,7 @@ from gas_forecast_agent.skills import (
     SkillRouter,
     TrainingPolicy,
 )
+from gas_forecast_agent.operation_models import OperationParameters
 from gas_forecast_agent.skills.result_adapter import ToolResultAdapter
 
 
@@ -45,6 +53,74 @@ def skill_definition(
         "allowed-tools": allowed_tools,
         "read-only": read_only,
         "instructions": instructions,
+    })
+
+
+def empty_memory() -> ConversationMemory:
+    """新会话没有可恢复的业务参数。"""
+    return ConversationMemory()
+
+
+def pending_memory(
+    parameters: dict[str, Any],
+    *,
+    pending_tool: str | None = "forecast_start",
+    interaction_type: InteractionType = InteractionType.CONFIRMATION,
+) -> ConversationMemory:
+    """按当前 pendingOperation 协议构造一轮尚未完成的操作。"""
+    return ConversationMemory(
+        pending_operation=PendingOperation(
+            interaction=PendingInteraction(
+                interaction_id="INT-TEST-1",
+                interaction_type=interaction_type,
+                source_turn_id="TURN-TEST-1",
+                reason=ClarificationReason.PARAMETER_MISSING,
+                resume_from="PlanValidator",
+            ),
+            semantics=RequestSemantics(intent=SkillIntent.FORECAST),
+            parameters=OperationParameters.model_validate(parameters),
+            pending_tool=pending_tool,
+        ),
+    )
+
+
+def semantics(
+    *,
+    intent: SkillIntent = SkillIntent.FORECAST,
+    customer: str | None = None,
+    customers: list[str] | None = None,
+    region: str | None = None,
+    industry: str | None = None,
+    forecast_horizon: int | None = None,
+    history_start_date: str | None = None,
+    history_end_date: str | None = None,
+    training_policy: TrainingPolicy | None = None,
+    fetch_all: bool = False,
+    dialogue_act: DialogueAct = DialogueAct.UNSPECIFIED,
+) -> RequestSemantics:
+    """构造当前 requests 结构的语义对象，避免测试依赖已删除的扁平字段。"""
+    customer_values = customers if customers is not None else [customer] if customer else []
+    parameters: dict[str, Any] = {}
+    if forecast_horizon is not None:
+        parameters["forecastHorizon"] = forecast_horizon
+    if history_start_date is not None:
+        parameters["historyStartDate"] = history_start_date
+    if history_end_date is not None:
+        parameters["historyEndDate"] = history_end_date
+    if training_policy is not None:
+        parameters["trainingPolicy"] = training_policy.value
+    return RequestSemantics.model_validate({
+        "dialogueAct": dialogue_act.value,
+        "requests": [{
+            "intent": intent.value,
+            "targetSelection": "ALL_MATCHED" if fetch_all else "EXPLICIT" if customer_values else "UNSPECIFIED",
+            "entities": {
+                "customers": customer_values,
+                "regions": [region] if region else [],
+                "industries": [industry] if industry else [],
+            },
+            "parameters": parameters,
+        }],
     })
 
 
@@ -101,7 +177,7 @@ def test_knowledge_qa_does_not_depend_on_mcp_tool_catalog(monkeypatch) -> None:
         skill=skill,
         message="MAPE 是什么？",
         history=[],
-        memory={},
+        memory=empty_memory(),
         metadata={},
         mcp=UnavailableMcp(),
     ))
@@ -241,7 +317,7 @@ def test_model_selects_one_allowed_tool_then_returns_structured_list(monkeypatch
         skill=skill,
         message="查询浙江客户",
         history=[],
-        memory={},
+        memory=empty_memory(),
         metadata={},
         mcp=mcp,
     ))
@@ -298,7 +374,7 @@ def test_structured_training_result_returns_without_second_model_call(monkeypatc
 
     result = asyncio.run(ActionExecutor(settings).run(
         conversation_no="C-TRAIN", skill=skill, message="查询训练信息", history=[],
-        memory={}, metadata={}, mcp=TrainingMcp(),
+        memory=empty_memory(), metadata={}, mcp=TrainingMcp(),
     ))
 
     assert result.status == "COMPLETED"
@@ -328,7 +404,7 @@ def test_action_skill_cannot_claim_success_without_tool(monkeypatch) -> None:
     )
 
     result = asyncio.run(ActionExecutor(settings).run(
-        conversation_no="C-SAFE", skill=skill, message="预测某客户", history=[], memory={}, metadata={}, mcp=FakeMcp(),
+        conversation_no="C-SAFE", skill=skill, message="预测某客户", history=[], memory=empty_memory(), metadata={}, mcp=FakeMcp(),
     ))
 
     assert result.status == "FAILED"
@@ -354,7 +430,7 @@ def test_tool_business_status_is_not_flattened_to_failed() -> None:
         instructions="查询客户。",
     )
     result = asyncio.run(ActionExecutor(settings).run(
-        conversation_no="C-2", skill=skill, message="查询客户", history=[], memory={}, metadata={}, mcp=NeedInfoMcp(),
+        conversation_no="C-2", skill=skill, message="查询客户", history=[], memory=empty_memory(), metadata={}, mcp=NeedInfoMcp(),
     ))
 
     assert result.status == "NEED_INFORMATION"
@@ -457,35 +533,43 @@ def test_schema_range_is_checked_before_tool_call() -> None:
     tool = {"inputSchema": {"properties": {"forecastHorizon": {"type": "integer", "minimum": 1, "maximum": 30}}}}
     assert ActionExecutor._argument_validation_error(tool, {"forecastHorizon": 31}) == "参数 forecastHorizon 不能大于 30。"
     assert ActionExecutor._argument_validation_error(tool, {
-        "trainingStartDate": "2025-03-01", "trainingEndDate": "2025-01-01",
+        "historyStartDate": "2025-03-01", "historyEndDate": "2025-01-01",
     }) == "训练开始日期不能晚于训练结束日期，请重新确认训练范围。"
 
 
-def test_training_utterance_extracts_clean_customer_name() -> None:
-    for message in (
+def test_structured_semantics_supplies_customer_to_action_executor() -> None:
+    values = ActionExecutor._initial_parameters(
         "训练杭州天然气的短期预测模型",
-        "帮杭州天然气重新训练一下",
-        "让模型重新学习杭州天然气的数据",
-        "查询杭州天然气训练进度",
-        "开始跑一下杭州天然气模型",
-    ):
-        values = ActionExecutor._initial_parameters(message, {}, {}, "C-6", "model-training-management")
-        assert values["customerName"] == "杭州天然气"
-
-
-def test_training_range_and_industry_alias_are_extracted() -> None:
-    recent = ActionExecutor._initial_parameters("只用最近90天数据训练杭州天然气", {}, {}, "C-7", "model-training-management")
-    assert (recent["trainMode"], recent["trainingPeriods"], recent["customerName"]) == ("RECENT", 90, "杭州天然气")
-
-    date_range = ActionExecutor._initial_parameters(
-        "使用2025-01-01到2025-03-01的数据训练杭州天然气", {}, {}, "C-8", "model-training-management",
+        empty_memory(),
+        {},
+        "C-6",
+        "model-training-management",
+        semantics(intent=SkillIntent.TRAIN, customer="杭州天然气"),
     )
-    assert (date_range["trainMode"], date_range["trainingStartDate"], date_range["trainingEndDate"]) == (
-        "RANGE", "2025-01-01", "2025-03-01",
+
+    assert values["customerName"] == "杭州天然气"
+
+
+def test_structured_history_range_and_industry_are_consumed() -> None:
+    date_range = ActionExecutor._initial_parameters(
+        "使用指定历史数据训练杭州天然气",
+        empty_memory(),
+        {},
+        "C-8",
+        "model-training-management",
+        semantics(
+            intent=SkillIntent.TRAIN,
+            customer="杭州天然气",
+            history_start_date="2025-01-01",
+            history_end_date="2025-03-01",
+        ),
+    )
+    assert (date_range["historyStartDate"], date_range["historyEndDate"], date_range["customerName"]) == (
+        "2025-01-01", "2025-03-01", "杭州天然气",
     )
     chemical = ActionExecutor._initial_parameters(
-        "训练浙江城市化工客户", {}, {}, "C-9", "model-training-management",
-        RequestSemantics(region_name="浙江", industry_name="化工", fetch_all=True),
+        "训练浙江城市化工客户", empty_memory(), {}, "C-9", "model-training-management",
+        semantics(intent=SkillIntent.TRAIN, region="浙江", industry="化工", fetch_all=True),
     )
     assert chemical["industryName"] == "化工"
     assert chemical["bulk"] is True
@@ -494,31 +578,27 @@ def test_training_range_and_industry_alias_are_extracted() -> None:
 def test_region_or_industry_does_not_implicitly_expand_write_scope() -> None:
     values = ActionExecutor._initial_parameters(
         "训练浙江城燃客户",
-        {},
+        empty_memory(),
         {},
         "C-SCOPE-UNSPECIFIED",
         "model-training-management",
-        RequestSemantics(region_name="浙江", industry_name="城燃"),
+        semantics(intent=SkillIntent.TRAIN, region="浙江", industry="城燃"),
     )
 
     assert values["bulk"] is False
     assert "全部匹配客户" in values["_clarificationQuestion"]
-    assert values["_clarificationPendingTool"] == "training_start"
+    assert values["_clarificationPendingTool"] == "forecast_start"
 
 
 def test_rejecting_scope_clears_singular_and_batch_entities() -> None:
     values = ActionExecutor._initial_parameters(
         "重新选择范围",
-        {
-            "pendingInteraction": {
-                "parameters": {
-                    "regionName": "浙江",
-                    "regionNames": ["浙江", "江苏"],
-                    "industryName": "城燃",
-                    "industryNames": ["城燃", "化工"],
-                },
-            },
-        },
+        pending_memory({
+            "regionName": "浙江",
+            "regionNames": ["浙江", "江苏"],
+            "industryName": "城燃",
+            "industryNames": ["城燃", "化工"],
+        }, interaction_type=InteractionType.CLARIFICATION),
         {
             "inputType": "CLARIFICATION_REPLY",
             "clarificationResolvedParameters": {"_scopeRejected": True},
@@ -540,8 +620,8 @@ def test_scope_clarification_uses_range_specific_labels() -> None:
 
 def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> None:
     values = ActionExecutor._initial_parameters(
-        "查询江苏省城市燃气行业的所有客户信息", {}, {}, "C-REGION", "business-data-query",
-        RequestSemantics(region_name="江苏", industry_name="城市燃气", fetch_all=True),
+        "查询江苏省城市燃气行业的所有客户信息", empty_memory(), {}, "C-REGION", "business-data-query",
+        semantics(intent=SkillIntent.QUERY, region="江苏", industry="城市燃气", fetch_all=True),
     )
 
     assert values["regionName"] == "江苏"
@@ -551,12 +631,12 @@ def test_region_with_province_suffix_does_not_require_a_region_allowlist() -> No
 
 def test_scope_quantifier_is_not_part_of_region_name() -> None:
     leading = ActionExecutor._initial_parameters(
-        "查询所有江苏城燃的客户", {}, {}, "C-REGION-ALL-1", "business-data-query",
-        RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
+        "查询所有江苏城燃的客户", empty_memory(), {}, "C-REGION-ALL-1", "business-data-query",
+        semantics(intent=SkillIntent.QUERY, region="江苏", industry="城燃", fetch_all=True),
     )
     middle = ActionExecutor._initial_parameters(
-        "查询江苏所有城燃的客户", {}, {}, "C-REGION-ALL-2", "business-data-query",
-        RequestSemantics(region_name="江苏", industry_name="城燃", fetch_all=True),
+        "查询江苏所有城燃的客户", empty_memory(), {}, "C-REGION-ALL-2", "business-data-query",
+        semantics(intent=SkillIntent.QUERY, region="江苏", industry="城燃", fetch_all=True),
     )
 
     assert leading["regionName"] == "江苏"
@@ -568,16 +648,13 @@ def test_scope_quantifier_is_not_part_of_region_name() -> None:
 
 
 def test_structured_region_and_industry_are_used_without_phrase_rules() -> None:
-    semantics = RequestSemantics(
-        region_name="江苏",
-        industry_name="城燃",
-        fetch_all=True,
-        evidence={"region_name": "江苏", "industry_name": "城燃", "fetch_all": "所有"},
+    request_semantics = semantics(
+        intent=SkillIntent.QUERY, region="江苏", industry="城燃", fetch_all=True,
     )
 
     values = ActionExecutor._initial_parameters(
         "查询下江苏城燃的所有客户信息",
-        {}, {}, "C-REGION-LOCKED", "business-data-query", semantics,
+        empty_memory(), {}, "C-REGION-LOCKED", "business-data-query", request_semantics,
     )
 
     assert values["regionName"] == "江苏"
@@ -589,19 +666,11 @@ def test_structured_region_and_industry_are_used_without_phrase_rules() -> None:
 def test_customer_name_does_not_become_region_or_industry_filter() -> None:
     values = ActionExecutor._initial_parameters(
         "帮我预测下扬州中燃未来50天的燃气销量",
-        {"currentParameters": {
-            "regionCode": "OLD-REGION", "industryCode": "OLD-INDUSTRY",
-            "customerCode": "OLD-CUSTOMER",
-        }},
+        empty_memory(),
         {},
         "C-CUSTOMER-BOUNDARY",
         "customer-gas-forecast",
-        RequestSemantics(
-            customer_name="扬州中燃",
-            region_name="扬州",
-            industry_name="燃气",
-            forecast_horizon=50,
-        ),
+        semantics(customer="扬州中燃", region="扬州", industry="燃气", forecast_horizon=50),
     )
 
     assert values["customerName"] == "扬州中燃"
@@ -616,26 +685,37 @@ def test_customer_name_does_not_become_region_or_industry_filter() -> None:
 def test_forecast_with_new_training_result_forces_retraining() -> None:
     values = ActionExecutor._initial_parameters(
         "帮我预测下客户CUS000023的未来40天燃气销量，用新训练的结果",
-        {}, {}, "C-NEW-TRAIN", "customer-gas-forecast",
+        empty_memory(), {}, "C-NEW-TRAIN", "customer-gas-forecast",
+        semantics(
+            customer="客户CUS000023",
+            forecast_horizon=40,
+            training_policy=TrainingPolicy.FORCE_RETRAIN,
+        ),
     )
 
     assert values["forceRetrain"] is True
     assert values["autoTrain"] is True
     assert values["trainingPreference"] == "FORCE_RETRAIN"
-    assert values["customerCode"] == "CUS000023"
+    assert values["customerName"] == "客户CUS000023"
     assert values["forecastHorizon"] == 40
 
-    arguments = {**values, "customerCode": "CUS000135", "forecastHorizon": 90, "forceRetrain": False}
+    arguments = {**values, "customerName": "客户CUS000135", "forecastHorizon": 90, "forceRetrain": False}
     ActionExecutor._apply_locked_parameters(values, arguments)
-    assert arguments["customerCode"] == "CUS000023"
+    assert arguments["customerName"] == "客户CUS000023"
     assert arguments["forecastHorizon"] == 40
     assert arguments["forceRetrain"] is True
 
     confirmed = ActionExecutor._initial_parameters(
         "是",
-        {"currentParameters": values, "pendingAction": {"tool": "forecast_start", "parameters": values}},
+        pending_memory({
+            "customerCode": "CUS000023",
+            "forecastHorizon": 40,
+            "forceRetrain": True,
+            "autoTrain": True,
+            "trainingPreference": "FORCE_RETRAIN",
+        }),
         {}, "C-NEW-TRAIN", "customer-gas-forecast",
-        RequestSemantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
+        semantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
     )
     assert confirmed["confirmed"] is True
     assert confirmed["customerCode"] == "CUS000023"
@@ -652,10 +732,16 @@ def test_new_retraining_request_replaces_stale_pending_forecast() -> None:
     }
     values = ActionExecutor._initial_parameters(
         "预测下客户CUS000134未来50天燃气销量，同时训练也要重新发起",
-        {"currentParameters": stale, "pendingAction": {"tool": "forecast_start", "parameters": stale}},
-        {},
+        pending_memory(stale),
+        {"inputType": "TEXT"},
         "C-RETRAIN-AGAIN",
         "customer-gas-forecast",
+        semantics(
+            customer="客户CUS000134",
+            forecast_horizon=50,
+            training_policy=TrainingPolicy.FORCE_RETRAIN,
+            dialogue_act=DialogueAct.NEW_REQUEST,
+        ),
     )
 
     assert "_pendingTool" not in values
@@ -668,14 +754,11 @@ def test_new_retraining_request_replaces_stale_pending_forecast() -> None:
 def test_structured_semantics_overrides_stale_training_policy_without_phrase_rules() -> None:
     values = ActionExecutor._initial_parameters(
         "模型不要接着上次那个了，给我另起炉灶",
-        {"currentParameters": {"customerCode": "CUS-9", "forceRetrain": False, "trainingPreference": "AUTO"}},
+        empty_memory(),
         {},
         "C-SEMANTIC",
         "customer-gas-forecast",
-        RequestSemantics(
-            training_policy=TrainingPolicy.FORCE_RETRAIN,
-            evidence={"training_policy": "不要接着上次那个了，另起炉灶"},
-        ),
+        semantics(training_policy=TrainingPolicy.FORCE_RETRAIN),
     )
 
     assert values["forceRetrain"] is True
@@ -690,14 +773,11 @@ def test_confirmation_restores_and_locks_pending_parameter_snapshot() -> None:
     }
     values = ActionExecutor._initial_parameters(
         "确认",
-        {
-            "currentParameters": {**snapshot, "forceRetrain": False},
-            "pendingAction": {"tool": "forecast_start", "parameters": snapshot},
-        },
-        {"customerCode": "STALE-PAGE-CUSTOMER"},
+        pending_memory(snapshot),
+        {"currentBusinessContext": {"customerCode": "STALE-PAGE-CUSTOMER"}},
         "C-SNAPSHOT",
         "customer-gas-forecast",
-        RequestSemantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
+        semantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
     )
 
     assert values["_pendingTool"] == "forecast_start"
@@ -720,16 +800,11 @@ def test_confirmation_ignores_semantic_clarification_and_uses_pending_snapshot()
     }
     values = ActionExecutor._initial_parameters(
         "继续",
-        {"pendingAction": {"tool": "forecast_start", "parameters": snapshot}},
+        pending_memory(snapshot),
         {},
         "C-CONFIRMATION",
         "customer-gas-forecast",
-        RequestSemantics(
-            dialogue_act=DialogueAct.CONFIRM_PENDING,
-            needs_clarification=True,
-            clarification_question="请明确要继续执行的具体客户、区域、行业或预测周期？",
-            evidence={"message": "继续"},
-        ),
+        semantics(dialogue_act=DialogueAct.CONFIRM_PENDING),
     )
 
     assert values["_pendingTool"] == "forecast_start"
@@ -1168,7 +1243,7 @@ def test_same_tool_call_budget_stops_parameter_churn(monkeypatch) -> None:
     mcp = PagingMcp()
 
     result = asyncio.run(ActionExecutor(settings).run(
-        conversation_no="C-5", skill=skill, message="反复翻页", history=[], memory={}, metadata={}, mcp=mcp,
+        conversation_no="C-5", skill=skill, message="反复翻页", history=[], memory=empty_memory(), metadata={}, mcp=mcp,
     ))
 
     assert result.status == "FAILED"
@@ -1212,7 +1287,7 @@ def test_structured_customer_list_is_terminal_and_not_replanned(monkeypatch) -> 
 
     result = asyncio.run(ActionExecutor(model_settings()).run(
         conversation_no="C-LIST", skill=skill, message="查询全部客户",
-        history=[], memory={}, metadata={}, mcp=ListMcp(),
+        history=[], memory=empty_memory(), metadata={}, mcp=ListMcp(),
     ))
 
     assert result.status == "COMPLETED"

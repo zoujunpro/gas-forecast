@@ -1,6 +1,7 @@
 """FastAPI 应用入口。"""
 
 import logging
+import json
 import sys
 from pathlib import Path
 from typing import Annotated, Any
@@ -14,22 +15,30 @@ if __name__ == "__main__" and not __package__:
     ]
     sys.path.insert(0, str(package_dir.parent))
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header
+from fastapi.responses import StreamingResponse
 from gas_forecast_agent.config import Settings, get_settings
-from gas_forecast_agent.llm import build_llm_client
 from gas_forecast_agent.internal_client import InternalAgentClient
-from gas_forecast_agent.mcp import McpClientError, StreamableHttpMcpClient
+from gas_forecast_agent.mcp import StreamableHttpMcpClient
 from gas_forecast_agent.schemas import (
     AgentRuntimeRequest,
     AgentRuntimeResponse,
+    AgentHistoryMessage,
+    AgentHistoryReferences,
+    AgentRuntimeMetadata,
     AgentChatRequest,
     AgentChatResponse,
+    AgentIntentData,
+    AgentResultData,
     AgentStatus,
     ClarificationField,
     ClarificationResponse,
+    MemoryPatch,
     MessageReferenceResponse,
+    PresentationResponse,
     ReferenceRelation,
     ReferenceType,
+    ExecutionResultResponse,
 )
 from gas_forecast_agent.skills import SemanticExtractionError, SkillRegistry
 from gas_forecast_agent.workflow import persistent_parameters, run_agent_graph
@@ -75,50 +84,6 @@ async def health() -> dict[str, str]:
     return {"status": "UP"}
 
 
-@app.post("/api/v1/llm/chat-completions")
-async def llm_chat_completions(
-    request: dict[str, Any],
-    settings: Annotated[Settings, Depends(get_settings)],
-) -> dict[str, Any]:
-    """Java业务的统一模型网关；模型地址、密钥和SDK只由Python Agent持有。"""
-    if not settings.llm_api_key or not settings.llm_model:
-        raise HTTPException(status_code=503, detail="Python Agent未配置LLM_API_KEY或LLM_MODEL")
-    messages = request.get("messages")
-    if not isinstance(messages, list) or not messages:
-        raise HTTPException(status_code=422, detail="messages不能为空")
-    try:
-        client = build_llm_client(settings, minimum_timeout=120)
-        response = await client.chat.completions.create(
-            model=settings.llm_model,
-            temperature=float(request.get("temperature", 0.7)),
-            messages=messages,
-        )
-        content = (response.choices[0].message.content or "").strip()
-        if not content:
-            raise RuntimeError("大模型未返回内容")
-        return {"model": settings.llm_model, "choices": [{"message": {"role": "assistant", "content": content}}]}
-    except Exception as exc:
-        logger.exception("Python Agent 模型调用失败，model=%s", settings.llm_model)
-        raise HTTPException(status_code=502, detail=f"Python Agent模型调用失败：{exc}") from exc
-
-
-@app.get("/api/v1/mcp/tools")
-async def list_mcp_tools(client: Annotated[StreamableHttpMcpClient, Depends(get_mcp_client)]) -> dict[str, Any]:
-    """用于部署联调：确认 Python 能获得 Java 发布的完整工具描述。"""
-    try:
-        tools = await client.list_tools()
-        return {"count": len(tools), "tools": tools}
-    except McpClientError as exc:
-        logger.exception("MCP 工具发现接口失败")
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-
-@app.get("/api/v1/skills")
-async def list_skills() -> dict[str, Any]:
-    """返回可发现的 Skill 及其工具白名单。"""
-    return skill_registry.summary()
-
-
 @app.post("/api/v1/internal/chat", response_model=AgentChatResponse, response_model_by_alias=True)
 async def agent_chat(
     request: AgentChatRequest,
@@ -135,45 +100,29 @@ async def agent_chat(
     """
     # 1. 当前业务焦点来自用户发送消息时正在查看的页面对象。它可以随页面选择
     #    变化，只作为指代消解候选，不代表用户已经确认用它创建训练或预测任务。
-    current_business_context = request.business_context.model_dump(
-        by_alias=True,
-        exclude_none=True,
-    )
-    request_metadata: dict[str, Any] = {}
-    if current_business_context:
-        request_metadata["currentBusinessContext"] = current_business_context
-
-    # 2. 补充本轮执行标识。conversationNo 是 AgentRuntimeRequest 的独立字段，
-    #    因此不在 metadata 中重复保存，避免出现两个不一致的会话编号来源。
-    request_metadata.update({
-        "turnId": request.turn_id,
-        "runNo": request.run_no,
-        "agentCode": request.agent_code.value,
-    })
-
-    # 3. conversationContext 是 Java 从数据库加载的可信会话快照，包含近期消息
-    #    以及每条消息关联的执行任务、训练批次或预测批次。
+    # 2. conversationContext 是 Java 从数据库加载的可信会话快照，包含近期消息
+    #    以及每条消息关联的执行任务或预测结果。
     conversation_context = request.conversation_context
 
     # 4. 单独提取历史消息的业务对象引用并保留消息归属关系。
     #    普通对话历史只传 role/content；引用放入 metadata，供 Skill 判断用户说的
     #    “这个任务”“上次预测”等对象具体指向哪个业务编号。
     history_references = [
-        {
-            "messageId": item.message_id,
-            "turnId": item.turn_id,
-            "references": [
-                # 转为可直接传给工具和模型的小驼峰 JSON 字典，并省略空展示字段。
-                reference.model_dump(mode="json", by_alias=True, exclude_none=True)
-                for reference in item.references
-            ],
-        }
+        AgentHistoryReferences(
+            message_id=item.message_id,
+            turn_id=item.turn_id,
+            references=item.references,
+        )
         for item in conversation_context.recent_messages
         # 没有关联对象的消息无需出现在 historyReferences 中，减少上下文体积。
         if item.references
     ]
-    if history_references:
-        request_metadata["historyReferences"] = history_references
+    request_metadata = AgentRuntimeMetadata(
+        run_no=request.run_no,
+        agent_code=request.agent_code,
+        current_business_context=request.business_context,
+        history_references=history_references,
+    )
 
     # 5. 将对外的 Java 请求适配为现有 Agent 编排层使用的内部请求。
     #    仅 USER/ASSISTANT 消息进入自然语言对话历史；SYSTEM/TOOL 消息不会在此处
@@ -185,12 +134,11 @@ async def agent_chat(
         input_type=request.input_type,
         interaction_id=request.interaction_id,
         reply_to_turn_id=request.reply_to_turn_id,
-        answers=dict(request.answers),
         agent_type=request.agent_code,
         conversation_summary=conversation_context.summary,
-        memory=dict(conversation_context.memory),
+        memory=conversation_context.memory.model_copy(deep=True),
         history=[
-            {"role": item.role.lower(), "content": item.content}
+            AgentHistoryMessage(role=item.role.lower(), content=item.content)
             for item in conversation_context.recent_messages
             if item.role.upper() in {"USER", "ASSISTANT"}
         ],
@@ -249,7 +197,7 @@ async def agent_chat(
 
     # 8. 将内部运行结果规范化为 Java 会话服务约定的响应结构。
     #    execution_result 可能为空；统一使用空字典可以简化后续状态和编号提取。
-    execution = reply.execution_result or {}
+    execution = reply.execution_result.to_payload() if reply.execution_result else {}
 
     # 内部 Skill 状态可能包含 EXECUTING、NEED_CONFIRMATION 等细分值，先映射为
     # AgentStatus；再从真实工具结果提取消息需要持久化的业务对象引用。
@@ -273,28 +221,45 @@ async def agent_chat(
         references=references,
         # 意图与持久参数用于审计及后续轮次恢复，不保存单轮控制参数。
         intent_code=_intent_code(reply),
-        intent_data={
-            "parameters": persistent_parameters(reply.parameters),
-            "entityResolution": reply.entity_resolution,
-        },
+        intent_data=AgentIntentData(
+            parameters=persistent_parameters(reply.parameters),
+            entity_resolution=(reply.entity_resolution.model_dump(mode="json", by_alias=True)
+                               if reply.entity_resolution else {}),
+        ),
         skill_code=reply.skill_name,
         # resultData 保存轻量执行摘要，不重复嵌入可能很大的完整工具响应。
-        result_data={
-            "executedTool": reply.executed_tool,
-            "toolStatus": _find_text(execution, "status"),
-            "decisionReason": reply.decision_reason,
-            "references": [
-                item.model_dump(mode="json", by_alias=True, exclude_none=True)
-                for item in references
-            ],
-        },
-        memory_patch=reply.memory_patch,
-        presentation=reply.presentation,
-        execution_result=execution,
+        result_data=AgentResultData(
+            executed_tool=reply.executed_tool,
+            tool_status=_find_text(execution, "status"),
+            decision_reason=reply.decision_reason,
+            references=references,
+        ),
+        memory_patch=MemoryPatch.model_validate(reply.memory_patch),
+        presentation=(PresentationResponse.model_validate(reply.presentation)
+                      if reply.presentation else None),
+        execution_result=ExecutionResultResponse.model_validate(execution),
         # 只有最终失败时才填写稳定错误码和可展示错误信息。
         error_code="AGENT_RESULT_FAILED" if status == AgentStatus.FAILED else None,
         error_message=reply.message if status == AgentStatus.FAILED else None,
     )
+
+
+@app.post("/api/v1/internal/chat/stream")
+async def agent_chat_stream(
+    request: AgentChatRequest,
+    client: Annotated[StreamableHttpMcpClient, Depends(get_mcp_client)],
+    internal_client: Annotated[InternalAgentClient, Depends(get_internal_agent_client)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    trace_id: Annotated[str | None, Header(alias="x-traceId")] = None,
+) -> StreamingResponse:
+    """推送真实处理阶段；最终 done 始终携带完整、可持久化的 Agent 结果。"""
+    async def events():
+        # 当前编排在 agent_chat 完成后才会拿到完整的理解结果，不能伪造后续阶段。
+        # 仅推送已真实开始的阶段，避免用户误以为已经创建或执行了预测任务。
+        yield f"event: progress\ndata: {json.dumps('正在理解您的预测需求…', ensure_ascii=False)}\n\n"
+        result = await agent_chat(request, client, internal_client, settings, trace_id)
+        yield "event: done\ndata: " + result.model_dump_json(by_alias=True) + "\n\n"
+    return StreamingResponse(events(), media_type="text/event-stream")
 
 
 def _chat_status(status: str) -> AgentStatus:
@@ -320,11 +285,9 @@ def _chat_references(
     executed_tool: str | None,
 ) -> list[MessageReferenceResponse]:
     """从本轮真实工具结果提取轻量业务引用，不回传完整执行数据。"""
-    relation = (
-        ReferenceRelation.CREATED
-        if executed_tool == "forecast_start"
-        else ReferenceRelation.DISPLAYED
-    )
+    relation = (ReferenceRelation.CREATED if executed_tool == "forecast_start"
+                else ReferenceRelation.REFERENCED if executed_tool == "forecast_result_by_no"
+                else ReferenceRelation.DISPLAYED)
     status = _find_text(execution_result, "status")
     references: list[MessageReferenceResponse] = []
     for field, reference_type in (

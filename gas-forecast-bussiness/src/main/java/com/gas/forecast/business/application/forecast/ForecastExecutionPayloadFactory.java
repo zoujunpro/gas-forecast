@@ -8,12 +8,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.DataDailySalesTb;
+import com.gas.forecast.dao.domain.DataRegionWeatherDailyTb;
 import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import com.gas.forecast.dao.domain.ExecutionTaskTb;
 import com.gas.forecast.dao.domain.ModelExecuteRecordTb;
 import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
+import com.gas.forecast.dao.mapper.DataRegionWeatherDailyTbMapper;
 import java.time.LocalDate;
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +28,7 @@ import org.springframework.stereotype.Service;
 public class ForecastExecutionPayloadFactory {
     private final ObjectMapper objectMapper;
     private final DataDailySalesTbMapper dataDailySalesTbMapper;
+    private final DataRegionWeatherDailyTbMapper dataRegionWeatherDailyTbMapper;
 
     public ObjectNode build(ExecutionTaskTb task, ExecutionTaskDetailTb detail, ModelExecuteRecordTb record) {
         JsonNode snapshot = readSnapshot(task);
@@ -43,6 +49,7 @@ public class ForecastExecutionPayloadFactory {
         if (TextUtils.hasText(historyEnd)) query.le(DataDailySalesTb::getStatDate, historyEnd);
         List<DataDailySalesTb> sales = dataDailySalesTbMapper.selectList(query.orderByAsc(DataDailySalesTb::getStatDate).orderByAsc(DataDailySalesTb::getId));
         if (sales.isEmpty()) throw new BusinessException("当前预测对象没有可用的历史销量数据");
+        Map<String, DataRegionWeatherDailyTb> weatherByDate = weatherByDate(record.getRegionCode(), historyStart, historyEnd);
 
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("forecast_no", record.getForecastNo());
@@ -54,6 +61,7 @@ public class ForecastExecutionPayloadFactory {
         ArrayNode history = payload.putArray("history_dataset");
         for (DataDailySalesTb item : sales) {
             ObjectNode row = history.addObject(); row.put("date", item.getStatDate()); row.put("gas_sales", item.getGasSales());
+            appendWeather(row, weatherByDate.get(item.getStatDate()));
         }
         ArrayNode future = payload.putArray("future_dataset");
         for (int index = 0; index < horizon; index++) future.addObject().put("date", next(start, unit, index).toString());
@@ -79,4 +87,31 @@ public class ForecastExecutionPayloadFactory {
     }
     private LocalDate next(LocalDate start, String unit, int index) { return "month".equals(unit) ? start.plusMonths(index) : "tenday".equals(unit) ? start.plusDays(index * 10L) : start.plusDays(index); }
     private void put(ObjectNode node, String name, String value) { if (TextUtils.hasText(value)) node.put(name, value); }
+    private void put(ObjectNode node, String name, java.math.BigDecimal value) { if (value != null) node.put(name, value); }
+
+    /** 同日可能有多个天气来源；按更新时间倒序取第一条，确保请求快照可重放。 */
+    private Map<String, DataRegionWeatherDailyTb> weatherByDate(String regionCode, String historyStart, String historyEnd) {
+        if (!TextUtils.hasText(regionCode)) return Map.of();
+        var query = Wrappers.<DataRegionWeatherDailyTb>lambdaQuery().eq(DataRegionWeatherDailyTb::getRegionCode, regionCode)
+                .eq(DataRegionWeatherDailyTb::getWeatherType, "ACTUAL");
+        if (TextUtils.hasText(historyStart)) query.ge(DataRegionWeatherDailyTb::getStatDate, historyStart);
+        if (TextUtils.hasText(historyEnd)) query.le(DataRegionWeatherDailyTb::getStatDate, historyEnd);
+        Map<String, DataRegionWeatherDailyTb> result = new HashMap<>();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        for (DataRegionWeatherDailyTb weather : dataRegionWeatherDailyTbMapper.selectList(query.orderByDesc(DataRegionWeatherDailyTb::getUpdatedAt).orderByDesc(DataRegionWeatherDailyTb::getId))) {
+            if (weather.getStatDate() != null) result.putIfAbsent(formatter.format(weather.getStatDate()), weather);
+        }
+        return result;
+    }
+
+    /** 字段名与模型平台特征计算器一致，同时完整保留原始天气入参。 */
+    private void appendWeather(ObjectNode row, DataRegionWeatherDailyTb weather) {
+        if (weather == null) return;
+        put(row, "max_temp", weather.getTempMax()); put(row, "min_temp", weather.getTempMin()); put(row, "avg_temp", weather.getTempAvg());
+        put(row, "feels_like_max", weather.getFeelsLikeMax()); put(row, "feels_like_min", weather.getFeelsLikeMin()); put(row, "feels_like_avg", weather.getFeelsLikeAvg());
+        put(row, "dew_point", weather.getDewPoint()); put(row, "humidity", weather.getHumidity()); put(row, "precipitation", weather.getPrecipitation());
+        put(row, "wind_gust", weather.getWindGust()); put(row, "wind_speed", weather.getWindSpeed()); put(row, "sea_level_pressure", weather.getSeaLevelPressure());
+        put(row, "cloud_cover", weather.getCloudCover()); put(row, "visibility", weather.getVisibility()); put(row, "solar_radiation", weather.getSolarRadiation());
+        put(row, "solar_energy", weather.getSolarEnergy()); put(row, "uv_index", weather.getUvIndex()); put(row, "hdd", weather.getHdd());
+    }
 }

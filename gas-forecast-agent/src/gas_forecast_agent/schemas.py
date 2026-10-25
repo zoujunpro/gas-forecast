@@ -4,7 +4,10 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
+from gas_forecast_agent.operation_models import OperationParameters
+from gas_forecast_agent.skills.semantics import RequestSemantics
+from gas_forecast_agent.tool_results import ToolExecutionResult
 
 
 def _to_camel(name: str) -> str:
@@ -41,8 +44,7 @@ class UserInputType(StrEnum):
 
     TEXT = "TEXT"  # 普通自然语言；由语义层识别新请求
     CLARIFICATION_REPLY = "CLARIFICATION_REPLY"  # 回答一个结构化澄清问题
-    CONFIRMATION_REPLY = "CONFIRMATION_REPLY"  # 确认已经完成解析的待执行计划
-    REJECTION_REPLY = "REJECTION_REPLY"  # 拒绝或取消待执行计划
+    INTERACTION_REPLY = "INTERACTION_REPLY"  # 回答待确认操作；确认、取消或修改均由语义层判断
 
 
 class InteractionType(StrEnum):
@@ -220,18 +222,13 @@ class AgentRecentMessage(ApiModel):
         max_length=10000,
         description="消息正文",
     )
-    message_type: str | None = Field(
-        default=None,
-        max_length=64,
-        description="消息分类或来源 Skill 编码",
-    )
     created_at: datetime | None = Field(
         default=None,
         description="消息创建时间",
     )
     references: list["MessageReferenceResponse"] = Field(
         default_factory=list,
-        description="该消息关联的执行任务、训练批次或预测批次",
+        description="该消息关联的执行任务或预测结果",
     )
 
 
@@ -248,8 +245,8 @@ class AgentConversationContext(ApiModel):
         max_length=50000,
         description="较早会话内容的压缩摘要；尚未生成时为空",
     )
-    memory: dict[str, Any] = Field(
-        default_factory=dict,
+    memory: "ConversationMemory" = Field(
+        default_factory=lambda: ConversationMemory(),
         description="当前会话的结构化记忆，如已确认的业务参数和待处理状态",
     )
     recent_messages: list[AgentRecentMessage] = Field(
@@ -301,10 +298,6 @@ class AgentChatRequest(ApiModel):
         max_length=64,
         description="结构化回复所回应的助手轮次编号",
     )
-    answers: dict[str, Any] = Field(
-        default_factory=dict,
-        description="结构化澄清字段答案；候选选择提交服务端生成的不透明选项值",
-    )
     agent_code: AgentType = Field(
         description="Java 根据会话确定的智能体编码，不接受本轮临时切换",
     )
@@ -336,6 +329,39 @@ class ClarificationOption(ApiModel):
     label: str = Field(description="展示给用户的选项名称")
 
 
+class ParameterCandidate(ApiModel):
+    """服务端生成的一个候选答案，编号不会直接作为业务编码执行。"""
+
+    value: str
+    parameters: OperationParameters = Field(default_factory=OperationParameters)
+    intent: str | None = None
+    scope_confirmed: bool | None = None
+    scope_rejected: bool | None = None
+
+
+class IssueDetails(ApiModel):
+    """澄清问题的内部依据：候选参数和实体类型。"""
+
+    candidates: list[ParameterCandidate] = Field(default_factory=list)
+    entity_type: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_tool_details(cls, value: object) -> object:
+        if isinstance(value, dict) and "candidateMap" in value:
+            candidates = []
+            for token, parameters in (value.get("candidateMap") or {}).items():
+                candidates.append(ParameterCandidate(
+                    value=token,
+                    parameters=OperationParameters.from_execution(parameters),
+                    intent=parameters.get("_intent"),
+                    scope_confirmed=parameters.get("_scopeConfirmed"),
+                    scope_rejected=parameters.get("_scopeRejected"),
+                ))
+            return {"candidates": candidates, "entityType": value.get("entityType")}
+        return value
+
+
 class ResolutionIssue(ApiModel):
     """阻止请求继续形成可执行计划的一个结构化问题。"""
 
@@ -348,8 +374,8 @@ class ResolutionIssue(ApiModel):
     )
     required: bool = Field(default=True, description="该问题是否阻止当前请求继续执行")
     options: list[ClarificationOption] = Field(default_factory=list)
-    details: dict[str, Any] = Field(
-        default_factory=dict,
+    details: IssueDetails = Field(
+        default_factory=IssueDetails,
         description="仅供服务端恢复待处理请求使用的结构化信息",
     )
 
@@ -422,7 +448,7 @@ class MessageReferenceResponse(ApiModel):
     """
     当前助手消息关联的业务对象轻量引用。
 
-    一条消息可以关联多个批次或任务。前端根据对象类型和对象编号查询任务、
+    一条消息可以关联多个任务或预测结果。前端根据对象类型和对象编号查询任务、
     执行步骤或业务结果详情；该对象本身不承载完整的执行过程和结果数据。
     """
 
@@ -436,8 +462,7 @@ class MessageReferenceResponse(ApiModel):
         min_length=1,
         max_length=64,
         description=(
-            "业务对象编号：执行批次使用 batch_no，执行任务使用 task_no，"
-            "训练批次使用训练 batch_no，预测批次使用 forecast_batch_no；"
+            "业务对象编号：执行任务使用 task_no，预测结果使用 forecast_no；"
             "对应 ai_message_ref_tb.ref_no"
         ),
     )
@@ -458,6 +483,123 @@ class MessageReferenceResponse(ApiModel):
         max_length=32,
         description="对象返回时的状态快照；页面应通过任务接口获取最新状态",
     )
+
+
+class AgentIntentData(ApiModel):
+    """供 Java 审计的本轮意图及已解析实体参数。"""
+
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    entity_resolution: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentResultData(ApiModel):
+    """供 Java 审计的轻量 Agent 编排结果。"""
+
+    executed_tool: str | None = Field(default=None, max_length=128)
+    tool_status: str | None = Field(default=None, max_length=32)
+    decision_reason: str | None = Field(default=None, max_length=1000)
+    references: list[MessageReferenceResponse] = Field(default_factory=list)
+
+
+class PendingInteraction(ApiModel):
+    """一轮澄清/确认的身份信息，用于拒绝过期回复。"""
+
+    interaction_id: str
+    interaction_type: InteractionType
+    source_turn_id: str
+    request_id: str | None = None
+    reason: ClarificationReason
+    resume_from: str
+
+
+class PendingOperation(ApiModel):
+    """唯一的未完成操作快照。实体、参数与待回答问题始终一起保存。"""
+
+    interaction: PendingInteraction
+    semantics: RequestSemantics
+    parameters: OperationParameters = Field(default_factory=OperationParameters)
+    pending_tool: str | None = None
+    issues: list[ResolutionIssue] = Field(default_factory=list)
+
+
+class ConversationMemory(ApiModel):
+    """跨轮只保存未完成操作和页面业务焦点；没有历史任务参数缓存。"""
+
+    pending_operation: PendingOperation | None = None
+    current_business_context: BusinessContext | None = None
+
+
+class MemoryPatch(ApiModel):
+    """当前操作替换补丁。null=清除操作；不传补丁=本轮失败，保持原状态。"""
+
+    pending_operation: PendingOperation | None = None
+
+    @field_serializer("pending_operation")
+    def serialize_operation(self, operation: PendingOperation | None) -> dict[str, object] | None:
+        # 存储边界只输出实际快照，不把模型的未提供字段补成一大组 null/空数组。
+        return operation.model_dump(
+            mode="json", by_alias=True, exclude_none=True, exclude_unset=True,
+        ) if operation else None
+
+
+class PresentationResponse(ApiModel):
+    """前端展示配置。"""
+
+    type: str = Field(min_length=1, max_length=32)
+    chart_type: str | None = Field(default=None, max_length=32)
+    title: str | None = Field(default=None, max_length=200)
+    x_field: str | None = Field(default=None, max_length=64)
+    y_fields: list[str] = Field(default_factory=list)
+    data_source: str | None = Field(default=None, max_length=128)
+
+
+class ExecutionResultResponse(ApiModel):
+    """工具执行结果的稳定信封；data 保留工具特有明细。"""
+
+    success: bool | None = None
+    status: str | None = Field(default=None, max_length=32)
+    result_type: str | None = Field(default=None, max_length=32)
+    message: str | None = Field(default=None, max_length=10000)
+    error_code: str | None = Field(default=None, max_length=64)
+    error_type: str | None = Field(default=None, max_length=64)
+    retryable: bool | None = None
+    data: dict[str, Any] = Field(default_factory=dict)
+
+
+class SkillSelectionResponse(ApiModel):
+    skill_name: str
+    confidence: float
+    reason: str
+
+
+class ProgressStepResponse(ApiModel):
+    index: int
+    name: str
+    status: str
+    detail: str | None = None
+
+
+class ProgressResponse(ApiModel):
+    title: str
+    current_step: int
+    total_steps: int
+    steps: list[ProgressStepResponse] = Field(default_factory=list)
+
+
+class ForecastPointResponse(ApiModel):
+    date: str
+    value: Any
+
+
+class ForecastResultResponse(ApiModel):
+    forecast_no: str | None = None
+    customer_name: str | None = None
+    average: Any | None = None
+    minimum: Any | None = None
+    maximum: Any | None = None
+    training: dict[str, Any] = Field(default_factory=dict)
+    backtest: dict[str, Any] = Field(default_factory=dict)
+    points: list[ForecastPointResponse] = Field(default_factory=list)
 
 
 class AgentChatResponse(ApiModel):
@@ -500,15 +642,15 @@ class AgentChatResponse(ApiModel):
     )
     references: list[MessageReferenceResponse] = Field(
         default_factory=list,
-        description="当前消息关联的多个执行任务、训练批次或预测批次",
+        description="当前消息关联的多个执行任务或预测结果",
     )
     intent_code: str | None = Field(
         default=None,
         max_length=32,
         description="Agent 识别的主意图编码，用于更新 agent_run_tb.intent_code",
     )
-    intent_data: dict[str, Any] = Field(
-        default_factory=dict,
+    intent_data: AgentIntentData = Field(
+        default_factory=AgentIntentData,
         description="结构化意图与已解析参数摘要，用于更新 agent_run_tb.intent_json",
     )
     skill_code: str | None = Field(
@@ -516,19 +658,19 @@ class AgentChatResponse(ApiModel):
         max_length=64,
         description="本轮选中的 Skill 编码，用于更新 agent_run_tb.skill_code",
     )
-    result_data: dict[str, Any] = Field(
-        default_factory=dict,
+    result_data: AgentResultData = Field(
+        default_factory=AgentResultData,
         description="Agent 编排结果摘要，仅供 Java 持久化审计，不直接返回给 Vue",
     )
-    memory_patch: dict[str, Any] = Field(
-        default_factory=dict,
+    memory_patch: MemoryPatch | None = Field(
+        default=None,
         description="本轮会话记忆变更补丁，仅供 Java 校验、合并并持久化",
     )
-    presentation: dict[str, Any] | None = Field(
+    presentation: PresentationResponse | None = Field(
         default=None,
         description="前端展示结构，例如列表、图表或进度条配置",
     )
-    execution_result: dict[str, Any] | None = Field(
+    execution_result: ExecutionResultResponse | None = Field(
         default=None,
         description="本轮工具真实结果；列表 records 用于前端展示查询表格",
     )
@@ -703,6 +845,30 @@ class ExecutionStepListResponse(ApiModel):
 # ==================== LangGraph 内部运行时对象 ====================
 
 
+class AgentHistoryMessage(ApiModel):
+    """供编排层理解上下文的一条精简历史消息。"""
+
+    role: str = Field(min_length=1, max_length=16)
+    content: str = Field(min_length=1, max_length=10000)
+
+
+class AgentHistoryReferences(ApiModel):
+    """一条历史消息关联的业务对象，供“这个任务”等指代消解使用。"""
+
+    message_id: int = Field(ge=1)
+    turn_id: str | None = Field(default=None, max_length=64)
+    references: list["MessageReferenceResponse"] = Field(default_factory=list)
+
+
+class AgentRuntimeMetadata(ApiModel):
+    """编排运行所需的可信元数据，不承载任意键值对。"""
+
+    run_no: str = Field(min_length=1, max_length=64)
+    agent_code: AgentType
+    current_business_context: BusinessContext | None = None
+    history_references: list[AgentHistoryReferences] = Field(default_factory=list)
+
+
 class AgentRuntimeRequest(BaseModel):
     """LangGraph 编排层使用的内部请求，不属于 Python 对外接口。"""
 
@@ -712,12 +878,11 @@ class AgentRuntimeRequest(BaseModel):
     input_type: UserInputType = UserInputType.TEXT
     interaction_id: str | None = None
     reply_to_turn_id: str | None = None
-    answers: dict[str, Any] = Field(default_factory=dict)
     agent_type: AgentType | None = None
     conversation_summary: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    memory: dict[str, Any] = Field(default_factory=dict)
-    history: list[dict[str, str]] = Field(default_factory=list)
+    metadata: AgentRuntimeMetadata
+    memory: ConversationMemory = Field(default_factory=ConversationMemory)
+    history: list[AgentHistoryMessage] = Field(default_factory=list)
 
 
 class AgentRuntimeResponse(BaseModel):
@@ -729,9 +894,9 @@ class AgentRuntimeResponse(BaseModel):
     message: str
     status: str
     skill_name: str | None = None
-    skill_selection: dict[str, Any] | None = None
-    parameters: dict[str, Any] = Field(default_factory=dict)
-    entity_resolution: dict[str, Any] | None = None
+    skill_selection: SkillSelectionResponse | None = None
+    parameters: OperationParameters = Field(default_factory=OperationParameters)
+    entity_resolution: RequestSemantics | None = None
     missing_parameters: list[str] = Field(default_factory=list)
     resolution_issues: list[ResolutionIssue] = Field(default_factory=list)
     interaction_id: str | None = None
@@ -743,12 +908,13 @@ class AgentRuntimeResponse(BaseModel):
     memory_loaded: bool = False
     available_tools: list[str] = Field(default_factory=list)
     executed_tool: str | None = None
-    execution_result: dict[str, Any] | None = None
-    presentation: dict[str, Any] | None = None
-    progress: dict[str, Any] | None = None
-    forecast_result: dict[str, Any] | None = None
-    training_result: dict[str, Any] | None = None
+    execution_result: ToolExecutionResult | None = None
+    presentation: PresentationResponse | None = None
     next_action: str | None = None
     next_check_seconds: int | None = None
     decision_reason: str | None = None
-    memory_patch: dict[str, Any] = Field(default_factory=dict)
+    memory_patch: MemoryPatch = Field(default_factory=MemoryPatch)
+
+
+AgentConversationContext.model_rebuild()
+AgentChatRequest.model_rebuild()

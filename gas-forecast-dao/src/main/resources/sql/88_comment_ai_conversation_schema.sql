@@ -20,7 +20,6 @@ alter table ai_conversation_message_tb
     modify column role varchar(16) not null comment '消息角色：USER用户、ASSISTANT助手、SYSTEM系统、TOOL工具',
     modify column turn_id varchar(64) default null comment '对话轮次ID，同一轮用户与助手消息使用相同值',
     modify column content text not null comment '消息正文',
-    modify column message_type varchar(64) default null comment '消息分类或来源Skill编码，与业务绑定类型无关',
     modify column structured_json json default null comment '消息附带的结构化数据JSON',
     modify column created_at datetime not null comment '消息创建时间',
     comment='AI对话消息表';

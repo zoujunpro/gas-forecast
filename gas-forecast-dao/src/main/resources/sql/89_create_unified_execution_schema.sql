@@ -3,7 +3,6 @@ use gas_data;
 create table if not exists agent_run_tb (
     id bigint not null auto_increment comment '主键ID',
     run_no varchar(64) not null comment 'Agent执行唯一编号',
-    request_id varchar(128) not null comment 'Java服务端生成的请求跟踪编号，不参与前端幂等或响应重放',
     conversation_id bigint not null comment '所属会话ID，关联ai_conversation_tb.id',
     message_id bigint unsigned not null comment '触发本次Agent执行的用户消息ID，关联ai_conversation_message_tb.id',
     agent_code varchar(64) not null comment '执行智能体编码',
@@ -23,7 +22,6 @@ create table if not exists agent_run_tb (
     updated_at datetime not null default current_timestamp on update current_timestamp comment '更新时间',
     primary key (id),
     unique key uk_run_no (run_no),
-    unique key uk_agent_run_request_id (request_id),
     key idx_conversation_id (conversation_id),
     key idx_message_id (message_id),
     key idx_agent_status (agent_code, status),
@@ -172,7 +170,7 @@ create table if not exists ai_message_ref_tb (
     id bigint not null auto_increment comment '主键ID',
     message_id bigint unsigned not null comment '关联消息ID，关联ai_conversation_message_tb.id',
     ref_type varchar(32) not null
-        comment '引用类型：EXECUTION_BATCH执行批次、EXECUTION_TASK执行任务、TRAIN_BATCH训练批次、FORECAST_BATCH预测批次',
+        comment '引用类型：EXECUTION_TASK执行任务、FORECAST预测结果',
     ref_no varchar(64) not null comment '引用对象编号，根据ref_type确定对应业务表',
     relation_type varchar(32) not null default 'REFERENCED'
         comment '关联类型：CREATED本消息触发创建、REFERENCED引用历史对象、DISPLAYED消息展示对象',
@@ -181,4 +179,4 @@ create table if not exists ai_message_ref_tb (
     unique key uk_message_ref (message_id, ref_type, ref_no, relation_type),
     key idx_ref (ref_type, ref_no)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci
-    comment='AI消息与执行任务、训练预测结果的引用关系表';
+    comment='AI消息与执行任务、预测结果的引用关系表';

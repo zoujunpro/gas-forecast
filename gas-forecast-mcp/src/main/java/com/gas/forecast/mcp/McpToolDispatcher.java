@@ -47,6 +47,8 @@ public class McpToolDispatcher {
                 case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args)));
                 case "forecast_result_query" -> success(toolName, "预测结果查询成功",
                         queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
+                case "forecast_result_by_no" -> success(toolName, "预测结果查询成功",
+                        queryService.forecastByNo(requiredText(args, "forecastNo"), bool(args, "includePoints", true)));
                 case "task_status_get" -> success(toolName, "任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
                 case "task_steps_get" -> success(toolName, "任务步骤查询成功",
                         taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));

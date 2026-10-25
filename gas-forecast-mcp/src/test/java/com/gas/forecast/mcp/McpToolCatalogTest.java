@@ -14,7 +14,7 @@ class McpToolCatalogTest {
         Set<String> names = catalog.list().stream().map(McpToolCatalog.ToolDefinition::name).collect(Collectors.toSet());
 
         assertThat(names).containsExactlyInAnyOrder("region_list", "industry_list", "customer_list",
-                "forecast_start", "forecast_result_query", "task_status_get", "task_steps_get");
+                "forecast_start", "forecast_result_query", "forecast_result_by_no", "task_status_get", "task_steps_get");
         assertThat(catalog.list()).allSatisfy(tool -> {
             assertThat(tool.description()).isNotBlank();
             assertThat(tool.inputSchema()).containsEntry("type", "object");

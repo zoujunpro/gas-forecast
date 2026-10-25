@@ -17,9 +17,6 @@ public class AgentRunTb {
     /** Agent执行唯一编号。 */
     private String runNo;
 
-    /** 前端提交幂等号，用于防止重复发起同一次 Agent 请求。 */
-    private String requestId;
-
     /** 所属会话ID，关联ai_conversation_tb.id。 */
     private Long conversationId;
 

@@ -9,6 +9,17 @@ import com.gas.forecast.business.dto.AiChatRequest;
 import com.gas.forecast.business.dto.AiChatResponse;
 import com.gas.forecast.business.dto.PythonAgentChatRequest;
 import com.gas.forecast.business.dto.PythonAgentChatResponse;
+import com.gas.forecast.business.enums.AgentRunErrorCodeEnum;
+import com.gas.forecast.business.enums.AgentRunStatusEnum;
+import com.gas.forecast.business.enums.AiAgentCodeEnum;
+import com.gas.forecast.business.enums.AiClarificationInputTypeEnum;
+import com.gas.forecast.business.enums.AiClarificationReasonEnum;
+import com.gas.forecast.business.enums.AiConversationStatusEnum;
+import com.gas.forecast.business.enums.AiIntentEnum;
+import com.gas.forecast.business.enums.AiInteractionTypeEnum;
+import com.gas.forecast.business.enums.AiMessageReferenceRelationEnum;
+import com.gas.forecast.business.enums.AiMessageReferenceTypeEnum;
+import com.gas.forecast.business.enums.AiMessageRoleEnum;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
@@ -38,26 +49,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AiChatPersistenceService {
-    private static final Set<String> AGENT_CODES = Set.of(
-            "general", "short-term", "monthly-sales", "winter-supply");
-    private static final Set<String> RUN_STATUSES = Set.of(
-            "PENDING", "RUNNING", "WAITING", "SUCCESS", "FAILED", "CANCELLED");
-    private static final Set<String> REFERENCE_TYPES = Set.of(
-            "EXECUTION_TASK", "FORECAST");
-    private static final Set<String> RELATION_TYPES = Set.of(
-            "CREATED", "REFERENCED", "DISPLAYED");
-    private static final Set<String> INTERACTION_TYPES = Set.of("CLARIFICATION", "CONFIRMATION");
-    private static final Set<String> CLARIFICATION_REASONS = Set.of(
-            "INTENT_AMBIGUOUS", "ENTITY_MISSING",
-            "ENTITY_AMBIGUOUS", "ENTITY_NOT_FOUND", "PARAMETER_MISSING",
-            "PARAMETER_CONFLICT", "SCOPE_AMBIGUOUS", "REFERENCE_AMBIGUOUS",
-            "WRITE_CONFIRMATION_REQUIRED");
-    private static final Set<String> CLARIFICATION_INPUT_TYPES = Set.of(
-            "TEXT", "NUMBER", "DATE", "SELECT", "MULTI_SELECT", "CONFIRM");
-    /** Python 仅能通过补丁维护这些工作记忆字段，不能任意改写会话数据。 */
-    private static final Set<String> MEMORY_PATCH_KEYS = Set.of(
-            "currentSkill", "currentParameters", "lastTool", "lastExecution",
-            "pendingInteraction", "pendingAction", "currentBusinessContext");
+    /** 会话只保留未完成操作和页面焦点，不再加载上一任务的参数或工具结果。 */
+    private static final Set<String> MEMORY_KEYS = Set.of("pendingOperation", "currentBusinessContext");
 
     private final AiConversationTbMapper conversationMapper;
     private final AiConversationMessageTbMapper messageMapper;
@@ -85,17 +78,13 @@ public class AiChatPersistenceService {
         String turnId = "TURN-" + compactUuid();
         AiConversationMessageTb userMessage = new AiConversationMessageTb();
         userMessage.setConversationId(conversation.getId());
-        userMessage.setRole("USER");
+        userMessage.setRole(AiMessageRoleEnum.USER.getCode());
         userMessage.setTurnId(turnId);
         userMessage.setContent(request.message().trim());
-        userMessage.setMessageType("USER_MESSAGE");
         userMessage.setCreatedAt(now);
         messageMapper.insert(userMessage);
 
         String runNo = "RUN-" + compactUuid();
-        // 幂等键来自前端；用户重试同一次发送时必须复用。未升级的旧调用方才由
-        // 服务端兜底生成，避免空值进入后续训练/预测任务创建。
-        String requestId = TextUtils.hasText(request.clientRequestId()) ? request.clientRequestId().trim() : "REQ-" + compactUuid();
         AiChatRequest.BusinessContext context = request.businessContext() == null
                 ? new AiChatRequest.BusinessContext(null, null, null, null, null, null)
                 : request.businessContext();
@@ -107,18 +96,16 @@ public class AiChatPersistenceService {
                 request.inputType().name(),
                 trimToNull(request.interactionId()),
                 trimToNull(request.replyToTurnId()),
-                request.answers(),
                 conversation.getAgentCode(),
                 context,
                 conversationContext);
 
         AgentRunTb run = new AgentRunTb();
         run.setRunNo(runNo);
-        run.setRequestId(requestId);
         run.setConversationId(conversation.getId());
         run.setMessageId(userMessage.getId());
         run.setAgentCode(conversation.getAgentCode());
-        run.setStatus("RUNNING");
+        run.setStatus(AgentRunStatusEnum.RUNNING.getCode());
         run.setRequestJson(agentRequestSnapshot(agentRequest));
         run.setStartedAt(now);
         run.setCreatedAt(now);
@@ -160,11 +147,9 @@ public class AiChatPersistenceService {
         Date now = new Date();
         AiConversationMessageTb assistant = new AiConversationMessageTb();
         assistant.setConversationId(conversation.getId());
-        assistant.setRole("ASSISTANT");
+        assistant.setRole(AiMessageRoleEnum.ASSISTANT.getCode());
         assistant.setTurnId(result.turnId());
         assistant.setContent(answer);
-        assistant.setMessageType(TextUtils.hasText(result.skillCode())
-                ? result.skillCode() : "AGENT_REPLY");
         assistant.setStructuredJson(writeJson(response));
         assistant.setCreatedAt(now);
         messageMapper.insert(assistant);
@@ -175,8 +160,10 @@ public class AiChatPersistenceService {
         run.setIntentJson(writeNullableJson(result.intentData()));
         run.setSkillCode(trimToNull(result.skillCode()));
         run.setResultJson(runResultJson(result, response));
-        run.setErrorCode("FAILED".equals(status) ? trimToNull(result.errorCode()) : null);
-        run.setErrorMessage("FAILED".equals(status) ? trimToNull(result.errorMessage()) : null);
+        run.setErrorCode(AgentRunStatusEnum.FAILED.getCode().equals(status)
+                ? trimToNull(result.errorCode()) : null);
+        run.setErrorMessage(AgentRunStatusEnum.FAILED.getCode().equals(status)
+                ? trimToNull(result.errorMessage()) : null);
         run.setFinishedAt(now);
         run.setUpdatedAt(now);
         runMapper.updateById(run);
@@ -193,10 +180,12 @@ public class AiChatPersistenceService {
         String message = "智能体服务暂时不可用，本轮未确认创建新的业务任务，请稍后重试。";
         PythonAgentChatResponse failure = new PythonAgentChatResponse(
                 request.conversationNo(), request.turnId(), request.runNo(),
-                request.agentCode(), "FAILED", message, null, List.of(), "CHAT",
-                objectMapper.createObjectNode(), null, objectMapper.createObjectNode(),
-                objectMapper.createObjectNode(), null, null,
-                "AGENT_SERVICE_ERROR", safeError(exception));
+                request.agentCode(), AgentRunStatusEnum.FAILED.getCode(), message, null, List.of(),
+                AiIntentEnum.CHAT.getCode(),
+                new PythonAgentChatResponse.IntentData(Map.of(), Map.of()), null,
+                new PythonAgentChatResponse.ResultData(null, null, null, List.of()),
+                null, null, null,
+                AgentRunErrorCodeEnum.AGENT_SERVICE_ERROR.getCode(), safeError(exception));
         return complete(failure);
     }
 
@@ -210,22 +199,22 @@ public class AiChatPersistenceService {
             if (existing == null) {
                 throw new BusinessException("会话不存在或无权访问");
             }
-            if (!"ACTIVE".equalsIgnoreCase(existing.getStatus())) {
+            if (!AiConversationStatusEnum.ACTIVE.getCode().equalsIgnoreCase(existing.getStatus())) {
                 throw new BusinessException("当前会话已归档，不能继续发送消息");
             }
             return existing;
         }
 
         String agentCode = TextUtils.hasText(request.agentCode())
-                ? request.agentCode().trim() : "general";
-        if (!AGENT_CODES.contains(agentCode)) {
+                ? request.agentCode().trim() : AiAgentCodeEnum.GENERAL.getCode();
+        if (!AiAgentCodeEnum.contains(agentCode)) {
             throw new BusinessException("不支持的智能体编码：" + agentCode);
         }
         AiConversationTb conversation = new AiConversationTb();
         conversation.setConversationNo("AICHAT-" + compactUuid());
         conversation.setTitle(abbreviate(request.message().trim(), 200));
         conversation.setAgentCode(agentCode);
-        conversation.setStatus("ACTIVE");
+        conversation.setStatus(AiConversationStatusEnum.ACTIVE.getCode());
         conversation.setLastMessageAt(now);
         conversation.setCreatedBy(currentUserId());
         conversation.setCreatedAt(now);
@@ -253,7 +242,8 @@ public class AiChatPersistenceService {
                 || !TextUtils.hasText(request.replyToTurnId())) {
             throw new BusinessException("结构化回复必须提供interactionId和replyToTurnId");
         }
-        Map<String, Object> interaction = objectMap(memory.get("pendingInteraction"));
+        Map<String, Object> pendingOperation = objectMap(memory.get("pendingOperation"));
+        Map<String, Object> interaction = objectMap(pendingOperation.get("interaction"));
         if (interaction.isEmpty()) {
             throw new BusinessException("当前会话没有等待处理的澄清或确认");
         }
@@ -262,12 +252,13 @@ public class AiChatPersistenceService {
             throw new BusinessException("该澄清交互已过期，请根据最新问题重新操作");
         }
         String expectedType = request.inputType() == AiChatRequest.InputType.CLARIFICATION_REPLY
-                ? "CLARIFICATION" : "CONFIRMATION";
+                ? AiInteractionTypeEnum.CLARIFICATION.getCode()
+                : AiInteractionTypeEnum.CONFIRMATION.getCode();
         if (!Objects.equals(expectedType, interaction.get("interactionType"))) {
             throw new BusinessException("回复类型与当前待处理交互不匹配");
         }
-        if ("CONFIRMATION".equals(expectedType)
-                && objectMap(memory.get("pendingAction")).isEmpty()) {
+        if (AiInteractionTypeEnum.CONFIRMATION.getCode().equals(expectedType)
+                && !TextUtils.hasText(Objects.toString(pendingOperation.get("pendingTool"), ""))) {
             throw new BusinessException("当前没有可确认或取消的待执行动作");
         }
     }
@@ -292,15 +283,14 @@ public class AiChatPersistenceService {
             return List.of();
         }
         List<Long> ids = messages.stream().map(AiConversationMessageTb::getId).toList();
-        // 历史会话可能在旧版本中写入 TRAIN_BATCH、FORECAST_BATCH 等引用。
-        // 新 Agent 的请求模型只识别统一任务和预测编号；旧引用保留在数据库审计，
-        // 但不能继续透传，否则 Pydantic 会在请求进入 Agent 前直接返回 422。
+        // 历史会话可能保留已废弃的引用类型。当前协议只识别执行任务和预测结果；
+        // 旧引用保留在数据库审计，但不透传给 Agent。
         Map<Long, List<AiChatResponse.Reference>> references = referenceMapper.selectList(
                         Wrappers.<AiMessageRefTb>lambdaQuery()
                                 .in(AiMessageRefTb::getMessageId, ids)
                                 .orderByAsc(AiMessageRefTb::getId))
                 .stream()
-                .filter(reference -> REFERENCE_TYPES.contains(reference.getRefType()))
+                .filter(reference -> AiMessageReferenceTypeEnum.contains(reference.getRefType()))
                 .collect(Collectors.groupingBy(
                         AiMessageRefTb::getMessageId,
                         LinkedHashMap::new,
@@ -310,7 +300,7 @@ public class AiChatPersistenceService {
                         && TextUtils.hasText(message.getContent()))
                 .map(message -> new PythonAgentChatRequest.RecentMessage(
                         message.getId(), message.getTurnId(), message.getRole(), message.getContent(),
-                        message.getMessageType(), message.getCreatedAt(),
+                        message.getCreatedAt(),
                         references.getOrDefault(message.getId(), List.of())))
                 .toList();
     }
@@ -330,6 +320,8 @@ public class AiChatPersistenceService {
             if (memory == null) {
                 throw new IllegalStateException("会话长期记忆必须是 JSON 对象");
             }
+            // 不兼容旧的操作快照；旧记录中的历史缓存不再参与后续执行。
+            memory.keySet().retainAll(MEMORY_KEYS);
             return memory;
         } catch (IllegalStateException exception) {
             throw exception;
@@ -376,48 +368,23 @@ public class AiChatPersistenceService {
      * JSON 序列化和事务提交全部由 Java 负责。非法补丁直接拒绝，避免 Agent
      * 响应意外污染会话记忆。</p>
      */
-    private void applyMemoryPatch(AiConversationTb conversation, JsonNode patch) {
-        if (patch == null || patch.isNull()) {
+    private void applyMemoryPatch(AiConversationTb conversation, PythonAgentChatResponse.MemoryPatch patch) {
+        if (patch == null) {
             return;
         }
-        if (!patch.isObject()) {
-            throw new IllegalStateException("Python 返回的 memoryPatch 必须是对象");
-        }
-        JsonNode set = patch.path("set");
-        JsonNode remove = patch.path("remove");
-        if (!set.isMissingNode() && !set.isObject()) {
-            throw new IllegalStateException("memoryPatch.set 必须是对象");
-        }
-        if (!remove.isMissingNode() && !remove.isArray()) {
-            throw new IllegalStateException("memoryPatch.remove 必须是数组");
-        }
-
         Map<String, Object> memory = new LinkedHashMap<>(
                 parseConversationMemory(conversation.getMemoryJson()));
-        if (set.isObject()) {
-            var fields = set.fields();
-            while (fields.hasNext()) {
-                var field = fields.next();
-                assertPatchKey(field.getKey());
-                memory.put(field.getKey(), objectMapper.convertValue(field.getValue(), Object.class));
+        if (patch.pendingOperation() == null) {
+            memory.remove("pendingOperation");
+        } else {
+            Map<String, Object> operation = patch.pendingOperation();
+            Map<String, Object> interaction = objectMap(operation.get("interaction"));
+            if (interaction.isEmpty() || objectMap(operation.get("semantics")).isEmpty()) {
+                throw new IllegalStateException("pendingOperation 缺少有效的交互身份或原请求语义");
             }
-        }
-        if (remove.isArray()) {
-            for (JsonNode key : remove) {
-                if (!key.isTextual()) {
-                    throw new IllegalStateException("memoryPatch.remove 只能包含字段名");
-                }
-                assertPatchKey(key.asText());
-                memory.remove(key.asText());
-            }
+            memory.put("pendingOperation", operation);
         }
         conversation.setMemoryJson(memory.isEmpty() ? null : writeJson(memory));
-    }
-
-    private void assertPatchKey(String key) {
-        if (!MEMORY_PATCH_KEYS.contains(key)) {
-            throw new IllegalStateException("memoryPatch 包含不允许的字段：" + key);
-        }
     }
 
     private void putIfText(Map<String, Object> target, String key, String value) {
@@ -471,7 +438,7 @@ public class AiChatPersistenceService {
         }
 
         // Agent Run 只能由 USER 消息触发，不能关联助手、系统或工具消息。
-        if (!"USER".equalsIgnoreCase(user.getRole())) {
+        if (!AiMessageRoleEnum.USER.getCode().equalsIgnoreCase(user.getRole())) {
             throw new IllegalStateException(
                     "Agent Run 关联的消息不是用户消息，runNo=" + run.getRunNo());
         }
@@ -496,8 +463,8 @@ public class AiChatPersistenceService {
         }
         LinkedHashMap<String, AiChatResponse.Reference> unique = new LinkedHashMap<>();
         for (AiChatResponse.Reference value : values) {
-            if (value == null || !REFERENCE_TYPES.contains(value.referenceType())
-                    || !RELATION_TYPES.contains(value.relationType())
+            if (value == null || !AiMessageReferenceTypeEnum.contains(value.referenceType())
+                    || !AiMessageReferenceRelationEnum.contains(value.relationType())
                     || !TextUtils.hasText(value.referenceNo())) {
                 throw new IllegalStateException("Python Agent 返回了无效的业务对象引用");
             }
@@ -516,13 +483,13 @@ public class AiChatPersistenceService {
     /** WAITING 响应必须携带完整、可回传且与当前轮次绑定的结构化交互。 */
     private AiChatResponse.Clarification normalizeClarification(
             String status, String turnId, AiChatResponse.Clarification value) {
-        if (!"WAITING".equals(status)) {
+        if (!AgentRunStatusEnum.WAITING.getCode().equals(status)) {
             return null;
         }
         if (value == null || !TextUtils.hasText(value.interactionId())
-                || !INTERACTION_TYPES.contains(value.interactionType())
+                || !AiInteractionTypeEnum.contains(value.interactionType())
                 || !Objects.equals(turnId, value.replyToTurnId())
-                || !CLARIFICATION_REASONS.contains(value.reason())
+                || !AiClarificationReasonEnum.contains(value.reason())
                 || !TextUtils.hasText(value.resumeFrom())
                 || !TextUtils.hasText(value.prompt())
                 || value.fields() == null || value.fields().isEmpty()) {
@@ -531,13 +498,13 @@ public class AiChatPersistenceService {
         for (AiChatResponse.ClarificationField field : value.fields()) {
             if (field == null || !TextUtils.hasText(field.parameterCode())
                     || !TextUtils.hasText(field.parameterName())
-                    || !CLARIFICATION_REASONS.contains(field.reason())
-                    || !CLARIFICATION_INPUT_TYPES.contains(field.inputType())) {
+                    || !AiClarificationReasonEnum.contains(field.reason())
+                    || !AiClarificationInputTypeEnum.contains(field.inputType())) {
                 throw new IllegalStateException("Python Agent 返回了无效的澄清字段");
             }
-            if (("SELECT".equals(field.inputType())
-                    || "MULTI_SELECT".equals(field.inputType())
-                    || "CONFIRM".equals(field.inputType()))
+            if ((AiClarificationInputTypeEnum.SELECT.getCode().equals(field.inputType())
+                    || AiClarificationInputTypeEnum.MULTI_SELECT.getCode().equals(field.inputType())
+                    || AiClarificationInputTypeEnum.CONFIRM.getCode().equals(field.inputType()))
                     && (field.options() == null || field.options().isEmpty())) {
                 throw new IllegalStateException("选择类澄清字段必须提供候选项");
             }
@@ -586,7 +553,6 @@ public class AiChatPersistenceService {
         value.put("inputType", request.inputType());
         value.put("interactionId", request.interactionId());
         value.put("replyToTurnId", request.replyToTurnId());
-        value.set("answers", objectMapper.valueToTree(request.answers()));
         value.put("agentCode", request.agentCode());
         value.set("businessContext", objectMapper.valueToTree(request.businessContext()));
         ObjectNode context = value.putObject("conversationContext");
@@ -598,14 +564,14 @@ public class AiChatPersistenceService {
 
     private String runResultJson(PythonAgentChatResponse result, AiChatResponse response) {
         ObjectNode stored = objectMapper.createObjectNode();
-        stored.set("agentResult", result.resultData() == null
-                ? objectMapper.createObjectNode() : result.resultData());
+        stored.set("agentResult", objectMapper.valueToTree(
+                result.resultData() == null ? Map.of() : result.resultData()));
         stored.set("response", objectMapper.valueToTree(response));
         return writeJson(stored);
     }
 
-    private String writeNullableJson(JsonNode value) {
-        return value == null || value.isNull() ? null : writeJson(value);
+    private String writeNullableJson(Object value) {
+        return value == null ? null : writeJson(value);
     }
 
     private String writeJson(Object value) {
@@ -617,8 +583,7 @@ public class AiChatPersistenceService {
     }
 
     private String normalizeRunStatus(String status) {
-        String normalized = TextUtils.hasText(status) ? status.trim().toUpperCase() : "FAILED";
-        return RUN_STATUSES.contains(normalized) ? normalized : "FAILED";
+        return AgentRunStatusEnum.normalize(status);
     }
 
     private String currentUserId() {

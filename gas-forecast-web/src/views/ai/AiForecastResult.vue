@@ -1,50 +1,50 @@
 <template>
   <div class="result-card">
-    <div class="result-title"><div><strong>模型回测与预测结果</strong><span>模型 {{ result.training?.bestModel || '-' }} · 历史回测 MAPE {{ formatPercent(result.training?.mape) }}</span></div><em v-if="needsAccuracyAttention">精度需关注</em></div>
-    <transition name="content-reveal"><div v-if="revealStage >= 2" class="metrics">
+    <div v-if="!simple" class="result-title"><div><strong>{{ showBacktest ? '模型回测与预测结果' : '未来销量预测结果' }}</strong><span v-if="showBacktest">模型 {{ result.training?.bestModel || '-' }} · 历史回测 MAPE {{ formatPercent(result.training?.mape) }}</span><span v-else>模型 {{ result.training?.bestModel || '-' }} · 共 {{ result.points.length }} 个预测周期</span></div><em v-if="showBacktest && needsAccuracyAttention">精度需关注</em></div>
+    <transition name="content-reveal"><div v-if="!simple && revealStage >= 2" class="metrics">
       <div><small>最佳模型</small><b>{{ result.training?.bestModel || '-' }}</b></div>
-      <div><small>MAPE</small><b class="accuracy-value">{{ formatPercent(result.training?.mape) }}</b></div>
-      <div><small>回测天数</small><b>{{ backtestDays }}</b></div>
+      <template v-if="showBacktest"><div><small>MAPE</small><b class="accuracy-value">{{ formatPercent(result.training?.mape) }}</b></div><div><small>回测天数</small><b>{{ backtestDays }}</b></div></template>
+      <template v-else><div><small>预测周期</small><b>{{ result.points.length }}</b></div><div><small>预测均值</small><b>{{ format(forecastAverage) }}</b></div></template>
     </div></transition>
-    <transition name="content-reveal"><section v-if="revealStage >= 3 && backtestPoints.length" class="result-section backtest-section">
+    <transition name="content-reveal"><section v-if="showBacktest && revealStage >= 3 && backtestPoints.length" class="result-section backtest-section">
       <h4>历史回测 · 实际销量与预测值</h4>
       <div ref="backtestRef" class="chart backtest-chart" role="img" aria-label="历史回测实际销量与预测值趋势图"></div>
     </section></transition>
     <transition name="content-reveal"><section v-if="revealStage >= 4" class="result-section forecast-section">
       <h4>未来{{ result.points.length }}天销量预测趋势</h4>
-    <div class="chart-tools" :class="{ readonly }">
+    <div class="chart-tools" :class="{ readonly: readonly && !simple }">
       <span>{{ result.customerName || '客户' }}：未来{{ result.points.length }}天预测</span>
-      <div v-if="!readonly" class="chart-actions"><div class="chart-type-switch"><button type="button" :class="{ active: chartType === 'bar' }" title="柱状图" @click="chartType = 'bar'"><el-icon><Histogram /></el-icon>柱状图</button><button type="button" :class="{ active: chartType === 'line' }" title="折线图" @click="chartType = 'line'"><el-icon><TrendCharts /></el-icon>折线图</button></div><button type="button" class="download-button" title="下载预测图表 PNG 图片" @click="downloadChart"><el-icon><Download /></el-icon>下载图片</button><button type="button" title="缩小" :disabled="zoom <= 0.15" @click="changeZoom(-0.1)">−</button><b>{{ Math.round(zoom * 100) }}%</b><button type="button" title="放大" :disabled="zoom >= 3" @click="changeZoom(0.2)">＋</button><button type="button" @click="fitToView">全景</button></div>
+      <div class="chart-actions"><div v-if="simple" class="result-view-switch"><button type="button" :class="{ active: forecastView === 'chart' }" @click="forecastView = 'chart'">图表</button><button type="button" :class="{ active: forecastView === 'data' }" @click="forecastView = 'data'">数据</button></div><template v-if="!readonly"><button type="button" class="download-button" title="下载预测图表 PNG 图片" @click="downloadChart"><el-icon><Download /></el-icon>下载图片</button><button type="button" title="缩小" :disabled="zoom <= 0.15" @click="changeZoom(-0.1)">−</button><b>{{ Math.round(zoom * 100) }}%</b><button type="button" title="放大" :disabled="zoom >= 3" @click="changeZoom(0.2)">＋</button><button type="button" @click="fitToView">全景</button></template></div>
     </div>
-    <div ref="trendScroll" class="chart-scroll" @wheel.prevent="onWheel">
+    <div v-if="!simple || forecastView === 'chart'" ref="trendScroll" class="chart-scroll" @wheel.prevent="onWheel">
       <div class="chart-inner" :style="{ width: `${chartWidth}px` }">
-        <div ref="chartRef" class="chart" role="img" :aria-label="`未来用气预测${chartType === 'bar' ? '柱状' : '折线'}图`"></div>
+        <ForecastComparisonChart ref="forecastChartRef" class="chart" :dates="trendPoints.map((point) => displayDate(point.date))" :reference-values="trendPoints.map((point) => lastYearValue(point.date) ?? null)" :forecast-values="trendPoints.map((point) => Number(point.value))" chart-type="line" />
       </div>
     </div>
-    </section></transition>
-    <section class="daily-detail"><h4>每日预测明细</h4><div class="values">
+    <section v-if="!simple || forecastView === 'data'" class="daily-detail" :class="{ 'simple-data': simple }"><h4 v-if="!simple">每日预测明细</h4><div class="values">
       <div class="values-head"><span>日期</span><span>去年同期</span><span>最新预测</span><span>同比变化率</span></div>
       <div v-for="point in result.points" :key="point.date" class="values-row"><span>{{ displayDate(point.date) }}</span><span>{{ formatNullable(lastYearValue(point.date)) }}</span><b>{{ format(point.value) }}</b><span :class="dailyChangeClass(point)">{{ dailyChangeText(point) }}</span></div>
     </div></section>
-    <div class="batch">预测批次：{{ result.batchNo }}</div>
+    </section></transition>
+    <div v-if="!simple" class="batch">预测批次：{{ result.batchNo }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Download, Histogram, TrendCharts } from '@element-plus/icons-vue'
+import { Download } from '@element-plus/icons-vue'
 import echarts from '@/utils/echarts'
+import ForecastComparisonChart from '@/components/ForecastComparisonChart.vue'
 
 interface ForecastPoint { date: string; value: number }
 interface BacktestPoint { date: string; actualValue: number; predictedValue: number }
 interface TrainingResult { batchNo: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number }
 interface ForecastResult { batchNo: string; customerName?: string; average: number; minimum: number; maximum: number; training?: TrainingResult; points: ForecastPoint[]; historyPoints?: ForecastPoint[]; lastYearPoints?: ForecastPoint[]; backtestPoints?: BacktestPoint[] }
-const props = withDefaults(defineProps<{ result: ForecastResult; presentation?: { chartType?: 'LINE' | 'BAR'; title?: string }; readonly?: boolean; revealStage?: number }>(), { revealStage: 4 })
+const props = withDefaults(defineProps<{ result: ForecastResult; presentation?: { chartType?: 'LINE' | 'BAR'; title?: string }; readonly?: boolean; revealStage?: number; showBacktest?: boolean; simple?: boolean }>(), { revealStage: 4, showBacktest: true, simple: false })
 const trendScroll = ref<HTMLElement>()
-const chartRef = ref<HTMLElement>()
+const forecastChartRef = ref<{ getDataURL: (options?: object) => string | undefined }>()
 const backtestRef = ref<HTMLElement>()
-const chartType = ref<'bar' | 'line'>(props.presentation?.chartType === 'LINE' ? 'line' : 'bar')
-let chart: echarts.ECharts | null = null
+const forecastView = ref<'chart' | 'data'>('chart')
 let backtestChart: echarts.ECharts | null = null
 const format = (value: number) => Number(value).toFixed(2)
 const formatNullable = (value?: number) => value == null || !Number.isFinite(Number(value)) ? '-' : format(Number(value))
@@ -62,6 +62,7 @@ const needsAccuracyAttention = computed(() => Number(props.result.training?.mape
 const backtestPoints = computed(() => props.result.backtestPoints || [])
 const backtestDays = computed(() => backtestPoints.value.length ? `${backtestPoints.value.length}天` : '-')
 const forecastTotal = computed(() => props.result.points.reduce((sum, point) => sum + Number(point.value || 0), 0))
+const forecastAverage = computed(() => props.result.points.length ? forecastTotal.value / props.result.points.length : 0)
 const lastYearValueByDate = computed(() => new Map((props.result.lastYearPoints || []).map((point) => [point.date, point.value])))
 const lastYearValue = (date: string) => lastYearValueByDate.value.get(date)
 const dailyChange = (point: ForecastPoint) => {
@@ -100,42 +101,6 @@ const changeZoom = (delta: number) => { zoom.value = Math.min(3, Math.max(0.15, 
 const onWheel = (event: WheelEvent) => changeZoom(event.deltaY < 0 ? 0.1 : -0.1)
 const trendPoints = computed(() => props.result.points.map((item) => ({ ...item, series: 'forecast' })))
 const chartWidth = computed(() => Math.max(420, trendPoints.value.length * 68 * zoom.value))
-const renderChart = () => nextTick(() => {
-  if (!chartRef.value) return
-  chart = echarts.getInstanceByDom(chartRef.value) || echarts.init(chartRef.value)
-  const isLine = chartType.value === 'line'
-  chart.setOption({
-    animationDuration: 350,
-    tooltip: {
-      trigger: 'axis', axisPointer: { type: isLine ? 'line' : 'shadow' },
-      formatter: (params: any) => {
-        const rows = Array.isArray(params) ? params : [params]
-        const date = rows[0]?.axisValueLabel || rows[0]?.axisValue || '-'
-        return [`<strong>${date}</strong>`, ...rows.map((item: any) => `${item.marker}${item.seriesName}：<strong>${formatNullable(item.value)}</strong>`) ].join('<br/>')
-      }
-    },
-    legend: {
-      show: true,
-      top: 4,
-      left: 'center',
-      icon: 'circle',
-      itemWidth: 7,
-      itemHeight: 7,
-      itemGap: 30,
-      selectedMode: false,
-      data: ['去年同期', '最新预测'],
-      textStyle: { color: '#64748b', fontSize: 11 }
-    },
-    grid: { top: 38, right: 18, bottom: 52, left: 48 },
-    xAxis: { type: 'category', data: trendPoints.value.map((point) => displayDate(point.date)), axisLabel: { color: '#64748b', fontSize: 10, rotate: 35, formatter: (value: string) => value.slice(5) }, axisLine: { lineStyle: { color: '#94a3b8' } }, axisTick: { show: false } },
-    yAxis: { type: 'value', name: '用量', nameTextStyle: { color: '#94a3b8', fontSize: 10 }, axisLabel: { color: '#64748b', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf1f6' } } },
-    series: [
-      { name: '去年同期', type: chartType.value, data: trendPoints.value.map((point) => lastYearValue(point.date) ?? null), barMaxWidth: 22, smooth: isLine, connectNulls: false, symbolSize: 6, lineStyle: { width: 2 }, itemStyle: { color: '#9ca3af' } },
-      { name: '最新预测', type: chartType.value, data: trendPoints.value.map((point) => Number(point.value)), barMaxWidth: 22, smooth: isLine, symbolSize: 6, lineStyle: { width: 2.5 }, itemStyle: { color: '#b91c1c' }, areaStyle: isLine ? { color: 'rgba(185, 28, 28, 0.08)' } : undefined }
-    ]
-  }, true)
-  chart.resize()
-})
 const renderBacktestChart = () => nextTick(() => {
   if (!backtestRef.value || !backtestPoints.value.length) return
   backtestChart = echarts.getInstanceByDom(backtestRef.value) || echarts.init(backtestRef.value)
@@ -155,11 +120,12 @@ const renderBacktestChart = () => nextTick(() => {
   backtestChart.resize()
 })
 const downloadChart = () => {
-  if (!chart) return
+  const dataUrl = forecastChartRef.value?.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' })
+  if (!dataUrl) return
   const link = document.createElement('a')
   const safeName = (props.result.customerName || '客户预测').replace(/[\\/:*?"<>|]/g, '-')
   link.download = `${safeName}-${props.result.batchNo || '预测结果'}.png`
-  link.href = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' })
+  link.href = dataUrl
   link.click()
 }
 const fitToView = () => nextTick(() => {
@@ -168,7 +134,6 @@ const fitToView = () => nextTick(() => {
   if (!container) return
   zoom.value = Math.min(1, Math.max(0.15, Number(((container.clientWidth - 12) / (count * 68)).toFixed(2))))
   container.scrollLeft = 0
-  void renderChart()
 })
 let resizeObserver: ResizeObserver | undefined
 onMounted(() => {
@@ -179,9 +144,9 @@ onMounted(() => {
     resizeObserver.observe(trendScroll.value)
   }
 })
-onBeforeUnmount(() => { resizeObserver?.disconnect(); chart?.dispose(); backtestChart?.dispose(); chart = null; backtestChart = null })
+onBeforeUnmount(() => { resizeObserver?.disconnect(); backtestChart?.dispose(); backtestChart = null })
 watch(() => props.result.batchNo, fitToView)
-watch([chartType, chartWidth, () => props.result.points, () => props.result.lastYearPoints], renderChart, { deep: true })
+watch(forecastView, () => { void nextTick(fitToView) })
 watch(() => props.result.backtestPoints, renderBacktestChart, { deep: true })
 watch(() => props.revealStage, () => { void nextTick(() => { fitToView(); renderBacktestChart() }) })
 </script>
@@ -191,7 +156,8 @@ watch(() => props.revealStage, () => { void nextTick(() => { fitToView(); render
 .date-axis span{width:100%}
 .legend{display:flex;gap:16px;margin:0 0 4px;font-size:11px;color:#64748b}.legend span:before{content:'';display:inline-block;width:14px;height:8px;margin-right:5px;vertical-align:-1px;border-radius:1px}.history-key:before,.actual-key:before{background:#16a34a}.last-year-key:before{background:#9ca3af}.forecast-key:before{background:#b91c1c}.backtest-key:before{background:#f59e0b}.backtest-section{margin-top:18px;padding-top:14px;border-top:1px solid #edf1f6}.backtest-section .chart-tools small{color:#94a3b8}.chart-scroll{cursor:ew-resize}
 .metrics{grid-template-columns:repeat(4,1fr)}.trend-up{color:#ef4444!important}.trend-down{color:#16a34a!important}.training-summary{margin:4px 0 14px;padding:12px;border:1px solid #e8edf5;border-radius:10px;background:#fbfcff}.sub-title{display:flex;align-items:center;justify-content:space-between;gap:12px}.sub-title span,.training-meta{font-size:11px;color:#94a3b8}.reuse-note{margin-top:8px;padding:7px 9px;border-radius:7px;background:#eef5ff;color:#4169a8;font-size:11px;line-height:1.6}.training-meta{display:flex;gap:18px;margin-top:6px}.training-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.training-metrics>div{padding:8px;background:#fff;border-radius:7px}.training-metrics small,.training-metrics b{display:block}.training-metrics small{color:#94a3b8}.training-metrics b{margin-top:3px;color:#334155}@media(max-width:760px){.metrics,.training-metrics{grid-template-columns:1fr 1fr}.training-meta{flex-direction:column;gap:3px}}
-.chart-actions,.chart-type-switch{display:flex;align-items:center;gap:5px}.chart-tools button{display:inline-flex;align-items:center;justify-content:center;gap:4px}.chart-tools button.active{border-color:#4776ef;color:#4776ef;background:#f3f7ff}.chart-type-switch{padding-right:6px;margin-right:2px;border-right:1px solid #e5eaf1}.download-button{color:#315ecc!important}.chart{height:270px}@media(max-width:760px){.chart-tools{align-items:flex-start;flex-direction:column}.chart-actions{width:100%;flex-wrap:wrap}}
+.chart-actions{display:flex;align-items:center;gap:5px}.chart-tools button{display:inline-flex;align-items:center;justify-content:center;gap:4px}.chart-tools button.active{border-color:#4776ef;color:#4776ef;background:#f3f7ff}.download-button{color:#315ecc!important}.chart{height:270px}@media(max-width:760px){.chart-tools{align-items:flex-start;flex-direction:column}.chart-actions{width:100%;flex-wrap:wrap}}
 .result-title>div{min-width:0}.result-title strong{display:block;color:#1e293b;font-size:17px}.result-title span{display:block;margin-top:5px;font-size:13px;color:#64748b}.result-title em{flex:0 0 auto;padding:4px 8px;border-radius:99px;background:#fff1e8;color:#f97316;font-size:12px;font-style:normal}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.metrics>div{background:#fff}.metrics b{font-size:17px}.metrics .accuracy-value{color:#ef4444}.result-section h4{margin:18px 0 10px;color:#1e293b;font-size:14px}.backtest-section{margin-top:2px;padding-top:0;border-top:0}.backtest-chart{height:290px;padding:8px;border:1px solid #e5eaf1;border-radius:12px;background:#fff}.forecast-section{margin-top:4px}.forecast-section .chart-scroll{padding:8px;border:1px solid #e5eaf1;border-radius:12px;background:#fff}.forecast-section .chart-tools{margin-bottom:8px}.training-summary{display:none}
 .content-reveal-enter-active{transition:opacity .32s ease,transform .32s ease}.content-reveal-enter-from{opacity:0;transform:translateY(8px)}.daily-detail h4{margin:18px 0 8px;color:#1e293b;font-size:14px}
+.result-view-switch{display:flex;gap:4px;padding:3px;border-radius:7px;background:#f1f5f9}.result-view-switch button{height:27px;min-width:42px;border:0!important;background:transparent!important}.result-view-switch button.active{background:#fff!important;color:#315ecc;box-shadow:0 1px 3px rgba(15,23,42,.12)}.simple-data{margin-top:12px}
 </style>

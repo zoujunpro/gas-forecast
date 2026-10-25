@@ -1,7 +1,6 @@
 package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
@@ -26,10 +25,6 @@ public class AiConversationMessageTb {
 
     /** 消息正文。 */
     private String content;
-
-    /** 消息分类或来源Skill编码，与业务绑定类型无关。 */
-    @TableField("message_type")
-    private String messageType;
 
     /** 消息附带的结构化数据JSON。 */
     private String structuredJson;

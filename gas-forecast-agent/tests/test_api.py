@@ -1,129 +1,180 @@
-import hashlib
+"""Python 内部会话接口的协议测试。
+
+这些测试只覆盖 Java -> Python 的当前协议：会话记忆只包含
+``pendingOperation`` 和 ``currentBusinessContext``；澄清答案始终使用用户的
+普通文本消息，不再使用 ``answers`` 或旧的 ``pendingAction``。
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Iterator
 from typing import Any
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from gas_forecast_agent.config import Settings, get_settings
-from gas_forecast_agent.main import _chat_references, app, get_mcp_client
-from gas_forecast_agent.mcp import McpClientError
-from gas_forecast_agent.schemas import AgentRuntimeRequest
-from gas_forecast_agent.skills import RequestSemantics, SemanticExtractionError, SkillIntent
-from gas_forecast_agent.workflow import (
-    _resolved_clarification_parameters,
-    agent_graph,
-    conversation_history,
-    persistent_parameters,
+from gas_forecast_agent.main import (
+    _chat_references,
+    app,
+    get_internal_agent_client,
+    get_mcp_client,
 )
+from gas_forecast_agent.mcp import McpClientError
+from gas_forecast_agent.operation_models import OperationParameters
+from gas_forecast_agent.schemas import (
+    AgentRuntimeMetadata,
+    AgentRuntimeRequest,
+    ClarificationReason,
+)
+from gas_forecast_agent.skills import (
+    DialogueAct,
+    RequestSemanticExtractor,
+    RequestSemantics,
+    SkillIntent,
+    TargetSelection,
+)
+from gas_forecast_agent.workflow import agent_graph, conversation_history, persistent_parameters
 
 
-TOOLS = [
-    "region_list", "industry_list", "region_search", "industry_search", "entity_batch_resolve",
-    "customer_list", "customer_search", "task_status_get", "task_steps_get",
-    "forecast_start", "forecast_result_query", "training_start",
-    "training_status_get", "training_result_get", "training_latest_get",
-    "training_history_get",
-]
+def _tool(
+    name: str,
+    *,
+    properties: dict[str, dict[str, object]],
+    required: list[str] | None = None,
+    read_only: bool = True,
+) -> dict[str, object]:
+    return {
+        "name": name,
+        "description": name,
+        "inputSchema": {
+            "type": "object",
+            "properties": properties,
+            "required": required or [],
+        },
+        "annotations": {
+            "readOnlyHint": read_only,
+            "destructiveHint": not read_only,
+        },
+    }
 
 
 class FakeMcpClient:
+    """仅模拟当前七个 MCP 业务工具，不再保留实体或训练专用工具。"""
+
     def __init__(self) -> None:
-        self.memory: dict[str, Any] = {}
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
-    async def list_tools(self) -> list[dict[str, Any]]:
+    async def list_tools(self) -> list[dict[str, object]]:
+        common_page = {
+            "keyword": {"type": "string"},
+            "pageNo": {"type": "integer"},
+            "pageSize": {"type": "integer"},
+            "fetchAll": {"type": "boolean"},
+        }
         return [
-            {
-                "name": name,
-                "description": name,
-                "inputSchema": {
-                    "type": "object",
-                    "required": [],
-                    "properties": {
-                        "conversationNo": {"type": "string"},
-                        "customerCode": {"type": "string"},
-                        "customerName": {"type": "string"},
-                        "customerCodes": {"type": "array", "items": {"type": "string"}},
-                        "customerNames": {"type": "array", "items": {"type": "string"}},
-                        "regionCodes": {"type": "array", "items": {"type": "string"}},
-                        "regionCode": {"type": "string"},
-                        "regionName": {"type": "string"},
-                        "regionNames": {"type": "array", "items": {"type": "string"}},
-                        "industryCodes": {"type": "array", "items": {"type": "string"}},
-                        "industryCode": {"type": "string"},
-                        "industryName": {"type": "string"},
-                        "industryNames": {"type": "array", "items": {"type": "string"}},
-                        "taskNo": {"type": "string"},
-                        "confirmed": {"type": "boolean"},
-                        "idempotencyKey": {"type": "string"},
-                        "autoTrain": {"type": "boolean"},
-                        "forceRetrain": {"type": "boolean"},
-                        "trainingPreference": {"type": "string"},
-                        "bulk": {"type": "boolean"},
-                    },
-                },
-                "annotations": {
-                    "readOnlyHint": name not in {
-                        "forecast_start", "training_start",
-                    },
-                    "destructiveHint": name in {"forecast_start", "training_start"},
-                },
-            }
-            for name in TOOLS
-        ] + [{"name": "admin_delete", "description": "禁止工具", "inputSchema": {}}]
+            _tool("region_list", properties=common_page),
+            _tool("industry_list", properties=common_page),
+            _tool("customer_list", properties={
+                **common_page,
+                "regionCode": {"type": "string"},
+                "industryCode": {"type": "string"},
+                "customerCode": {"type": "string"},
+            }),
+            _tool("forecast_result_query", properties={
+                "customerCode": {"type": "string"},
+                "regionCode": {"type": "string"},
+                "industryCode": {"type": "string"},
+                "agentCode": {"type": "string"},
+                "includePoints": {"type": "boolean"},
+            }),
+            _tool("task_status_get", properties={
+                "taskNo": {"type": "string"},
+                "includeRecovery": {"type": "boolean"},
+            }, required=["taskNo"]),
+            _tool("task_steps_get", properties={
+                "taskNo": {"type": "string"},
+                "includeBusinessSteps": {"type": "boolean"},
+                "includeAttempts": {"type": "boolean"},
+            }, required=["taskNo"]),
+            _tool("forecast_start", properties={
+                "conversationNo": {"type": "string"},
+                "agentCode": {"type": "string"},
+                "dimensionType": {"type": "string"},
+                "targets": {"type": "array"},
+                "forecastHorizon": {"type": "integer", "minimum": 1},
+                "forecastStartDate": {"type": "string"},
+                "forecastUnit": {"type": "string"},
+                "historyStartDate": {"type": "string"},
+                "historyEndDate": {"type": "string"},
+                "confirmed": {"type": "boolean"},
+                "idempotencyKey": {"type": "string"},
+                "autoTrain": {"type": "boolean"},
+                "forceRetrain": {"type": "boolean"},
+                "trainingPreference": {"type": "string"},
+                "bulk": {"type": "boolean"},
+            }, required=[
+                "conversationNo", "agentCode", "dimensionType", "targets",
+                "forecastHorizon", "confirmed",
+            ], read_only=False),
+            # 不属于任何 Skill 白名单，确保 Agent 不会越权调用。
+            _tool("admin_delete", properties={}, read_only=False),
+        ]
 
-    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, object]:
         self.calls.append((name, arguments))
-        if name == "memory_update":
-            self.memory.update(arguments["values"])
-            data = dict(self.memory)
-        elif name == "forecast_start":
-            data = {
-                "executionBatchNo": "EXEC-1",
+        if name == "forecast_start":
+            data: dict[str, object] = {
                 "taskNo": "TASK-1",
-                "forecastBatchNo": "FORECAST-1",
+                "total": 1,
+                "status": "PENDING",
+                "tasks": [{
+                    "detailNo": "DETAIL-1",
+                    "forecastNo": "FORECAST-1",
+                    "customerCode": "CUS-1",
+                    "status": "PENDING",
+                }],
             }
+            status = "EXECUTING"
+            result_type = "TASK_CREATED"
+            message = "预测任务已创建"
         elif name == "customer_list":
             data = {
-                "records": [{"customerCode": "C-1", "customerName": "杭州燃气"}],
+                "records": [{
+                    "customerCode": "CUS-1",
+                    "customerName": "高邮安源",
+                    "regionCode": "320000",
+                    "regionName": "江苏",
+                    "industryCode": "CITY_GAS",
+                    "industryName": "城燃",
+                }],
                 "total": 1,
             }
-        elif name == "region_search":
-            data = {"status": "UNIQUE", "candidates": [{
-                "type": "REGION", "code": "330000", "name": "浙江",
-                "regionCode": "330000", "regionName": "浙江",
-            }]}
-        elif name == "industry_search":
-            data = {"status": "UNIQUE", "candidates": [{
-                "type": "INDUSTRY", "code": "CITY_GAS", "name": "城燃",
-                "industryCode": "CITY_GAS", "industryName": "城燃",
-            }]}
-        elif name == "customer_search":
-            data = {"status": "UNIQUE", "candidates": [{
-                "type": "CUSTOMER", "code": arguments.get("customerCode", "CUS-1"),
-                "name": arguments.get("customerName", "高邮安源"),
-                "regionCode": "320000", "regionName": "江苏",
-                "industryCode": "CITY_GAS", "industryName": "城燃",
-            }]}
-        elif name == "entity_batch_resolve":
-            names = arguments.get("customerNames") or []
+            status = "COMPLETED"
+            result_type = "PAGE"
+            message = "查询完成"
+        elif name == "task_status_get":
             data = {
-                "status": "UNIQUE",
-                "message": "批量实体解析成功",
-                "items": [],
-                "proposedParameters": {
-                    "customerCodes": [f"CUS-{index}" for index, _ in enumerate(names, start=1)],
-                    "customerNames": names,
-                },
+                "taskNo": arguments["taskNo"],
+                "status": "RUNNING",
+                "summary": {"total": 1, "pending": 0, "running": 1, "success": 0, "failed": 0},
+                "details": [],
             }
+            status = "COMPLETED"
+            result_type = "TASK_STATUS"
+            message = "任务状态查询完成"
         else:
-            data = {"tool": name, "arguments": arguments}
+            data = {"records": [], "total": 0}
+            status = "COMPLETED"
+            result_type = "PAGE"
+            message = "查询完成"
         return {
             "isError": False,
             "structuredContent": {
                 "success": True,
-                "status": "EXECUTING" if name == "forecast_start" else "COMPLETED",
-                "message": "预测任务已创建" if name == "forecast_start" else "查询完成",
+                "status": status,
+                "resultType": result_type,
+                "message": message,
                 "retryable": False,
                 "data": data,
             },
@@ -131,49 +182,51 @@ class FakeMcpClient:
 
 
 class FailingMcpClient(FakeMcpClient):
-    async def list_tools(self) -> list[dict[str, Any]]:
+    async def list_tools(self) -> list[dict[str, object]]:
         raise McpClientError("unauthorized", 401)
 
 
-class CorrectableEntityMcpClient(FakeMcpClient):
-    """第一次实体查询未命中，用户修正名称后第二次唯一命中。"""
+class FakeEntityResolver:
+    """Java 内部实体解析接口的替身，实体解析不再通过 MCP 工具完成。"""
 
-    async def call_tool(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        if name != "customer_search":
-            return await super().call_tool(name, arguments)
-        self.calls.append((name, arguments))
-        attempt = sum(call_name == "customer_search" for call_name, _ in self.calls)
-        if attempt == 1:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    async def resolve_entities(self, arguments: dict[str, Any]) -> dict[str, object]:
+        self.calls.append(arguments)
+        customer_names = list(arguments.get("customerNames") or [])
+        if "不存在的客户" in customer_names:
             return {
-                "isError": False,
-                "structuredContent": {
-                    "success": True,
+                "status": "NOT_FOUND",
+                "message": "没有找到匹配的客户",
+                "items": [{
+                    "entityType": "CUSTOMER",
+                    "inputName": "不存在的客户",
                     "status": "NOT_FOUND",
                     "message": "没有找到匹配的客户",
-                    "retryable": False,
-                    "data": {"status": "NOT_FOUND", "candidates": []},
-                },
+                    "candidates": [],
+                }],
             }
+
+        parameters: dict[str, object] = {}
+        if customer_names:
+            codes = ["CUS-2" if name == "扬州中燃" else f"CUS-{index}"
+                     for index, name in enumerate(customer_names, start=1)]
+            parameters["customerCodes"] = codes
+            parameters["customerNames"] = customer_names
+        region_names = list(arguments.get("regionNames") or [])
+        if region_names:
+            parameters["regionCodes"] = ["320000" for _ in region_names]
+            parameters["regionNames"] = region_names
+        industry_names = list(arguments.get("industryNames") or [])
+        if industry_names:
+            parameters["industryCodes"] = ["CITY_GAS" for _ in industry_names]
+            parameters["industryNames"] = industry_names
         return {
-            "isError": False,
-            "structuredContent": {
-                "success": True,
-                "status": "COMPLETED",
-                "message": "客户解析成功",
-                "retryable": False,
-                "data": {
-                    "status": "UNIQUE",
-                    "candidates": [{
-                        "type": "CUSTOMER",
-                        "code": "CUS-2",
-                        "name": arguments["customerName"],
-                        "regionCode": "320000",
-                        "regionName": "江苏",
-                        "industryCode": "CITY_GAS",
-                        "industryName": "城燃",
-                    }],
-                },
-            },
+            "status": "UNIQUE",
+            "message": "实体解析成功",
+            "proposedParameters": parameters,
+            "items": [],
         }
 
 
@@ -182,38 +235,17 @@ def rule_settings() -> Settings:
 
 
 @pytest.fixture
-def model_understanding(monkeypatch):
-    """用确定的结构化结果代替 API 测试中的外部大模型调用。"""
-    captured_contexts = []
-
-    async def extract(
-        self,
-        message,
-        pending_action=None,
-        pending_interaction=None,
-        input_type="TEXT",
-        answers=None,
-        available_skills=None,
-        conversation_context=None,
-    ):
-        captured_contexts.append(conversation_context)
-        if "任务" in message and any(word in message for word in ("状态", "进度")):
-            return RequestSemantics(
-                intent=SkillIntent.QUERY,
-            )
-        if "预测" in message:
-            return RequestSemantics(
-                intent=SkillIntent.FORECAST,
-            )
-        return RequestSemantics(
-            intent=SkillIntent.QUERY,
-        )
-
-    monkeypatch.setattr(
-        "gas_forecast_agent.workflow.RequestSemanticExtractor.extract",
-        extract,
-    )
-    return captured_contexts
+def api_client() -> Iterator[tuple[TestClient, FakeMcpClient, FakeEntityResolver]]:
+    mcp = FakeMcpClient()
+    resolver = FakeEntityResolver()
+    app.dependency_overrides[get_mcp_client] = lambda: mcp
+    app.dependency_overrides[get_internal_agent_client] = lambda: resolver
+    app.dependency_overrides[get_settings] = rule_settings
+    try:
+        with TestClient(app) as client:
+            yield client, mcp, resolver
+    finally:
+        app.dependency_overrides.clear()
 
 
 def internal_request(
@@ -229,7 +261,7 @@ def internal_request(
         "runNo": run_no,
         "message": message,
         "agentCode": agent_code,
-        "businessContext": {"customerCode": "CUS-1"},
+        "businessContext": {"customerCode": "CUS-1", "customerName": "高邮安源"},
         "conversationContext": {
             "summary": None,
             "memory": {},
@@ -238,44 +270,82 @@ def internal_request(
     }
 
 
-def test_skill_endpoint_exposes_skill_tool_allowlists() -> None:
-    response = TestClient(app).get("/api/v1/skills")
+def semantics(
+    intent: SkillIntent | None,
+    *,
+    customers: list[str] | None = None,
+    forecast_horizon: int | None = None,
+    context_relation: str = "NEW",
+    references: dict[str, str] | None = None,
+) -> RequestSemantics:
+    """构造与模型输出相同的已验证请求语义。"""
+    return RequestSemantics.model_validate({
+        "dialogueAct": DialogueAct.NEW_REQUEST.value,
+        "requests": [{
+            "requestId": "R1",
+            "intent": intent.value if intent else None,
+            "targetSelection": (
+                TargetSelection.EXPLICIT.value if customers else TargetSelection.UNSPECIFIED.value
+            ),
+            "contextRelation": context_relation,
+            "entities": {"customers": customers or [], "regions": [], "industries": []},
+            "references": references or {},
+            "parameters": (
+                {"forecastHorizon": forecast_horizon}
+                if forecast_horizon is not None else {}
+            ),
+        }],
+    })
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["total"] == 7
-    forecast = next(item for item in body["skills"] if item["name"] == "customer-gas-forecast")
-    assert forecast["intent"] == "FORECAST"
-    assert forecast["readOnly"] is False
-    assert "forecast_start" in forecast["allowed_tools"]
-    assert next(item for item in body["skills"] if item["name"] == "general-chat")["allowed_tools"] == []
-    assert next(item for item in body["skills"] if item["name"] == "unknown-request")["allowed_tools"] == []
+
+def install_extractor(
+    monkeypatch: pytest.MonkeyPatch,
+    callback: Callable[..., RequestSemantics],
+) -> list[dict[str, object] | None]:
+    """替换外部模型，保留当前 ``pendingOperation`` 调用契约。"""
+    contexts: list[dict[str, object] | None] = []
+
+    async def extract(
+        self: RequestSemanticExtractor,
+        message: str,
+        *,
+        pending_operation: dict[str, object] | None = None,
+        input_type: str = "TEXT",
+        available_skills: list[dict[str, object]] | None = None,
+        conversation_context: dict[str, object] | None = None,
+    ) -> RequestSemantics:
+        contexts.append(conversation_context)
+        return callback(
+            message=message,
+            pending_operation=pending_operation,
+            input_type=input_type,
+            available_skills=available_skills,
+            conversation_context=conversation_context,
+        )
+
+    monkeypatch.setattr(RequestSemanticExtractor, "extract", extract)
+    return contexts
 
 
-def test_plain_greeting_never_enters_forecast_flow() -> None:
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    request = internal_request(
-        "你好",
-        turn_id="TURN-CHAT-1",
-        run_no="RUN-CHAT-1",
-        agent_code="short-term",
-    )
-    existing_memory = {
-        "currentSkill": "customer-gas-forecast",
-        "currentParameters": {"forecastHorizon": 50},
-        "pendingAction": {
-            "tool": "forecast_start",
-            "parameters": {"customerCode": "CUS-OLD"},
+def test_plain_greeting_does_not_reuse_pending_operation(api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver]) -> None:
+    client, mcp, _ = api_client
+    request = internal_request("你好", turn_id="TURN-CHAT-1", run_no="RUN-CHAT-1", agent_code="short-term")
+    request["conversationContext"]["memory"] = {
+        "pendingOperation": {
+            "interaction": {
+                "interactionId": "INT-OLD",
+                "interactionType": "CLARIFICATION",
+                "sourceTurnId": "TURN-OLD",
+                "reason": "PARAMETER_MISSING",
+                "resumeFrom": "PlanValidator",
+            },
+            "semantics": semantics(SkillIntent.FORECAST, customers=["高邮安源"]).model_dump(by_alias=True),
+            "parameters": {"customerCodes": ["CUS-OLD"], "forecastHorizon": 30},
+            "pendingTool": "forecast_start",
         },
     }
-    request["conversationContext"]["memory"] = existing_memory
-    fake.memory.update(existing_memory)
-    try:
-        response = TestClient(app).post("/api/v1/internal/chat", json=request)
-    finally:
-        app.dependency_overrides.clear()
+
+    response = client.post("/api/v1/internal/chat", json=request)
 
     body = response.json()
     assert response.status_code == 200
@@ -283,72 +353,42 @@ def test_plain_greeting_never_enters_forecast_flow() -> None:
     assert body["intentCode"] == "CHAT"
     assert body["skillCode"] == "general-chat"
     assert body["clarification"] is None
-    assert [name for name, _ in fake.calls].count("forecast_start") == 0
-    assert fake.memory["currentSkill"] == "customer-gas-forecast"
-    assert fake.memory["currentParameters"] == {"forecastHorizon": 50}
-    assert fake.memory["pendingAction"] is None
+    assert [name for name, _ in mcp.calls].count("forecast_start") == 0
+    # 普通新消息不会恢复旧操作；Java 收到 null 后清理已过期的 pendingOperation。
+    assert body["memoryPatch"] == {"pendingOperation": None}
 
 
-def test_unknown_intent_returns_safe_reply_without_tools(monkeypatch) -> None:
-    async def extract(self, message, **kwargs):
-        return RequestSemantics(
-            intent=SkillIntent.UNKNOWN,
-        )
+def test_unknown_intent_returns_current_clarification_protocol(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, mcp, _ = api_client
+    install_extractor(monkeypatch, lambda **_: RequestSemantics())
 
-    monkeypatch.setattr(
-        "gas_forecast_agent.workflow.RequestSemanticExtractor.extract",
-        extract,
-    )
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    try:
-        response = TestClient(app).post(
-            "/api/v1/internal/chat",
-            json=internal_request(
-                "做一下那个东西",
-                turn_id="TURN-UNKNOWN-1",
-                run_no="RUN-UNKNOWN-1",
-            ),
-        )
-    finally:
-        app.dependency_overrides.clear()
+    response = client.post("/api/v1/internal/chat", json=internal_request("做一下那个东西"))
 
     body = response.json()
     assert response.status_code == 200
-    assert body["status"] == "SUCCESS"
-    assert body["intentCode"] == "UNKNOWN"
-    assert body["skillCode"] == "unknown-request"
-    assert body["clarification"] is None
-    assert "不能确定" in body["message"]
-    assert fake.calls == []
+    assert body["status"] == "WAITING"
+    assert body["intentCode"] == "CHAT"
+    assert body["skillCode"] == "general-chat"
+    assert body["clarification"]["interactionType"] == "CLARIFICATION"
+    assert body["clarification"]["reason"] == "INTENT_AMBIGUOUS"
+    assert body["memoryPatch"]["pendingOperation"]["issues"][0]["field"] == "intent"
+    assert mcp.calls == []
 
 
-def test_plain_text_receives_summary_history_memory_and_page_context(
-    model_understanding,
+def test_model_receives_summary_history_page_context_and_current_memory(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    request = internal_request(
-        "再预测15天",
-        turn_id="TURN-CONTEXT-2",
-        run_no="RUN-CONTEXT-2",
-        agent_code="short-term",
-    )
-    request["businessContext"] = {
-        "customerCode": "CUS-1",
-        "customerName": "高邮安源",
-    }
+    client, _, _ = api_client
+    contexts = install_extractor(monkeypatch, lambda **_: semantics(SkillIntent.QUERY))
+    request = internal_request("查询客户", turn_id="TURN-CONTEXT-2", run_no="RUN-CONTEXT-2")
     request["conversationContext"] = {
         "summary": "用户上一轮查询了高邮安源。",
         "memory": {
-            "currentSkill": "business-data-query",
-            "currentBusinessContext": {
-                "customerCode": "CUS-1",
-                "customerName": "高邮安源",
-            },
-            "pendingAction": {"tool": "training_start"},
+            "currentBusinessContext": {"customerCode": "CUS-1", "customerName": "高邮安源"},
         },
         "recentMessages": [{
             "messageId": 1,
@@ -358,115 +398,63 @@ def test_plain_text_receives_summary_history_memory_and_page_context(
             "references": [],
         }],
     }
-    try:
-        response = TestClient(app).post("/api/v1/internal/chat", json=request)
-    finally:
-        app.dependency_overrides.clear()
+
+    response = client.post("/api/v1/internal/chat", json=request)
 
     assert response.status_code == 200
-    context = model_understanding[-1]
+    context = contexts[-1]
+    assert context is not None
     assert context["summary"] == "用户上一轮查询了高邮安源。"
-    assert context["recentMessages"] == [
-        {"role": "assistant", "content": "已找到高邮安源。"}
-    ]
-    assert context["memory"]["currentSkill"] == "business-data-query"
-    assert "pendingAction" not in context["memory"]
-    assert context["pageContext"]["customerCode"] == "CUS-1"
+    assert context["recentMessages"] == [{"role": "assistant", "content": "已找到高邮安源。"}]
+    assert context["memory"] == {
+        "currentBusinessContext": {"customerCode": "CUS-1", "customerName": "高邮安源"},
+    }
+    assert context["pageContext"] == {"customerCode": "CUS-1", "customerName": "高邮安源"}
 
 
-def test_semantic_extraction_failure_has_distinct_error_code(monkeypatch) -> None:
-    async def extract(self, message, **kwargs):
-        raise SemanticExtractionError("model unavailable")
+def test_semantic_extraction_failure_has_distinct_error_code(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, mcp, _ = api_client
 
-    monkeypatch.setattr(
-        "gas_forecast_agent.workflow.RequestSemanticExtractor.extract",
-        extract,
-    )
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    try:
-        response = TestClient(app).post(
-            "/api/v1/internal/chat",
-            json=internal_request(
-                "预测高邮安源未来15天",
-                turn_id="TURN-SEMANTIC-FAIL",
-                run_no="RUN-SEMANTIC-FAIL",
-            ),
-        )
-    finally:
-        app.dependency_overrides.clear()
+    async def fail(*_: object, **__: object) -> RequestSemantics:
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(RequestSemanticExtractor, "extract", fail)
+    response = client.post("/api/v1/internal/chat", json=internal_request("预测高邮安源未来15天"))
 
     body = response.json()
+    # 非 SemanticExtractionError 的内部异常走统一失败分支。
     assert response.status_code == 200
     assert body["status"] == "FAILED"
-    assert body["errorCode"] == "SEMANTIC_EXTRACTION_FAILED"
-    assert [name for name, _ in fake.calls] == []
+    assert body["errorCode"] == "AGENT_EXECUTION_ERROR"
+    assert mcp.calls == []
 
 
-def test_only_business_parameters_are_persisted_between_turns() -> None:
-    assert persistent_parameters({
+def test_only_typed_business_parameters_are_persisted() -> None:
+    parameters = OperationParameters(
+        customer_code="CUS-1",
+        forecast_horizon=30,
+        confirmed=True,
+        locked_parameters=["customerCode"],
+    )
+
+    assert persistent_parameters(parameters) == {
         "customerCode": "CUS-1",
         "forecastHorizon": 30,
-        "confirmed": True,
-        "turnId": "TURN-1",
-        "_clarificationQuestion": "旧问题",
-        "_lockedParameters": ["customerCode"],
-        "_pendingTool": "forecast_start",
-    }) == {"forecastHorizon": 30}
+    }
 
 
-def test_free_text_entity_clarification_must_be_validated_again() -> None:
-    resolved = _resolved_clarification_parameters(
-        {
-            "issues": [{
-                "reason": "ENTITY_NOT_FOUND",
-                "field": "customerName",
-                "details": {"candidateMap": {}, "entityType": "CUSTOMER"},
-            }],
-        },
-        {"customerName": "扬州中燃"},
-    )
-
-    assert resolved == {"customerName": "扬州中燃"}
-
-
-def test_batch_entity_correction_preserves_unique_matches_but_revalidates_names() -> None:
-    resolved = _resolved_clarification_parameters(
-        {
-            "issues": [{
-                "reason": "ENTITY_NOT_FOUND",
-                "field": "customerNames:1",
-                "details": {
-                    "candidateMap": {},
-                    "entityType": "CUSTOMER",
-                    "resolvedParameters": {
-                        "customerCodes": ["CUS-1"],
-                        "customerNames": ["高邮安源"],
-                    },
-                },
-            }],
-        },
-        {"customerNames:1": "扬州中燃"},
-    )
-
-    assert resolved["customerCodes"] == ["CUS-1"]
-    assert resolved["customerNames"] == ["高邮安源", "扬州中燃"]
-    assert resolved["_validatedEntityParameters"] == ["customerCodes"]
-    assert "_entityBatchResolved" not in resolved
-
-
-def test_agent_graph_has_readable_business_nodes() -> None:
+def test_agent_graph_has_current_linear_nodes() -> None:
     nodes = set(agent_graph.get_graph().nodes)
 
     assert {
-        "load_memory",
         "understand_request",
-        "select_skill",
         "execute_action",
-        "save_memory",
         "build_response",
     }.issubset(nodes)
+    assert "select_skill" not in nodes
 
 
 def test_compressed_summary_is_kept_with_recent_messages() -> None:
@@ -475,10 +463,8 @@ def test_compressed_summary_is_kept_with_recent_messages() -> None:
         conversation_no="C-1",
         message="继续",
         conversation_summary="用户此前选择了浙江地区。",
-        history=[
-            {"role": "user", "content": f"历史消息 {index}"}
-            for index in range(10)
-        ],
+        metadata=AgentRuntimeMetadata(run_no="RUN-1", agent_code="general"),
+        history=[{"role": "user", "content": f"历史消息 {index}"} for index in range(10)],
     )
 
     history = conversation_history(request)
@@ -490,265 +476,183 @@ def test_compressed_summary_is_kept_with_recent_messages() -> None:
     assert history[-1]["content"] == "历史消息 9"
 
 
-def test_one_agent_result_can_reference_multiple_business_batches() -> None:
+def test_task_and_forecast_references_are_extracted_from_current_result_shape() -> None:
     references = _chat_references(
         {
             "status": "EXECUTING",
-            "tasks": [
-                {"forecastBatchNo": "FORECAST-1"},
-                {"forecastBatchNo": "FORECAST-2"},
-                {"forecastBatchNo": "FORECAST-1"},
-            ],
+            "data": {
+                "taskNo": "TASK-1",
+                "tasks": [
+                    {"forecastNo": "FORECAST-1"},
+                    {"forecastNo": "FORECAST-2"},
+                    {"forecastNo": "FORECAST-1"},
+                ],
+            },
         },
         "forecast_start",
     )
 
-    assert [item.reference_no for item in references] == ["FORECAST-1", "FORECAST-2"]
+    assert [(item.reference_type, item.reference_no) for item in references] == [
+        ("EXECUTION_TASK", "TASK-1"),
+        ("FORECAST", "FORECAST-1"),
+        ("FORECAST", "FORECAST-2"),
+    ]
 
 
-def test_internal_chat_asks_before_using_current_page_business_context(model_understanding) -> None:
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    request = internal_request(
-        "预测当前客户未来30天用气量",
-        turn_id="TURN-1",
-        run_no="RUN-1",
-        agent_code="short-term",
-    )
-    try:
-        response = TestClient(app).post("/api/v1/internal/chat", json=request)
-    finally:
-        app.dependency_overrides.clear()
+def test_text_clarification_then_confirmation_restores_pending_operation(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """客户先确认、天数后补充，三轮只经 memoryPatch 传递状态。"""
+    client, mcp, resolver = api_client
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["conversationNo"] == "C-1"
-    assert body["turnId"] == "TURN-1"
-    assert body["runNo"] == "RUN-1"
-    assert body["status"] == "WAITING"
-    assert body["intentCode"] == "FORECAST"
-    assert "当前业务对象" in body["message"]
-    assert "CUS-1" in body["message"]
-    assert body["references"] == []
-    assert body["skillCode"] == "customer-gas-forecast"
-    assert body["resultData"]["executedTool"] is None
-    assert body["clarification"]["interactionType"] == "CLARIFICATION"
-    assert body["clarification"]["reason"] == "SCOPE_AMBIGUOUS"
-    assert body["clarification"]["replyToTurnId"] == "TURN-1"
-    assert body["clarification"]["fields"][0]["parameterCode"] == "businessScope"
-    assert [name for name, _ in fake.calls].count("forecast_start") == 0
-    assert fake.memory["pendingAction"] is None
-    assert fake.memory["pendingInteraction"]["pendingTool"] == "forecast_start"
-    assert fake.memory["pendingInteraction"]["parameters"]["customerCode"] == "CUS-1"
-    assert fake.memory["pendingInteraction"]["parameters"]["idempotencyKey"] == hashlib.sha256(
-        b"TURN-1"
-    ).hexdigest()[:32]
-    assert "currentBusinessContext" not in fake.memory
-    assert "admin_delete" not in [name for name, _ in fake.calls]
-    assert "memory_get" not in [name for name, _ in fake.calls]
-    assert "conversation_prepare" not in [name for name, _ in fake.calls]
-    assert "conversation_reply_append" not in [name for name, _ in fake.calls]
+    def extract(**kwargs: object) -> RequestSemantics:
+        message = str(kwargs["message"])
+        if "30" in message:
+            return semantics(SkillIntent.FORECAST, forecast_horizon=30)
+        return semantics(SkillIntent.FORECAST, customers=["高邮安源"])
 
+    install_extractor(monkeypatch, extract)
 
-def test_structured_scope_reply_then_write_confirmation_resumes_original_request(model_understanding) -> None:
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    client = TestClient(app)
-    try:
-        first = client.post(
-            "/api/v1/internal/chat",
-            json=internal_request(
-                "预测当前客户未来30天用气量",
-                turn_id="TURN-SCOPE-1",
-                run_no="RUN-SCOPE-1",
-                agent_code="short-term",
-            ),
-        ).json()
-        first_interaction = first["clarification"]
-
-        second_request = internal_request(
-            "使用当前业务对象",
-            turn_id="TURN-SCOPE-2",
-            run_no="RUN-SCOPE-2",
-            agent_code="short-term",
-        )
-        second_request.update({
-            "inputType": "CLARIFICATION_REPLY",
-            "interactionId": first_interaction["interactionId"],
-            "replyToTurnId": first_interaction["replyToTurnId"],
-            "answers": {"businessScope": "accept"},
-        })
-        second_request["conversationContext"]["memory"] = dict(fake.memory)
-        second = client.post("/api/v1/internal/chat", json=second_request).json()
-
-        assert second["status"] == "WAITING"
-        assert second["intentCode"] == "FORECAST"
-        assert second["clarification"]["interactionType"] == "CONFIRMATION"
-        assert second["clarification"]["reason"] == "WRITE_CONFIRMATION_REQUIRED"
-        assert fake.memory["pendingAction"]["tool"] == "forecast_start"
-
-        confirmation = second["clarification"]
-        third_request = internal_request(
-            "确认执行",
-            turn_id="TURN-SCOPE-3",
-            run_no="RUN-SCOPE-3",
-            agent_code="short-term",
-        )
-        third_request.update({
-            "inputType": "CONFIRMATION_REPLY",
-            "interactionId": confirmation["interactionId"],
-            "replyToTurnId": confirmation["replyToTurnId"],
-            "answers": {},
-        })
-        third_request["conversationContext"]["memory"] = dict(fake.memory)
-        third = client.post("/api/v1/internal/chat", json=third_request).json()
-    finally:
-        app.dependency_overrides.clear()
-
-    assert third["status"] == "SUCCESS"
-    assert third["intentCode"] == "FORECAST"
-    assert third["clarification"] is None
-    assert [name for name, _ in fake.calls].count("forecast_start") == 1
-    forecast_arguments = next(arguments for name, arguments in fake.calls if name == "forecast_start")
-    assert forecast_arguments["customerCode"] == "CUS-1"
-    assert forecast_arguments["confirmed"] is True
-
-
-def test_multiple_customer_names_are_batch_validated_before_forecast(monkeypatch) -> None:
-    async def extract(self, message, **kwargs):
-        return RequestSemantics.model_validate({
-            "dialogueAct": "NEW_REQUEST",
-            "requests": [{
-                "requestId": "R1",
-                "intent": "FORECAST",
-                "targetSelection": "EXPLICIT",
-                "entities": {
-                    "regions": [],
-                    "industries": [],
-                    "customers": ["高邮安源", "扬州中燃"],
-                },
-                "references": {},
-                "parameters": {"forecastHorizon": 30},
-                "dependsOn": [],
-            }],
-        })
-
-    monkeypatch.setattr(
-        "gas_forecast_agent.workflow.RequestSemanticExtractor.extract",
-        extract,
-    )
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    try:
-        response = TestClient(app).post(
-            "/api/v1/internal/chat",
-            json=internal_request(
-                "预测高邮安源和扬州中燃未来30天用气量",
-                turn_id="TURN-BATCH-1",
-                run_no="RUN-BATCH-1",
-                agent_code="short-term",
-            ),
-        )
-    finally:
-        app.dependency_overrides.clear()
-
-    body = response.json()
-    assert body["status"] == "WAITING"
-    assert body["clarification"]["interactionType"] == "CONFIRMATION"
-    assert [name for name, _ in fake.calls].count("entity_batch_resolve") == 1
-    assert [name for name, _ in fake.calls].count("forecast_start") == 0
-    assert fake.memory["pendingAction"]["parameters"]["customerCodes"] == ["CUS-1", "CUS-2"]
-    assert fake.memory["pendingAction"]["parameters"]["bulk"] is True
-
-
-def test_corrected_entity_name_is_resolved_again_before_forecast(monkeypatch) -> None:
-    async def extract(self, message, *, answers=None, **kwargs):
-        customer_name = (answers or {}).get("customerName") or "不存在的客户"
-        return RequestSemantics.model_validate({
-            "dialogueAct": "NEW_REQUEST",
-            "requests": [{
-                "requestId": "R1",
-                "intent": "FORECAST",
-                "targetSelection": "EXPLICIT",
-                "entities": {
-                    "regions": [],
-                    "industries": [],
-                    "customers": [customer_name],
-                },
-                "references": {},
-                "parameters": {"forecastHorizon": 30},
-                "dependsOn": [],
-            }],
-        })
-
-    monkeypatch.setattr(
-        "gas_forecast_agent.workflow.RequestSemanticExtractor.extract",
-        extract,
-    )
-    fake = CorrectableEntityMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    client = TestClient(app)
-    try:
-        first = client.post(
-            "/api/v1/internal/chat",
-            json=internal_request(
-                "预测不存在的客户未来30天用气量",
-                turn_id="TURN-ENTITY-1",
-                run_no="RUN-ENTITY-1",
-                agent_code="short-term",
-            ),
-        ).json()
-        interaction = first["clarification"]
-
-        second_request = internal_request(
-            "扬州中燃",
-            turn_id="TURN-ENTITY-2",
-            run_no="RUN-ENTITY-2",
-            agent_code="short-term",
-        )
-        second_request.update({
-            "inputType": "CLARIFICATION_REPLY",
-            "interactionId": interaction["interactionId"],
-            "replyToTurnId": interaction["replyToTurnId"],
-            "answers": {"customerName": "扬州中燃"},
-        })
-        second_request["conversationContext"]["memory"] = dict(fake.memory)
-        second = client.post("/api/v1/internal/chat", json=second_request).json()
-    finally:
-        app.dependency_overrides.clear()
-
+    first = client.post(
+        "/api/v1/internal/chat",
+        json=internal_request("预测高邮安源", turn_id="TURN-1", run_no="RUN-1", agent_code="short-term"),
+    ).json()
     assert first["status"] == "WAITING"
-    assert interaction["reason"] == "ENTITY_NOT_FOUND"
+    assert first["clarification"]["reason"] == "PARAMETER_MISSING"
+    assert first["clarification"]["fields"][0]["parameterCode"] == "forecastHorizon"
+    pending_after_first = first["memoryPatch"]["pendingOperation"]
+    assert pending_after_first["parameters"]["customerCodes"] == ["CUS-1"]
+    assert "pendingAction" not in first["memoryPatch"]
+
+    second_request = internal_request("30天", turn_id="TURN-2", run_no="RUN-2", agent_code="short-term")
+    second_request.update({
+        "inputType": "CLARIFICATION_REPLY",
+        "interactionId": first["clarification"]["interactionId"],
+        "replyToTurnId": first["clarification"]["replyToTurnId"],
+    })
+    second_request["conversationContext"]["memory"] = first["memoryPatch"]
+    second = client.post("/api/v1/internal/chat", json=second_request).json()
+
     assert second["status"] == "WAITING"
     assert second["clarification"]["interactionType"] == "CONFIRMATION"
-    assert [name for name, _ in fake.calls].count("customer_search") == 2
-    assert [name for name, _ in fake.calls].count("forecast_start") == 0
-    assert fake.memory["pendingAction"]["parameters"]["customerCode"] == "CUS-2"
+    pending_after_second = second["memoryPatch"]["pendingOperation"]
+    assert pending_after_second["pendingTool"] == "forecast_start"
+    assert pending_after_second["parameters"]["forecastHorizon"] == 30
+    assert pending_after_second["parameters"]["targets"][0]["customerCodes"] == ["CUS-1"]
+
+    third_request = internal_request("确认", turn_id="TURN-3", run_no="RUN-3", agent_code="short-term")
+    third_request.update({
+        "inputType": "INTERACTION_REPLY",
+        "interactionId": second["clarification"]["interactionId"],
+        "replyToTurnId": second["clarification"]["replyToTurnId"],
+    })
+    third_request["conversationContext"]["memory"] = second["memoryPatch"]
+    third = client.post("/api/v1/internal/chat", json=third_request).json()
+
+    assert third["status"] == "SUCCESS"
+    assert third["clarification"] is None
+    assert third["memoryPatch"] == {"pendingOperation": None}
+    forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
+    assert forecast_arguments["confirmed"] is True
+    assert forecast_arguments["forecastHorizon"] == 30
+    assert forecast_arguments["targets"][0]["customerCodes"] == ["CUS-1"]
+    assert len(resolver.calls) == 1
 
 
-def test_browser_chat_entry_is_no_longer_exposed_by_python() -> None:
-    response = TestClient(app).post(
-        "/api/v1/chat",
-        json={"message": "查询客户"},
+def test_corrected_entity_name_is_resolved_again_from_plain_text(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, mcp, resolver = api_client
+
+    def extract(**kwargs: object) -> RequestSemantics:
+        message = str(kwargs["message"])
+        customer = "扬州中燃" if "扬州中燃" in message else "不存在的客户"
+        return semantics(SkillIntent.FORECAST, customers=[customer], forecast_horizon=30)
+
+    install_extractor(monkeypatch, extract)
+
+    first = client.post(
+        "/api/v1/internal/chat",
+        json=internal_request("预测不存在的客户未来30天", turn_id="TURN-ENTITY-1", run_no="RUN-ENTITY-1"),
+    ).json()
+    assert first["status"] == "WAITING"
+    assert first["clarification"]["reason"] == "ENTITY_NOT_FOUND"
+
+    second_request = internal_request("扬州中燃", turn_id="TURN-ENTITY-2", run_no="RUN-ENTITY-2")
+    second_request.update({
+        "inputType": "CLARIFICATION_REPLY",
+        "interactionId": first["clarification"]["interactionId"],
+        "replyToTurnId": first["clarification"]["replyToTurnId"],
+    })
+    second_request["conversationContext"]["memory"] = first["memoryPatch"]
+    second = client.post("/api/v1/internal/chat", json=second_request).json()
+
+    assert second["status"] == "WAITING"
+    assert second["clarification"]["interactionType"] == "CONFIRMATION"
+    assert second["memoryPatch"]["pendingOperation"]["parameters"]["targets"][0]["customerCodes"] == ["CUS-2"]
+    assert [call["customerNames"] for call in resolver.calls] == [["不存在的客户"], ["扬州中燃"]]
+    assert [name for name, _ in mcp.calls].count("forecast_start") == 0
+
+
+def test_multiple_customers_are_validated_by_internal_entity_service_before_confirmation(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, mcp, resolver = api_client
+    install_extractor(
+        monkeypatch,
+        lambda **_: semantics(
+            SkillIntent.FORECAST,
+            customers=["高邮安源", "扬州中燃"],
+            forecast_horizon=30,
+        ),
     )
+
+    response = client.post(
+        "/api/v1/internal/chat",
+        json=internal_request("预测高邮安源和扬州中燃未来30天", turn_id="TURN-BATCH-1", run_no="RUN-BATCH-1"),
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["status"] == "WAITING"
+    assert body["clarification"]["interactionType"] == "CONFIRMATION"
+    assert resolver.calls == [{"customerNames": ["高邮安源", "扬州中燃"]}]
+    assert [name for name, _ in mcp.calls].count("forecast_start") == 0
+    assert body["memoryPatch"]["pendingOperation"]["parameters"]["targets"][0]["customerCodes"] == ["CUS-1", "CUS-2"]
+
+
+def test_legacy_answers_field_is_not_part_of_current_internal_protocol() -> None:
+    request = internal_request("30天")
+    request["answers"] = {"forecastHorizon": 30}
+
+    response = TestClient(app).post("/api/v1/internal/chat", json=request)
+
+    assert response.status_code == 422
+
+
+def test_browser_chat_entry_is_not_exposed_by_python() -> None:
+    response = TestClient(app).post("/api/v1/chat", json={"message": "查询客户"})
+
     assert response.status_code == 404
 
 
 def test_internal_chat_requires_java_generated_identifiers() -> None:
-    response = TestClient(app).post(
-        "/api/v1/internal/chat",
-        json={"message": "查询客户"},
-    )
+    response = TestClient(app).post("/api/v1/internal/chat", json={"message": "查询客户"})
+
     assert response.status_code == 422
 
 
-def test_mcp_failure_returns_structured_failed_agent_result(model_understanding) -> None:
+def test_mcp_failure_returns_structured_failed_agent_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolver = FakeEntityResolver()
     app.dependency_overrides[get_mcp_client] = lambda: FailingMcpClient()
+    app.dependency_overrides[get_internal_agent_client] = lambda: resolver
     app.dependency_overrides[get_settings] = rule_settings
+    install_extractor(monkeypatch, lambda **_: semantics(SkillIntent.QUERY))
     try:
         response = TestClient(app).post(
             "/api/v1/internal/chat",
@@ -762,46 +666,30 @@ def test_mcp_failure_returns_structured_failed_agent_result(model_understanding)
     assert response.json()["errorCode"] == "AGENT_EXECUTION_ERROR"
 
 
-def test_customer_query_uses_read_only_skill(model_understanding) -> None:
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    try:
-        response = TestClient(app).post(
-            "/api/v1/internal/chat",
-            json=internal_request("查询浙江城市燃气客户", turn_id="TURN-2", run_no="RUN-2"),
-        )
-    finally:
-        app.dependency_overrides.clear()
+def test_customer_and_task_queries_use_read_only_skill(
+    api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, mcp, _ = api_client
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "SUCCESS"
-    assert body["intentCode"] == "QUERY"
-    assert body["references"] == []
-    assert body["skillCode"] == "business-data-query"
-    semantics = body["intentData"]["entityResolution"]
-    assert set(semantics) == {"dialogueAct", "requests"}
-    assert semantics["requests"][0]["intent"] == "QUERY"
-    assert set(semantics["requests"][0]["entities"]) == {"regions", "industries", "customers"}
-    assert "needsClarification" not in semantics
-    assert [name for name, _ in fake.calls if name == "customer_list"] == ["customer_list"]
+    def extract(**kwargs: object) -> RequestSemantics:
+        message = str(kwargs["message"])
+        return semantics(SkillIntent.QUERY)
 
+    install_extractor(monkeypatch, extract)
+    customer = client.post(
+        "/api/v1/internal/chat",
+        json=internal_request("查询客户", turn_id="TURN-CUSTOMER", run_no="RUN-CUSTOMER"),
+    ).json()
+    task = client.post(
+        "/api/v1/internal/chat",
+        json=internal_request("查询任务 TASK-123 状态", turn_id="TURN-TASK", run_no="RUN-TASK"),
+    ).json()
 
-def test_task_status_query_uses_read_only_query_skill(model_understanding) -> None:
-    fake = FakeMcpClient()
-    app.dependency_overrides[get_mcp_client] = lambda: fake
-    app.dependency_overrides[get_settings] = rule_settings
-    try:
-        response = TestClient(app).post(
-            "/api/v1/internal/chat",
-            json=internal_request("查询任务 TASK-123 状态", turn_id="TURN-3A", run_no="RUN-3A"),
-        )
-    finally:
-        app.dependency_overrides.clear()
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "SUCCESS"
-    assert body["skillCode"] == "business-data-query"
-    assert [name for name, _ in fake.calls].count("task_status_get") == 1
+    assert customer["status"] == "SUCCESS"
+    assert customer["intentCode"] == "QUERY"
+    assert customer["skillCode"] == "business-data-query"
+    assert customer["executionResult"]["data"]["records"][0]["customerCode"] == "CUS-1"
+    assert task["status"] == "SUCCESS"
+    assert task["skillCode"] == "business-data-query"
+    assert [name for name, _ in mcp.calls] == ["customer_list", "task_status_get"]

@@ -29,21 +29,33 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
     @Override
     public ResolutionResult resolveCustomer(EntityQuery query) {
         int limit = limit(query.limit());
+        String customerName = query.customerName() == null ? null : query.customerName().trim();
         var wrapper = Wrappers.<BaseCustomerTb>lambdaQuery();
         if (TextUtils.hasText(query.customerCode()))
             wrapper.eq(BaseCustomerTb::getCustomerCode, query.customerCode());
-        if (TextUtils.hasText(query.customerName()))
-            wrapper.and(q -> q.eq(BaseCustomerTb::getCustomerName, query.customerName()).or().like(BaseCustomerTb::getCustomerName, query.customerName()));
-        if (TextUtils.hasText(query.regionCode()))
-            wrapper.eq(BaseCustomerTb::getRegionCode, query.regionCode());
-        if (TextUtils.hasText(query.regionName()))
-            wrapper.eq(BaseCustomerTb::getRegionName, normalizeRegion(query.regionName()));
-        if (TextUtils.hasText(query.industryCode()))
-            wrapper.eq(BaseCustomerTb::getIndustryCode, query.industryCode());
-        if (TextUtils.hasText(query.industryName()))
-            wrapper.eq(BaseCustomerTb::getIndustryName, normalizeIndustry(query.industryName()));
-        List<EntityCandidate> rows = customerMapper.selectList(wrapper.orderByAsc(BaseCustomerTb::getCustomerName).last("limit " + limit)).stream().map(this::customer).toList();
+        if (TextUtils.hasText(customerName))
+            wrapper.and(q -> q.eq(BaseCustomerTb::getCustomerName, customerName).or().like(BaseCustomerTb::getCustomerName, customerName));
+        applyCustomerScope(wrapper, query);
+        List<BaseCustomerTb> matches = customerMapper.selectList(wrapper.orderByAsc(BaseCustomerTb::getCustomerName).last("limit " + limit));
+        // 语义抽取有时会把整句“客户 + 预测诉求”放进 customerName。常规匹配失败时，
+        // 基于主数据反向寻找被用户原话包含的客户名称，不依赖任何特定业务词或客户别名。
+        if (matches.isEmpty() && TextUtils.hasText(customerName)) {
+            var embeddedNameQuery = Wrappers.<BaseCustomerTb>lambdaQuery();
+            applyCustomerScope(embeddedNameQuery, query);
+            matches = customerMapper.selectList(embeddedNameQuery.orderByAsc(BaseCustomerTb::getCustomerName)).stream()
+                    .filter(item -> TextUtils.hasText(item.getCustomerName()) && customerName.contains(item.getCustomerName()))
+                    .limit(limit)
+                    .toList();
+        }
+        List<EntityCandidate> rows = matches.stream().map(this::customer).toList();
         return result("客户", rows);
+    }
+
+    private void applyCustomerScope(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BaseCustomerTb> wrapper, EntityQuery query) {
+        if (TextUtils.hasText(query.regionCode())) wrapper.eq(BaseCustomerTb::getRegionCode, query.regionCode());
+        if (TextUtils.hasText(query.regionName())) wrapper.eq(BaseCustomerTb::getRegionName, normalizeRegion(query.regionName()));
+        if (TextUtils.hasText(query.industryCode())) wrapper.eq(BaseCustomerTb::getIndustryCode, query.industryCode());
+        if (TextUtils.hasText(query.industryName())) wrapper.eq(BaseCustomerTb::getIndustryName, normalizeIndustry(query.industryName()));
     }
 
     @Override
@@ -232,4 +244,5 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
         String normalized = value.trim().replaceAll("\\s+", "");
         return INDUSTRY_ALIASES.getOrDefault(normalized, normalized);
     }
+
 }

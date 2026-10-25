@@ -11,6 +11,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -70,6 +72,33 @@ public class PythonAgentChatClient {
             }
             throw new IllegalStateException("Python Agent 请求失败：" + exception.getMessage(), exception);
         }
+    }
+
+    /** 消费 Python 的阶段事件，并在 done 事件返回完整响应。 */
+    public PythonAgentChatResponse chatStream(PythonAgentChatRequest requestBody, Consumer<String> progress) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(chatUrl + "/stream"))
+                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10)))
+                    .header("Content-Type", "application/json").header("Accept", "text/event-stream")
+                    .header("x-traceId", requestBody.runNo())
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8));
+            if (TextUtils.hasText(ThreadLocalUtil.getToken())) builder.header("X-Access-Token", ThreadLocalUtil.getToken());
+            HttpResponse<java.util.stream.Stream<String>> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofLines());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) throw new IllegalStateException("Python Agent 返回 HTTP " + response.statusCode());
+            AtomicReference<String> event = new AtomicReference<>("message");
+            AtomicReference<PythonAgentChatResponse> done = new AtomicReference<>();
+            response.body().forEach(line -> {
+                if (line.startsWith("event:")) event.set(line.substring(6).trim());
+                if (line.startsWith("data:")) try {
+                    String data = line.substring(5).trim();
+                    if ("progress".equals(event.get())) progress.accept(objectMapper.readValue(data, String.class));
+                    if ("done".equals(event.get())) done.set(objectMapper.readValue(data, PythonAgentChatResponse.class));
+                } catch (Exception exception) { throw new IllegalStateException("Python Agent 流式响应解析失败", exception); }
+            });
+            if (done.get() == null) throw new IllegalStateException("Python Agent 流式响应缺少 done 事件");
+            return done.get();
+        } catch (InterruptedException exception) { Thread.currentThread().interrupt(); throw new IllegalStateException("Python Agent 请求已中断", exception); }
+        catch (Exception exception) { if (exception instanceof IllegalStateException state) throw state; throw new IllegalStateException("Python Agent 请求失败：" + exception.getMessage(), exception); }
     }
 
     private String abbreviate(String value) {

@@ -13,7 +13,7 @@ class PresentationPlanner:
     @classmethod
     def plan(cls, tool_name: str | None, result: dict[str, Any]) -> dict[str, Any]:
         data = result.get("data") if isinstance(result.get("data"), dict) else {}
-        if tool_name == "forecast_result_query":
+        if tool_name in {"forecast_result_query", "forecast_result_by_no"}:
             forecast = cls._forecast_result(data)
             if forecast:
                 return {

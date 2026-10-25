@@ -1,6 +1,5 @@
 package com.gas.forecast.business.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
 /**
@@ -32,10 +31,10 @@ public record AiChatResponse(
         Clarification clarification,
 
         /** 前端展示结构，例如列表或图表。 */
-        JsonNode presentation,
+        PythonAgentChatResponse.Presentation presentation,
 
         /** 本轮工具真实结果；查询列表由前端据此渲染。 */
-        JsonNode executionResult,
+        PythonAgentChatResponse.ExecutionResult executionResult,
 
         /** 当前助手消息创建、引用或展示的多个业务对象。 */
         List<Reference> references) {

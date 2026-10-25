@@ -2,10 +2,13 @@ package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import lombok.Data;
 
 /**
@@ -56,6 +59,11 @@ public class ModelExecuteRecordTb {
     private String backtestResultJson;
     /** 模型平台返回的预测结果快照 JSON 文本。 */
     private String forecastResultJson;
+    /** 基于本次回测和预测结果生成的可追溯研判说明。 */
+    private String analysisContent;
+    /** 展示时按预测日期查询的去年同期实际销量，不持久化。 */
+    @TableField(exist = false)
+    private List<Map<String, Object>> lastYearPoints;
     private String errorMessage;
     private String createdBy;
     private String createdByName;

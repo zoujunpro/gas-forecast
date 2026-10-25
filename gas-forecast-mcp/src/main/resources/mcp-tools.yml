@@ -119,6 +119,19 @@ tools:
     outputSchema: *standardOutput
     annotations: *readOnly
 
+  - name: forecast_result_by_no
+    title: 按编号查询预测进度与结果
+    description: 根据当前会话已关联的forecastNo，查询同一预测的状态、训练、回测和预测结果。预测未成功时仅返回其真实状态，不得替换为其他预测结果。
+    inputSchema:
+      type: object
+      required: [forecastNo]
+      additionalProperties: false
+      properties:
+        forecastNo: {type: string, description: 当前会话预测引用中的稳定预测编号}
+        includePoints: {type: boolean, description: 是否返回逐期预测值，默认true}
+    outputSchema: *standardOutput
+    annotations: *readOnly
+
   - name: task_status_get
     title: 查询统一任务状态
     description: 查询训练、预测或训练后预测任务的总体进度、成功失败数量、当前阶段和恢复建议。恢复或重试之前必须先调用本工具。

@@ -56,7 +56,7 @@ def extract(
     monkeypatch,
     message: str,
     payload: dict,
-    pending_action=None,
+    pending_operation=None,
     conversation_context=None,
 ) -> tuple[RequestSemantics, dict]:
     captured = {}
@@ -71,7 +71,7 @@ def extract(
     monkeypatch.setattr("gas_forecast_agent.skills.semantics.build_llm_client", lambda settings: client)
     result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
         message,
-        pending_action=pending_action,
+        pending_operation=pending_operation,
         available_skills=SKILLS,
         conversation_context=conversation_context,
     ))
@@ -113,13 +113,14 @@ def test_new_contract_serializes_as_request_and_entity_arrays() -> None:
         customers=["高邮安源", "扬州中燃"],
     ))
 
-    assert semantics.model_dump(mode="json") == {
+    assert semantics.model_dump(mode="json", by_alias=True, exclude_none=True) == {
         "dialogueAct": "NEW_REQUEST",
         "requests": [{
             "requestId": "R1",
             "intent": "QUERY",
-            "scenario": None,
             "targetSelection": "EXPLICIT",
+            "contextRelation": "NEW",
+            "clearParameters": [],
             "entities": {
                 "regions": [],
                 "industries": [],
@@ -137,7 +138,7 @@ def test_plain_greeting_is_deterministically_classified_as_chat(monkeypatch) -> 
         monkeypatch,
         "你好",
         request_payload(intent="FORECAST"),
-        pending_action={"tool": "forecast_start"},
+        pending_operation={"tool": "forecast_start"},
     )
 
     assert result.intent == SkillIntent.CHAT
@@ -165,7 +166,7 @@ def test_unknown_intent_is_preserved_instead_of_guessing_business_action(monkeyp
         request_payload(intent="UNKNOWN"),
     )
 
-    assert result.intent == SkillIntent.UNKNOWN
+    assert result.intent is None
 
 
 def test_entity_arrays_clean_suffixes_and_remove_duplicates() -> None:
@@ -219,11 +220,12 @@ def test_parameter_codes_are_removed() -> None:
 
     semantics = RequestSemantics.model_validate(payload)
 
-    assert semantics.primary_request.parameters == {"forecastHorizon": 30}
+    assert semantics.primary_request.parameters.forecast_horizon == 30
+    assert semantics.primary_request.parameters.to_payload() == {"forecastHorizon": 30}
     assert "customerCode" not in semantics.model_dump(mode="json")["requests"][0]
 
 
-def test_confirmation_dialogue_act_requires_real_pending_action(monkeypatch) -> None:
+def test_confirmation_dialogue_act_requires_real_pending_operation(monkeypatch) -> None:
     payload = request_payload()
     payload["dialogueAct"] = "CONFIRM_PENDING"
 
@@ -231,7 +233,7 @@ def test_confirmation_dialogue_act_requires_real_pending_action(monkeypatch) -> 
         monkeypatch,
         "确认",
         payload,
-        pending_action={"tool": "forecast_start", "parameters": {}},
+        pending_operation={"tool": "forecast_start", "parameters": {}},
     )
     rejected, _ = extract(monkeypatch, "确认", payload)
 
@@ -285,7 +287,7 @@ def test_context_reference_is_not_treated_as_entity(monkeypatch) -> None:
 
     assert result.customer_names == []
     assert result.target_selection == TargetSelection.CONTEXT
-    assert result.primary_request.references == {"customers": "LAST_RESULT"}
+    assert result.primary_request.references.customers == "LAST_RESULT"
 
 
 def test_hallucinated_entity_name_is_removed(monkeypatch) -> None:
@@ -472,7 +474,7 @@ def test_legacy_flat_payload_is_upgraded_but_serializes_only_new_contract() -> N
         clarification_question="旧字段不应保留",
     )
 
-    serialized = semantics.model_dump(mode="json")
+    serialized = semantics.model_dump(mode="json", by_alias=True, exclude_none=True)
     assert serialized["requests"][0]["entities"]["customers"] == ["高邮安源"]
     assert serialized["requests"][0]["parameters"] == {"forecastHorizon": 30}
     assert "needsClarification" not in serialized

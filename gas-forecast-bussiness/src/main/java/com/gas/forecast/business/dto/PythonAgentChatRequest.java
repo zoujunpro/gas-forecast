@@ -26,8 +26,6 @@ public record PythonAgentChatRequest(
         String interactionId,
         /** 结构化回复所回应的助手轮次编号。 */
         String replyToTurnId,
-        /** 结构化澄清答案；选择类字段使用不透明候选 token。 */
-        Map<String, Object> answers,
         /** 会话绑定的智能体编码。 */
         String agentCode,
         /** 本轮消息发生时的当前业务焦点；不是会话绑定条件。 */
@@ -37,9 +35,6 @@ public record PythonAgentChatRequest(
 
     public PythonAgentChatRequest {
         inputType = inputType == null ? "TEXT" : inputType;
-        answers = answers == null
-                ? Map.of()
-                : Collections.unmodifiableMap(new LinkedHashMap<>(answers));
         conversationContext = conversationContext == null
                 ? new ConversationContext(null, Map.of(), List.of())
                 : conversationContext;
@@ -80,8 +75,6 @@ public record PythonAgentChatRequest(
             String role,
             /** 消息正文。 */
             String content,
-            /** 消息分类或来源 Skill 编码。 */
-            String messageType,
             /** 消息创建时间。 */
             Date createdAt,
             /** 该消息关联的一个或多个业务对象。 */

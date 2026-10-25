@@ -2,6 +2,7 @@ package com.gas.forecast.business.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.gas.forecast.business.application.forecast.ForecastLastYearComparisonService;
 import com.gas.forecast.business.application.task.event.ExecutionTaskEventService;
 import com.gas.forecast.business.enums.ExecutionStepCodeEnum;
 import com.gas.forecast.business.service.ExecutionTaskQueryService;
@@ -40,6 +41,7 @@ public class ExecutionTaskQueryServiceImpl implements ExecutionTaskQueryService 
     private final BaseCustomerTbMapper customerMapper;
     private final ModelExecuteRecordTbMapper recordMapper;
     private final ExecutionTaskEventService eventService;
+    private final ForecastLastYearComparisonService forecastLastYearComparisonService;
 
     @Override
     public SseEmitter subscribe(String taskNo) { task(taskNo); return eventService.subscribe(taskNo); }
@@ -88,6 +90,7 @@ public class ExecutionTaskQueryServiceImpl implements ExecutionTaskQueryService 
         if (record == null) throw new BusinessException("该任务尚未生成预测结果");
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("record", record); result.put("training", record.getTrainingResultJson()); result.put("backtest", record.getBacktestResultJson()); result.put("forecast", record.getForecastResultJson());
+        result.put("lastYearPoints", forecastLastYearComparisonService.lastYearPoints(record));
         result.put("detailNo", detailNo); result.put("customer", customerMap(List.of(detail)).get(detail.getCustomerCode()));
         return result;
     }
