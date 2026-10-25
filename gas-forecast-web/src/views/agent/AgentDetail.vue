@@ -1486,9 +1486,12 @@ const loadStResult = async (preferConversation = false) => {
     const record = directPage.records[0] || await latestExecuteRecord('short-term', row =>
       row.regionName === selectedStProvince.value
       && row.industryName === selectedStIndustry.value && row.customerName === selectedStCustomer.value)
-    if (requestSeq === stResultRequestSeq && record) {
+    // 页面恢复会同步多个下拉框并产生新的请求序号；不能因此丢掉已经返回的
+    // 同一客户结果。只要记录仍属于当前已选客户，即可安全回填。
+    if (record && (!selectedShortTermCustomerRecord()?.customerCode || record.customerCode === selectedShortTermCustomerRecord()?.customerCode)) {
       const data = resultFromExecuteRecord(record)
       currentResult.value = data
+      stFilterDirty.value = false
       nextTick(() => initMonthlyChart(data))
     }
   } catch (e) {
