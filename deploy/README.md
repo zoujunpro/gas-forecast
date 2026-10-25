@@ -22,6 +22,8 @@ cp /Users/zoujun/data/gas/gas-agent/config/agent.env.example /Users/zoujun/data/
 本机公共 Nginx 使用 `deploy/nginx/gas-web-dev.conf`，Web 入口为
 `http://localhost:18082`。普通业务接口转发至 Java 服务 `18081`；
 浏览器会话统一请求 Java `/ai/conversations/chat`。Python Agent `18091` 仅供 Java 服务在内网调用，不再通过 Nginx 或 Vite 暴露 `/agent-api/` 浏览器代理。
+Agent 除 MCP 地址外，还必须配置 `GAS_ENTITY_RESOLVE_URL`，用于请求前的实体校验；Jenkins 环境应指向
+`http://127.0.0.1:18081/gas-forecast/internal/agent/entities:resolve`。
 
 手动管理服务：
 
