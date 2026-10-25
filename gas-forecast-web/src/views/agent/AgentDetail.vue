@@ -1208,6 +1208,20 @@ const latestConversationExecuteRecord = async () => {
   }
   return null
 }
+const latestConversationTaskRecord = async () => {
+  const taskMessages = [...messages.value].reverse().filter((message) => Boolean(message.taskNo))
+  for (const message of taskMessages) {
+    try {
+      const details = (await getJson<any>(`/execution-tasks/${encodeURIComponent(message.taskNo!)}/details?pageNo=1&pageSize=100&status=SUCCESS`)).data?.records || []
+      const detail = [...details].reverse().find((item: any) => item.detailNo && item.forecastNo)
+      if (!detail) continue
+      const result = await getJson<any>(`/execution-tasks/details/${encodeURIComponent(detail.detailNo)}/result`)
+      const record = result.data?.record
+      if (record?.status === 'SUCCESS' && record.agentCode === agentId.value) return record
+    } catch { /* 继续回退到按客户编码查询 */ }
+  }
+  return null
+}
 const resultFromExecuteRecord = (record: any) => {
   const backtest = jsonValue(record?.backtestResultJson) as any
   const forecast = jsonValue(record?.forecastResultJson) as any
@@ -1648,6 +1662,16 @@ const loadShortTermDashboard = async () => {
   syncShortTermCustomers()
   selectDefaultShortTermCustomer()
   syncShortTermMape()
+  const taskRecord = await latestConversationTaskRecord()
+  if (taskRecord) {
+    await focusShortTermForecastScope({ regionName: taskRecord.regionName, industryName: taskRecord.industryName, customerName: taskRecord.customerName })
+    const data = resultFromExecuteRecord(taskRecord)
+    currentResult.value = data
+    loadingResult.value = false
+    await nextTick()
+    initMonthlyChart(data)
+    return
+  }
   await loadStResult(true)
 }
 
