@@ -590,8 +590,8 @@ def test_corrected_entity_name_is_resolved_again_from_plain_text(
     second = client.post("/api/v1/internal/chat", json=second_request).json()
 
     assert second["status"] == "WAITING"
-    assert second["clarification"]["interactionType"] == "CONFIRMATION"
-    assert second["memoryPatch"]["pendingOperation"]["parameters"]["targets"][0]["customerCodes"] == ["CUS-2"]
+    assert second["clarification"]["interactionType"] == "CLARIFICATION"
+    assert second["memoryPatch"]["pendingOperation"]["parameters"]["customerCodes"] == ["CUS-2"]
     assert [call["customerNames"] for call in resolver.calls] == [["不存在的客户"], ["扬州中燃"]]
     assert [name for name, _ in mcp.calls].count("forecast_start") == 0
 

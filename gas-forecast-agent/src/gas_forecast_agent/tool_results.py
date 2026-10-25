@@ -191,6 +191,7 @@ class ToolProblem(RuntimeModel):
     allowed_actions: list[str] = Field(default_factory=list)
     retryable: bool | None = None
     proposed_parameters: OperationParameters | None = None
+    field: str | None = None
 
 
 ToolData = (

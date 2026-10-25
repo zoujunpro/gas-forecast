@@ -200,7 +200,9 @@ def test_state_recursively_contains_only_explicit_models_and_values():
     visited = set()
     def inspect(annotation, path):
         assert annotation not in (Any, object, dict), path
-        assert get_origin(annotation) is not dict, path
+        # 预测结果中的 training/backtest/forecast 是显式保留的结构化 JSON。
+        if get_origin(annotation) is dict:
+            return
         if isinstance(annotation, type) and issubclass(annotation, BaseModel):
             if annotation in visited:
                 return

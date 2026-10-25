@@ -616,6 +616,9 @@ class ActionExecutor:
         skill_name: str,
         semantics: RequestSemantics | None = None,
     ) -> dict[str, Any]:
+        # 兼容历史单元测试及旧调用方传入的序列化 memory；运行时仍统一使用模型。
+        if isinstance(memory, dict):
+            memory = ConversationMemory.model_validate(memory)
         if skill_name == "general-chat":
             # 非业务对话只能使用当前原话和聊天历史，不能继承客户、预测周期、
             # pendingOperation 等业务状态，否则一次问候也可能被旧预测参数污染。
