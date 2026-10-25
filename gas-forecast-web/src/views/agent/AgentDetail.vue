@@ -1431,7 +1431,14 @@ const loadStResult = async (preferConversation = false) => {
   loadingResult.value = true
   currentResult.value = null
   try {
-    const conversationRecord = preferConversation ? await latestConversationExecuteRecord() : null
+    // 会话恢复只用于自动聚焦，不得阻塞当前已选客户的结果展示。历史会话中的
+    // 某条请求若因网络切换、旧代理或服务重启迟迟未结束，3 秒后直接按客户编码查询。
+    const conversationRecord = preferConversation
+      ? await Promise.race<any>([
+          latestConversationExecuteRecord(),
+          wait(3_000).then(() => null)
+        ])
+      : null
     if (conversationRecord) {
       await focusShortTermForecastScope({
         regionName: conversationRecord.regionName,
