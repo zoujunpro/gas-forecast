@@ -1216,8 +1216,19 @@ const latestConversationTaskRecord = async () => {
       const detail = [...details].reverse().find((item: any) => item.detailNo && item.forecastNo)
       if (!detail) continue
       const result = await getJson<any>(`/execution-tasks/details/${encodeURIComponent(detail.detailNo)}/result`)
-      const record = result.data?.record
-      if (record?.status === 'SUCCESS' && record.agentCode === agentId.value) return record
+      const payload = result.data || {}
+      const record = payload.record
+      // 任务结果接口把三段模型快照拆在 data 顶层；合并后交给统一转换器，
+      // 否则只有摘要指标，没有可绘制的回测及未来点位。
+      if (record?.status === 'SUCCESS' && record.agentCode === agentId.value) {
+        return {
+          ...record,
+          trainingResultJson: payload.training ?? record.trainingResultJson,
+          backtestResultJson: payload.backtest ?? record.backtestResultJson,
+          forecastResultJson: payload.forecast ?? record.forecastResultJson,
+          lastYearPoints: payload.lastYearPoints ?? record.lastYearPoints
+        }
+      }
     } catch { /* 继续回退到按客户编码查询 */ }
   }
   return null
@@ -1573,7 +1584,8 @@ const focusShortTermForecastScope = async (scope: ShortTermForecastScope) => {
   if (!stCustomers.value.includes(resolved.customerName)) return false
   selectedStCustomer.value = resolved.customerName
   syncShortTermMape()
-  currentResult.value = null
+  // 任务卡恢复完成时会再次调用本方法。这里若先清空，异步回填被后续请求覆盖时
+  // 左侧就会永久停在空状态；保留旧结果直到新的同范围结果已准备好。
   stFilterDirty.value = true
   return true
 }
@@ -1629,6 +1641,7 @@ const showCompletedTaskForecast = async (message: ChatMessage, result: Record<st
   if (fallback.future_dates.length) {
     currentResult.value = fallback
     loadingResult.value = false
+    stFilterDirty.value = false
     await nextTick()
     initMonthlyChart(fallback)
   }
