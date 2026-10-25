@@ -50,6 +50,7 @@ mkdir -p deploy-package/config deploy-package/bin
 cp gas-forecast-agent/dist/*.whl deploy-package/
 cp deploy/config/agent.env.example deploy-package/config/
 cp deploy/agent/bin/start.sh deploy-package/bin/
+cp deploy/agent/com.gas.forecast.agent.plist deploy-package/
 tar -C deploy-package -czf gas-agent-deploy.tar.gz .</command>
       <configuredLocalRules/>
     </hudson.tasks.Shell>
@@ -86,6 +87,10 @@ if ! grep -q &apos;^GAS_ENTITY_RESOLVE_URL=&apos; &quot;$root/gas-agent/config/a
   printf &apos;\nGAS_ENTITY_RESOLVE_URL=http://127.0.0.1:18081/gas-forecast/internal/agent/entities:resolve\n&apos; &gt;&gt; &quot;$root/gas-agent/config/agent.env&quot;
 fi
 install -m 755 &quot;$release/bin/start.sh&quot; &quot;$root/gas-agent/bin/start.sh&quot;
+mkdir -p &quot;$HOME/Library/LaunchAgents&quot;
+install -m 644 &quot;$release/com.gas.forecast.agent.plist&quot; &quot;$HOME/Library/LaunchAgents/com.gas.forecast.agent.plist&quot;
+launchctl bootout &quot;gui/$(id -u)/com.gas.forecast.agent&quot; &gt;/dev/null 2&gt;&amp;1 || true
+launchctl bootstrap &quot;gui/$(id -u)&quot; &quot;$HOME/Library/LaunchAgents/com.gas.forecast.agent.plist&quot;
 if ! &quot;$root/gas-agent/venv/bin/python&quot; -c &apos;import sys; raise SystemExit(0 if sys.prefix != sys.base_prefix else 1)&apos; &gt;/dev/null 2&gt;&amp;1; then
   rm -rf &quot;$root/gas-agent/venv&quot;
   /Users/zoujun/.pyenv/versions/3.12.13/bin/python3 -m venv &quot;$root/gas-agent/venv&quot;

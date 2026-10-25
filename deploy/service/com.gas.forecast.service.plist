@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.gas.forecast.service</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-lc</string>
+    <string>set -a; [ -f /Users/zoujun/data/gas/gas-service/config/service.env ] &amp;&amp; . /Users/zoujun/data/gas/gas-service/config/service.env; set +a; exec /usr/bin/java ${JAVA_OPTS:--Xms512m -Xmx2g} -jar /Users/zoujun/data/gas/gas-service/current/gas-forecast.jar --spring.profiles.active=dev</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/zoujun/data/gas/gas-service</string>
+  <key>StandardOutPath</key>
+  <string>/Users/zoujun/data/gas/gas-service/logs/console.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/zoujun/data/gas/gas-service/logs/console.log</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+</dict>
+</plist>

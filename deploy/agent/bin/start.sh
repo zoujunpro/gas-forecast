@@ -9,6 +9,13 @@ fi
 if [ -f "$root/config/agent.env" ]; then set -a; . "$root/config/agent.env"; set +a; fi
 : "${GAS_MCP_URL:?缺少 GAS_MCP_URL，无法连接 Java MCP 服务}"
 : "${GAS_ENTITY_RESOLVE_URL:?缺少 GAS_ENTITY_RESOLVE_URL，无法进行实体校验}"
+label=com.gas.forecast.agent
+plist="$HOME/Library/LaunchAgents/$label.plist"
+if [ -f "$plist" ] && command -v launchctl >/dev/null 2>&1; then
+  launchctl kickstart -k "gui/$(id -u)/$label"
+  echo "Agent 服务已由 launchd 启动"
+  exit 0
+fi
 cd "$root"
 nohup "$root/venv/bin/gas-forecast-agent" >> "$root/logs/console.log" 2>&1 &
 echo "$!" > "$pid_file"

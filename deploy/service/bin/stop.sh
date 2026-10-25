@@ -5,9 +5,9 @@ pid_file="$root/service.pid"
 [ -f "$pid_file" ] || { echo 'Java 服务未运行'; exit 0; }
 pid=$(cat "$pid_file")
 
-# 本机故障恢复时服务可能由 launchd 临时托管；正式部署前先解除托管，避免被自动拉起并占用端口。
+# 由 launchd 托管时，先卸载服务，避免停止后被自动拉起。
 if command -v launchctl >/dev/null 2>&1; then
-  launchctl remove com.gas.forecast.service >/dev/null 2>&1 || true
+  launchctl bootout "gui/$(id -u)/com.gas.forecast.service" >/dev/null 2>&1 || true
 fi
 kill "$pid" 2>/dev/null || true
 

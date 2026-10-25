@@ -27,6 +27,7 @@ gas:
     chat-url: ${GAS_AGENT_CHAT_URL:http://127.0.0.1:18091/api/v1/internal/chat}
     chat-timeout-seconds: ${GAS_AGENT_CHAT_TIMEOUT_SECONDS:120}
     models-url: ${GAS_AGENT_MODELS_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/models}
+    execute-url: ${GAS_AGENT_EXECUTE_URL:${GAS_AGENT_BASE_URL:http://127.0.0.1:18090}/api/v1/execute}
     connect-timeout-ms: ${GAS_AGENT_CONNECT_TIMEOUT_MS:5000}
     training-timeout-ms: ${GAS_AGENT_TRAINING_TIMEOUT_MS:1800000}
   analysis:
