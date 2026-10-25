@@ -1638,6 +1638,28 @@ const showCompletedTaskForecast = async (message: ChatMessage, result: Record<st
     industryName: result.industryName,
     customerName: result.customerName
   })
+  // 任务卡的结果已明确携带 forecastNo。按编号读取完整执行记录，避免会话恢复、
+  // 分页查询或任务结果摘要的字段差异导致左侧没有点位数据。
+  const forecastNo = result.forecastNo || result.batchNo
+  if (forecastNo) {
+    try {
+      const response = await getJson<any>(`/model-execute-record/${encodeURIComponent(forecastNo)}`)
+      const record = response.data
+      if (record?.status === 'SUCCESS') {
+        const data = resultFromExecuteRecord(record)
+        if (data.future_dates.length) {
+          currentResult.value = data
+          loadingResult.value = false
+          stFilterDirty.value = false
+          await nextTick()
+          initMonthlyChart(data)
+          return
+        }
+      }
+    } catch (error) {
+      console.warn('按预测编号读取左侧结果失败，将使用任务卡结果：', error)
+    }
+  }
   // 范围聚焦会清空旧画面，随后必须立即回填任务卡已经读取成功的数据。
   // 即使历史范围无法完整恢复，也不能让已完成任务的结果消失。
   const fallback = shortTermResultFromTaskPresentation(result)
