@@ -185,7 +185,7 @@ const toggleStep = async (detailNo: string, step: Record<string, any>) => {
 }
 const detailStep = (detailNo: string, step: Record<string, any>) => detailSteps.value[detailNo]?.find(item => item.stepCode === step.stepCode)
 const parseJson = (value: any) => { if (!value || typeof value !== 'string') return value; try { return JSON.parse(value) } catch { return value } }
-const labelOf = (key: string) => ({ salesCount: '有效销量数据', startDate: '开始日期', endDate: '结束日期', missingSalesCount: '缺失销量数据', featureCount: '基础特征数', weatherFeatureCount: '天气特征数', features: '特征列表', candidate_count: '候选指标数', available_count: '可用指标数', selected_indexes: '已选指标', selected_model_name: '最佳模型', best_model: '最佳模型', mape: 'MAPE', wmape: 'WMAPE', rmse: 'RMSE', mae: 'MAE', r2: 'R²', analysis: '智能解读', model: '解读模型', forecastBatchNo: '预测批次' }[key] || key)
+const labelOf = (key: string) => ({ salesCount: '有效销量数据', startDate: '开始日期', endDate: '结束日期', missingSalesCount: '缺失销量数据', featureCount: '基础特征数', weatherFeatureCount: '天气特征数', features: '特征列表', candidate_count: '候选指标数', available_count: '可用指标数', selected_indexes: '已选指标', selected_model_name: '最佳模型', best_model: '最佳模型', mape: 'MAPE', wmape: 'WMAPE', rmse: 'RMSE', mae: 'MAE', r2: 'R²', analysis: '智能解读', model: '解读模型', forecastBatchNo: '预测批次', backtestDays: '回测天数', forecastDays: '预测天数' }[key] || key)
 const readable = (value: any) => {
   if (Array.isArray(value)) {
     // 数组内含对象时 join 会渲染为 [object Object]；步骤详情只显示数量，
