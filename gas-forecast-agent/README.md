@@ -57,7 +57,7 @@ Skill 只声明能力边界和允许调用的 MCP 工具，不再重复实现意
 | `FORECAST` | `customer-gas-forecast` | 创建预测任务 | 否 |
 | `QUERY` | `business-data-query` | 查询主数据、训练、预测和执行任务 | 是 |
 | `ANALYZE` | `forecast-analysis` | 获取真实结果后进行解释或比较 | 是 |
-| `KNOWLEDGE_QA` | `knowledge-qa` | 回答概念和系统使用问题 | 是，不调用业务工具 |
+| `CHAT` | `general-chat` | 回答概念和系统使用问题 | 是，不调用业务工具 |
 | `CHAT` | `general-chat` | 处理问候、感谢、告别和普通寒暄 | 是，不调用业务工具 |
 | `UNKNOWN` | `unknown-request` | 承接无法可靠识别或超出能力的请求 | 是，不调用业务工具 |
 
