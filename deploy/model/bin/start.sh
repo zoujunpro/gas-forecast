@@ -15,6 +15,9 @@ export GAS_MODEL_ARTIFACT_ROOT="${GAS_MODEL_ARTIFACT_ROOT:-$root/artifacts}"
 export GAS_MODEL_LOG_DIR="${GAS_MODEL_LOG_DIR:-$root/logs}"
 
 if [ -f "$plist" ]; then
+  if ! launchctl print "gui/$(id -u)/$service_label" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$plist"
+  fi
   launchctl kickstart -k "gui/$(id -u)/$service_label"
   echo "模型服务已交由 launchd 启动"
   exit 0

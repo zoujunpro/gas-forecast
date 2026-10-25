@@ -11,6 +11,9 @@ fi
 if [ -f "$root/config/service.env" ]; then set -a; . "$root/config/service.env"; set +a; fi
 
 if [ -f "$plist" ]; then
+  if ! launchctl print "gui/$(id -u)/$service_label" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$plist"
+  fi
   launchctl kickstart -k "gui/$(id -u)/$service_label"
   echo "Java 服务已交由 launchd 启动"
   exit 0

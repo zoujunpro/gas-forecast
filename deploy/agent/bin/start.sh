@@ -12,6 +12,9 @@ if [ -f "$root/config/agent.env" ]; then set -a; . "$root/config/agent.env"; set
 label=com.gas.forecast.agent
 plist="$HOME/Library/LaunchAgents/$label.plist"
 if [ -f "$plist" ] && command -v launchctl >/dev/null 2>&1; then
+  if ! launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then
+    launchctl bootstrap "gui/$(id -u)" "$plist"
+  fi
   launchctl kickstart -k "gui/$(id -u)/$label"
   echo "Agent 服务已由 launchd 启动"
   exit 0
