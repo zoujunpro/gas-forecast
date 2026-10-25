@@ -1570,6 +1570,28 @@ const refreshShortTermForecastResult = async () => {
   void loadStMape().then(syncShortTermMape)
 }
 
+/** 聊天任务卡已读取并校验过的预测结果，可直接作为左侧客户结果页的可靠回退。 */
+const shortTermResultFromTaskPresentation = (result: Record<string, any>) => {
+  const backtestPoints = Array.isArray(result.backtestPoints) ? result.backtestPoints : []
+  const points = Array.isArray(result.points) ? result.points : []
+  const lastYearPoints = Array.isArray(result.lastYearPoints) ? result.lastYearPoints : []
+  const lastYearByDate = new Map(lastYearPoints.map((point: any) => [point.date, point.value]))
+  const training = result.training || {}
+  return {
+    dates: backtestPoints.map((point: any) => point.date).filter(Boolean),
+    actual: backtestPoints.map((point: any) => point.actualValue),
+    predicted: backtestPoints.map((point: any) => point.predictedValue),
+    future_dates: points.map((point: any) => point.date).filter(Boolean),
+    future_predicted: points.map((point: any) => point.value),
+    last_year_values: points.map((point: any) => lastYearByDate.get(point.date) ?? null),
+    metrics: { mape: training.mape, wmape: training.wmape, smape: training.smape, rmse: training.rmse, mae: training.mae, r2: training.r2 },
+    bestModel: training.bestModel || result.bestModel,
+    forecastNo: result.batchNo || result.forecastNo,
+    analysisContent: result.analysisContent || result.record?.analysisContent,
+    regionName: result.regionName, industryName: result.industryName, customerName: result.customerName
+  }
+}
+
 /** 右侧任务流程完成后，左侧自动切到同一地区、行业、客户，并加载最新预测结果。 */
 const showCompletedTaskForecast = async (message: ChatMessage, result: Record<string, any>) => {
   // 结果属于创建该任务的同一轮会话消息，避免用户必须滚动到任务卡片才能获知结论。
@@ -1588,7 +1610,15 @@ const showCompletedTaskForecast = async (message: ChatMessage, result: Record<st
     customerName: result.customerName
   })
   if (!focused) return
-  await refreshShortTermForecastResult()
+  // 先展示已校验的任务卡数据；记录列表只负责随后静默刷新，不能继续让左侧空白。
+  const fallback = shortTermResultFromTaskPresentation(result)
+  if (fallback.future_dates.length) {
+    currentResult.value = fallback
+    loadingResult.value = false
+    await nextTick()
+    initMonthlyChart(fallback)
+  }
+  void refreshShortTermForecastResult()
 }
 
 const runShortTermForecast = async () => {
