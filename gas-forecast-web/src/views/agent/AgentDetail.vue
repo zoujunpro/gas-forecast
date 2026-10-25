@@ -1604,13 +1604,13 @@ const showCompletedTaskForecast = async (message: ChatMessage, result: Record<st
   window.setTimeout(scrollToBottom, 150)
   window.setTimeout(scrollToBottom, 800)
   if (!isShortTerm.value) return
-  const focused = await focusShortTermForecastScope({
+  await focusShortTermForecastScope({
     regionName: result.regionName,
     industryName: result.industryName,
     customerName: result.customerName
   })
-  if (!focused) return
-  // 先展示已校验的任务卡数据；记录列表只负责随后静默刷新，不能继续让左侧空白。
+  // 范围聚焦会清空旧画面，随后必须立即回填任务卡已经读取成功的数据。
+  // 即使历史范围无法完整恢复，也不能让已完成任务的结果消失。
   const fallback = shortTermResultFromTaskPresentation(result)
   if (fallback.future_dates.length) {
     currentResult.value = fallback
@@ -1618,7 +1618,8 @@ const showCompletedTaskForecast = async (message: ChatMessage, result: Record<st
     await nextTick()
     initMonthlyChart(fallback)
   }
-  void refreshShortTermForecastResult()
+  // 当前任务卡与左侧展示使用同一预测批次；不再立即发起会清空画面的二次查询。
+  // 用户主动切换筛选条件时，仍由切换事件按客户编码查询最新记录。
 }
 
 const runShortTermForecast = async () => {
