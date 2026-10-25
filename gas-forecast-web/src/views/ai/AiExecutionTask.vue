@@ -186,7 +186,14 @@ const toggleStep = async (detailNo: string, step: Record<string, any>) => {
 const detailStep = (detailNo: string, step: Record<string, any>) => detailSteps.value[detailNo]?.find(item => item.stepCode === step.stepCode)
 const parseJson = (value: any) => { if (!value || typeof value !== 'string') return value; try { return JSON.parse(value) } catch { return value } }
 const labelOf = (key: string) => ({ salesCount: '有效销量数据', startDate: '开始日期', endDate: '结束日期', missingSalesCount: '缺失销量数据', featureCount: '基础特征数', weatherFeatureCount: '天气特征数', features: '特征列表', candidate_count: '候选指标数', available_count: '可用指标数', selected_indexes: '已选指标', selected_model_name: '最佳模型', best_model: '最佳模型', mape: 'MAPE', wmape: 'WMAPE', rmse: 'RMSE', mae: 'MAE', r2: 'R²', analysis: '智能解读', model: '解读模型', forecastBatchNo: '预测批次' }[key] || key)
-const readable = (value: any) => Array.isArray(value) ? value.join('、') : typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value ?? '')
+const readable = (value: any) => {
+  if (Array.isArray(value)) {
+    // 数组内含对象时 join 会渲染为 [object Object]；步骤详情只显示数量，
+    // 完整点位由紧随其后的预测结果图表和明细表承担。
+    return value.some(item => item && typeof item === 'object') ? `共 ${value.length} 条` : value.join('、')
+  }
+  return typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value ?? '')
+}
 const displayValue = (key: string, value: any) => {
   const text = readable(value)
   // 历史解读已按旧提示词保存为编号/Markdown；展示时兼容清理，不修改原始审计数据。
@@ -207,11 +214,22 @@ const modelDetailEntries = (raw: Record<string, any>) => {
   ].filter(([, value]) => value !== null && value !== undefined && value !== '')
     .map(([label, value]) => ({ label, value: readable(value) }))
 }
+const forecastDetailEntries = (raw: Record<string, any>) => {
+  const metadata = parseJson(raw.metadata) || raw.metadata || {}
+  const points = Array.isArray(raw.points) ? raw.points : []
+  return [
+    ['预测点数', points.length ? `${points.length} 天` : undefined],
+    ['预测批次', metadata.forecast_batch_no || metadata.forecastNo || metadata.batch_no],
+    ['预测模型', metadata.selected_model_name || metadata.best_model || metadata.model_name]
+  ].filter(([, value]) => value !== null && value !== undefined && value !== '')
+    .map(([label, value]) => ({ label, value: readable(value) }))
+}
 const detailEntries = (step: Record<string, any>) => {
   const value = parseJson(step.metricsJson) || parseJson(step.outputJson) || parseJson(step.inputJson)
   if (typeof value === 'string') return [{ label: '执行详情', value }]
   if (!value || typeof value !== 'object') return []
   if (step.stepCode === 'MODEL_SELECT') return modelDetailEntries(value)
+  if (step.stepCode === 'FORECAST') return forecastDetailEntries(value)
   // 步骤卡展示统计结果，不在聊天流内堆放完整特征编码列表。
   // 特征明细由数据中心/模型详情承载；这里仅保留基础、天气等数量。
   return Object.entries(value)
