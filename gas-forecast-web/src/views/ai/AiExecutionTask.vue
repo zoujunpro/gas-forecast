@@ -206,6 +206,9 @@ const modelDetailEntries = (raw: Record<string, any>) => {
   const mape = metricValue('mape') ?? metricValue('name')
   return [
     ['最佳模型', raw.selected_model_name || raw.selected_model_code || raw.best_model || raw.model_code],
+    ['候选模型数', raw.requested_candidate_count ?? raw.candidate_count],
+    ['训练成功数', raw.successful_candidate_count ?? raw.success_count],
+    ['参与排名数', raw.ranked_candidate_count ?? raw.ranked_count],
     ['MAPE', mape == null ? undefined : `${Number(mape).toFixed(2)}%`],
     ['MAE', metricValue('mae')],
     ['RMSE', metricValue('rmse')],
