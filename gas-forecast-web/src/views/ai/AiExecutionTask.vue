@@ -7,7 +7,7 @@
             <strong>批量预测任务</strong
             ><small>{{ overview.taskNo }} · 共 {{ batchTotal }} 个{{ executionTargetLabel }}</small>
           </div>
-          <el-tag :type="statusType(overview.status)">{{ statusText(overview.status) }}</el-tag>
+          <el-tag :type="statusType(batchDisplayStatus)">{{ statusText(batchDisplayStatus) }}</el-tag>
         </div>
         <div class="task-metrics batch-metrics">
           <div>
@@ -32,9 +32,11 @@
           :stroke-width="6"
           :show-text="false"
           :status="
-            overview.status === 'FAILED'
+            batchDisplayStatus === 'FAILED'
               ? 'exception'
-              : overview.status === 'SUCCESS' || overview.status === 'COMPLETED'
+              : batchDisplayStatus === 'PARTIAL_FAILED'
+                ? 'warning'
+                : batchDisplayStatus === 'SUCCESS' || batchDisplayStatus === 'COMPLETED'
                 ? 'success'
                 : undefined
           "
@@ -197,6 +199,18 @@ const singleTask = computed(() => records.value[0])
 const isBatchTask = computed(() => Number(overview.value.total || total.value || 0) > 1)
 const batchTotal = computed(() => Number(overview.value.total || total.value || 0))
 const batchProgressPercent = computed(() => Math.max(0, Math.min(100, Number(overview.value.progressPercent || 0))))
+const batchCount = (name: 'completed' | 'failed' | 'running' | 'pending') => Number(overview.value[name] || 0)
+/** 批量任务的任务总状态不足以表达部分明细失败，按汇总数量生成用户可见状态。 */
+const batchDisplayStatus = computed(() => {
+  const completed = batchCount('completed')
+  const failed = batchCount('failed')
+  const active = batchCount('running') + batchCount('pending')
+  if (active > 0) return 'RUNNING'
+  if (completed > 0 && failed > 0) return 'PARTIAL_FAILED'
+  if (failed > 0) return 'FAILED'
+  if (completed > 0) return 'SUCCESS'
+  return String(overview.value.status || 'PENDING').toUpperCase()
+})
 const executionTargetLabel = computed(() => {
   const dimension = String(overview.value.dimensionType || records.value[0]?.dimensionType || '').toUpperCase()
   return { CUSTOMER: '客户', REGION: '地区', INDUSTRY: '行业' }[dimension] || '对象'
@@ -212,6 +226,7 @@ const statusText = (status?: string) =>
     FORECASTING: '预测中',
     SUCCESS: '已完成',
     COMPLETED: '已完成',
+    PARTIAL_FAILED: '部分失败',
     FAILED: '失败',
     CANCELLED: '已取消',
     SKIPPED: '已跳过'
@@ -222,6 +237,7 @@ const statusType = (status?: string) =>
   (({
     SUCCESS: 'success',
     COMPLETED: 'success',
+    PARTIAL_FAILED: 'warning',
     FAILED: 'danger',
     CANCELLED: 'info',
     RUNNING: 'primary',
