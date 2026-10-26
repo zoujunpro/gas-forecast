@@ -1,5 +1,18 @@
 <template>
-  <div ref="root" class="forecast-comparison-chart" role="img" :aria-label="`${referenceName}与${forecastName}趋势图`" />
+  <div class="forecast-comparison-chart-wrap">
+    <button
+      class="chart-download-button"
+      type="button"
+      title="下载图表"
+      aria-label="下载图表"
+      @click="downloadChart"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+      </svg>
+    </button>
+    <div ref="root" class="forecast-comparison-chart" role="img" :aria-label="`${referenceName}与${forecastName}趋势图`" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -26,6 +39,15 @@ const props = withDefaults(defineProps<{
 
 const root = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
+const downloadChart = () => {
+  if (!chart) return
+  const link = document.createElement('a')
+  link.href = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' })
+  link.download = `${props.referenceName}-${props.forecastName}趋势图.png`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
 const render = () => nextTick(() => {
   if (!root.value) return
   chart = echarts.getInstanceByDom(root.value) || echarts.init(root.value)
@@ -50,9 +72,13 @@ let resizeObserver: ResizeObserver | undefined
 onMounted(() => { render(); if (root.value) { resizeObserver = new ResizeObserver(() => chart?.resize()); resizeObserver.observe(root.value) } })
 onBeforeUnmount(() => { resizeObserver?.disconnect(); chart?.dispose(); chart = null })
 watch(() => [props.dates, props.referenceValues, props.forecastValues, props.chartType], render, { deep: true })
-defineExpose({ getDataURL: (options?: object) => chart?.getDataURL(options) })
+defineExpose({ getDataURL: (options?: object) => chart?.getDataURL(options), downloadChart })
 </script>
 
 <style scoped>
+.forecast-comparison-chart-wrap{position:relative;width:100%;height:100%}
 .forecast-comparison-chart{width:100%;height:100%}
+.chart-download-button{position:absolute;z-index:2;top:8px;right:8px;display:grid;place-items:center;width:28px;height:28px;padding:0;color:#64748b;background:rgba(255,255,255,.88);border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;transition:color .18s ease,border-color .18s ease,background-color .18s ease}
+.chart-download-button:hover,.chart-download-button:focus-visible{color:#2563eb;background:#fff;border-color:#93c5fd;outline:none}
+.chart-download-button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
 </style>
