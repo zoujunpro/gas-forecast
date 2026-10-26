@@ -44,7 +44,17 @@
           ><small>展示 {{ records.length }} 条，共 {{ batchTotal }} 个{{ executionTargetLabel }}</small>
         </div>
         <div class="batch-detail-list">
-          <div v-for="item in records" :key="item.detailNo" :class="['batch-detail-row', batchDetailClass(item)]">
+          <div
+            v-for="item in records"
+            :key="item.detailNo"
+            :class="['batch-detail-row', batchDetailClass(item), { selectable: canOpenBatchDetail(item) }]"
+            :role="canOpenBatchDetail(item) ? 'button' : undefined"
+            :tabindex="canOpenBatchDetail(item) ? 0 : undefined"
+            :title="canOpenBatchDetail(item) ? '查看此预测结果' : undefined"
+            @click="openBatchDetail(item)"
+            @keydown.enter.prevent="openBatchDetail(item)"
+            @keydown.space.prevent="openBatchDetail(item)"
+          >
             <div>
               <strong>{{ item.targetName || '-' }}</strong
               ><small>{{ [item.regionName, item.industryName].filter(Boolean).join(' · ') || '—' }}</small>
@@ -156,6 +166,7 @@ import AiForecastResult from './AiForecastResult.vue'
 const props = defineProps<{ taskNo: string }>()
 const emit = defineEmits<{
   (event: 'forecast-completed', result: Record<string, any>): void
+  (event: 'batch-detail-selected', detail: Record<string, any>): void
   (event: 'content-rendered'): void
 }>()
 const loading = ref(false),
@@ -227,6 +238,11 @@ const currentText = (item: Record<string, any>) =>
         : '正在处理，请稍候'
 const rawSteps = computed<Record<string, any>[]>(() => singleTask.value?.steps || [])
 const succeeded = (status?: string) => ['SUCCESS', 'COMPLETED'].includes(String(status || '').toUpperCase())
+const canOpenBatchDetail = (item: Record<string, any>) =>
+  succeeded(item.status) && Boolean(item.detailNo && item.forecastNo)
+const openBatchDetail = (item: Record<string, any>) => {
+  if (canOpenBatchDetail(item)) emit('batch-detail-selected', item)
+}
 const detailCompletedSteps = (item: Record<string, any>) =>
   (item.steps || []).filter((step: Record<string, any>) => succeeded(step.status)).length
 const detailProgressText = (item: Record<string, any>) => {
@@ -1158,6 +1174,19 @@ watch(
 }
 .batch-detail-row:last-child {
   border-bottom: 0;
+}
+.batch-detail-row.selectable {
+  cursor: pointer;
+  border-radius: 6px;
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.batch-detail-row.selectable:hover,
+.batch-detail-row.selectable:focus-visible {
+  background: #f0f7ff;
+  box-shadow: inset 3px 0 0 #409eff;
+  outline: none;
 }
 .batch-detail-row strong,
 .batch-detail-row small {
