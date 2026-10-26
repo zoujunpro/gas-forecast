@@ -665,9 +665,42 @@ const schedulePresentationTick = () => {
  */
 let refreshSequence = 0
 let eventSource: EventSource | undefined
+let batchRefreshTimer: ReturnType<typeof setTimeout> | undefined
+let batchPollTimer: ReturnType<typeof setInterval> | undefined
+const taskTerminal = () =>
+  terminalStep(overview.value.status) ||
+  (records.value.length > 0 && records.value.every((item) => terminalStep(item.status)))
+const stopBatchFallbackPoll = () => {
+  if (batchPollTimer) clearInterval(batchPollTimer)
+  batchPollTimer = undefined
+}
 const closeEventStream = () => {
   eventSource?.close()
   eventSource = undefined
+  if (batchRefreshTimer) clearTimeout(batchRefreshTimer)
+  batchRefreshTimer = undefined
+  stopBatchFallbackPoll()
+}
+const scheduleBatchSnapshotRefresh = (delay = 400) => {
+  if (!isBatchTask.value || taskTerminal()) return
+  if (batchRefreshTimer) clearTimeout(batchRefreshTimer)
+  // 一批任务的多个步骤常在短时间内连续完成；合并为一次快照读取，避免 154 条明细反复重绘。
+  batchRefreshTimer = setTimeout(() => {
+    batchRefreshTimer = undefined
+    void refresh()
+  }, delay)
+}
+const startBatchFallbackPoll = () => {
+  if (!isBatchTask.value || taskTerminal() || batchPollTimer) return
+  // EventSource 会自动重连；轮询只负责浏览器切后台、网络断开等场景下的状态兜底。
+  batchPollTimer = setInterval(() => {
+    if (taskTerminal()) {
+      stopBatchFallbackPoll()
+      closeEventStream()
+      return
+    }
+    void refresh()
+  }, 10_000)
 }
 const applyStepEvent = (payload: Record<string, any>) => {
   const detailNo = payload.detailNo
@@ -693,16 +726,13 @@ const applyStepEvent = (payload: Record<string, any>) => {
   }
   schedulePresentationTick()
   if (isBatchTask.value) {
-    void fetchOverview(props.taskNo)
-      .then((result) => {
-        overview.value = result.data || overview.value
-      })
-      .catch(() => undefined)
+    scheduleBatchSnapshotRefresh()
+    return
   }
   if (incoming.stepCode === 'FORECAST_ANALYSIS' && terminalStep(incoming.status)) closeEventStream()
 }
 const openEventStream = () => {
-  if (eventSource || !props.taskNo || !singleTask.value || terminalStep(singleTask.value.status)) return
+  if (eventSource || !props.taskNo || taskTerminal() || (!singleTask.value && !isBatchTask.value)) return
   eventSource = new EventSource(`/execution-tasks/${encodeURIComponent(props.taskNo)}/events`)
   eventSource.addEventListener('task_step_updated', (event) => {
     try {
@@ -711,6 +741,7 @@ const openEventStream = () => {
       /* 忽略格式异常事件，快照仍可恢复当前状态。 */
     }
   })
+  startBatchFallbackPoll()
 }
 const fetchOverview = (taskNo: string) => getJson(`/execution-tasks/${encodeURIComponent(taskNo)}`)
 const fetchDetails = (taskNo: string, currentPage: number) =>
@@ -733,6 +764,7 @@ const fetchAllDetails = async (taskNo: string) => {
 const refresh = async () => {
   const taskNo = props.taskNo
   const sequence = ++refreshSequence
+  const initialLoad = !hasLoaded.value
   // 首次加载需要遮罩；后续静默刷新，避免每 5 秒遮住内容、触发页面明显重排。
   if (!hasLoaded.value) loading.value = true
   loadError.value = ''
@@ -748,9 +780,13 @@ const refresh = async () => {
     presentationNow.value = Date.now()
     hasLoaded.value = true
     // 任务明细异步加载会增高消息卡；通知父聊天容器重新定位到最新内容。
-    await nextTick()
-    emit('content-rendered')
+    if (initialLoad) {
+      await nextTick()
+      emit('content-rendered')
+    }
     openEventStream()
+    if (taskTerminal()) closeEventStream()
+    else startBatchFallbackPoll()
     schedulePresentationTick()
   } catch (error) {
     if (sequence !== refreshSequence || taskNo !== props.taskNo) return
