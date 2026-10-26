@@ -69,7 +69,8 @@ public class ForecastExecutionDispatcher {
             modelExecuteRecord.setRequestParam(forecastExecutionPayload.toString());
             modelExecuteRecordMapper.updateById(modelExecuteRecord);
             executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.SALES_DATA_PREPARE,
-                    "历史销量数据已准备，共" + modelExecuteRecord.getHistoryRows() + "条", null);
+                    "历史销量数据已准备，共" + modelExecuteRecord.getHistoryRows() + "条，覆盖"
+                            + modelExecuteRecord.getHistoryStartDate() + "至" + modelExecuteRecord.getHistoryEndDate(), null);
 
             executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FACTOR_DATA_PREPARE,
                     "正在准备日期、周期等基础特征");

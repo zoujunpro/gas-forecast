@@ -5,13 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/94_add_ai_conversation_soft_delete.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/AiConversationController.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/controller/AiConversationController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiChatPersistenceService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiChatPersistenceService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiConversationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiConversationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AiConversationTb.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/java/com/gas/forecast/dao/domain/AiConversationTb.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/60_create_ai_conversation.sql" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-dao/src/main/resources/sql/60_create_ai_conversation.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -308,14 +302,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00036" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1791861515941</created>
-      <option name="number" value="00036" />
-      <option name="presentableId" value="LOCAL-00036" />
-      <option name="project" value="LOCAL" />
-      <updated>1791861515941</updated>
     </task>
     <task id="LOCAL-00037" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -701,7 +687,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792974913836</updated>
     </task>
-    <option name="localTasksCounter" value="85" />
+    <task id="LOCAL-00085" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1792985611280</created>
+      <option name="number" value="00085" />
+      <option name="presentableId" value="LOCAL-00085" />
+      <option name="project" value="LOCAL" />
+      <updated>1792985611280</updated>
+    </task>
+    <option name="localTasksCounter" value="86" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
