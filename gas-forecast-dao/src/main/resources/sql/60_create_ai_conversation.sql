@@ -7,6 +7,8 @@ create table if not exists ai_conversation_tb (
     summary text default null comment '会话内容摘要',
     agent_code varchar(64) not null comment '所属智能体编码',
     status varchar(20) not null default 'ACTIVE' comment '会话状态：ACTIVE正常、ARCHIVED归档',
+    deleted_flag tinyint not null default 0 comment '逻辑删除标识：0否、1是',
+    deleted_at datetime default null comment '逻辑删除时间',
     memory_json json default null comment '可变会话记忆，包括当前业务焦点、已确认参数和待处理动作；不作为会话绑定条件',
     last_message_at datetime default null comment '最近消息时间',
     created_by varchar(64) not null comment '创建人编码',
@@ -14,7 +16,8 @@ create table if not exists ai_conversation_tb (
     updated_at datetime not null default current_timestamp on update current_timestamp comment '更新时间',
     primary key (id),
     unique key uk_conversation_no (conversation_no),
-    key idx_user_agent_recent (created_by, agent_code, last_message_at)
+    key idx_user_agent_recent (created_by, agent_code, last_message_at),
+    key idx_user_visible_recent (created_by, deleted_flag, last_message_at)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci comment='AI智能体会话表';
 
 create table if not exists ai_conversation_message_tb (

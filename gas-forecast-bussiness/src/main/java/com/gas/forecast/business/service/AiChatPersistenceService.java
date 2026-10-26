@@ -195,6 +195,7 @@ public class AiChatPersistenceService {
                     Wrappers.<AiConversationTb>lambdaQuery()
                             .eq(AiConversationTb::getConversationNo, request.conversationNo().trim())
                             .eq(AiConversationTb::getCreatedBy, currentUserId())
+                            .eq(AiConversationTb::getDeletedFlag, 0)
                             .last("limit 1"));
             if (existing == null) {
                 throw new BusinessException("会话不存在或无权访问");
@@ -215,6 +216,7 @@ public class AiChatPersistenceService {
         conversation.setTitle(abbreviate(request.message().trim(), 200));
         conversation.setAgentCode(agentCode);
         conversation.setStatus(AiConversationStatusEnum.ACTIVE.getCode());
+        conversation.setDeletedFlag(0);
         conversation.setLastMessageAt(now);
         conversation.setCreatedBy(currentUserId());
         conversation.setCreatedAt(now);
@@ -532,6 +534,7 @@ public class AiChatPersistenceService {
                 Wrappers.<AiConversationTb>lambdaQuery()
                         .eq(AiConversationTb::getId, conversationId)
                         .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .eq(AiConversationTb::getDeletedFlag, 0)
                         .last("limit 1"));
         if (conversation == null) {
             throw new BusinessException("会话不存在或无权访问");

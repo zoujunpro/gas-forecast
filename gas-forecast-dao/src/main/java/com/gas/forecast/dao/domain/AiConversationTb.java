@@ -30,6 +30,12 @@ public class AiConversationTb {
     /** 会话状态：ACTIVE有效、ARCHIVED已归档。 */
     private String status;
 
+    /** 是否已逻辑删除：0否、1是。已删除会话不参与正常会话查询或后续对话。 */
+    private Integer deletedFlag;
+
+    /** 逻辑删除时间。 */
+    private Date deletedAt;
+
     /** 可变会话记忆，包括当前业务焦点、已确认参数和待处理动作。 */
     private String memoryJson;
 

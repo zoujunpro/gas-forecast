@@ -39,6 +39,7 @@ public class AiConversationService {
     public List<AiConversationResponse> list() {
         return conversationMapper.selectList(Wrappers.<AiConversationTb>lambdaQuery()
                         .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .eq(AiConversationTb::getDeletedFlag, 0)
                         .orderByDesc(AiConversationTb::getLastMessageAt)
                         .orderByDesc(AiConversationTb::getUpdatedAt)
                         .last("limit 50"))
@@ -59,22 +60,17 @@ public class AiConversationService {
         conversationMapper.updateById(conversation);
     }
 
-    /** 删除会话自身、消息、消息引用和 Agent Run；后台训练预测业务数据不随会话删除。 */
+    /**
+     * 逻辑删除会话；保留消息、消息引用和 Agent Run，用于审计和排障。
+     * 后台训练预测业务数据不受影响。
+     */
     @Transactional
     public void delete(String conversationNo) {
         AiConversationTb conversation = findOwned(conversationNo);
-        List<Long> messageIds = messages(conversation.getId()).stream()
-                .map(AiConversationMessageTb::getId)
-                .toList();
-        if (!messageIds.isEmpty()) {
-            referenceMapper.delete(Wrappers.<AiMessageRefTb>lambdaQuery()
-                    .in(AiMessageRefTb::getMessageId, messageIds));
-        }
-        runMapper.delete(Wrappers.<AgentRunTb>lambdaQuery()
-                .eq(AgentRunTb::getConversationId, conversation.getId()));
-        messageMapper.delete(Wrappers.<AiConversationMessageTb>lambdaQuery()
-                .eq(AiConversationMessageTb::getConversationId, conversation.getId()));
-        conversationMapper.deleteById(conversation.getId());
+        conversation.setDeletedFlag(1);
+        conversation.setDeletedAt(new Date());
+        conversation.setUpdatedAt(new Date());
+        conversationMapper.updateById(conversation);
     }
 
     private AiConversationResponse toResponse(AiConversationTb conversation, Long beforeMessageId, int pageSize) {
@@ -229,6 +225,7 @@ public class AiConversationService {
                 Wrappers.<AiConversationTb>lambdaQuery()
                         .eq(AiConversationTb::getConversationNo, conversationNo.trim())
                         .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .eq(AiConversationTb::getDeletedFlag, 0)
                         .last("limit 1"));
         if (conversation == null) {
             throw new BusinessException("会话不存在或无权访问");
@@ -241,6 +238,7 @@ public class AiConversationService {
                 Wrappers.<AiConversationTb>lambdaQuery()
                         .eq(AiConversationTb::getId, conversationId)
                         .eq(AiConversationTb::getCreatedBy, currentUserId())
+                        .eq(AiConversationTb::getDeletedFlag, 0)
                         .last("limit 1"));
         if (conversation == null) {
             throw new BusinessException("会话不存在或无权访问");
