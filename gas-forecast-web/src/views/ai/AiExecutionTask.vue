@@ -1062,7 +1062,7 @@ watch(
   min-width: 0;
   margin: 0 0 10px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   padding: 10px;
   border-radius: 6px;
