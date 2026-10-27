@@ -697,37 +697,40 @@ const schedulePresentationTick = () => {
  */
 let refreshSequence = 0
 let eventSource: EventSource | undefined
-let batchRefreshTimer: ReturnType<typeof setTimeout> | undefined
-let batchPollTimer: ReturnType<typeof setInterval> | undefined
+let snapshotRefreshTimer: ReturnType<typeof setTimeout> | undefined
+let fallbackPollTimer: ReturnType<typeof setInterval> | undefined
+// 明细快照优先于任务概览：概览可能先标记结束，不能因此提前关闭步骤更新。
 const taskTerminal = () =>
-  terminalStep(overview.value.status) ||
-  (records.value.length > 0 && records.value.every((item) => terminalStep(item.status)))
-const stopBatchFallbackPoll = () => {
-  if (batchPollTimer) clearInterval(batchPollTimer)
-  batchPollTimer = undefined
+  records.value.length > 0
+    ? records.value.every((item) => terminalStep(item.status))
+    : terminalStep(overview.value.status)
+const stopFallbackPoll = () => {
+  if (fallbackPollTimer) clearInterval(fallbackPollTimer)
+  fallbackPollTimer = undefined
 }
 const closeEventStream = () => {
   eventSource?.close()
   eventSource = undefined
-  if (batchRefreshTimer) clearTimeout(batchRefreshTimer)
-  batchRefreshTimer = undefined
-  stopBatchFallbackPoll()
+  if (snapshotRefreshTimer) clearTimeout(snapshotRefreshTimer)
+  snapshotRefreshTimer = undefined
+  stopFallbackPoll()
 }
 const scheduleBatchSnapshotRefresh = (delay = 400) => {
   if (!isBatchTask.value || taskTerminal()) return
-  if (batchRefreshTimer) clearTimeout(batchRefreshTimer)
+  if (snapshotRefreshTimer) clearTimeout(snapshotRefreshTimer)
   // 一批任务的多个步骤常在短时间内连续完成；合并为一次快照读取，避免 154 条明细反复重绘。
-  batchRefreshTimer = setTimeout(() => {
-    batchRefreshTimer = undefined
+  snapshotRefreshTimer = setTimeout(() => {
+    snapshotRefreshTimer = undefined
     void refresh()
   }, delay)
 }
-const startBatchFallbackPoll = () => {
-  if (!isBatchTask.value || taskTerminal() || batchPollTimer) return
-  // EventSource 会自动重连；轮询只负责浏览器切后台、网络断开等场景下的状态兜底。
-  batchPollTimer = setInterval(() => {
+const startFallbackPoll = () => {
+  if (taskTerminal() || fallbackPollTimer) return
+  // SSE 负责即时更新；快照轮询只在代理断流、浏览器后台或首个事件早于订阅时兜底。
+  // 单任务和批量任务都必须覆盖，否则单任务会停在进入页面时的初始步骤快照。
+  fallbackPollTimer = setInterval(() => {
     if (taskTerminal()) {
-      stopBatchFallbackPoll()
+      stopFallbackPoll()
       closeEventStream()
       return
     }
@@ -773,7 +776,11 @@ const openEventStream = () => {
       /* 忽略格式异常事件，快照仍可恢复当前状态。 */
     }
   })
-  startBatchFallbackPoll()
+  // EventSource 自动重连前先拉一次快照，避免反向代理关闭长连接后界面一直停在旧步骤。
+  eventSource.onerror = () => {
+    if (!taskTerminal()) void refresh()
+  }
+  startFallbackPoll()
 }
 const fetchOverview = (taskNo: string) => getJson(`/execution-tasks/${encodeURIComponent(taskNo)}`)
 const fetchDetails = (taskNo: string, currentPage: number) =>
@@ -818,7 +825,7 @@ const refresh = async () => {
     }
     openEventStream()
     if (taskTerminal()) closeEventStream()
-    else startBatchFallbackPoll()
+    else startFallbackPoll()
     schedulePresentationTick()
   } catch (error) {
     if (sequence !== refreshSequence || taskNo !== props.taskNo) return
