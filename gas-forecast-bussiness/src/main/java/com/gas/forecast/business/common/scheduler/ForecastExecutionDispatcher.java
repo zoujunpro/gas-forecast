@@ -84,8 +84,10 @@ public class ForecastExecutionDispatcher {
 
             executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.DYNAMIC_INDICATOR,
                     "正在识别本次预测可用的动态指标");
+            ObjectNode dynamicIndicatorMetrics = dynamicIndicatorMetrics();
             executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.DYNAMIC_INDICATOR,
-                    "动态指标处理完成，本次采用模型内置特征快照", null);
+                    "本次未接入外部动态指标，训练将使用已准备的销量、日期周期、滞后滚动及天气特征",
+                    dynamicIndicatorMetrics.toString());
 
             executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.MODEL_SELECT, "正在训练、回测并筛选模型");
             JsonNode forecastExecutionResult = modelPlatformClient.executeForecast(forecastExecutionPayload);
@@ -158,6 +160,19 @@ public class ForecastExecutionDispatcher {
         return used == 0
                 ? "基础特征已准备：天气特征共" + supported + "项，本次实际使用0项"
                 : "基础特征已准备：天气特征共" + supported + "项，实际使用" + used + "项，覆盖" + coveredDays + "天";
+    }
+
+    /**
+     * 当前预测链路尚未把外部市场指标拼入模型请求，不能把这一步描述为已获取到动态指标。
+     * 显式落库本次的实际处理方式，避免前端仅显示一句无法追溯的“处理完成”。
+     */
+    private ObjectNode dynamicIndicatorMetrics() {
+        ObjectNode metrics = objectMapper.createObjectNode();
+        metrics.put("dynamicIndicatorSource", "未接入外部市场指标");
+        metrics.put("dynamicIndicatorCount", 0);
+        metrics.put("featureSnapshot", "历史销量、日期周期、滞后滚动及天气特征");
+        metrics.put("processingDescription", "本次没有可用的外部动态指标输入；模型将在训练阶段基于已准备的特征快照完成特征处理和模型筛选。");
+        return metrics;
     }
 
     private String weatherFeatureLabel(String name) {
