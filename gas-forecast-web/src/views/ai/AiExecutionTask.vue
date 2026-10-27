@@ -1007,24 +1007,24 @@ watch(
   border-radius: 7px;
   background: #eff6ff;
 }
-.step i {
+.step-head > i {
   width: 10px;
   height: 10px;
   flex: 0 0 10px;
   border-radius: 50%;
   background: #94a3b8;
 }
-.step.success i {
+.step.success > .step-head > i {
   background: #22c55e;
 }
-.step.running i,
-.step.training i,
-.step.forecasting i {
+.step.running > .step-head > i,
+.step.training > .step-head > i,
+.step.forecasting > .step-head > i {
   background: #2563eb;
   box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45);
   animation: step-pulse 1.4s infinite;
 }
-.step.failed i {
+.step.failed > .step-head > i {
   background: #ef4444;
 }
 .step.running .step-head strong {
