@@ -125,9 +125,13 @@
                   v-for="entry in detailEntries(detailStep(singleTask.detailNo, step))"
                   :key="entry.label"
                   class="detail-entry"
+                  :class="{ 'detail-entry-wide': entry.wide || entry.tags?.length }"
                 >
-                  <span>{{ entry.label }}</span
-                  ><b>{{ entry.value }}</b>
+                  <span>{{ entry.label }}</span>
+                  <div v-if="entry.tags?.length" class="detail-tags">
+                    <i v-for="tag in entry.tags" :key="tag">{{ tag }}</i>
+                  </div>
+                  <b v-else>{{ entry.value }}</b>
                 </div>
               </template>
               <span v-else class="empty-detail">暂无可展开的详情</span>
@@ -486,6 +490,13 @@ const displayValue = (key: string, value: any) => {
         .replace(/\s*\n\s*/g, ' ')
     : text
 }
+const detailEntry = (label: string, value: any) => {
+  const tags = Array.isArray(value) && !value.some((item) => item && typeof item === 'object')
+    ? value.map((item) => String(item)).filter(Boolean)
+    : []
+  const text = tags.length ? '' : readable(value)
+  return { label, value: text, tags, wide: tags.length > 0 || text.length > 34 }
+}
 const modelDetailEntries = (raw: Record<string, any>) => {
   const metrics = parseJson(raw.metrics) || raw.metrics || {}
   const metricValue = (key: string) => metrics[key] ?? raw[key]
@@ -503,7 +514,7 @@ const modelDetailEntries = (raw: Record<string, any>) => {
     ['训练批次', raw.train_batch_no || raw.trainBatchNo]
   ]
     .filter(([, value]) => value !== null && value !== undefined && value !== '')
-    .map(([label, value]) => ({ label, value: readable(value) }))
+    .map(([label, value]) => detailEntry(String(label), value))
 }
 const forecastDetailEntries = (raw: Record<string, any>) => {
   const metadata = parseJson(raw.metadata) || raw.metadata || {}
@@ -514,11 +525,11 @@ const forecastDetailEntries = (raw: Record<string, any>) => {
     ['预测模型', metadata.selected_model_name || metadata.best_model || metadata.model_name]
   ]
     .filter(([, value]) => value !== null && value !== undefined && value !== '')
-    .map(([label, value]) => ({ label, value: readable(value) }))
+    .map(([label, value]) => detailEntry(String(label), value))
 }
 const detailEntries = (step: Record<string, any>) => {
   const value = parseJson(step.metricsJson) || parseJson(step.outputJson) || parseJson(step.inputJson)
-  if (typeof value === 'string') return [{ label: '执行详情', value }]
+  if (typeof value === 'string') return [detailEntry('执行详情', value)]
   if (!value || typeof value !== 'object') return []
   if (step.stepCode === 'MODEL_SELECT') return modelDetailEntries(value)
   if (step.stepCode === 'FORECAST') return forecastDetailEntries(value)
@@ -526,7 +537,10 @@ const detailEntries = (step: Record<string, any>) => {
   // 特征明细由数据中心/模型详情承载；这里仅保留基础、天气等数量。
   return Object.entries(value)
     .filter(([key, item]) => key !== 'features' && item !== null && item !== undefined && item !== '')
-    .map(([key, item]) => ({ label: labelOf(key), value: displayValue(key, item) }))
+    .map(([key, item]) => {
+      const entry = detailEntry(labelOf(key), item)
+      return entry.tags.length ? entry : { ...entry, value: displayValue(key, item) }
+    })
 }
 const analysisText = computed(() => {
   const step = detailStep(singleTask.value?.detailNo, { stepCode: 'FORECAST_ANALYSIS' })
@@ -1047,28 +1061,55 @@ watch(
   width: 100%;
   min-width: 0;
   margin: 0 0 10px;
-  padding: 11px 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
   border-radius: 6px;
-  background: #f8fafc;
+  background: #f5f8fc;
 }
 .detail-entry {
-  display: grid;
-  grid-template-columns: 100px minmax(0, 1fr);
-  gap: 12px;
-  padding: 5px 0;
-  font-size: 14px;
-  line-height: 22px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #e8eef6;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.detail-entry-wide {
+  grid-column: 1 / -1;
 }
 .detail-entry span {
+  display: block;
   color: #94a3b8;
+  font-size: 12px;
 }
 .detail-entry b {
+  display: block;
+  margin-top: 4px;
   min-width: 0;
   color: #334155;
   font-weight: 500;
   overflow-wrap: anywhere;
   word-break: break-word;
   white-space: normal;
+}
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.detail-tags i {
+  padding: 3px 7px;
+  color: #356da8;
+  border: 1px solid #d8e7f7;
+  border-radius: 4px;
+  background: #f3f8fe;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
 }
 .task-model {
   display: flex;
