@@ -4,6 +4,7 @@ import com.gas.forecast.business.common.client.modelplatform.ModelPlatformClient
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gas.forecast.business.enums.ExecutionStepCodeEnum;
 import com.gas.forecast.business.enums.ExecutionTargetStatusEnum;
@@ -21,8 +22,10 @@ import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.ModelExecuteRecordTbMapper;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,6 +38,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "gas.agent.forecast-queue", name = "scheduler-enabled", havingValue = "true")
 public class ForecastExecutionDispatcher {
+    private static final int SUPPORTED_WEATHER_FEATURE_COUNT = 18;
     private final ExecutionTaskDetailTbMapper executionTaskDetailMapper;
     private final ExecutionTaskTbMapper executionTaskMapper;
     private final ModelExecuteRecordTbMapper modelExecuteRecordMapper;
@@ -74,8 +78,9 @@ public class ForecastExecutionDispatcher {
 
             executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FACTOR_DATA_PREPARE,
                     "正在准备日期、周期等基础特征");
+            ObjectNode weatherFeatures = weatherFeatureMetrics(forecastExecutionPayload);
             executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FACTOR_DATA_PREPARE,
-                    "基础特征已准备：日期派生、周期及滞后滚动特征", null);
+                    weatherFeatureMessage(weatherFeatures), weatherFeatures.toString());
 
             executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.DYNAMIC_INDICATOR,
                     "正在识别本次预测可用的动态指标");
@@ -116,6 +121,67 @@ public class ForecastExecutionDispatcher {
         modelExecuteRecord.setMape(decimalOf(trainingMetrics, "mape")); modelExecuteRecord.setWmape(decimalOf(trainingMetrics, "wmape")); modelExecuteRecord.setSmape(decimalOf(trainingMetrics, "smape"));
         modelExecuteRecord.setRmse(decimalOf(trainingMetrics, "rmse")); modelExecuteRecord.setMae(decimalOf(trainingMetrics, "mae")); modelExecuteRecord.setR2(decimalOf(trainingMetrics, "r2"));
         modelExecuteRecord.setFinishedAt(new Date()); modelExecuteRecord.setUpdatedAt(new Date()); modelExecuteRecordMapper.updateById(modelExecuteRecord);
+    }
+
+    /**
+     * 第二步只展示本次历史数据实际携带的天气字段，不把模型平台内部的派生特征当作已知事实。
+     */
+    private ObjectNode weatherFeatureMetrics(JsonNode payload) {
+        Set<String> featureNames = new LinkedHashSet<>();
+        int coveredDays = 0;
+        for (JsonNode row : payload.path("history_dataset")) {
+            boolean hasWeather = false;
+            var fields = row.fieldNames();
+            while (fields.hasNext()) {
+                String label = weatherFeatureLabel(fields.next());
+                if (label != null) {
+                    featureNames.add(label);
+                    hasWeather = true;
+                }
+            }
+            if (hasWeather) coveredDays++;
+        }
+        ObjectNode metrics = objectMapper.createObjectNode();
+        metrics.put("weatherSupportedFeatureCount", SUPPORTED_WEATHER_FEATURE_COUNT);
+        // 仅统计历史数据中至少出现过一个非空值、并随本次请求送入模型的天气字段。
+        metrics.put("weatherFeatureCount", featureNames.size());
+        metrics.put("weatherCoveredDays", coveredDays);
+        ArrayNode features = metrics.putArray("weatherFeatures");
+        featureNames.forEach(features::add);
+        return metrics;
+    }
+
+    private String weatherFeatureMessage(ObjectNode metrics) {
+        int supported = metrics.path("weatherSupportedFeatureCount").asInt();
+        int used = metrics.path("weatherFeatureCount").asInt();
+        int coveredDays = metrics.path("weatherCoveredDays").asInt();
+        return used == 0
+                ? "基础特征已准备：天气特征共" + supported + "项，本次实际使用0项"
+                : "基础特征已准备：天气特征共" + supported + "项，实际使用" + used + "项，覆盖" + coveredDays + "天";
+    }
+
+    private String weatherFeatureLabel(String name) {
+        return switch (name) {
+            case "max_temp" -> "最高温";
+            case "min_temp" -> "最低温";
+            case "avg_temp" -> "平均温度";
+            case "feels_like_max" -> "最高体感温度";
+            case "feels_like_min" -> "最低体感温度";
+            case "feels_like_avg" -> "平均体感温度";
+            case "dew_point" -> "露点温度";
+            case "humidity" -> "湿度";
+            case "precipitation" -> "降水量";
+            case "wind_gust" -> "阵风风速";
+            case "wind_speed" -> "平均风速";
+            case "sea_level_pressure" -> "海平面气压";
+            case "cloud_cover" -> "云量";
+            case "visibility" -> "能见度";
+            case "solar_radiation" -> "太阳辐射";
+            case "solar_energy" -> "太阳能量";
+            case "uv_index" -> "紫外线指数";
+            case "hdd" -> "采暖度日";
+            default -> null;
+        };
     }
     private String textOf(JsonNode jsonNode, String fieldName) { String textValue = jsonNode.path(fieldName).asText(null); return TextUtils.hasText(textValue) ? textValue : null; }
     private BigDecimal decimalOf(JsonNode jsonNode, String fieldName) { return jsonNode.path(fieldName).isNumber() ? jsonNode.path(fieldName).decimalValue() : null; }
