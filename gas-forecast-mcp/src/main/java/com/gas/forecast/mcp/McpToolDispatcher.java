@@ -52,9 +52,9 @@ public class McpToolDispatcher {
                 case "customer_list" -> success(toolName, "客户列表查询成功",
                         queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args, runNo)));
-                case "forecast_result_query" -> success(toolName, "预测结果查询成功",
+                case "forecast_result_query" -> success(toolName, "已读取最近一次成功预测的结果和回测数据，正在分析",
                         queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
-                case "forecast_result_by_no" -> success(toolName, "预测结果查询成功",
+                case "forecast_result_by_no" -> success(toolName, "已读取本次预测的结果和回测数据，正在分析",
                         queryService.forecastByNo(requiredText(args, "forecastNo"), bool(args, "includePoints", true)));
                 case "task_status_get" -> success(toolName, "任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
                 case "task_steps_get" -> success(toolName, "任务步骤查询成功",
@@ -90,7 +90,13 @@ public class McpToolDispatcher {
     }
 
     private String eventCode(String toolName) { return toolName != null && toolName.endsWith("_list") ? "DATA_QUERY" : "TOOL_CALL"; }
-    private String startMessage(String toolName) { return "正在执行" + (toolName == null ? "业务操作" : toolName) + "。"; }
+    private String startMessage(String toolName) {
+        return switch (toolName == null ? "" : toolName) {
+            case "forecast_result_by_no" -> "已确认本次需要分析的预测，正在读取相关数据。";
+            case "forecast_result_query" -> "正在查找最近一次成功预测并读取相关数据。";
+            default -> "正在执行业务操作。";
+        };
+    }
 
     private List<ExecutionTarget> targets(Map<String, Object> args, String dimension) {
         Object raw = args.get("targets");

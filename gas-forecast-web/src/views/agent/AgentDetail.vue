@@ -1161,14 +1161,29 @@ const chatListColumns = (message: ChatMessage) => {
     .map((key) => ({ key, label: labels[key] }))
 }
 
-const isRunInProgress = (message: ChatMessage) =>
-  ['PENDING', 'RUNNING'].includes(String(message.runStatus || '').toUpperCase()) ||
-  Boolean(message.executionEvents?.some((event) => event.status === 'RUNNING'))
+const isRunInProgress = (message: ChatMessage) => {
+  const status = String(message.runStatus || '').toUpperCase()
+  // Run 的终态是最终事实；历史事件列表里即使残留较早的 RUNNING 事件，
+  // 也不能让已完成的轮次继续计时。
+  if (['SUCCESS', 'FAILED', 'CANCELLED'].includes(status)) return false
+  return ['PENDING', 'RUNNING'].includes(status) ||
+    Boolean(message.executionEvents?.some((event) => event.status === 'RUNNING'))
+}
 
 const runElapsedSeconds = (message: ChatMessage) => {
   const startedAt = message.runStartedAt ? new Date(message.runStartedAt).getTime() : 0
-  if (!startedAt) return 0
-  const finishedAt = message.runFinishedAt ? new Date(message.runFinishedAt).getTime() : Date.now()
+  if (!Number.isFinite(startedAt) || startedAt <= 0) return 0
+  const explicitFinishedAt = message.runFinishedAt ? new Date(message.runFinishedAt).getTime() : 0
+  const terminalEventTimes = (message.executionEvents || [])
+    .filter((event) => ['SUCCESS', 'FAILED', 'CANCELLED', 'SKIPPED'].includes(String(event.status || '').toUpperCase()))
+    .map((event) => new Date(event.updatedAt || event.createdAt || '').getTime())
+    .filter((value) => Number.isFinite(value) && value > 0)
+  const eventFinishedAt = terminalEventTimes.length ? Math.max(...terminalEventTimes) : 0
+  // 只有真正运行中的任务才允许以当前时间计时。终态缺少 finishedAt 时使用
+  // 最后一条终态事件；两者都缺失则显示 0 秒，不能让已完成任务持续累加。
+  const finishedAt = Number.isFinite(explicitFinishedAt) && explicitFinishedAt > 0
+    ? explicitFinishedAt
+    : eventFinishedAt || (isRunInProgress(message) ? Date.now() : startedAt)
   return Math.max(0, Math.round((finishedAt - startedAt) / 1000))
 }
 

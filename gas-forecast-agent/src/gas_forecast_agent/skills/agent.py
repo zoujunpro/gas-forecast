@@ -153,6 +153,8 @@ class ActionExecutor:
                 if last and self._is_successful_page(last["result"]) and decision_status != "COMPLETED":
                     return self._page_fallback_result(parameters, tools, trace)
                 decision_message = decision["message"]
+                if skill.intent == SkillIntent.ANALYZE:
+                    decision_message = self._customer_friendly_message(decision_message)
                 if last and self._is_successful_page(last["result"]):
                     decision_message = ToolResultAdapter.presentation_message(last["result"], decision_message)
                 return SkillRunResult(
@@ -278,14 +280,16 @@ class ActionExecutor:
                     tool_trace=trace,
                     resolution_issues=self._missing_issues(tools[name], missing, arguments),
                 )
-            if any(step["tool"] == name and step["arguments"] == arguments for step in trace):
-                return SkillRunResult(
-                    status="FAILED",
-                    message=f"检测到重复调用工具 {name}，已停止执行。",
-                    parameters=parameters,
-                    available_tools=list(tools),
-                    tool_trace=trace,
-                )
+            cached_step = self._cached_read_step(name, arguments, trace)
+            if cached_step is not None:
+                # 同一只读对象已经查询成功时，忽略可选参数差异并复用结果。
+                result = cached_step["result"]
+                trace.append({
+                    "tool": name, "arguments": arguments, "result": result,
+                    "attempts": 0, "cached": True,
+                })
+                self._merge_result(parameters, result)
+                continue
             tool_counts[name] = tool_counts.get(name, 0) + 1
             if tool_counts[name] > self._settings.agent_max_same_tool_calls:
                 return self._budget_exceeded(f"工具 {name} 的调用次数达到安全上限", parameters, tools, trace)
@@ -380,6 +384,45 @@ class ActionExecutor:
             available_tools=list(tools),
             tool_trace=trace,
         )
+
+    @staticmethod
+    def _cached_read_step(
+        name: str,
+        arguments: dict[str, Any],
+        trace: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        """按稳定业务对象复用只读结果，忽略不影响对象身份的可选参数差异。"""
+        if name in WRITE_TOOLS:
+            return None
+        identity = tuple(
+            (key, arguments.get(key))
+            for key in ("forecastNo", "taskNo")
+            if arguments.get(key)
+        )
+        for step in reversed(trace):
+            if step.get("tool") != name:
+                continue
+            previous_arguments = step.get("arguments") or {}
+            if identity and all(previous_arguments.get(key) == value for key, value in identity):
+                return step
+            if not identity and previous_arguments == arguments:
+                return step
+        return None
+
+    @staticmethod
+    def _customer_friendly_message(value: object) -> str:
+        """隐藏内部业务编号，并把常见模型指标转换成客户可理解的说法。"""
+        message = str(value or "").strip()
+        message = re.sub(r"预测编号\s*FORECAST[-_A-Za-z0-9]+\s*", "本次预测", message, flags=re.I)
+        message = re.sub(
+            r"(?<![A-Za-z0-9_-])(?:FORECAST|TASK|RUN)[-_A-Za-z0-9]+(?![A-Za-z0-9_-])",
+            "本次预测", message, flags=re.I,
+        )
+        message = re.sub(
+            r"(?<![A-Za-z0-9_-])(?:CUS|REG|IND)[-_A-Za-z0-9]+(?![A-Za-z0-9_-])",
+            "当前业务对象", message, flags=re.I,
+        )
+        return re.sub(r"\bMAPE\b", "平均相对误差", message, flags=re.I)
 
     @staticmethod
     def _budget_exceeded(
@@ -498,7 +541,10 @@ class ActionExecutor:
                       "Schema未要求的参数不能作为澄清理由。"
                       "目标完成时直接回答。直接回复时必须只输出 JSON："
                       '{"status":"COMPLETED|NEED_INFORMATION|NEED_CLARIFICATION|NOT_FOUND|FAILED","message":"给用户的话"}。'
-                      "不得重复写操作，不得持续轮询异步任务。"
+                      "不得重复调用已经成功返回同一业务对象的查询工具，不得重复写操作，不得持续轮询异步任务。"
+                      "回答面向天然气业务客户，使用客户看得懂的业务语言：不得展示FORECAST、TASK、RUN、"
+                      "客户编码、地区编码、行业编码、工具名或模型代码等内部标识；应使用客户名称或‘本次预测’。"
+                      "MAPE必须解释为平均相对误差，例如‘平均相对误差约9.7%’，不能只写英文缩写。"
                 ),
             },
             *history[-8:],

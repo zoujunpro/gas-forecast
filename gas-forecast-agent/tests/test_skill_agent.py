@@ -941,6 +941,54 @@ def test_forecast_result_accepts_persisted_analysis_questions() -> None:
     assert result.record.analysis_questions_json == '["本次预测准确吗？"]'
 
 
+def test_read_result_cache_uses_stable_forecast_identity() -> None:
+    trace = [{
+        "tool": "forecast_result_by_no",
+        "arguments": {"forecastNo": "FORECAST-1", "includePoints": False},
+        "result": {"success": True},
+    }]
+
+    cached = ActionExecutor._cached_read_step(
+        "forecast_result_by_no",
+        {"forecastNo": "FORECAST-1", "includePoints": True},
+        trace,
+    )
+
+    assert cached is trace[0]
+    assert ActionExecutor._cached_read_step(
+        "forecast_result_by_no", {"forecastNo": "FORECAST-2"}, trace,
+    ) is None
+
+
+def test_customer_friendly_message_hides_internal_ids_and_explains_mape() -> None:
+    message = ActionExecutor._customer_friendly_message(
+        "预测编号 FORECAST-20261102094232-000388 已完成，回测 MAPE 为 9.71%。"
+    )
+
+    assert message == "本次预测已完成，回测 平均相对误差 为 9.71%。"
+    assert "FORECAST" not in message
+    assert "MAPE" not in message
+
+
+def test_forecast_model_summary_uses_all_nested_prediction_points() -> None:
+    points = [
+        {"forecast_date": f"2026-11-{day:02d}", "prediction": value}
+        for day, value in enumerate([238, 252, 273, 281, 277, 277, 279, 271, 286, 284], start=2)
+    ]
+
+    summary = ToolResultAdapter.for_model({
+        "success": True,
+        "resultType": "OBJECT",
+        "data": {"record": {}, "training": {}, "backtest": {}, "forecast": {"points": points}},
+    })
+    point_summary = summary["data"]["forecast"]["pointSummary"]
+
+    assert point_summary["count"] == 10
+    assert point_summary["first"]["prediction"] == 238
+    assert point_summary["last"]["prediction"] == 284
+    assert point_summary["maximum"] == 286
+
+
 def test_router_rejects_missing_model_skill() -> None:
     router = SkillRouter(SkillRegistry())
 

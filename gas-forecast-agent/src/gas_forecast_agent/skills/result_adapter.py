@@ -83,11 +83,41 @@ class ToolResultAdapter:
             })
             return summary
 
+        # 单次预测详情由 record/training/backtest/forecast 四部分组成。预测点嵌套
+        # 在 forecast.points 中，不能走普通列表截断，否则十天预测只给模型前八天，
+        # 会导致末值、峰值和整体趋势判断错误。
+        forecast = data.get("forecast")
+        if isinstance(forecast, dict) and isinstance(forecast.get("points"), list):
+            points = forecast["points"]
+            values = [
+                cls._number(point.get("prediction", point.get("forecastValue", point.get("value"))))
+                for point in points if isinstance(point, dict)
+            ]
+            values = [value for value in values if value is not None]
+            return {
+                "record": cls._compact(data.get("record") or {}),
+                "training": cls._compact(data.get("training") or {}),
+                "backtest": cls._compact({
+                    "metrics": (data.get("backtest") or {}).get("metrics"),
+                }),
+                "forecast": {
+                    "metadata": cls._compact(forecast.get("metadata") or {}),
+                    "pointSummary": {
+                        "count": len(points),
+                        "minimum": min(values) if values else None,
+                        "maximum": max(values) if values else None,
+                        "average": sum(values, Decimal("0")) / len(values) if values else None,
+                        "first": cls._compact(points[0]) if points else None,
+                        "last": cls._compact(points[-1]) if points else None,
+                    },
+                },
+            }
+
         # 预测点只给模型统计值和首尾样例，完整点位继续由前端绘图。
         points = data.get("points")
         if isinstance(points, list):
             values = [
-                cls._number(point.get("forecastValue", point.get("value")))
+                cls._number(point.get("prediction", point.get("forecastValue", point.get("value"))))
                 for point in points if isinstance(point, dict)
             ]
             values = [value for value in values if value is not None]
