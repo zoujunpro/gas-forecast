@@ -170,6 +170,7 @@ class ForecastRecord(RecordAudit):
     backtest_result_json: str | None = None
     forecast_result_json: str | None = None
     analysis_content: str | None = None
+    analysis_questions_json: str | None = None
     last_year_points: list[LastYearPoint] | None = None
     error_message: str | None = None
     started_at: str | None = None

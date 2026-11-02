@@ -24,6 +24,7 @@ from gas_forecast_agent.skills import (
 )
 from gas_forecast_agent.operation_models import OperationParameters
 from gas_forecast_agent.skills.result_adapter import ToolResultAdapter
+from gas_forecast_agent.tool_results import ForecastQueryResult
 
 
 def model_settings(**overrides) -> Settings:
@@ -924,6 +925,20 @@ def test_latest_forecast_reference_returns_none_without_success() -> None:
     ]}]
 
     assert ActionExecutor._latest_forecast_reference(history) is None
+
+
+def test_forecast_result_accepts_persisted_analysis_questions() -> None:
+    result = ForecastQueryResult.model_validate({
+        "record": {
+            "forecastNo": "FORECAST-1",
+            "analysisQuestionsJson": '["本次预测准确吗？"]',
+        },
+        "training": {},
+        "backtest": {},
+        "forecast": {},
+    })
+
+    assert result.record.analysis_questions_json == '["本次预测准确吗？"]'
 
 
 def test_router_rejects_missing_model_skill() -> None:
