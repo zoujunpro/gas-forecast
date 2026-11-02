@@ -16,7 +16,6 @@
         <module>gas-forecast-gateway</module>
         <module>gas-forecast-dao</module>
         <module>gas-forecast-startup</module>
-        <module>gas-forecast-model</module>
     </modules>
 
     <properties>
