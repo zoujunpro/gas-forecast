@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/tool_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/tool_results.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -303,30 +303,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00054" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792052466183</created>
-      <option name="number" value="00054" />
-      <option name="presentableId" value="LOCAL-00054" />
-      <option name="project" value="LOCAL" />
-      <updated>1792052466183</updated>
-    </task>
-    <task id="LOCAL-00055" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792368214741</created>
-      <option name="number" value="00055" />
-      <option name="presentableId" value="LOCAL-00055" />
-      <option name="project" value="LOCAL" />
-      <updated>1792368214741</updated>
-    </task>
-    <task id="LOCAL-00056" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792371012259</created>
-      <option name="number" value="00056" />
-      <option name="presentableId" value="LOCAL-00056" />
-      <option name="project" value="LOCAL" />
-      <updated>1792371012259</updated>
     </task>
     <task id="LOCAL-00057" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -696,7 +672,31 @@
       <option name="project" value="LOCAL" />
       <updated>1793585698525</updated>
     </task>
-    <option name="localTasksCounter" value="103" />
+    <task id="LOCAL-00103" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1793586036437</created>
+      <option name="number" value="00103" />
+      <option name="presentableId" value="LOCAL-00103" />
+      <option name="project" value="LOCAL" />
+      <updated>1793586036437</updated>
+    </task>
+    <task id="LOCAL-00104" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1793586076415</created>
+      <option name="number" value="00104" />
+      <option name="presentableId" value="LOCAL-00104" />
+      <option name="project" value="LOCAL" />
+      <updated>1793586076415</updated>
+    </task>
+    <task id="LOCAL-00105" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1793587136050</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
+      <option name="project" value="LOCAL" />
+      <updated>1793587136050</updated>
+    </task>
+    <option name="localTasksCounter" value="106" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
