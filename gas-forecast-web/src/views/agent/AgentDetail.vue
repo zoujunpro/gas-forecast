@@ -5664,6 +5664,9 @@ watch(futureChartType, () => {
   box-shadow: none;
   color: #0075ff;
 }
+.short-term-workbench .msg.task-message .msg-avatar.assistant {
+  display: flex;
+}
 .short-term-workbench .msg-avatar.assistant svg {
   box-sizing: content-box;
   width: 17px;
