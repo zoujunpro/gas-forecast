@@ -15,6 +15,10 @@ cp /Users/zoujun/data/gas/gas-model/config/model.env.example /Users/zoujun/data/
 cp /Users/zoujun/data/gas/gas-agent/config/agent.env.example /Users/zoujun/data/gas/gas-agent/config/agent.env
 ```
 
+Jenkins 开发环境的模型服务固定使用 `GAS_MODEL_PROFILE=dev`；开发者直接从源码
+运行模型服务时使用公共配置默认的 `local`。环境相关的回调地址分别维护在
+`application-dev.yaml` 和 `application-local.yaml` 中，不在 `model.env` 中重复覆盖。
+
 四个 Jenkins 任务使用页面配置的构建步骤。构建、创建 release、复制产物和切换
 `current` 等发布动作直接写在 Pipeline 中。Java 和模型服务目录中的脚本只负责启动或停止；
 前端是静态文件，由 Nginx 托管，不单独启动进程。

@@ -10,7 +10,7 @@ if [ -f "$pid_file" ] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
 fi
 if [ -f "$root/config/model.env" ]; then set -a; . "$root/config/model.env"; set +a; fi
 export GAS_MODEL_CONFIG="$root/current/config/application.yaml"
-export GAS_MODEL_PROFILE="${GAS_MODEL_PROFILE:-prod}"
+export GAS_MODEL_PROFILE="${GAS_MODEL_PROFILE:-dev}"
 export GAS_MODEL_ARTIFACT_ROOT="${GAS_MODEL_ARTIFACT_ROOT:-$root/artifacts}"
 export GAS_MODEL_LOG_DIR="${GAS_MODEL_LOG_DIR:-$root/logs}"
 
