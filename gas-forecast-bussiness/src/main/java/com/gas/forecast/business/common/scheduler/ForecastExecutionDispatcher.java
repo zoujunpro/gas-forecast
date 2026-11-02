@@ -112,6 +112,11 @@ public class ForecastExecutionDispatcher {
             activeEventId = null;
             executionTaskLifecycleService.completeForecastDetail(executionTaskDetail.getId(), true);
         } catch (RuntimeException exception) {
+            if (activeEventId == null) {
+                activeEventId = agentRunEventRecorder.start(executionTask.getRunNo(), "FORECAST",
+                        "预测执行失败。", modelExecuteRecord == null ? null : modelExecuteRecord.getForecastNo(),
+                        executionTaskDetail.getDetailNo());
+            }
             agentRunEventRecorder.failure(activeEventId, "本次预测执行失败：" + exception.getMessage(), "FORECAST_EXECUTION_FAILED", exception);
             if (modelExecuteRecord != null) {
                 modelExecuteRecord.setStatus("FAILED"); modelExecuteRecord.setErrorMessage(exception.getMessage()); modelExecuteRecord.setFinishedAt(new Date()); modelExecuteRecord.setUpdatedAt(new Date());

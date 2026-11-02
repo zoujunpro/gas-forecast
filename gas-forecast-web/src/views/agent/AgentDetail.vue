@@ -1819,6 +1819,7 @@ const stCustomerRecords = ref<Record<string, any>[]>([])
 const stProvinceMape = ref<Record<string, number>>({})
 const stAllResults = ref<any[]>([])
 const stFilterDirty = ref(false)
+const shortTermFailureMessage = ref('')
 const runningForecast = ref(false)
 const shortTermTab = ref<'results' | 'process' | 'data' | 'model'>('results')
 const shortTermUiCacheKey = 'gas-forecast:short-term-ui-cache'
@@ -1880,7 +1881,9 @@ const selectedShortTermCustomerRecord = () =>
   )
 
 const shortTermEmptyDescription = computed(() =>
-  stFilterDirty.value
+  shortTermFailureMessage.value
+    ? `预测失败：${shortTermFailureMessage.value}`
+    : stFilterDirty.value
     ? '正在获取所选范围的预测结果'
     : `${selectedStProvince.value || '当前地区'} / ${selectedStIndustry.value || '当前行业'} / ${selectedStCustomer.value || '当前客户'} 暂无预测结果`
 )
@@ -2288,6 +2291,9 @@ const runShortTermForecast = async () => {
     return
   }
   const customer = shortTermForecastContext()
+  shortTermFailureMessage.value = ''
+  currentResult.value = null
+  stFilterDirty.value = true
   inputMessage.value = `发起${customer.regionName} ${customer.industryName} ${customer.customerName}的燃气预测，预测开始日期为${startDate}，结束日期为${endDate}，共${horizon}天`
   await sendMessage()
 }
@@ -2844,8 +2850,21 @@ const finishRunProcess = (message: ChatMessage, failed = false) => {
   message.runStatus = failed ? 'FAILED' : 'SUCCESS'
   message.runFinishedAt = new Date().toISOString()
   message.processExpanded = failed
+  if (failed && isShortTerm.value) {
+    loadingResult.value = false
+    stFilterDirty.value = false
+  }
   stopRunEventRefresh(message.runNo)
   void restoreMessageProcess(message)
+}
+
+const setRunFailureMessage = (message: ChatMessage) => {
+  const event = [...(message.executionEvents || [])]
+    .reverse()
+    .find((item) => String(item.status || '').toUpperCase() === 'FAILED')
+  const reason = event?.errorMessage || event?.message || '后台预测任务执行失败'
+  message.completionSummary = renderMarkdown(`预测执行失败：${reason}`)
+  if (isShortTerm.value) shortTermFailureMessage.value = reason
 }
 
 const startRunEventRefresh = (message: ChatMessage) => {
@@ -2861,7 +2880,9 @@ const startRunEventRefresh = (message: ChatMessage) => {
       const finished = Number(task.completed || 0) + Number(task.failed || 0) + Number(task.cancelled || 0)
       const status = String(task.status || '').toUpperCase()
       if (['SUCCESS', 'FAILED', 'CANCELLED'].includes(status) || (total > 0 && finished >= total)) {
-        finishRunProcess(message, status === 'FAILED' || Number(task.failed || 0) > 0)
+        const failed = status === 'FAILED' || Number(task.failed || 0) > 0
+        finishRunProcess(message, failed)
+        if (failed) setRunFailureMessage(message)
       }
     } catch (error) {
       // 任务卡自身仍有状态刷新；过程事件查询失败不能影响对话或预测任务。
@@ -3118,13 +3139,18 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
           data.taskNo ||
           (data.references || []).find((item: any) => item.referenceType === 'EXECUTION_TASK')?.referenceNo
         msg.runNo = data.runNo || msg.runNo
-        msg.runStatus = data.status || 'SUCCESS'
+        const responseStatus = String(data.status || '').toUpperCase()
+        msg.runStatus = msg.taskNo && !['WAITING', 'FAILED', 'CANCELLED'].includes(responseStatus)
+          ? 'RUNNING'
+          : responseStatus || 'SUCCESS'
         // PENDING/RUNNING 是后台预测任务仍在执行，不能在聊天回复到达时就冻结
         // 耗时或收起真实过程；WAITING 也应展开，以便用户知道这轮为何需要补充。
         if (!isRunInProgress(msg)) msg.runFinishedAt = new Date().toISOString()
         msg.processExpanded = shouldKeepProcessExpanded(msg)
         if (msg.runNo && !msg.executionEvents?.length) await restoreMessageProcess(msg)
-        if (msg.runNo && msg.taskNo && isRunInProgress(msg)) startRunEventRefresh(msg)
+        if (msg.runNo && msg.taskNo && !['FAILED', 'CANCELLED'].includes(String(msg.runStatus).toUpperCase())) {
+          startRunEventRefresh(msg)
+        }
         if (msg.clarification) clarificationDraft[msg.id] = {}
       }
       saveChatToMemory(streamId)
