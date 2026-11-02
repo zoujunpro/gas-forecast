@@ -5631,16 +5631,12 @@ watch(futureChartType, () => {
   gap: 9px;
   margin-bottom: 13px;
 }
-.short-term-workbench .msg.assistant:not(.task-message) {
-  position: relative;
-  display: block;
+.short-term-workbench .msg.assistant {
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
 }
-.short-term-workbench .msg.assistant:not(.task-message)::before {
-  position: absolute;
-  z-index: 2;
-  top: 15px;
-  left: 48px;
+.short-term-workbench .msg-avatar.assistant::after {
   color: #55708f;
   content: '智能体';
   font-size: 12px;
@@ -5657,21 +5653,26 @@ watch(futureChartType, () => {
   border-radius: 50%;
 }
 .short-term-workbench .msg-avatar.assistant {
-  position: absolute;
-  z-index: 2;
-  top: 10px;
-  left: 12px;
-  width: 28px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  gap: 8px;
+  width: auto;
   height: 28px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #0075ff;
+}
+.short-term-workbench .msg-avatar.assistant svg {
+  box-sizing: content-box;
+  width: 17px;
+  height: 17px;
+  padding: 5px;
   border: 1px solid #cfe6ff;
   border-radius: 9px;
   background: linear-gradient(145deg, #f7fbff, #e7f3ff);
   box-shadow: 0 3px 9px rgba(0, 117, 255, 0.1);
-  color: #0075ff;
-}
-.short-term-workbench .msg-avatar.assistant svg {
-  width: 17px;
-  height: 17px;
 }
 .short-term-workbench .msg-avatar.user {
   width: 36px;
@@ -5684,7 +5685,7 @@ watch(futureChartType, () => {
   flex: 1 1 auto;
   max-width: none;
 }
-.short-term-workbench .msg.assistant:not(.task-message) .msg-body {
+.short-term-workbench .msg.assistant .msg-body {
   width: 100%;
 }
 .short-term-workbench .msg.user .msg-body {
@@ -5704,16 +5705,9 @@ watch(futureChartType, () => {
 .short-term-workbench .msg.assistant .msg-bubble {
   border-bottom-left-radius: 10px;
 }
-.short-term-workbench .msg.assistant:not(.task-message) .msg-bubble:not(.typing) {
+.short-term-workbench .msg.assistant .msg-bubble {
   box-sizing: border-box;
   width: 100%;
-  padding: 48px 16px 16px;
-}
-.short-term-workbench .msg.assistant:not(.task-message) .msg-bubble.typing {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 48px;
-  padding: 19px 16px 12px 52px;
 }
 .short-term-workbench .msg.user .msg-bubble {
   padding: 14px 16px;
