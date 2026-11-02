@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from gas_model_platform.models.alpha_model import ModelAlphaAutoV1Handler
+from gas_model_platform.models.alpha_model import auto_engine
 from gas_model_platform.models.alpha_model import handler as module
 from gas_model_platform.models.alpha_model.auto_engine import AutoTrainingOutput
 from gas_model_platform.models.registry import registry
@@ -117,6 +118,23 @@ def test_alpha_auto_predict_uses_requested_dates(monkeypatch, tmp_path) -> None:
     ))
     assert result.forecast_batch_no == "FORECAST-alpha-test"
     assert [point.prediction for point in result.points] == [101.0, 102.0, 103.0]
+
+
+def test_forecast_auto_normalizes_prophet_ds_column(monkeypatch) -> None:
+    monkeypatch.setattr(auto_engine, "predict_best_model", lambda *args, **kwargs: SimpleNamespace(
+        success=True,
+        data={"forecast_df": pd.DataFrame({
+            "ds": pd.date_range("2026-02-10", periods=3, freq="D"),
+            "gas_sales": [101.0, 102.0, 103.0],
+        })},
+    ))
+
+    result = auto_engine.forecast_auto(
+        pd.DataFrame(_dataset()), model_name="prophet_lightgbm", params={}, horizon=3,
+    )
+
+    assert result.columns.tolist() == ["date", "gas_sales"]
+    assert result["date"].tolist() == list(pd.date_range("2026-02-10", periods=3, freq="D"))
 
 
 def test_alpha_auto_rejects_incompatible_artifact(monkeypatch, tmp_path) -> None:

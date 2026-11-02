@@ -160,4 +160,12 @@ def forecast_auto(
     )
     if not result.success:
         raise ValueError(f"预测失败：{result.error}")
-    return result.data["forecast_df"].copy()
+    forecast = result.data["forecast_df"].copy()
+    if date_col not in forecast.columns and "ds" in forecast.columns:
+        forecast = forecast.rename(columns={"ds": date_col})
+    if date_col not in forecast.columns:
+        raise ValueError(
+            f"预测结果缺少日期列：期望 {date_col}，"
+            f"实际为 {forecast.columns.tolist()}"
+        )
+    return forecast
