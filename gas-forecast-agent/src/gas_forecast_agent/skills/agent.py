@@ -890,7 +890,7 @@ class ActionExecutor:
 
     @staticmethod
     def _latest_forecast_reference(history_references: Any) -> str | None:
-        """从可信会话引用中反向获取当前分析对象，不依赖自然语言猜测。"""
+        """从可信会话引用中反向获取最近一次成功预测，不依赖自然语言猜测。"""
         if not isinstance(history_references, list):
             return None
         for message in reversed(history_references):
@@ -904,7 +904,13 @@ class ActionExecutor:
                     continue
                 ref_type = reference.get("referenceType") or reference.get("reference_type")
                 ref_no = reference.get("referenceNo") or reference.get("reference_no")
-                if str(ref_type or "").upper() == "FORECAST" and isinstance(ref_no, str) and ref_no.strip():
+                status = str(reference.get("status") or "").upper()
+                if (
+                    str(ref_type or "").upper() == "FORECAST"
+                    and status == "SUCCESS"
+                    and isinstance(ref_no, str)
+                    and ref_no.strip()
+                ):
                     return ref_no.strip()
         return None
 

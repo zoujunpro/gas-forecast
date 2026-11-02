@@ -908,6 +908,24 @@ def test_router_uses_skill_from_structured_model_understanding() -> None:
     assert selection.reason == "由结构化请求 R1 的意图直接选择。"
 
 
+def test_latest_forecast_reference_uses_most_recent_success_only() -> None:
+    history = [
+        {"references": [{"referenceType": "FORECAST", "referenceNo": "FORECAST-1", "status": "SUCCESS"}]},
+        {"references": [{"referenceType": "FORECAST", "referenceNo": "FORECAST-2", "status": "FAILED"}]},
+        {"references": [{"referenceType": "FORECAST", "referenceNo": "FORECAST-3", "status": "RUNNING"}]},
+    ]
+
+    assert ActionExecutor._latest_forecast_reference(history) == "FORECAST-1"
+
+
+def test_latest_forecast_reference_returns_none_without_success() -> None:
+    history = [{"references": [
+        {"referenceType": "FORECAST", "referenceNo": "FORECAST-2", "status": "FAILED"},
+    ]}]
+
+    assert ActionExecutor._latest_forecast_reference(history) is None
+
+
 def test_router_rejects_missing_model_skill() -> None:
     router = SkillRouter(SkillRegistry())
 

@@ -195,6 +195,27 @@ def test_model_clarification_decision_is_discarded_from_recognition_result() -> 
     assert "needsClarification" not in serialized["requests"][0]
 
 
+def test_invalid_context_names_in_references_do_not_break_analysis_intent(monkeypatch) -> None:
+    payload = request_payload(
+        intent="ANALYZE",
+        references={
+            "customerName": "苏州燃气",
+            "regionName": "江苏",
+            "industryName": "城燃",
+            "forecast": "本次预测",
+        },
+    )
+
+    result, _ = extract(monkeypatch, "本次用气量是升还是降？", payload)
+
+    assert result.intent == SkillIntent.ANALYZE
+    assert result.primary_request is not None
+    assert result.primary_request.references.forecast == "本次预测"
+    assert result.primary_request.references.model_dump(exclude_none=True) == {
+        "forecast": "本次预测",
+    }
+
+
 def test_entity_objects_discard_internal_codes() -> None:
     payload = request_payload(customers=[])
     payload["requests"][0]["entities"]["customers"] = [

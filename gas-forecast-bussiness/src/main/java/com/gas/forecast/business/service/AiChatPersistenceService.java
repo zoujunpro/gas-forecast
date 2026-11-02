@@ -27,10 +27,12 @@ import com.gas.forecast.dao.domain.AgentRunTb;
 import com.gas.forecast.dao.domain.AiConversationMessageTb;
 import com.gas.forecast.dao.domain.AiConversationTb;
 import com.gas.forecast.dao.domain.AiMessageRefTb;
+import com.gas.forecast.dao.domain.ModelExecuteRecordTb;
 import com.gas.forecast.dao.mapper.AgentRunTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationMessageTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationTbMapper;
 import com.gas.forecast.dao.mapper.AiMessageRefTbMapper;
+import com.gas.forecast.dao.mapper.ModelExecuteRecordTbMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -56,6 +58,7 @@ public class AiChatPersistenceService {
     private final AiConversationMessageTbMapper messageMapper;
     private final AgentRunTbMapper runMapper;
     private final AiMessageRefTbMapper referenceMapper;
+    private final ModelExecuteRecordTbMapper modelExecuteRecordMapper;
     private final ObjectMapper objectMapper;
 
     /** 创建或加载会话，保存用户消息和 Agent Run，并生成发给 Python 的请求。 */
@@ -287,16 +290,39 @@ public class AiChatPersistenceService {
         List<Long> ids = messages.stream().map(AiConversationMessageTb::getId).toList();
         // 历史会话可能保留已废弃的引用类型。当前协议只识别执行任务和预测结果；
         // 旧引用保留在数据库审计，但不透传给 Agent。
-        Map<Long, List<AiChatResponse.Reference>> references = referenceMapper.selectList(
+        List<AiMessageRefTb> storedReferences = referenceMapper.selectList(
                         Wrappers.<AiMessageRefTb>lambdaQuery()
                                 .in(AiMessageRefTb::getMessageId, ids)
                                 .orderByAsc(AiMessageRefTb::getId))
                 .stream()
                 .filter(reference -> AiMessageReferenceTypeEnum.contains(reference.getRefType()))
+                .toList();
+        List<String> forecastNos = storedReferences.stream()
+                .filter(reference -> AiMessageReferenceTypeEnum.FORECAST.getCode()
+                        .equals(reference.getRefType()))
+                .map(AiMessageRefTb::getRefNo)
+                .filter(TextUtils::hasText)
+                .distinct()
+                .toList();
+        Map<String, String> forecastStatuses = forecastNos.isEmpty()
+                ? Map.of()
+                : modelExecuteRecordMapper.selectList(
+                                Wrappers.<ModelExecuteRecordTb>lambdaQuery()
+                                        .in(ModelExecuteRecordTb::getForecastNo, forecastNos))
+                        .stream()
+                        .filter(record -> TextUtils.hasText(record.getForecastNo()))
+                        .collect(Collectors.toMap(
+                                ModelExecuteRecordTb::getForecastNo,
+                                ModelExecuteRecordTb::getStatus,
+                                (left, right) -> right));
+        Map<Long, List<AiChatResponse.Reference>> references = storedReferences.stream()
                 .collect(Collectors.groupingBy(
                         AiMessageRefTb::getMessageId,
                         LinkedHashMap::new,
-                        Collectors.mapping(this::toReference, Collectors.toList())));
+                        Collectors.mapping(
+                                reference -> toReference(
+                                        reference, forecastStatuses.get(reference.getRefNo())),
+                                Collectors.toList())));
         return messages.stream()
                 .filter(message -> TextUtils.hasText(message.getRole())
                         && TextUtils.hasText(message.getContent()))
@@ -542,9 +568,9 @@ public class AiChatPersistenceService {
         return conversation;
     }
 
-    private AiChatResponse.Reference toReference(AiMessageRefTb value) {
+    private AiChatResponse.Reference toReference(AiMessageRefTb value, String status) {
         return new AiChatResponse.Reference(
-                value.getRefType(), value.getRefNo(), value.getRelationType(), null, null);
+                value.getRefType(), value.getRefNo(), value.getRelationType(), null, status);
     }
 
     private String agentRequestSnapshot(PythonAgentChatRequest request) {

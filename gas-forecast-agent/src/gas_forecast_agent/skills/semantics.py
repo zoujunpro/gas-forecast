@@ -226,7 +226,22 @@ class SemanticRequest(SemanticModel):
     @field_validator("references", mode="before")
     @classmethod
     def normalize_references(cls, value: object) -> dict[str, Any]:
-        return value if isinstance(value, (dict, ReferenceMentions)) else {}
+        if isinstance(value, ReferenceMentions):
+            return value
+        if not isinstance(value, dict):
+            return {}
+        # 大模型偶尔会把会话上下文中的实体名称放到 references.customerName
+        # 等不存在的字段里。引用字段只允许协议定义的自然语言指代；非法附加字段
+        # 不能导致已经正确识别出的 ANALYZE/QUERY 意图整轮失败。
+        allowed = {
+            field_name
+            for field_name in ReferenceMentions.model_fields
+        } | {
+            field.alias
+            for field in ReferenceMentions.model_fields.values()
+            if field.alias
+        }
+        return {str(key): item for key, item in value.items() if str(key) in allowed}
 
     @field_validator("parameters", mode="before")
     @classmethod

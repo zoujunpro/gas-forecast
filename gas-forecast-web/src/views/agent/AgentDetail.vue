@@ -1849,8 +1849,13 @@ const persistShortTermUiCache = () => {
 }
 watch([currentResult, shortTermTrainingData], persistShortTermUiCache)
 const runShortTermQuickAnalysis = async (question: string) => {
+  const forecastNo = currentResult.value?.forecastNo
+  if (!forecastNo) {
+    ElMessage.warning('当前没有可分析的预测结果')
+    return
+  }
   inputMessage.value = question
-  await sendMessage()
+  await sendMessage(undefined, forecastNo)
 }
 // 批量任务可能按地区或行业聚合，不能把它们误标为客户预测。
 const shortTermResultDimension = ref('CUSTOMER')
@@ -3028,7 +3033,7 @@ const _replyClarification = (message: ChatMessage, directAnswers?: Record<string
     '补充信息'
   void sendMessage({ source: message, inputType: 'CLARIFICATION_REPLY', answers, displayText })
 }
-const sendMessage = async (structured?: AgentStructuredReply) => {
+const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo?: string) => {
   // 用户始终通过同一个输入框对话。若上一轮正在等补充信息，则把这句自然语言
   // 自动作为该问题的回答提交，页面不再显示下拉框、表单或确认按钮。
   // 只允许最后一条助手消息等待回答，历史遗留的澄清不能劫持新的普通对话。
@@ -3050,6 +3055,11 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
       : undefined)
   if ((!effectiveReply && !inputMessage.value.trim()) || isStreaming.value) return
   const userMessage = effectiveReply?.displayText || inputMessage.value
+  // 结果卡上的快捷分析必须绑定用户实际点击的预测。聊天气泡仍只展示问题，
+  // 请求文本附带稳定编号，Agent 会把它作为显式、不可改写的业务标识。
+  const requestMessage = explicitForecastNo
+    ? `${userMessage}\n预测编号：${explicitForecastNo}`
+    : userMessage
   if (!structured) inputMessage.value = ''
   if (effectiveReply) effectiveReply.source.clarificationResolved = true
   const streamId = activeChatId.value
@@ -3075,7 +3085,7 @@ const sendMessage = async (structured?: AgentStructuredReply) => {
   }
   const requestBody = (reply?: AgentStructuredReply) => ({
     conversationNo: activeConversationNo.value || conversationMemory.get(streamId) || null,
-    message: userMessage,
+    message: requestMessage,
     inputType: reply?.inputType || 'TEXT',
     interactionId: reply?.source.clarification?.interactionId || null,
     replyToTurnId: reply?.source.clarification?.replyToTurnId || null,
