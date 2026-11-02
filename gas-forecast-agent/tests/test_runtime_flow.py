@@ -126,20 +126,16 @@ def conversation(monkeypatch):
         app.dependency_overrides.clear()
 
 
-def test_candidate_then_horizon_then_confirmation_keeps_same_operation(conversation):
+def test_candidate_then_horizon_then_direct_forecast_keeps_same_operation(conversation):
     chat, tools, entities = conversation
     assert chat.send("预测安源")["status"] == "WAITING"
     assert chat.pending.issues[0].details.candidates[0].parameters.customer_codes == ["CUS-1"]
     assert chat.send("1", "CLARIFICATION_REPLY")["status"] == "WAITING"
     assert chat.pending.parameters.customer_codes == ["CUS-1"]
     assert chat.pending.parameters.forecast_horizon is None
-    assert chat.send("30天", "CLARIFICATION_REPLY")["status"] == "WAITING"
-    assert chat.pending.parameters.customer_codes == ["CUS-1"]
-    assert chat.pending.parameters.forecast_horizon == 30
-    assert len(entities.calls) == 1  # 补天数不再重复查已确认客户。
-    assert not tools.created
-    reply = chat.send("确认", "INTERACTION_REPLY")
+    reply = chat.send("30天", "CLARIFICATION_REPLY")
     assert reply["status"] == "SUCCESS", reply
+    assert len(entities.calls) == 1  # 补天数不再重复查已确认客户。
     assert reply["references"][0]["referenceNo"] == "TASK-1"
     assert len(tools.created) == 1
     assert tools.created[0]["targets"][0]["customerCodes"] == ["CUS-1"]
@@ -150,25 +146,24 @@ def test_candidate_then_horizon_then_confirmation_keeps_same_operation(conversat
 
 def test_new_request_does_not_inherit_pending_or_completed_parameters(conversation):
     chat, tools, _ = conversation
-    chat.send("预测两个客户30天")
-    assert chat.pending.parameters.forecast_horizon == 30
+    assert chat.send("预测两个客户30天")["status"] == "SUCCESS"
+    assert "pendingOperation" not in chat.memory
     chat.send("预测客户二")  # TEXT 新请求，不回答上个操作的确认。
     assert chat.pending.parameters.customer_codes == ["CUS-2"]
     assert chat.pending.parameters.forecast_horizon is None
-    chat.send("30天", "CLARIFICATION_REPLY")
-    chat.send("确认", "INTERACTION_REPLY")
-    assert len(tools.created) == 1
+    assert chat.send("30天", "CLARIFICATION_REPLY")["status"] == "SUCCESS"
+    assert len(tools.created) == 2
     chat.send("预测高邮安源")
     assert chat.pending.parameters.customer_codes == ["CUS-1"]
     assert chat.pending.parameters.forecast_horizon is None
 
 
-def test_batch_targets_and_rejection_remain_supported(conversation):
+def test_batch_targets_execute_directly_after_required_parameters_are_present(conversation):
     chat, tools, _ = conversation
-    chat.send("预测两个客户30天")
-    assert chat.pending.parameters.customer_codes == ["CUS-1", "CUS-2"]
-    chat.send("拒绝", "INTERACTION_REPLY")
-    assert not tools.created
+    reply = chat.send("预测两个客户30天")
+    assert reply["status"] == "SUCCESS"
+    assert len(tools.created) == 1
+    assert tools.created[0]["targets"][0]["customerCodes"] == ["CUS-1", "CUS-2"]
     assert "pendingOperation" not in chat.memory
 
 
@@ -185,19 +180,18 @@ def test_cancel_during_parameter_clarification_abandons_operation(conversation):
     assert not tools.created
 
 
-def test_ambiguous_confirmation_reply_keeps_pending_operation(conversation):
+def test_non_numeric_horizon_reply_keeps_pending_operation(conversation):
     chat, tools, _ = conversation
-    chat.send("预测两个客户30天")
-    reply = chat.send("嗯", "INTERACTION_REPLY")
+    chat.send("预测两个客户")
+    reply = chat.send("嗯", "CLARIFICATION_REPLY")
     assert reply["status"] == "WAITING"
-    assert "确认" in reply["message"]
-    assert chat.pending.pending_tool == "forecast_start"
+    assert chat.pending.parameters.forecast_horizon is None
     assert not tools.created
 
 
 def test_failed_turn_preserves_pending_operation_and_stale_reply_cannot_execute(conversation):
     chat, tools, _ = conversation
-    chat.send("预测两个客户30天")
+    chat.send("预测高邮安源")
     original = copy.deepcopy(chat.memory)
     reply = chat.send("确认", "INTERACTION_REPLY", interactionId="INT-expired")
     assert reply["status"] == "FAILED"

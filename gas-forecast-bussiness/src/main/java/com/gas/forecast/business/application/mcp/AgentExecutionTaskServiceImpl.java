@@ -5,10 +5,10 @@ import com.gas.forecast.business.application.mcp.AgentExecutionTaskService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
-import com.gas.forecast.dao.domain.ExecutionStepTb;
+import com.gas.forecast.dao.domain.AgentRunEventTb;
 import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import com.gas.forecast.dao.domain.ExecutionTaskTb;
-import com.gas.forecast.dao.mapper.ExecutionStepTbMapper;
+import com.gas.forecast.dao.mapper.AgentRunEventTbMapper;
 import com.gas.forecast.dao.mapper.ExecutionTaskDetailTbMapper;
 import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import java.util.LinkedHashMap;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 public class AgentExecutionTaskServiceImpl implements AgentExecutionTaskService {
     private final ExecutionTaskTbMapper executionTaskTbMapper;
     private final ExecutionTaskDetailTbMapper executionTaskDetailTbMapper;
-    private final ExecutionStepTbMapper executionStepTbMapper;
+    private final AgentRunEventTbMapper agentRunEventTbMapper;
 
     @Override
     public Object status(String taskNo, boolean includeRecovery) {
@@ -47,13 +47,15 @@ public class AgentExecutionTaskServiceImpl implements AgentExecutionTaskService 
 
     @Override
     public Object steps(String taskNo, boolean includeBusinessSteps, boolean includeAttempts) {
-        owned(taskNo);
+        ExecutionTaskTb task = owned(taskNo);
         List<String> detailNos = executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery()
                 .select(ExecutionTaskDetailTb::getDetailNo).eq(ExecutionTaskDetailTb::getTaskNo, taskNo))
                 .stream().map(ExecutionTaskDetailTb::getDetailNo).toList();
-        List<ExecutionStepTb> steps = detailNos.isEmpty() ? List.of() : executionStepTbMapper.selectList(Wrappers.<ExecutionStepTb>lambdaQuery()
-                .in(ExecutionStepTb::getTaskDetailNo, detailNos).orderByAsc(ExecutionStepTb::getStepOrder));
-        return Map.of("taskNo", taskNo, "steps", steps);
+        List<AgentRunEventTb> events = task.getRunNo() == null ? List.of() : agentRunEventTbMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery()
+                .eq(AgentRunEventTb::getRunNo, task.getRunNo())
+                .in(!detailNos.isEmpty(), AgentRunEventTb::getTaskDetailNo, detailNos)
+                .orderByAsc(AgentRunEventTb::getId));
+        return Map.of("taskNo", taskNo, "events", events);
     }
 
     private ExecutionTaskTb owned(String taskNo) {

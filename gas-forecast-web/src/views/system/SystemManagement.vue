@@ -2,7 +2,7 @@
   <section class="system-page">
     <PageBreadcrumb />
 
-    <AppTablePanel>
+    <AppTablePanel :updated-at="listUpdatedAt">
       <template #filters>
         <el-input
           v-model="keyword"
@@ -51,6 +51,7 @@
         :key="tableKey"
         v-loading="loading"
         :data="records"
+        :empty-description="`暂无${config.title}，请调整查询条件或新增数据`"
         :row-key="rowKey"
         :tree-props="{ children: 'children' }"
         :default-expand-all="treeExpanded"
@@ -73,6 +74,7 @@
           :prop="field.prop"
           :label="field.label"
           :min-width="field.minWidth || 120"
+          :align="field.align || (field.type === 'number' ? 'right' : undefined)"
         >
           <template #header>
             <el-tooltip v-if="field.tooltip" :content="field.tooltip" placement="top">
@@ -100,7 +102,7 @@
                   size="small"
                   @change="togglePermissionStatus(row, Number($event))"
                 />
-                <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light" round>
+                <el-tag :class="['status-switch-tag', row.status === 1 ? 'is-enabled' : 'is-disabled']" effect="light" round>
                   {{ row.status === 1 ? '启用' : '停用' }}
                 </el-tag>
               </span>
@@ -314,6 +316,7 @@ const props = defineProps<{
 }>()
 
 const saving = ref(false)
+const listUpdatedAt = ref('')
 const dialogVisible = ref(false)
 const editingId = ref<number | null>(null)
 const formRef = ref<FormInstance>()
@@ -418,6 +421,12 @@ const { loading, keyword, page, size, total, records, loadData, searchData, rese
       }
     }
   })
+
+watch(loading, (isLoading, wasLoading) => {
+  if (!isLoading && wasLoading) {
+    listUpdatedAt.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+})
 
 const loadOptions = async () => {
   const response = await fetch('/system/options')
@@ -742,7 +751,7 @@ onMounted(async () => {
 .system-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--app-gap);
 }
 
 .search-input {
@@ -822,8 +831,8 @@ onMounted(async () => {
   overflow: auto;
   padding: 10px 12px;
   background: #f8fafc;
-  border: 1px solid #e6eaf0;
-  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
 }
 
 .permission-tree :deep(.el-tree-node__content) {
@@ -846,6 +855,16 @@ onMounted(async () => {
   gap: 8px;
 }
 
+.status-switch-tag {
+  min-width: 56px;
+  justify-content: center;
+  border: 0;
+  font-weight: 600;
+}
+
+.status-switch-tag.is-enabled { background: #ecfdf5; color: var(--app-success); }
+.status-switch-tag.is-disabled { background: #f1f5f9; color: var(--app-text-muted); }
+
 .menu-kind-icon {
   color: #667085;
   font-size: 15px;
@@ -864,8 +883,8 @@ onMounted(async () => {
   margin-bottom: 18px;
   padding: 14px 16px;
   border: 1px solid #dbeafe;
-  border-radius: 8px;
-  background: #f5f9ff;
+  border-radius: 10px;
+  background: #f8fbff;
 }
 
 .fixed-permission-context > div {
@@ -886,7 +905,7 @@ onMounted(async () => {
   padding: 16px;
   border: 1px solid #dbeafe;
   border-radius: 10px;
-  background: #f5f9ff;
+  background: #f8fbff;
 }
 
 .permission-menu-summary span {

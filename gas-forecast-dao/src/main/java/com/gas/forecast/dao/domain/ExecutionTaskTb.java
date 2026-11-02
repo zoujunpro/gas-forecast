@@ -22,6 +22,9 @@ public class ExecutionTaskTb {
     /** 所属会话编号。 */
     private String conversationNo;
 
+    /** 所属智能体运行编号；供异步执行过程回写会话事件。 */
+    private String runNo;
+
     /** 执行维度：CUSTOMER客户、REGION地区、INDUSTRY行业。 */
     private String dimensionType;
 

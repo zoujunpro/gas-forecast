@@ -12,6 +12,8 @@ from gas_model_platform.schemas.modeling import (
     TrainingDataRange,
     TrainingDataValidationResult,
     TrainResult,
+    ValidationProfile,
+    ValidationRuleSummary,
 )
 
 
@@ -30,6 +32,17 @@ class ModelExampleV1Handler:
             recommended=730,
             continuous=True,
             description="至少需要365天连续日数据，建议提供730天以上。",
+        ),
+        validation_profile=ValidationProfile(
+            required_fields=["date", "gas_sales"],
+            forecast_units=["day"],
+            rules=[
+                ValidationRuleSummary(
+                    code="INSUFFICIENT_HISTORY",
+                    level="ERROR",
+                    description="历史数据不足时禁止训练。",
+                ),
+            ],
         ),
     )
 

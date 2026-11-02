@@ -141,11 +141,18 @@ const submitUpload = async () => {
 
 .file-uploader :deep(.el-upload-dragger) {
   padding: 30px 20px;
-  border-radius: 8px;
+  border-color: var(--app-border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.file-uploader :deep(.el-upload-dragger:hover) {
+  border-color: #93c5fd;
+  background: var(--app-primary-soft);
 }
 
 .upload-icon {
-  color: #1890ff;
+  color: var(--app-primary);
   font-size: 42px;
 }
 

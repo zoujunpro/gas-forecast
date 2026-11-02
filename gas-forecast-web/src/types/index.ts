@@ -30,6 +30,30 @@ export interface ChatMessage {
   executionResult?: Record<string, any>
   /** 统一执行任务编号；页面据此展示任务明细和步骤。 */
   taskNo?: string
+  /** 本轮智能体运行编号；用于恢复和展示真实过程事件。 */
+  runNo?: string
+  runStatus?: string
+  runStartedAt?: string
+  runFinishedAt?: string
+  executionEvents?: AgentRunEvent[]
+  processExpanded?: boolean
+  /** 异步预测完成后单独展示的结论，不能与“已收到任务”确认文案混在同一气泡。 */
+  completionSummary?: string
+}
+
+export interface AgentRunEvent {
+  id: number
+  runNo: string
+  eventCode: string
+  message: string
+  eventDataJson?: string
+  status: 'RUNNING' | 'SUCCESS' | 'FAILED' | 'SKIPPED' | 'CANCELLED' | string
+  forecastNo?: string
+  taskDetailNo?: string
+  errorCode?: string
+  errorMessage?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface ChatClarificationOption {

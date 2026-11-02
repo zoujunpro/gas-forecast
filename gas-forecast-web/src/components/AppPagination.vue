@@ -40,6 +40,8 @@ const pageSize = defineModel<number>('pageSize', { required: true })
 .app-pagination {
   display: flex;
   justify-content: flex-end;
-  padding-top: 14px;
+  padding-top: 16px;
+  margin-top: 2px;
+  border-top: 1px solid var(--app-border-soft);
 }
 </style>

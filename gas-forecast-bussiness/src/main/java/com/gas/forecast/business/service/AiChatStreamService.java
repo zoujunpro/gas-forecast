@@ -15,6 +15,12 @@ import com.gas.forecast.common.util.ThreadLocalUtil;
 import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -26,9 +32,15 @@ public class AiChatStreamService {
     private static final long TIMEOUT_MS = 150_000L;
     private final AiChatPersistenceService persistenceService;
     private final PythonAgentChatClient agentClient;
+    private final AgentRunEventService eventService;
     private final ObjectMapper objectMapper;
     private final TraceableThreadPoolExecutor executor = ThreadPoolUtils.create(
             ThreadPoolConfig.of("ai-chat-stream", 2, 4, 50));
+    private final ScheduledExecutorService eventEmitter = Executors.newScheduledThreadPool(1, runnable -> {
+        Thread thread = new Thread(runnable, "ai-chat-event-stream");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public SseEmitter chat(AiChatRequest request) {
         SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
@@ -41,10 +53,17 @@ public class AiChatStreamService {
                     ThreadLocalUtil.setLoginUser(loginUser.userId(), loginUser.username(), loginUser.token());
                 }
                 PythonAgentChatRequest pythonRequest = persistenceService.createTurn(request);
+                send(emitter, "run_started", java.util.Map.of(
+                        "runNo", pythonRequest.runNo(), "startedAt", java.time.Instant.now().toString()));
+                ScheduledFuture<?> eventSubscription = subscribeRunEvents(emitter, pythonRequest.runNo());
                 PythonAgentChatResponse result;
                 RuntimeException agentException = null;
                 try { result = agentClient.chatStream(pythonRequest, text -> sendUnchecked(emitter, "progress", text)); }
                 catch (RuntimeException exception) { result = null; agentException = exception; }
+                finally {
+                    eventSubscription.cancel(false);
+                    sendRunEvents(emitter, pythonRequest.runNo(), new AtomicReference<>(null));
+                }
                 AiChatResponse response = result == null
                         ? persistenceService.fail(pythonRequest, agentException == null
                                 ? new IllegalStateException("Python Agent 未返回最终结果") : agentException)
@@ -77,13 +96,33 @@ public class AiChatStreamService {
     }
 
     private void send(SseEmitter emitter, String event, Object data) throws IOException {
-        emitter.send(SseEmitter.event().name(event).data(objectMapper.writeValueAsString(data)));
+        synchronized (emitter) {
+            emitter.send(SseEmitter.event().name(event).data(objectMapper.writeValueAsString(data)));
+        }
     }
 
     private void sendUnchecked(SseEmitter emitter, String event, Object data) {
         try { send(emitter, event, data); } catch (IOException exception) { throw new IllegalStateException(exception); }
     }
 
+    private ScheduledFuture<?> subscribeRunEvents(SseEmitter emitter, String runNo) {
+        AtomicReference<String> lastVersion = new AtomicReference<>(null);
+        return eventEmitter.scheduleWithFixedDelay(
+                () -> sendRunEvents(emitter, runNo, lastVersion), 0, 350, TimeUnit.MILLISECONDS);
+    }
+
+    private void sendRunEvents(SseEmitter emitter, String runNo, AtomicReference<String> lastVersion) {
+        try {
+            List<com.gas.forecast.business.dto.AgentRunEventResponse> events = eventService.listInternal(runNo);
+            String version = events.stream()
+                    .map(event -> event.id() + ":" + event.status() + ":" + event.updatedAt())
+                    .reduce("", (left, right) -> left + "|" + right);
+            if (!version.equals(lastVersion.getAndSet(version))) send(emitter, "run_events", events);
+        } catch (Exception ignored) {
+            // 过程推送失败不能中断主对话；最终回复和历史事件仍会保留。
+        }
+    }
+
     @PreDestroy
-    void shutdown() { executor.shutdown(); }
+    void shutdown() { executor.shutdown(); eventEmitter.shutdown(); }
 }

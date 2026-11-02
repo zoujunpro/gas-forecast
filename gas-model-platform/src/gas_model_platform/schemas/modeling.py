@@ -38,6 +38,28 @@ class TrainingDataRange(BaseModel):
     description: str = Field(min_length=1)
 
 
+class ValidationRuleSummary(BaseModel):
+    """模型实际执行的数据校验项摘要。"""
+
+    code: str = Field(min_length=1)
+    level: Literal["ERROR", "WARNING"]
+    description: str = Field(min_length=1)
+
+
+class ValidationProfile(BaseModel):
+    """模型可运行条件与校验规则的标准化声明。
+
+    此处只供模型目录、业务服务和智能体展示；最终校验仍由
+    ``validate_training_data`` 执行，避免维护两份判断逻辑。
+    """
+
+    required_fields: list[str] = Field(min_length=1)
+    forecast_units: list[ForecastUnit] = Field(min_length=1)
+    min_forecast_horizon: int = Field(default=1, ge=1)
+    max_forecast_horizon: int = Field(default=366, ge=1, le=366)
+    rules: list[ValidationRuleSummary] = Field(default_factory=list)
+
+
 class ModelInfo(BaseModel):
     agent_code: AgentCode
     model_code: str
@@ -46,6 +68,7 @@ class ModelInfo(BaseModel):
     description: str
     capabilities: list[Literal["train", "backtest", "predict"]]
     training_data_range: TrainingDataRange | None = None
+    validation_profile: ValidationProfile | None = None
 
 
 class ModelContext(BaseModel):
@@ -111,6 +134,8 @@ class ForecastExecuteRequest(BaseModel):
     agent_code: AgentCode | None = None
     model_code: str = Field(min_length=1)
     forecast_no: str = Field(min_length=1, max_length=65)
+    run_no: str | None = Field(default=None, min_length=1, max_length=64)
+    task_detail_no: str | None = Field(default=None, min_length=1, max_length=96)
     region_code: str | None = None
     region_name: str | None = None
     industry_code: str | None = None

@@ -11,6 +11,7 @@
       <set>
         <option value="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-freemarker/pom.xml" />
         <option value="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-poi/pom.xml" />
+        <option value="$PROJECT_DIR$/gas-forecast-model/pom.xml" />
       </set>
     </option>
   </component>

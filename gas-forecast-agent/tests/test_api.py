@@ -499,11 +499,11 @@ def test_task_and_forecast_references_are_extracted_from_current_result_shape() 
     ]
 
 
-def test_text_clarification_then_confirmation_restores_pending_operation(
+def test_text_clarification_then_direct_forecast_restores_pending_operation(
     api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """客户先确认、天数后补充，三轮只经 memoryPatch 传递状态。"""
+    """客户先确认、天数后补充；参数完整后直接发起预测。"""
     client, mcp, resolver = api_client
 
     def extract(**kwargs: object) -> RequestSemantics:
@@ -534,25 +534,9 @@ def test_text_clarification_then_confirmation_restores_pending_operation(
     second_request["conversationContext"]["memory"] = first["memoryPatch"]
     second = client.post("/api/v1/internal/chat", json=second_request).json()
 
-    assert second["status"] == "WAITING"
-    assert second["clarification"]["interactionType"] == "CONFIRMATION"
-    pending_after_second = second["memoryPatch"]["pendingOperation"]
-    assert pending_after_second["pendingTool"] == "forecast_start"
-    assert pending_after_second["parameters"]["forecastHorizon"] == 30
-    assert pending_after_second["parameters"]["targets"][0]["customerCodes"] == ["CUS-1"]
-
-    third_request = internal_request("确认", turn_id="TURN-3", run_no="RUN-3", agent_code="short-term")
-    third_request.update({
-        "inputType": "INTERACTION_REPLY",
-        "interactionId": second["clarification"]["interactionId"],
-        "replyToTurnId": second["clarification"]["replyToTurnId"],
-    })
-    third_request["conversationContext"]["memory"] = second["memoryPatch"]
-    third = client.post("/api/v1/internal/chat", json=third_request).json()
-
-    assert third["status"] == "SUCCESS"
-    assert third["clarification"] is None
-    assert third["memoryPatch"] == {"pendingOperation": None}
+    assert second["status"] == "SUCCESS"
+    assert second["clarification"] is None
+    assert second["memoryPatch"] == {"pendingOperation": None}
     forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
     assert forecast_arguments["confirmed"] is True
     assert forecast_arguments["forecastHorizon"] == 30
@@ -589,14 +573,16 @@ def test_corrected_entity_name_is_resolved_again_from_plain_text(
     second_request["conversationContext"]["memory"] = first["memoryPatch"]
     second = client.post("/api/v1/internal/chat", json=second_request).json()
 
-    assert second["status"] == "WAITING"
-    assert second["clarification"]["interactionType"] == "CLARIFICATION"
-    assert second["memoryPatch"]["pendingOperation"]["parameters"]["customerCodes"] == ["CUS-2"]
+    assert second["status"] == "SUCCESS"
+    assert second["clarification"] is None
+    assert second["memoryPatch"] == {"pendingOperation": None}
     assert [call["customerNames"] for call in resolver.calls] == [["不存在的客户"], ["扬州中燃"]]
-    assert [name for name, _ in mcp.calls].count("forecast_start") == 0
+    forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
+    assert forecast_arguments["confirmed"] is True
+    assert forecast_arguments["targets"][0]["customerCodes"] == ["CUS-2"]
 
 
-def test_multiple_customers_are_validated_by_internal_entity_service_before_confirmation(
+def test_multiple_customers_are_validated_by_internal_entity_service_before_direct_forecast(
     api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -617,11 +603,13 @@ def test_multiple_customers_are_validated_by_internal_entity_service_before_conf
 
     body = response.json()
     assert response.status_code == 200
-    assert body["status"] == "WAITING"
-    assert body["clarification"]["interactionType"] == "CONFIRMATION"
+    assert body["status"] == "SUCCESS"
+    assert body["clarification"] is None
     assert resolver.calls == [{"customerNames": ["高邮安源", "扬州中燃"]}]
-    assert [name for name, _ in mcp.calls].count("forecast_start") == 0
-    assert body["memoryPatch"]["pendingOperation"]["parameters"]["targets"][0]["customerCodes"] == ["CUS-1", "CUS-2"]
+    forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
+    assert forecast_arguments["confirmed"] is True
+    assert forecast_arguments["targets"][0]["customerCodes"] == ["CUS-1", "CUS-2"]
+    assert body["memoryPatch"] == {"pendingOperation": None}
 
 
 def test_legacy_answers_field_is_not_part_of_current_internal_protocol() -> None:

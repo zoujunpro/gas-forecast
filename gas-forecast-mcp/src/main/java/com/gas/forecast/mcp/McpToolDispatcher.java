@@ -7,6 +7,7 @@ import com.gas.forecast.business.application.forecast.ForecastApplicationService
 import com.gas.forecast.business.application.forecast.ForecastApplicationService.ForecastOptions;
 import com.gas.forecast.business.application.forecast.ForecastApplicationService.TrainingDataRange;
 import com.gas.forecast.business.application.forecast.ForecastApplicationService.ExecutionOptions;
+import com.gas.forecast.business.service.AgentRunEventRecorder;
 import com.gas.forecast.business.dto.request.ExecutionTarget;
 import com.gas.forecast.business.enums.ExecutionDimensionTypeEnum;
 import com.gas.forecast.common.core.BusinessException;
@@ -24,6 +25,7 @@ public class McpToolDispatcher {
     private final AgentBusinessQueryService queryService;
     private final AgentExecutionTaskService taskService;
     private final ForecastApplicationService forecastService;
+    private final AgentRunEventRecorder eventRecorder;
 
     /**
      * MCP工具统一调用入口。
@@ -37,14 +39,19 @@ public class McpToolDispatcher {
      * @return 统一的MCP工具执行结果
      */
     public McpToolResult invoke(String toolName, Map<String, Object> arguments) {
+        return invoke(toolName, arguments, null);
+    }
+
+    public McpToolResult invoke(String toolName, Map<String, Object> arguments, String runNo) {
         Map<String, Object> args = arguments == null ? Map.of() : arguments;
+        Long eventId = eventRecorder.start(runNo, eventCode(toolName), startMessage(toolName), null, null);
         try {
-            return switch (toolName) {
+            McpToolResult result = switch (toolName) {
                 case "region_list" -> success(toolName, "地区列表查询成功", queryService.regions(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "industry_list" -> success(toolName, "行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "customer_list" -> success(toolName, "客户列表查询成功",
                         queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
-                case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args)));
+                case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args, runNo)));
                 case "forecast_result_query" -> success(toolName, "预测结果查询成功",
                         queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
                 case "forecast_result_by_no" -> success(toolName, "预测结果查询成功",
@@ -54,21 +61,26 @@ public class McpToolDispatcher {
                         taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));
                 default -> failure(toolName, "TOOL_NOT_FOUND", "未知工具：" + toolName, false);
             };
+            eventRecorder.success(eventId, result.message());
+            return result;
         } catch (BusinessException | IllegalArgumentException exception) {
             String reason = safeMessage(exception);
+            eventRecorder.failure(eventId, reason, classify(reason), exception);
             return failure(toolName, classify(reason), reason, false);
         } catch (RuntimeException exception) {
             String reason = rootCauseMessage(exception);
+            eventRecorder.failure(eventId, "工具执行失败：" + reason, "INTERNAL_ERROR", exception);
             return failure(toolName, "INTERNAL_ERROR", "工具执行失败：" + reason, true);
         }
     }
 
     /** 将MCP预测参数转换成Business Service预测命令。 */
-    private ForecastCommand forecastCommand(Map<String, Object> args) {
+    private ForecastCommand forecastCommand(Map<String, Object> args, String runNo) {
         String dimensionType = requiredDimension(args);
         List<ExecutionTarget> targets = targets(args, dimensionType);
         return new ForecastCommand(
                 text(args, "conversationNo"),
+                runNo,
                 defaultText(text(args, "agentCode"), "short-term"),
                 ExecutionDimensionTypeEnum.fromCode(dimensionType).orElseThrow(),
                 targets,
@@ -76,6 +88,9 @@ public class McpToolDispatcher {
                 new TrainingDataRange(text(args, "historyStartDate"), text(args, "historyEndDate")),
                 new ExecutionOptions(bool(args, "confirmed", false)));
     }
+
+    private String eventCode(String toolName) { return toolName != null && toolName.endsWith("_list") ? "DATA_QUERY" : "TOOL_CALL"; }
+    private String startMessage(String toolName) { return "正在执行" + (toolName == null ? "业务操作" : toolName) + "。"; }
 
     private List<ExecutionTarget> targets(Map<String, Object> args, String dimension) {
         Object raw = args.get("targets");

@@ -4,6 +4,9 @@
     <template v-if="$slots.empty" #empty>
       <slot name="empty" />
     </template>
+    <template v-else #empty>
+      <el-empty :image-size="52" :description="emptyDescription" />
+    </template>
     <template v-if="$slots.append" #append>
       <slot name="append" />
     </template>
@@ -15,6 +18,12 @@ defineOptions({
   name: 'AppTable',
   inheritAttrs: false
 })
+
+withDefaults(defineProps<{
+  emptyDescription?: string
+}>(), {
+  emptyDescription: '暂无数据'
+})
 </script>
 
 <style scoped>
@@ -23,10 +32,10 @@ defineOptions({
 }
 
 .app-table :deep(th.el-table__cell) {
-  background: #f3f6fa;
-  color: var(--app-text);
-  font-size: 14px;
-  font-weight: 600;
+  background: #f6f8fc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .app-table :deep(td.el-table__cell) {
@@ -41,6 +50,31 @@ defineOptions({
 
 .app-table :deep(.el-table__cell) {
   vertical-align: middle;
+}
+
+.app-table :deep(th.el-table__cell) {
+  height: 42px;
+}
+
+.app-table :deep(td.el-table__cell) {
+  height: 44px;
+}
+
+.app-table :deep(.el-table__row--striped td.el-table__cell) {
+  background: #fbfcfe;
+}
+
+.app-table :deep(.el-table__body tr:hover > td.el-table__cell) {
+  background: #f5f9ff !important;
+}
+
+.app-table :deep(.el-table__empty-block) {
+  min-height: 220px;
+}
+
+.app-table :deep(.el-table__empty-text) {
+  color: var(--app-text-muted);
+  font-size: 13px;
 }
 
 .app-table :deep(.el-table__fixed),
@@ -111,4 +145,10 @@ defineOptions({
   font-size: 13px;
   font-weight: 500;
 }
+
+.app-table :deep(.action-column .el-button + .el-button) { margin-left: 10px; }
+
+.app-table :deep(.action-column .el-button--success.is-link) { color: var(--app-primary); }
+.app-table :deep(.action-column .el-button--info.is-link) { color: var(--app-text-secondary); }
+.app-table :deep(.action-column .el-button--danger.is-link) { color: var(--app-danger); }
 </style>

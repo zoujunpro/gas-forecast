@@ -2,7 +2,7 @@
   <template v-for="item in visibleMenus" :key="item.id">
     <el-sub-menu v-if="visibleChildren(item).length" :index="menuIndex(item)">
       <template #title>
-        <el-icon v-if="item.icon">
+        <el-icon>
           <component :is="resolveMenuIcon(item.icon)" />
         </el-icon>
         <span>{{ item.name }}</span>
@@ -10,7 +10,7 @@
       <SidebarMenu :menus="visibleChildren(item)" :collapsed="collapsed" />
     </el-sub-menu>
     <el-menu-item v-else-if="item.path" :index="item.path">
-      <el-icon v-if="item.icon">
+      <el-icon>
         <component :is="resolveMenuIcon(item.icon)" />
       </el-icon>
       <template #title>

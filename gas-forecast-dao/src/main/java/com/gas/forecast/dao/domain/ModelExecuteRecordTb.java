@@ -61,6 +61,8 @@ public class ModelExecuteRecordTb {
     private String forecastResultJson;
     /** 基于本次回测和预测结果生成的可追溯研判说明。 */
     private String analysisContent;
+    /** 基于本次研判生成的推荐追问，JSON 数组；与 forecastNo 一一对应。 */
+    private String analysisQuestionsJson;
     /** 展示时按预测日期查询的去年同期实际销量，不持久化。 */
     @TableField(exist = false)
     private List<Map<String, Object>> lastYearPoints;

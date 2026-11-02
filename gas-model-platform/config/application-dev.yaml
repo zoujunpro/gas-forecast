@@ -1,4 +1,7 @@
 # 本地开发环境配置。
+events:
+  callback_url: http://127.0.0.1:18081/gas-forecast/internal/model-run-events
+
 storage:
   artifact_root: artifacts
 

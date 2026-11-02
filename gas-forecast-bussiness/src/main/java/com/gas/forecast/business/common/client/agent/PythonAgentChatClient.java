@@ -3,6 +3,8 @@ package com.gas.forecast.business.common.client.agent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gas.forecast.business.dto.PythonAgentChatRequest;
 import com.gas.forecast.business.dto.PythonAgentChatResponse;
+import com.gas.forecast.business.dto.PythonForecastAnalysisRequest;
+import com.gas.forecast.business.dto.PythonForecastAnalysisResponse;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.common.util.ThreadLocalUtil;
 import java.net.URI;
@@ -28,6 +30,9 @@ public class PythonAgentChatClient {
     @Value("${gas.agent.chat-timeout-seconds:120}")
     private long timeoutSeconds;
 
+    @Value("${gas.agent.forecast-analysis-url:http://127.0.0.1:8091/api/v1/internal/forecast-analysis}")
+    private String forecastAnalysisUrl;
+
     public PythonAgentChatClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
@@ -48,6 +53,7 @@ public class PythonAgentChatClient {
                     .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10)))
                     .header("Content-Type", "application/json")
                     .header("x-traceId", requestBody.runNo())
+                    .header("X-Agent-Run-No", requestBody.runNo())
                     .POST(HttpRequest.BodyPublishers.ofString(
                             objectMapper.writeValueAsString(requestBody),
                             StandardCharsets.UTF_8));
@@ -74,6 +80,35 @@ public class PythonAgentChatClient {
         }
     }
 
+    /** 生成一次预测结果的可追溯研判与三个推荐追问。 */
+    public PythonForecastAnalysisResponse forecastAnalysis(PythonForecastAnalysisRequest requestBody) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(forecastAnalysisUrl))
+                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 45)))
+                    .header("Content-Type", "application/json")
+                    .header("x-traceId", requestBody.forecastNo())
+                    .POST(HttpRequest.BodyPublishers.ofString(
+                            objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException("Python 预测解读返回 HTTP " + response.statusCode()
+                        + "：" + abbreviate(response.body()));
+            }
+            PythonForecastAnalysisResponse result = objectMapper.readValue(response.body(), PythonForecastAnalysisResponse.class);
+            if (result == null || !TextUtils.hasText(result.analysis()) || result.questions() == null || result.questions().size() != 3) {
+                throw new IllegalStateException("Python 预测解读返回内容不完整");
+            }
+            return result;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Python 预测解读请求已中断", exception);
+        } catch (Exception exception) {
+            if (exception instanceof IllegalStateException stateException) throw stateException;
+            throw new IllegalStateException("Python 预测解读请求失败：" + exception.getMessage(), exception);
+        }
+    }
+
     /** 消费 Python 的阶段事件，并在 done 事件返回完整响应。 */
     public PythonAgentChatResponse chatStream(PythonAgentChatRequest requestBody, Consumer<String> progress) {
         try {
@@ -81,6 +116,7 @@ public class PythonAgentChatClient {
                     .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10)))
                     .header("Content-Type", "application/json").header("Accept", "text/event-stream")
                     .header("x-traceId", requestBody.runNo())
+                    .header("X-Agent-Run-No", requestBody.runNo())
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8));
             if (TextUtils.hasText(ThreadLocalUtil.getToken())) builder.header("X-Access-Token", ThreadLocalUtil.getToken());
             HttpResponse<java.util.stream.Stream<String>> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofLines());

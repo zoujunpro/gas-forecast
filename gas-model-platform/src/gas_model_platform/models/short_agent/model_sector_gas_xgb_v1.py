@@ -34,6 +34,8 @@ from gas_model_platform.schemas.modeling import (
     TrainingDataValidationIssue,
     TrainingDataValidationResult,
     TrainResult,
+    ValidationProfile,
+    ValidationRuleSummary,
 )
 
 
@@ -439,6 +441,14 @@ class SectorGasXgbV1Handler:
                     f"{spec.industry_name}模型至少需要{spec.minimum_history}条日数据，"
                     f"建议提供{spec.recommended_history}条以上；日期不连续时提示警告，但不阻断训练。"
                 ),
+            ),
+            validation_profile=ValidationProfile(
+                required_fields=["date", "gas_sales"], forecast_units=["day"],
+                rules=[
+                    ValidationRuleSummary(code="INSUFFICIENT_HISTORY", level="ERROR", description=f"历史日销量少于{spec.minimum_history}条时禁止训练。"),
+                    ValidationRuleSummary(code="DUPLICATE_DATES", level="ERROR", description="存在重复日期时禁止训练。"),
+                    ValidationRuleSummary(code="NON_CONTINUOUS_DATES", level="WARNING", description="日期缺失时允许训练，但可能影响预测精度。"),
+                ],
             ),
         )
 

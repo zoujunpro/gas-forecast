@@ -216,6 +216,11 @@ def _issue_satisfied_by_parameters(issue: ResolutionIssue, parameters: EntityPar
     expected = code_values.get(entity, set())
     if not expected:
         return False
+    # “未找到”问题没有候选项可供比对。用户下一轮重新输入正确名称并已解析出
+    # 标准编码时，说明这个旧问题已经被修正；若仍强制要求命中旧候选，会让
+    # “江苏省分 → 江苏”一类纠错永久卡在同一条澄清里。
+    if issue.reason == ClarificationReason.ENTITY_NOT_FOUND:
+        return True
     return any(
         expected.intersection(
             candidate.parameters.customer_codes + candidate.parameters.region_codes + candidate.parameters.industry_codes

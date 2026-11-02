@@ -35,6 +35,7 @@ class Settings:
     server_port: int = 8090
     server_reload: bool = False
     training_max_concurrency: int = 4
+    event_callback_url: str | None = None
     artifact_root: Path = Path("artifacts")
     log_dir: Path = Path("logs")
     log_level: str = "INFO"
@@ -120,6 +121,7 @@ def load_settings(
     app = _section(payload, "app")
     server = _section(payload, "server")
     training = _section(payload, "training")
+    events = _section(payload, "events")
     storage = _section(payload, "storage")
     logging_config = _section(payload, "logging")
 
@@ -142,6 +144,7 @@ def load_settings(
                 )
             ),
         ),
+        event_callback_url=env.get("GAS_MODEL_EVENT_CALLBACK_URL", events.get("callback_url")),
         artifact_root=_resolve_path(
             env.get("GAS_MODEL_ARTIFACT_ROOT", str(storage.get("artifact_root", "artifacts"))),
             path,

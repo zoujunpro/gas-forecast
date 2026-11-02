@@ -6,14 +6,10 @@ from gas_forecast_agent.schemas import (
     AgentChatResponse,
     AgentStatus,
     AgentType,
-    ExecutionResourceResponse,
     ExecutionStatus,
-    ExecutionStepDetailResponse,
     MessageReferenceResponse,
     ReferenceRelation,
     ReferenceType,
-    ResourceRole,
-    ResourceType,
 )
 
 
@@ -141,42 +137,3 @@ def test_agent_chat_response_supports_multiple_message_references() -> None:
     payload = response.model_dump(mode="json", by_alias=True)
     assert payload["agentCode"] == "short-term"
     assert [item["referenceNo"] for item in payload["references"]] == ["T-1", "T-2"]
-
-
-def test_execution_step_detail_uses_nullable_progress_and_multiple_resources() -> None:
-    detail = ExecutionStepDetailResponse(
-        step_no="S-1",
-        task_no="T-1",
-        attempt_no=1,
-        step_code="DATA_PREPARE",
-        step_name="历史数据准备",
-        step_order=1,
-        status=ExecutionStatus.RUNNING,
-        progress_percent=None,
-        message="正在准备训练数据",
-        has_detail=True,
-        resources=[
-            ExecutionResourceResponse(
-                resource_ref="dataset:history-sales:1",
-                resource_code="HISTORY_SALES",
-                resource_name="历史销量数据",
-                resource_role=ResourceRole.INPUT,
-                resource_type=ResourceType.DATASET,
-                summary={"recordCount": 730},
-            ),
-            ExecutionResourceResponse(
-                resource_ref="dataset:weather:1",
-                resource_code="WEATHER_FEATURES",
-                resource_name="气象特征数据",
-                resource_role=ResourceRole.INPUT,
-                resource_type=ResourceType.DATASET,
-                summary={"recordCount": 730},
-            ),
-        ],
-    )
-
-    assert detail.progress_percent is None
-    assert [resource.resource_code for resource in detail.resources] == [
-        "HISTORY_SALES",
-        "WEATHER_FEATURES",
-    ]

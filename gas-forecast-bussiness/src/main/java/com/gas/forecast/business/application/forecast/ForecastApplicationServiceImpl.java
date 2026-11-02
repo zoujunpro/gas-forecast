@@ -36,7 +36,7 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         if (targetCount == 0) throw new BusinessException("当前范围内没有可执行目标");
         if (!command.confirmed()) return confirmation(command, targetCount);
 
-        var task = taskLifecycleService.create(command.conversationNo(), command.agentCode(),
+        var task = taskLifecycleService.create(command.conversationNo(), command.runNo(), command.agentCode(),
                 command.dimensionTypeCode(), command.targets(), "模型回测与预测", requestJson(command));
         // forecastNo 是会话分析的稳定锚点，必须在任务创建时就绑定，而不能等异步
         // 执行器启动后才生成。这样助手消息可以立即持久化 FORECAST 引用。
@@ -53,7 +53,8 @@ public class ForecastApplicationServiceImpl implements ForecastApplicationServic
         result.put("taskNo", task.getTaskNo());
         result.put("total", details.size());
         result.put("status", "PENDING");
-        result.put("message", "预测任务已创建，正在等待异步执行。");
+        // 面向业务人员只表达已确认的预测条件与下一步实际动作，不暴露“任务创建/异步队列”等系统术语。
+        result.put("message", "预测条件已确认，正在准备历史用气数据。");
         result.put("tasks", details.stream().map(this::detailResult).toList());
         return result;
     }

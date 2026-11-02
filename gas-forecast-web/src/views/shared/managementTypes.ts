@@ -63,7 +63,6 @@ export interface SystemPageConfig {
     delete?: string
     execute?: string
   }
-  trainExecution?: boolean
 }
 
 export type BaseDataFieldType = 'text' | 'number' | 'select' | 'radio' | 'granularityDate'
@@ -140,12 +139,9 @@ export interface BaseDataPageConfig {
   endpoint: string
   searchPlaceholder: string
   readonly?: boolean
-  trainExecution?: boolean
   dialogWidth?: string
   dialogDescription?: string
-  dialogVariant?: 'feature-definition' | 'model-training'
   filterFields?: BaseDataFilterConfig[]
-  featureDetailProp?: string
   tableFields: BaseDataFieldConfig[]
   formFields: BaseDataFieldConfig[]
   emptyForm: Record<string, any>

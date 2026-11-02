@@ -9,6 +9,7 @@ import json
 import logging
 import re
 import time
+from datetime import date
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -177,8 +178,14 @@ class ActionExecutor:
             # 的编码并移除名称；在此之前记录展示范围，后续补周期和二次确认都应
             # 使用同一份用户已确认的范围事实。
             display_scope = self._forecast_scope(arguments) if name == "forecast_start" else None
-            # confirmed 只能来自用户明确回复，模型生成的同名参数不能绕过确认。
-            if parameters.get("confirmed") is True:
+            if name == "forecast_start":
+                self._apply_forecast_date_range(arguments)
+            # 用户已经明确发起预测，且前置的实体、周期等信息都通过校验后，直接
+            # 创建任务；不再额外插入“确认执行”这一轮无业务信息的澄清。
+            # 其他写工具仍维持原有显式确认约束。
+            if name == "forecast_start":
+                arguments["confirmed"] = True
+            elif parameters.get("confirmed") is True:
                 arguments["confirmed"] = True
             else:
                 arguments.pop("confirmed", None)
@@ -1194,6 +1201,24 @@ class ActionExecutor:
         if name.startswith("industry"):
             return "行业"
         return name
+
+    @staticmethod
+    def _apply_forecast_date_range(arguments: dict[str, Any]) -> None:
+        """将已识别的起止日期转为 MCP 支持的起始日与预测周期。"""
+        start_text = arguments.get("forecastStartDate")
+        end_text = arguments.get("forecastEndDate")
+        try:
+            start = date.fromisoformat(str(start_text))
+            end = date.fromisoformat(str(end_text))
+        except (TypeError, ValueError):
+            # MCP 没有 forecastEndDate 字段，不能把无效或孤立的结束日期传下去。
+            arguments.pop("forecastEndDate", None)
+            return
+        if end >= start:
+            # 预测按日包含首尾；例如 10-29 至 11-07 为 10 天。
+            arguments["forecastHorizon"] = (end - start).days + 1
+        # 结束日期是会话理解层的表达，不属于 forecast_start 的 MCP 参数。
+        arguments.pop("forecastEndDate", None)
 
     @staticmethod
     def _confirmation_message(

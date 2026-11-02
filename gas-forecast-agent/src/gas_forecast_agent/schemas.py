@@ -39,6 +39,22 @@ class AgentStatus(StrEnum):
     CANCELLED = "CANCELLED"  # Agent 本轮执行已取消
 
 
+class ForecastAnalysisRequest(BaseModel):
+    """预测任务完成后生成业务解读的可信输入快照。"""
+
+    model_config = ConfigDict(alias_generator=_to_camel, populate_by_name=True)
+    forecast_no: str
+    context: dict[str, Any]
+
+
+class ForecastAnalysisResponse(BaseModel):
+    """供 Java 保存到单条预测执行记录的解读与推荐追问。"""
+
+    model_config = ConfigDict(alias_generator=_to_camel, populate_by_name=True)
+    analysis: str
+    questions: list[str] = Field(min_length=3, max_length=3)
+
+
 class UserInputType(StrEnum):
     """当前用户输入相对于会话待处理状态的来源类型。"""
 
@@ -119,28 +135,6 @@ class ClarificationInputType(StrEnum):
     SELECT = "SELECT"  # 单选
     MULTI_SELECT = "MULTI_SELECT"  # 多选
     CONFIRM = "CONFIRM"  # 确认或取消
-
-
-class ResourceRole(StrEnum):
-    """步骤数据资源在本步骤中的用途。"""
-
-    INPUT = "INPUT"  # 步骤读取的数据
-    OUTPUT = "OUTPUT"  # 步骤生成的数据
-    METRIC = "METRIC"  # 指标明细
-    LOG = "LOG"  # 执行日志
-    RESULT = "RESULT"  # 可供业务页面使用的最终结果
-
-
-class ResourceType(StrEnum):
-    """步骤详情资源的展示或读取类型。"""
-
-    DATASET = "DATASET"  # 可分页查询的数据集
-    TABLE = "TABLE"  # 表格数据
-    CHART = "CHART"  # 图表数据
-    JSON = "JSON"  # 结构化 JSON 数据
-    LOG = "LOG"  # 可分段读取的日志
-    FILE = "FILE"  # 文件或可下载制品
-    MODEL = "MODEL"  # 模型版本或模型制品
 
 
 # ==================== 公共对象 ====================
@@ -682,163 +676,6 @@ class AgentChatResponse(ApiModel):
     error_message: str | None = Field(
         default=None,
         description="Agent 本轮失败时经过脱敏的错误说明",
-    )
-
-
-# ==================== 后台业务步骤响应 ====================
-
-
-class ExecutionStepResponse(ApiModel):
-    """后台业务执行步骤摘要，用于快速绘制任务执行时间线。"""
-
-    step_no: str = Field(
-        description="执行步骤唯一编号，对应 execution_step_tb.step_no",
-    )
-    task_no: str = Field(
-        description="所属执行任务编号，对应 execution_task_tb.task_no",
-    )
-    attempt_no: int = Field(
-        ge=1,
-        description="任务执行次数；首次为1，失败重试时递增",
-    )
-    step_code: str = Field(
-        description="业务步骤编码，如 DATA_PREPARE、FEATURE_BUILD、MODEL_TRAIN",
-    )
-    step_name: str = Field(
-        description="业务步骤名称，如历史销量数据准备、训练特征构建",
-    )
-    step_order: int = Field(
-        ge=0,
-        description="步骤执行顺序，用于前端按业务顺序展示",
-    )
-    stage_code: str | None = Field(
-        default=None,
-        description="所属业务阶段编码，如 DATA、FEATURE、TRAIN、FORECAST",
-    )
-    status: ExecutionStatus = Field(
-        description="当前步骤执行状态",
-    )
-    progress_percent: float | None = Field(
-        default=None,
-        ge=0,
-        le=100,
-        description="步骤执行进度；无法准确计算时为空，不应伪造百分比",
-    )
-    message: str | None = Field(
-        default=None,
-        description="步骤业务摘要，如成功获取730条历史销量数据",
-    )
-    has_detail: bool = Field(
-        default=False,
-        description="是否存在可通过步骤详情接口查询的输入、输出、指标或数据资源",
-    )
-    started_at: datetime | None = Field(
-        default=None,
-        description="步骤开始执行时间",
-    )
-    finished_at: datetime | None = Field(
-        default=None,
-        description="步骤结束执行时间",
-    )
-
-
-class ExecutionMetricResponse(ApiModel):
-    """执行步骤产生的一个可展示业务指标。"""
-
-    metric_code: str = Field(
-        max_length=64,
-        description="指标编码，如 MAPE、RMSE、SAMPLE_COUNT",
-    )
-    metric_name: str = Field(
-        max_length=128,
-        description="指标展示名称",
-    )
-    value: int | float | str | bool | None = Field(
-        default=None,
-        description="指标原始值",
-    )
-    unit: str | None = Field(
-        default=None,
-        max_length=32,
-        description="指标单位，如百分比、条、秒",
-    )
-    display_value: str | None = Field(
-        default=None,
-        description="已格式化的展示值；为空时前端根据 value 和 unit 处理",
-    )
-
-
-class ExecutionResourceResponse(ApiModel):
-    """执行步骤使用或产生的一份可按需查询的数据资源。"""
-
-    resource_ref: str = Field(
-        min_length=1,
-        max_length=512,
-        description="资源不透明引用；前端将其交给步骤资源接口，不直接解析",
-    )
-    resource_code: str = Field(
-        max_length=64,
-        description="步骤内稳定的资源编码，如 HISTORY_SALES、FEATURE_MATRIX、TRAIN_LOG",
-    )
-    resource_name: str = Field(
-        max_length=200,
-        description="资源展示名称，如历史销量数据、训练特征矩阵",
-    )
-    resource_role: ResourceRole = Field(
-        description="资源在当前步骤中的用途，如输入、输出、日志或最终结果",
-    )
-    resource_type: ResourceType = Field(
-        description="资源数据或展示类型，用于选择表格、图表、日志等查看组件",
-    )
-    summary: dict[str, Any] = Field(
-        default_factory=dict,
-        description="资源轻量摘要，如数据源、时间范围、记录数和数据版本",
-    )
-
-
-class ExecutionStepDetailResponse(ExecutionStepResponse):
-    """单个后台步骤的完整可展示详情，不直接携带大规模业务数据。"""
-
-    input_data: dict[str, Any] = Field(
-        default_factory=dict,
-        description="步骤输入参数摘要；不得包含密钥、完整数据集等敏感或大体量内容",
-    )
-    output_data: dict[str, Any] = Field(
-        default_factory=dict,
-        description="步骤输出结果摘要；完整业务数据通过 resources 按需查询",
-    )
-    metrics: list[ExecutionMetricResponse] = Field(
-        default_factory=list,
-        description="步骤产生的结构化指标列表",
-    )
-    resources: list[ExecutionResourceResponse] = Field(
-        default_factory=list,
-        description="步骤读取或生成的数据资源；一个步骤可以关联多个资源",
-    )
-    error_code: str | None = Field(
-        default=None,
-        max_length=64,
-        description="步骤执行失败时的稳定错误编码",
-    )
-    error_message: str | None = Field(
-        default=None,
-        description="经过脱敏、可以展示给用户的失败原因",
-    )
-
-
-class ExecutionStepListResponse(ApiModel):
-    """某次任务执行尝试的步骤摘要列表。"""
-
-    task_no: str = Field(
-        description="执行任务编号",
-    )
-    attempt_no: int = Field(
-        ge=1,
-        description="当前查询的任务执行次数",
-    )
-    steps: list[ExecutionStepResponse] = Field(
-        default_factory=list,
-        description="步骤摘要列表，按 stepOrder 升序排列",
     )
 
 

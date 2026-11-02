@@ -42,6 +42,9 @@ public record AiConversationResponse(
             String runNo,
             /** Agent Run 当前状态，不代表后台训练预测任务状态。 */
             String runStatus,
+            /** 运行开始、结束时间，用于历史过程的总耗时展示。 */
+            Date runStartedAt,
+            Date runFinishedAt,
             /** 该轮等待补充信息时的结构化提示。 */
             AiChatResponse.Clarification clarification,
             /** 前端展示结构。 */

@@ -2,6 +2,7 @@ package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.request.ModelExecuteRecordPageRequest;
 import com.gas.forecast.business.service.ModelExecuteRecordService;
+import com.gas.forecast.business.application.forecast.ForecastTrendDataService;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.web.WebLog;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ModelExecuteRecordController {
     private final ModelExecuteRecordService modelExecuteRecordService;
+    private final ForecastTrendDataService forecastTrendDataService;
 
     @PostMapping("listPage") @WebLog("预测记录分页查询")
     public ResponseResult<PageInfoDTO<ModelExecuteRecordTb>> listPage(@Valid @RequestBody ModelExecuteRecordPageRequest request) {
@@ -25,5 +27,15 @@ public class ModelExecuteRecordController {
     @GetMapping("/{forecastNo}") @WebLog("预测记录详情查询")
     public ResponseResult<ModelExecuteRecordTb> detail(@PathVariable String forecastNo) {
         return ResponseResult.success(modelExecuteRecordService.detail(forecastNo));
+    }
+
+    @GetMapping("/{forecastNo}/trend") @WebLog("预测趋势明细查询")
+    public ResponseResult<java.util.Map<String, Object>> trend(@PathVariable String forecastNo) {
+        return ResponseResult.success(forecastTrendDataService.trend(modelExecuteRecordService.detail(forecastNo)));
+    }
+
+    @GetMapping("/{forecastNo}/training-data") @WebLog("模型训练数据查询")
+    public ResponseResult<java.util.Map<String, Object>> trainingData(@PathVariable String forecastNo) {
+        return ResponseResult.success(forecastTrendDataService.trainingData(modelExecuteRecordService.detail(forecastNo)));
     }
 }

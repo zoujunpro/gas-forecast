@@ -13,6 +13,8 @@
         <result property="trainingResultJson" column="training_result_json" jdbcType="LONGVARCHAR"/>
         <result property="backtestResultJson" column="backtest_result_json" jdbcType="LONGVARCHAR"/>
         <result property="forecastResultJson" column="forecast_result_json" jdbcType="LONGVARCHAR"/>
+        <result property="analysisContent" column="analysis_content" jdbcType="LONGVARCHAR"/>
+        <result property="analysisQuestionsJson" column="analysis_questions_json" jdbcType="LONGVARCHAR"/>
         <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
         <result property="updatedAt" column="updated_at" jdbcType="TIMESTAMP"/>
     </resultMap>
@@ -23,7 +25,7 @@
         history_start_date, history_end_date, history_rows, forecast_start_date, forecast_horizon, forecast_unit,
         status, best_model, candidate_count, successful_candidate_count,
         mape, wmape, smape, rmse, mae, r2, execute_duration_seconds,
-        request_param, training_result_json, backtest_result_json, forecast_result_json, error_message,
+        request_param, training_result_json, backtest_result_json, forecast_result_json, analysis_content, analysis_questions_json, error_message,
         created_by, created_by_name, started_at, finished_at, created_at, updated_at
     </sql>
 </mapper>

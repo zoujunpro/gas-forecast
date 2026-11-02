@@ -76,14 +76,15 @@ const scopes = computed(() => page.value.scopes)
 .placeholder-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--app-gap);
 }
 
 .summary-panel,
 .section-panel {
   background: #ffffff;
-  border: 1px solid #e6eaf0;
-  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.035);
 }
 
 .summary-panel {
@@ -98,18 +99,18 @@ const scopes = computed(() => page.value.scopes)
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #0284c7;
+  color: var(--app-primary);
 }
 
 h1 {
   margin: 0 0 8px;
   font-size: 22px;
-  color: #101828;
+  color: var(--app-text);
 }
 
 p {
   margin: 0;
-  color: #667085;
+  color: var(--app-text-secondary);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -133,7 +134,7 @@ p {
 
 .panel-head h2 {
   font-size: 16px;
-  color: #101828;
+  color: var(--app-text);
 }
 
 .panel-head span {

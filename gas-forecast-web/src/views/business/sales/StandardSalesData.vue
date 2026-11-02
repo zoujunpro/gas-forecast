@@ -276,7 +276,7 @@ onMounted(() => {
 .sales-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--app-gap);
 }
 
 .date-range {

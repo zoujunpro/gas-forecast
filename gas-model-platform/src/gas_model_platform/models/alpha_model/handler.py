@@ -29,6 +29,8 @@ from gas_model_platform.schemas.modeling import (
     TrainingDataValidationIssue,
     TrainingDataValidationResult,
     TrainResult,
+    ValidationProfile,
+    ValidationRuleSummary,
 )
 
 from .auto_engine import AutoTrainingOutput, forecast_auto, train_auto
@@ -69,6 +71,16 @@ class ModelAlphaAutoV1Handler:
             recommended=730,
             continuous=True,
             description="至少需要365天连续日销量并覆盖完整年度，建议730天以上；默认使用最近90天进行独立回测。",
+        ),
+        validation_profile=ValidationProfile(
+            required_fields=["date", "gas_sales"], forecast_units=["day"],
+            rules=[
+                ValidationRuleSummary(code="INSUFFICIENT_HISTORY", level="ERROR", description="历史日销量少于365条时禁止训练。"),
+                ValidationRuleSummary(code="DUPLICATE_DATES", level="ERROR", description="存在重复日期时禁止训练。"),
+                ValidationRuleSummary(code="NON_CONTINUOUS_DATES", level="ERROR", description="存在日期缺失时禁止训练。"),
+                ValidationRuleSummary(code="NEGATIVE_GAS_SALES", level="ERROR", description="存在负销量时禁止训练。"),
+                ValidationRuleSummary(code="HISTORY_BELOW_RECOMMENDED", level="WARNING", description="历史日销量少于730条时提示选模稳定性风险。"),
+            ],
         ),
     )
 

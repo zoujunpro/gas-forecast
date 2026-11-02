@@ -12,12 +12,13 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** 为预测结果统一补充去年同期实际销量，供任务结果与预测记录页面共同使用。 */
+/** 为历史及预测结果统一补充去年同期实际销量，供任务结果与预测记录页面共同使用。 */
 @Service
 @RequiredArgsConstructor
 public class ForecastLastYearComparisonService {
@@ -25,7 +26,7 @@ public class ForecastLastYearComparisonService {
     private final DataDailySalesTbMapper dataDailySalesTbMapper;
 
     public List<Map<String, Object>> lastYearPoints(ModelExecuteRecordTb record) {
-        List<String> forecastDates = forecastDates(record == null ? null : record.getForecastResultJson());
+        List<String> forecastDates = comparisonDates(record);
         if (forecastDates.isEmpty()) return List.of();
         Map<String, String> comparisonDateByForecastDate = new LinkedHashMap<>();
         for (String forecastDate : forecastDates) {
@@ -55,18 +56,25 @@ public class ForecastLastYearComparisonService {
         return points;
     }
 
-    private List<String> forecastDates(String forecastResultJson) {
-        if (!hasText(forecastResultJson)) return List.of();
+    private List<String> comparisonDates(ModelExecuteRecordTb record) {
+        LinkedHashSet<String> dates = new LinkedHashSet<>();
+        collectDates(record == null ? null : record.getBacktestResultJson(), dates);
+        collectDates(record == null ? null : record.getForecastResultJson(), dates);
+        return new ArrayList<>(dates);
+    }
+
+    private void collectDates(String resultJson, LinkedHashSet<String> dates) {
+        if (!hasText(resultJson)) return;
         try {
-            JsonNode points = objectMapper.readTree(forecastResultJson).path("points");
-            if (!points.isArray()) return List.of();
-            List<String> dates = new ArrayList<>();
+            JsonNode root = objectMapper.readTree(resultJson);
+            JsonNode points = root.path("points");
+            if (!points.isArray()) points = root.path("rolling_backtest_results");
+            if (!points.isArray()) return;
             for (JsonNode point : points) {
                 String date = firstText(point, "date", "forecast_date", "forecastDate", "stat_date", "statDate");
                 if (hasText(date)) dates.add(date);
             }
-            return dates;
-        } catch (Exception exception) { return List.of(); }
+        } catch (Exception ignored) { }
     }
 
     private String firstText(JsonNode node, String... names) {

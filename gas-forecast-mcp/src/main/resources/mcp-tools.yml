@@ -134,7 +134,7 @@ tools:
 
   - name: task_status_get
     title: 查询统一任务状态
-    description: 查询训练、预测或训练后预测任务的总体进度、成功失败数量、当前阶段和恢复建议。恢复或重试之前必须先调用本工具。
+    description: 查询预测或分析任务的总体进度、成功失败数量、当前阶段和恢复建议。恢复或重试之前必须先调用本工具。
     inputSchema:
       type: object
       required: [taskNo]
@@ -146,15 +146,15 @@ tools:
     annotations: *readOnly
 
   - name: task_steps_get
-    title: 查询任务执行步骤
-    description: 查询智能体可审计步骤；可同时返回训练批次的LOAD_DATA、DYNAMIC_FEATURE、MODEL_TRAIN等真实业务步骤。includeAttempts=true返回历史任务尝试。
+    title: 查询预测执行过程
+    description: 查询智能体已记录的预测、查询或分析过程事件；includeAttempts=true返回历史任务尝试。
     inputSchema:
       type: object
       required: [taskNo]
       additionalProperties: false
       properties:
         taskNo: {type: string, description: 统一任务编号}
-        includeBusinessSteps: {type: boolean, description: 是否包含真实训练业务步骤，默认true}
+        includeBusinessSteps: {type: boolean, description: 是否包含真实业务过程事件，默认true}
         includeAttempts: {type: boolean, description: 是否包含历史任务尝试，默认false}
     outputSchema: *standardOutput
     annotations: *readOnly

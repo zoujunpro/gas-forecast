@@ -1,64 +1,26 @@
 <template>
   <el-config-provider :locale="zhCn">
     <router-view v-if="isLoginPage || isStandalonePage" :key="route.fullPath" />
-    <div v-else-if="isForecastPage" class="forecast-shell">
-      <header class="forecast-header">
-        <button class="forecast-brand" type="button" @click="goHome">
-          <span class="forecast-logo">
-            <svg viewBox="0 0 32 32" aria-hidden="true">
-              <path d="M16 3S5 10 5 18.5a11 11 0 0 0 22 0C27 10 16 3 16 3Z" fill="currentColor" />
-              <path d="M16 23V11m0 0-5 5m5-5 5 5" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" />
-            </svg>
-          </span>
-          <strong>天然气市场需求智能预测平台</strong>
-        </button>
-
-        <nav class="forecast-navigation" aria-label="预测工作台导航">
-          <RouterLink
-            v-for="menu in topMenus"
-            :key="menu.id"
-            :to="topMenuTarget(menu)"
-            :class="{ active: activeTopMenu?.id === menu.id }"
-          >{{ topMenuName(menu) }}</RouterLink>
-        </nav>
-
-        <div class="forecast-account">
-          <span>{{ welcomeName }}</span>
-          <button type="button" @click="logout">退出</button>
+    <div v-else :class="isForecastPage ? 'forecast-shell' : 'app-shell'">
+      <AppHeader
+        :menus="topMenus"
+        :target="topMenuTarget"
+        :label="topMenuName"
+        :active="(menu) => activeTopMenu?.id === menu.id"
+        :welcome-name="welcomeName"
+        @home="goHome"
+        @logout="logout"
+      />
+      <template v-if="isForecastPage">
+        <div class="forecast-body">
+          <main class="forecast-content"><Transition name="page-fade" mode="out-in"><router-view :key="route.fullPath" /></Transition></main>
         </div>
-      </header>
-      <div class="forecast-body">
-        <main class="forecast-content"><router-view :key="route.fullPath" /></main>
-      </div>
-    </div>
-    <div v-else class="app-shell">
-      <header class="topbar">
-        <button class="forecast-brand" type="button" @click="goHome">
-          <span class="forecast-logo">
-            <svg viewBox="0 0 32 32" aria-hidden="true">
-              <path d="M16 3S5 10 5 18.5a11 11 0 0 0 22 0C27 10 16 3 16 3Z" fill="currentColor" />
-              <path d="M16 23V11m0 0-5 5m5-5 5 5" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" />
-            </svg>
-          </span>
-          <strong>天然气市场需求智能预测平台</strong>
-        </button>
-        <nav class="workspace-switch" aria-label="中心切换">
-          <RouterLink
-            v-for="menu in topMenus"
-            :key="menu.id"
-            :to="topMenuTarget(menu)"
-            :class="{ active: activeTopMenu?.id === menu.id }"
-          >{{ topMenuName(menu) }}</RouterLink>
-        </nav>
-        <div class="forecast-account">
-          <span>{{ welcomeName }}</span>
-          <button type="button" @click="logout">退出</button>
-        </div>
-      </header>
-
-      <div class="app-body">
+      </template>
+      <template v-else>
+        <div class="app-body">
         <aside :class="['sidebar', { collapsed: isSidebarCollapsed }]">
           <div class="sidebar-heading">
+            <span v-if="!isSidebarCollapsed">{{ activeTopMenu?.name || '功能菜单' }}</span>
             <el-tooltip :content="isSidebarCollapsed ? '展开菜单' : '折叠菜单'" placement="bottom">
               <button class="collapse-button" type="button" @click="toggleSidebar">
                 <el-icon>
@@ -67,7 +29,6 @@
                 </el-icon>
               </button>
             </el-tooltip>
-            <span v-if="!isSidebarCollapsed">{{ activeTopMenu?.name || '功能菜单' }}</span>
           </div>
 
           <el-menu
@@ -86,7 +47,7 @@
           <PageTabs v-if="!isImmersivePage" />
 
           <main :class="['content', { immersive: isImmersivePage }]">
-            <router-view :key="route.fullPath" />
+            <Transition name="page-fade" mode="out-in"><router-view :key="route.fullPath" /></Transition>
           </main>
 
           <footer v-if="!isImmersivePage" class="footerbar">
@@ -94,7 +55,8 @@
             <span>本地开发环境</span>
           </footer>
         </section>
-      </div>
+        </div>
+      </template>
     </div>
   </el-config-provider>
 </template>
@@ -106,6 +68,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Expand, Fold } from '@element-plus/icons-vue'
 import PageTabs from '@/components/PageTabs.vue'
 import SidebarMenu from '@/components/SidebarMenu.vue'
+import AppHeader from '@/components/AppHeader.vue'
 import {
   clearToken,
   getProfile,
@@ -233,6 +196,23 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+body:has(.short-term-workbench) .forecast-content {
+  background: linear-gradient(130deg, #f3faff, #edf6ff);
+}
+
+/* The short-term workbench mirrors the supplied reference page.  It needs an
+   isolated type scale because the application shell otherwise supplies a
+   different font fallback, weight and navigation rhythm. */
+body:has(.short-term-workbench) {
+  --app-font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+  --el-font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+  --app-font-size-body: 15px;
+  --app-line-height-body: 1.5;
+  font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 button,
 input,
 textarea,
@@ -305,13 +285,46 @@ select {
 .el-table__body tr.hover-row > .el-table-fixed-column--right {
   background-color: #e8f3ff !important;
 }
+
+/* 折叠侧栏的二级菜单会挂载到 body，需在全局收敛宽度，避免出现默认的大浮层。 */
+.el-menu--popup {
+  min-width: 196px !important;
+  padding: 6px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .12) !important;
+}
+
+.el-menu--popup .el-menu-item,
+.el-menu--popup .el-sub-menu__title {
+  height: 40px;
+  line-height: 40px;
+  margin: 2px 0;
+  border-radius: 7px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.el-menu--popup .el-menu-item:hover,
+.el-menu--popup .el-sub-menu__title:hover {
+  background: #f5f9ff;
+  color: #2563eb;
+}
+
+.el-menu--popup .el-menu-item.is-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 650;
+}
 </style>
 
 <style scoped>
 .forecast-shell {
   min-height: 100vh;
-  background: #f7f9fc;
-  color: #0f172a;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
 .forecast-header {
@@ -361,8 +374,8 @@ select {
   left: 50%;
   display: flex;
   align-items: center;
-  gap: 34px;
-  padding: 9px 18px;
+  gap: 42px;
+  padding: 0;
   transform: translateX(-50%);
 }
 
@@ -420,7 +433,7 @@ select {
 }
 
 .forecast-body {
-  height: calc(100vh - 56px);
+  height: calc(100vh - 73px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -643,7 +656,7 @@ select {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: var(--app-surface);
+  background: #ffffff;
   border-right: 1px solid var(--app-border);
   display: flex;
   flex-direction: column;
@@ -706,7 +719,7 @@ select {
   flex: 1;
   width: 100%;
   border-right: none;
-  padding: 10px 8px 16px;
+  padding: 12px 8px 16px;
   font-family: inherit;
 }
 
@@ -715,6 +728,7 @@ select {
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: space-between;
   flex: 0 0 48px;
   padding: 0 12px;
   border-bottom: 1px solid var(--app-border-soft);
@@ -745,6 +759,7 @@ select {
 .side-menu :deep(.el-sub-menu__title) {
   height: 42px;
   line-height: 42px;
+  margin-bottom: 3px;
   border-radius: 8px;
   color: var(--app-text-secondary);
   font-family: inherit;
@@ -773,8 +788,20 @@ select {
 .side-menu :deep(.el-menu-item.is-active) {
   background: var(--app-primary-soft);
   color: var(--app-primary-hover);
-  font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--app-primary);
+  font-weight: 650;
+  box-shadow: inset 2px 0 0 var(--app-primary);
+}
+
+.side-menu :deep(.el-menu-item .el-icon),
+.side-menu :deep(.el-sub-menu__title .el-icon) {
+  color: inherit;
+  font-size: 17px;
+}
+
+.side-menu :deep(.el-menu-item:hover),
+.side-menu :deep(.el-sub-menu__title:hover) {
+  background: #f8fafc;
+  color: #1d4ed8;
 }
 
 .main-area {
@@ -806,8 +833,8 @@ select {
   left: 50%;
   display: flex;
   align-items: center;
-  gap: 34px;
-  padding: 4px 18px;
+  gap: 42px;
+  padding: 0;
   transform: translateX(-50%);
 }
 
@@ -831,16 +858,56 @@ select {
   box-shadow: 0 5px 14px -5px rgba(14, 165, 233, 0.55);
 }
 
+/* A single navigation contract for every application surface. */
+.forecast-header,
+.topbar {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--app-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  backdrop-filter: none;
+}
+
+.forecast-navigation,
+.workspace-switch {
+  gap: 42px;
+}
+
+.forecast-navigation a,
+.workspace-switch a {
+  padding: 9px 16px;
+  border-radius: 9px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.forecast-navigation a:hover,
+.workspace-switch a:hover {
+  color: #0f172a;
+}
+
+.forecast-navigation a.active,
+.workspace-switch a.active {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 5px 14px -5px rgba(14, 165, 233, 0.55);
+}
+
+
 .collapse-button {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   border: 1px solid #dbe3ec;
-  border-radius: 6px;
-  background: #f8fafc;
+  border-radius: 7px;
+  background: #ffffff;
   color: #64748b;
   cursor: pointer;
 }
@@ -861,7 +928,9 @@ select {
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 14px;
+  /* 菜单页的首屏由面包屑承接，顶部留白保持紧凑，避免标题区显得松散。 */
+  padding: 12px 14px 14px;
+  background: var(--app-bg);
 }
 
 .content.immersive {
@@ -872,6 +941,17 @@ select {
   overflow: hidden;
 }
 
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity .16s ease, transform .16s ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
 .footerbar {
   height: 36px;
   display: flex;
@@ -880,8 +960,8 @@ select {
   padding: 0 24px;
   background: var(--app-surface);
   border-top: 1px solid var(--app-border);
-  color: var(--app-text-muted);
-  font-size: 13px;
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 @media (max-width: 980px) {

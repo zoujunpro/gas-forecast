@@ -1,6 +1,5 @@
 package com.gas.forecast.business.application.task;
 
-import com.gas.forecast.business.application.task.step.ExecutionStepRecorder;
 import com.gas.forecast.business.common.support.BaseCodeGenerateService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,7 +36,6 @@ public class ExecutionTaskLifecycleService {
     private final ExecutionTaskDetailTbMapper executionTaskDetailTbMapper;
     private final BaseCustomerTbMapper baseCustomerTbMapper;
     private final BaseCodeGenerateService baseCodeGenerateService;
-    private final ExecutionStepRecorder executionStepRecorder;
     private final ObjectMapper objectMapper;
 
     /** 创建一次用户原始意图对应的任务及最小目标关联行。 */
@@ -51,10 +49,18 @@ public class ExecutionTaskLifecycleService {
     @Transactional
     public ExecutionTaskTb create(String conversationNo, String agentCode,
             String dimensionType, List<ExecutionTarget> targets, String taskName, String requestParam) {
+        return create(conversationNo, null, agentCode, dimensionType, targets, taskName, requestParam);
+    }
+
+    /** 创建任务时将发起它的智能体运行一并保存，供异步执行过程持续回写。 */
+    @Transactional
+    public ExecutionTaskTb create(String conversationNo, String runNo, String agentCode,
+            String dimensionType, List<ExecutionTarget> targets, String taskName, String requestParam) {
         Date now = new Date();
         ExecutionTaskTb task = new ExecutionTaskTb();
         task.setTaskNo(newTaskNo());
         task.setConversationNo(conversationNo);
+        task.setRunNo(TextUtils.hasText(runNo) ? runNo.trim() : null);
         task.setDimensionType(dimensionType);
         task.setTaskName(taskName);
         task.setScopeConditionJson(json(targets));
@@ -73,7 +79,6 @@ public class ExecutionTaskLifecycleService {
         }
         for (ExecutionTaskDetailTb relation : relations) {
             executionTaskDetailTbMapper.insert(relation);
-            executionStepRecorder.initialize(relation);
         }
         return task;
     }
@@ -116,7 +121,6 @@ public class ExecutionTaskLifecycleService {
             detail.setForecastNo(forecastNo);
             detail.setUpdatedAt(new Date());
             executionTaskDetailTbMapper.updateById(detail);
-            executionStepRecorder.bindForecastNo(detail.getDetailNo(), forecastNo);
         }
     }
 

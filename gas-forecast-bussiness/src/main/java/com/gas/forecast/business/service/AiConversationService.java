@@ -161,6 +161,8 @@ public class AiConversationService {
                     message.getContent(),
                     run == null ? null : run.getRunNo(),
                     run == null ? null : run.getStatus(),
+                    run == null ? null : run.getStartedAt(),
+                    run == null ? null : run.getFinishedAt(),
                     stored == null ? null : stored.clarification(),
                     stored == null ? null : stored.presentation(),
                     stored == null ? null : stored.executionResult(),

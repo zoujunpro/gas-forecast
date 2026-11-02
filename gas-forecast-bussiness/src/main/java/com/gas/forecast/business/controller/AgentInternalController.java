@@ -2,12 +2,18 @@ package com.gas.forecast.business.controller;
 
 import com.gas.forecast.business.dto.EntityBatchResolveRequest;
 import com.gas.forecast.business.dto.IntentEntityResolveRequest;
+import com.gas.forecast.business.dto.AgentRunEventCreateRequest;
+import com.gas.forecast.business.dto.AgentRunEventResponse;
+import com.gas.forecast.business.dto.AgentRunEventUpdateRequest;
+import com.gas.forecast.business.service.AgentRunEventService;
 import com.gas.forecast.business.service.BusinessEntityResolutionService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequirePermission("ai:assistant:use")
 public class AgentInternalController {
     private final BusinessEntityResolutionService entityResolutionService;
+    private final AgentRunEventService agentRunEventService;
 
     @PostMapping("/entities:resolve")
     public ResponseResult<BusinessEntityResolutionService.BatchResolutionResult> resolveEntities(
@@ -41,5 +48,19 @@ public class AgentInternalController {
                 new BusinessEntityResolutionService.IntentEntityQuery(request.intent(), request.dimensionType(),
                         request.targets().stream().map(target -> new BusinessEntityResolutionService.EntityTargetQuery(
                                 target.customerNames(), target.regionNames(), target.industryNames())).toList(), request.limit())));
+    }
+
+    /** 创建真实运行事件并返回数据库 id，供 Python 后续更新同一条事件。 */
+    @PostMapping("/runs/{runNo}/events")
+    public ResponseResult<AgentRunEventResponse> createRunEvent(@PathVariable String runNo,
+            @Valid @RequestBody AgentRunEventCreateRequest request) {
+        return ResponseResult.success(agentRunEventService.create(runNo, request));
+    }
+
+    /** 更新同一运行事件；不得以追加新事件代替状态变化。 */
+    @PatchMapping("/runs/{runNo}/events/{eventId}")
+    public ResponseResult<AgentRunEventResponse> updateRunEvent(@PathVariable String runNo,
+            @PathVariable Long eventId, @Valid @RequestBody AgentRunEventUpdateRequest request) {
+        return ResponseResult.success(agentRunEventService.update(runNo, eventId, request));
     }
 }

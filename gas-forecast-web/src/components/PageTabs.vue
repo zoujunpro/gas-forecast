@@ -1,16 +1,6 @@
 <template>
   <nav class="page-tabs" aria-label="打开的页面">
-    <button
-      class="tabs-nav-button"
-      type="button"
-      aria-label="向左滚动页面标签"
-      :disabled="!canScrollLeft"
-      @click="scrollTabs('left')"
-    >
-      <el-icon><ArrowLeft /></el-icon>
-    </button>
-
-    <div ref="tabsScrollRef" class="tabs-scroll" @scroll="updateTabsScrollState" @wheel="handleTabsWheel">
+    <div ref="tabsScrollRef" class="tabs-scroll" @wheel="handleTabsWheel">
       <button
         v-for="tab in tabs"
         :key="tab.path"
@@ -25,33 +15,6 @@
         </el-icon>
       </button>
     </div>
-
-    <button
-      class="tabs-nav-button"
-      type="button"
-      aria-label="向右滚动页面标签"
-      :disabled="!canScrollRight"
-      @click="scrollTabs('right')"
-    >
-      <el-icon><ArrowRight /></el-icon>
-    </button>
-
-    <el-dropdown trigger="click" @command="handleCommand">
-      <button class="tabs-action" type="button" aria-label="页面标签操作">
-        <el-icon><ArrowDown /></el-icon>
-      </button>
-      <template #dropdown>
-        <el-dropdown-menu>
-          <el-dropdown-item command="current" :disabled="!isClosable(route.path)"> 关闭当前 </el-dropdown-item>
-          <el-dropdown-item command="others">关闭其他</el-dropdown-item>
-          <el-dropdown-item command="right" :disabled="!hasRightTabs">关闭右侧</el-dropdown-item>
-          <el-dropdown-item command="left" :disabled="!hasLeftTabs">关闭左侧</el-dropdown-item>
-          <el-dropdown-item divided command="all" :disabled="tabs.every((tab) => !isClosable(tab.path))">
-            关闭所有
-          </el-dropdown-item>
-        </el-dropdown-menu>
-      </template>
-    </el-dropdown>
 
     <div
       v-if="contextMenu.visible"
@@ -99,7 +62,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowDown, ArrowLeft, ArrowRight, Close } from '@element-plus/icons-vue'
+import { Close } from '@element-plus/icons-vue'
 
 interface PageTab {
   path: string
@@ -112,8 +75,6 @@ const homePath = '/'
 const route = useRoute()
 const router = useRouter()
 const tabsScrollRef = ref<HTMLElement | null>(null)
-const canScrollLeft = ref(false)
-const canScrollRight = ref(false)
 
 const homeTab = (): PageTab => ({
   path: homePath,
@@ -128,9 +89,6 @@ const contextMenu = reactive({
   targetPath: homePath
 })
 
-const activeIndex = computed(() => tabs.value.findIndex((tab) => tab.path === route.path))
-const hasLeftTabs = computed(() => tabs.value.some((tab, index) => index < activeIndex.value && isClosable(tab.path)))
-const hasRightTabs = computed(() => tabs.value.some((tab, index) => index > activeIndex.value && isClosable(tab.path)))
 const contextTargetIndex = computed(() => tabs.value.findIndex((tab) => tab.path === contextMenu.targetPath))
 const contextTargetClosable = computed(() => isClosable(contextMenu.targetPath))
 const hasLeftTabsFromContext = computed(() =>
@@ -166,32 +124,6 @@ const scrollActiveTabIntoView = () => {
   void nextTick(() => {
     const activeTab = tabsScrollRef.value?.querySelector<HTMLElement>('.tab-item.active')
     activeTab?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
-    updateTabsScrollState()
-  })
-}
-
-const updateTabsScrollState = () => {
-  const scrollContainer = tabsScrollRef.value
-  if (!scrollContainer) {
-    canScrollLeft.value = false
-    canScrollRight.value = false
-    return
-  }
-
-  const maxScrollLeft = scrollContainer.scrollWidth - scrollContainer.clientWidth
-  canScrollLeft.value = scrollContainer.scrollLeft > 1
-  canScrollRight.value = scrollContainer.scrollLeft < maxScrollLeft - 1
-}
-
-const scrollTabs = (direction: 'left' | 'right') => {
-  const scrollContainer = tabsScrollRef.value
-  if (!scrollContainer) {
-    return
-  }
-
-  scrollContainer.scrollBy({
-    left: direction === 'left' ? -240 : 240,
-    behavior: 'smooth'
   })
 }
 
@@ -214,13 +146,6 @@ watch(
     scrollActiveTabIntoView()
   },
   { immediate: true }
-)
-
-watch(
-  () => tabs.value.length,
-  () => {
-    void nextTick(updateTabsScrollState)
-  }
 )
 
 const openTab = (path: string) => {
@@ -301,26 +226,6 @@ const closeRight = (targetPath = route.path) => {
   navigateAfterBulkClosing(targetPath)
 }
 
-const handleCommand = (command: string | number | object) => {
-  switch (command as TabCommand) {
-    case 'current':
-      closeTab(route.path)
-      break
-    case 'others':
-      closeOthers()
-      break
-    case 'right':
-      closeRight()
-      break
-    case 'left':
-      closeLeft()
-      break
-    case 'all':
-      closeAll()
-      break
-  }
-}
-
 const closeContextMenu = () => {
   contextMenu.visible = false
 }
@@ -358,14 +263,11 @@ const runContextCommand = (command: TabCommand) => {
 onMounted(() => {
   window.addEventListener('click', closeContextMenu)
   window.addEventListener('scroll', closeContextMenu, true)
-  window.addEventListener('resize', updateTabsScrollState)
-  updateTabsScrollState()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('click', closeContextMenu)
   window.removeEventListener('scroll', closeContextMenu, true)
-  window.removeEventListener('resize', updateTabsScrollState)
 })
 </script>
 
@@ -373,49 +275,15 @@ onBeforeUnmount(() => {
 .page-tabs {
   width: 100%;
   min-width: 0;
-  height: 40px;
+  height: 44px;
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 8px;
+  gap: 7px;
   padding: 0 12px;
   overflow: hidden;
-  background: var(--app-surface);
+  background: rgba(255, 255, 255, .96);
   border-bottom: 1px solid var(--app-border);
-}
-
-.page-tabs :deep(.el-dropdown) {
-  flex: 0 0 auto;
-}
-
-.tabs-nav-button {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  border: 1px solid var(--app-border);
-  border-radius: 6px;
-  background: var(--app-surface);
-  color: var(--app-text-secondary);
-  cursor: pointer;
-  transition:
-    color 0.2s,
-    border-color 0.2s,
-    background 0.2s;
-}
-
-.tabs-nav-button:hover:not(:disabled) {
-  color: var(--app-primary-hover);
-  border-color: #91caff;
-  background: var(--app-primary-soft);
-}
-
-.tabs-nav-button:disabled {
-  color: var(--app-text-disabled);
-  cursor: not-allowed;
-  background: #f5f7fa;
 }
 
 .tabs-scroll {
@@ -425,7 +293,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 0;
+  padding: 7px 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -448,8 +316,8 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: 0 10px;
   border: 1px solid var(--app-border);
-  border-radius: 6px;
-  background: #f5f7fa;
+  border-radius: 7px;
+  background: #f8fafc;
   color: var(--app-text-secondary);
   font-family: inherit;
   font-size: 13px;
@@ -463,9 +331,9 @@ onBeforeUnmount(() => {
 
 .tab-item.active {
   color: var(--app-primary-hover);
-  border-color: #91caff;
+  border-color: #bfdbfe;
   background: var(--app-primary-soft);
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .tab-title {
@@ -486,26 +354,6 @@ onBeforeUnmount(() => {
 .tab-close:hover {
   color: var(--app-text);
   background: rgba(15, 23, 42, 0.08);
-}
-
-.tabs-action {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid var(--app-border);
-  border-radius: 6px;
-  background: var(--app-surface);
-  color: var(--app-text-secondary);
-  cursor: pointer;
-}
-
-.tabs-action:hover {
-  color: var(--app-primary-hover);
-  border-color: #91caff;
-  background: var(--app-primary-soft);
 }
 
 .tab-context-menu {

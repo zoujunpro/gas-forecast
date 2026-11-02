@@ -60,6 +60,10 @@ def validate_model_handler(model_code: str, handler: Any) -> None:
         raise ModelContractError(
             f"{model_code} 声明了 train 能力，必须提供 training_data_range"
         )
+    if "train" in capabilities and info.validation_profile is None:
+        raise ModelContractError(
+            f"{model_code} 声明了 train 能力，必须提供 validation_profile"
+        )
     if "train" in capabilities and not callable(
         getattr(handler, "validate_training_data", None)
     ):

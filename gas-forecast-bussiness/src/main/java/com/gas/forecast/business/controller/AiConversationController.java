@@ -4,9 +4,11 @@ import com.gas.forecast.business.dto.AiChatRequest;
 import com.gas.forecast.business.dto.AiChatResponse;
 import com.gas.forecast.business.dto.AiConversationResponse;
 import com.gas.forecast.business.dto.AiConversationRenameRequest;
+import com.gas.forecast.business.dto.AgentRunEventResponse;
 import com.gas.forecast.business.service.AiChatService;
 import com.gas.forecast.business.service.AiChatStreamService;
 import com.gas.forecast.business.service.AiConversationService;
+import com.gas.forecast.business.service.AgentRunEventService;
 import com.gas.forecast.common.core.ResponseResult;
 import com.gas.forecast.common.security.annotation.RequirePermission;
 import com.gas.forecast.common.web.WebLog;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -36,6 +39,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequiredArgsConstructor
 public class AiConversationController {
     private final AiConversationService conversationService;
+    private final AgentRunEventService agentRunEventService;
     private final AiChatService chatService;
     private final AiChatStreamService chatStreamService;
 
@@ -91,6 +95,13 @@ public class AiConversationController {
             @RequestParam(required = false) Long beforeMessageId,
             @RequestParam(defaultValue = "20") int pageSize) {
         return ResponseResult.success(conversationService.detail(conversationNo, beforeMessageId, pageSize));
+    }
+
+    /** 刷新或展开历史消息时，按运行编号恢复真实过程事件，顺序为 id 升序。 */
+    @GetMapping("/runs/{runNo}/events")
+    @RequirePermission("ai:assistant:use")
+    public ResponseResult<List<AgentRunEventResponse>> runEvents(@PathVariable String runNo) {
+        return ResponseResult.success(agentRunEventService.list(runNo));
     }
 
     /**

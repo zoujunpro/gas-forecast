@@ -26,6 +26,8 @@ public interface ForecastApplicationService {
     record ForecastCommand(
             /** 所属会话编号。 */
             String conversationNo,
+            /** 发起本次操作的智能体运行编号；异步任务用它回写真实过程事件。 */
+            String runNo,
             /** 执行预测的智能体编码。 */
             String agentCode,
             /** 本次预测最小执行维度：CUSTOMER、REGION、INDUSTRY。 */

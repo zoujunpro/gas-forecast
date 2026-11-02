@@ -36,6 +36,8 @@ const visible = defineModel<boolean>({ default: false })
 <style scoped>
 :global(.app-dialog) {
   border-radius: var(--app-radius);
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
 }
 
 :global(.app-dialog .el-dialog__header) {
@@ -45,7 +47,9 @@ const visible = defineModel<boolean>({ default: false })
 }
 
 :global(.app-dialog .el-dialog__body) {
+  max-height: min(64vh, 720px);
   padding: 20px 24px 8px;
+  overflow: auto;
 }
 
 :global(.app-dialog .el-dialog__footer) {
@@ -71,5 +75,17 @@ const visible = defineModel<boolean>({ default: false })
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+:global(.app-dialog .el-dialog__headerbtn) {
+  top: 18px;
+  right: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+:global(.app-dialog .el-dialog__headerbtn:hover) {
+  background: #f1f5f9;
 }
 </style>

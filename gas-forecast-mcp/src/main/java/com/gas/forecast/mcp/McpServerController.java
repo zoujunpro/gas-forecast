@@ -58,7 +58,8 @@ public class McpServerController {
             @Valid @RequestBody JsonRpcRequest request,
             @RequestHeader(value = "MCP-Protocol-Version", required = false) String protocolVersion,
             @RequestHeader(value = "x-user", required = false) String userId,
-            @RequestHeader(value = "x-traceId", required = false) String traceId) {
+            @RequestHeader(value = "x-traceId", required = false) String traceId,
+            @RequestHeader(value = "X-Agent-Run-No", required = false) String agentRunNo) {
         JsonNode id = request.id();
         String method = request.method();
         String effectiveTraceId = TextUtils.hasText(traceId) ? traceId : MDC.get("x-traceId");
@@ -74,7 +75,7 @@ public class McpServerController {
             case "initialize" -> initialize(id);
             case "ping" -> jsonRpcResult(id, Map.of());
             case "tools/list" -> jsonRpcResult(id, Map.of("tools", catalog.list()));
-            case "tools/call" -> callTool(id, request.params());
+            case "tools/call" -> callTool(id, request.params(), agentRunNo);
             default -> jsonRpcError(id, -32601, "METHOD_NOT_FOUND", "不支持的方法：" + method);
         };
         LOGGER.info("event=mcp_request_completed user_id={} trace_id={} method={} request_id={} status={}",
@@ -84,7 +85,7 @@ public class McpServerController {
 
     /** 保留协议单元测试和内部调用使用的简化入口。 */
     ResponseEntity<JsonRpcResponse<?>> handle(JsonRpcRequest request, String protocolVersion) {
-        return handle(request, protocolVersion, null, null);
+        return handle(request, protocolVersion, null, null, null);
     }
 
     /** 完成MCP能力协商，并为客户端生成会话标识。 */
@@ -101,7 +102,7 @@ public class McpServerController {
     }
 
     /** 校验工具名称与参数，执行工具并同时返回文本和结构化结果。 */
-    private ResponseEntity<JsonRpcResponse<?>> callTool(JsonNode id, JsonNode params) {
+    private ResponseEntity<JsonRpcResponse<?>> callTool(JsonNode id, JsonNode params, String agentRunNo) {
         if (params == null || params.isNull() || !params.isObject())
             return jsonRpcError(id, -32602, "INVALID_ARGUMENT", "tools/call缺少params或params不是对象");
         McpToolCallRequest request;
@@ -119,7 +120,7 @@ public class McpServerController {
             return jsonRpcError(id, -32602, "TOOL_NOT_FOUND", exception.getMessage());
         }
         Map<String, Object> arguments = request.arguments() == null ? Map.of() : request.arguments();
-        McpToolResult toolResult = dispatcher.invoke(name, arguments);
+        McpToolResult toolResult = dispatcher.invoke(name, arguments, agentRunNo);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("content", List.of(Map.of("type", "text", "text", toolResult.message())));
         result.put("isError", !toolResult.success());

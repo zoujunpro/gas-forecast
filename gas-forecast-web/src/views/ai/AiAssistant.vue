@@ -450,4 +450,28 @@ onBeforeUnmount(() => {
 .composer{width:min(calc(100% - 48px),960px);align-self:center;margin:0 auto;border:1px solid #dfe5ef;border-radius:14px 14px 0 0;background:#fff;box-shadow:0 -4px 18px rgba(30,58,95,.05)}
 .composer :deep(.el-textarea__inner){border-color:transparent}
 @media(max-width:1100px){.assistant-page{grid-template-columns:240px 1fr}}@media(max-width:760px){.assistant-page{grid-template-columns:1fr}.session-panel{display:none}.messages{padding:20px}.quick-list{grid-template-columns:1fr}}
+
+/* 沉浸式对话保留独立布局，但与平台使用同一主题色、状态色与圆角。 */
+.assistant-page{background:var(--app-surface)}
+.session-panel{background:#f8fafc;border-right-color:var(--app-border)}
+.brand-icon,.welcome-icon{background:var(--app-primary);border-radius:10px}
+.session-row:hover,.session-row.active{background:var(--app-primary-soft);color:var(--app-primary-hover)}
+.session-context-menu{border-color:var(--app-border);border-radius:10px}
+.session-context-menu button:hover{background:var(--app-primary-soft);color:var(--app-primary-hover)}
+.chat-header{border-bottom-color:var(--app-border)}
+.online{color:var(--app-success)}
+.online i{background:var(--app-success)}
+.quick-list button{border-color:var(--app-border);border-radius:10px}
+.quick-list button:hover{border-color:#93c5fd;color:var(--app-primary);background:var(--app-primary-soft)}
+.user .avatar,.user-text{background:var(--app-primary)}
+.assistant-text,.typing{background:#f8fafc;color:var(--app-text-secondary)}
+.execution-trace summary>i{background:var(--app-primary);box-shadow:0 0 0 4px var(--app-primary-soft)}
+.execution-trace summary,.trace-step.running{color:var(--app-primary)}
+.result-list,.clarification-card{border-color:var(--app-border)}
+.result-list-head{background:#f8fafc;color:var(--app-text)}
+.clarification-card,.ai-analysis{background:#f8fbff;border-color:#dbeafe}
+.analysis-title,.follow-up button{color:var(--app-primary)}
+.follow-up button{border-color:var(--app-border);border-radius:18px}
+.follow-up button:hover{border-color:#93c5fd;background:var(--app-primary-soft)}
+.composer{border-color:var(--app-border);box-shadow:0 -4px 18px rgba(15,23,42,.045)}
 </style>

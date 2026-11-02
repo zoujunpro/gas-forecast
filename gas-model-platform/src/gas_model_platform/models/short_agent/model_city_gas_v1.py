@@ -13,7 +13,7 @@ from gas_model_platform.models.short_agent import city_gas_v3_engine as engine
 from gas_model_platform.schemas.modeling import (
     BacktestPoint, BacktestResult, ForecastPoint, MetricSet, ModelContext,
     ModelInfo, PredictResult, RollingBacktestPoint, TrainingDataRange, TrainingDataValidationIssue,
-    TrainingDataValidationResult, TrainResult,
+    TrainingDataValidationResult, TrainResult, ValidationProfile, ValidationRuleSummary,
 )
 
 PROPHET_PARAMS = {"seasonality_mode": "additive", "changepoint_prior_scale": 0.05,
@@ -37,7 +37,16 @@ class ModelCityGasV1Handler:
         capabilities=["train", "backtest", "predict"],
         training_data_range=TrainingDataRange(
             type="history_length", frequency="day", minimum=365, recommended=730,
-            continuous=False, description="至少需要365条日数据并覆盖完整年度，推荐730条；日期不连续时提示警告，但不阻断训练。"))
+            continuous=False, description="至少需要365条日数据并覆盖完整年度，推荐730条；日期不连续时提示警告，但不阻断训练。"),
+        validation_profile=ValidationProfile(
+            required_fields=["date", "gas_sales"], forecast_units=["day"],
+            rules=[
+                ValidationRuleSummary(code="INSUFFICIENT_HISTORY", level="ERROR", description="历史日销量少于365条时禁止训练。"),
+                ValidationRuleSummary(code="DUPLICATE_DATES", level="ERROR", description="存在重复日期时禁止训练。"),
+                ValidationRuleSummary(code="NON_CONTINUOUS_DATES", level="WARNING", description="日期缺失时允许训练，但可能影响预测精度。"),
+            ],
+        ),
+    )
 
     def validate_training_data(self, context: ModelContext) -> TrainingDataValidationResult:
         frame, _ = self._prepare(context.dataset)

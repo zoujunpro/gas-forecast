@@ -16,6 +16,7 @@ def test_all_trainable_models_expose_training_data_range() -> None:
     for handler in MODEL_REGISTRY.values():
         if "train" in handler.info.capabilities:
             assert handler.info.training_data_range is not None
+            assert handler.info.validation_profile is not None
 
 
 def test_contract_rejects_handler_with_missing_method() -> None:

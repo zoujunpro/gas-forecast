@@ -49,6 +49,8 @@ from gas_model_platform.schemas.modeling import (
     TrainingDataValidationIssue,
     TrainingDataValidationResult,
     TrainResult,
+    ValidationProfile,
+    ValidationRuleSummary,
 )
 
 
@@ -74,6 +76,14 @@ class WinterAgentV1Handler:
             period="winter_season",
             minimum_history_before_period=DEFAULT_CONFIG["minimum_train_rows"],
             description="至少3个完整冬供季，首个可回测季前至少108条历史数据。",
+        ),
+        validation_profile=ValidationProfile(
+            required_fields=["date", "gas_sales"], forecast_units=["tenday"],
+            rules=[
+                ValidationRuleSummary(code="INSUFFICIENT_COMPLETE_PERIODS", level="ERROR", description="完整冬供季少于3个时禁止训练。"),
+                ValidationRuleSummary(code="BELOW_CONFIGURED_BACKTEST_PERIODS", level="WARNING", description="完整冬供季少于配置的回测季数时提示稳定性风险。"),
+                ValidationRuleSummary(code="MISSING_TENDAYS", level="WARNING", description="历史数据缺少旬点时允许训练，但提示数据不完整。"),
+            ],
         ),
     )
 

@@ -1,7 +1,8 @@
 # gas-model-platform 公共配置，作用类似 Spring Boot application.yml。
 profiles:
   # 可由 GAS_MODEL_PROFILE 覆盖。
-  active: dev
+  # 本机开发默认与 Java local（18083）配套；部署环境通过 GAS_MODEL_PROFILE 覆盖。
+  active: local
 
 app:
   name: gas-model-platform
@@ -15,6 +16,10 @@ server:
 training:
   # 单个模型平台进程允许同时执行的训练数；按机器 CPU、内存实测调整。
   max_concurrency: 4
+
+# 模型只向 Java 回调真实过程事件；Java 再负责鉴权后的持久化和 SSE 推送。
+events:
+  callback_url: ""
 
 logging:
   level: INFO

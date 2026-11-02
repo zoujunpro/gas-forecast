@@ -53,6 +53,8 @@ public class ForecastExecutionPayloadFactory {
 
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("forecast_no", record.getForecastNo());
+        put(payload, "run_no", task.getRunNo());
+        put(payload, "task_detail_no", detail.getDetailNo());
         payload.put("agent_code", detail.getAgentCode());
         payload.put("model_code", record.getModelCode());
         put(payload, "region_code", detail.getRegionCode()); put(payload, "industry_code", detail.getIndustryCode()); put(payload, "customer_code", detail.getCustomerCode());

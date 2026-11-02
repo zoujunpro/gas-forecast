@@ -1,6 +1,6 @@
 <template>
-  <div class="task-presentation">
-    <section v-loading="loading && !hasLoaded" class="task-card">
+  <div class="task-presentation" :class="{ compact }">
+    <section v-if="!compact" v-loading="loading && !hasLoaded" class="task-card">
       <template v-if="isBatchTask">
         <div class="task-head">
           <div>
@@ -63,7 +63,7 @@
             </div>
             <span
               >{{ detailProgressText(item) }} · {{ detailCompletedSteps(item) }} /
-              {{ (item.steps || []).length || 6 }} 步</span
+              {{ (item.process || []).length }} 个事件</span
             >
             <el-tag size="small" :class="['batch-status', batchDetailClass(item)]" :type="statusType(item.status)">{{
               statusText(item.status)
@@ -83,7 +83,7 @@
             <small>预测周期</small><b>{{ forecastPeriods }} 天</b>
           </div>
           <div>
-            <small>执行进度</small><b>{{ completedSteps }} / 6</b>
+            <small>执行进度</small><b>{{ completedSteps }} / {{ processCount }}</b>
           </div>
           <div class="best-model-metric">
             <small>最佳模型</small><b :title="bestModelDisplay || '-'">{{ bestModelDisplay || '-' }}</b>
@@ -105,12 +105,12 @@
         <div class="inline-steps">
           <div
             v-for="step in presentedSteps"
-            :key="step.stepNo || step.stepCode"
+            :key="step.eventId || step.id || step.stepNo || step.stepCode"
             class="step"
             :class="[String(step.status || '').toLowerCase(), { expanded: isExpanded(singleTask.detailNo, step) }]"
           >
             <button type="button" class="step-head" @click="toggleStep(singleTask.detailNo, step)">
-              <i></i><strong>{{ step.stepOrder }}. {{ step.stepName }}</strong>
+              <i></i><strong>{{ step.order || '' }}{{ step.order ? '. ' : '' }}{{ step.eventName || step.stepName || '运行事件' }}</strong>
               <span class="step-summary">{{ summary(step) }}</span>
               <b class="chevron">{{ isExpanded(singleTask.detailNo, step) ? '⌃' : '⌄' }}</b>
             </button>
@@ -147,7 +147,7 @@
     <!-- 结果与过程是同一任务的连续输出，但始终作为相邻区块，不嵌入过程卡片。 -->
     <transition name="result-reveal">
       <AiForecastResult
-        v-if="forecastResult && resultRevealStage"
+        v-if="!compact && forecastResult && resultRevealStage"
         class="task-result"
         :result="forecastResult"
         :reveal-stage="resultRevealStage"
@@ -160,6 +160,12 @@
           <strong>AI 智能研判报告</strong><small>{{ analysisTyping ? '正在生成' : '已生成' }}</small>
         </div>
         <p>{{ typedAnalysis }}</p>
+        <div class="task-analysis-questions">
+          <small>你可以继续问</small>
+          <button v-for="question in analysisQuestions" :key="question" type="button" @click="emit('analysis-question', question)">
+            {{ question }} <span>→</span>
+          </button>
+        </div>
       </section>
     </transition>
   </div>
@@ -168,12 +174,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getJson } from '@/api/management'
+import { compactForecastAnalysis, forecastAnalysisQuestions } from '@/utils/forecastAnalysis'
 import AiForecastResult from './AiForecastResult.vue'
-const props = defineProps<{ taskNo: string }>()
+const props = defineProps<{ taskNo: string; compact?: boolean }>()
+const compact = computed(() => Boolean(props.compact))
 const emit = defineEmits<{
   (event: 'forecast-completed', result: Record<string, any>): void
   (event: 'batch-detail-selected', detail: Record<string, any>): void
   (event: 'content-rendered'): void
+  (event: 'analysis-question', question: string): void
 }>()
 const loading = ref(false),
   hasLoaded = ref(false),
@@ -256,7 +265,8 @@ const currentText = (item: Record<string, any>) =>
       : item.status === 'SUCCESS'
         ? '预测任务已完成'
         : '正在处理，请稍候'
-const rawSteps = computed<Record<string, any>[]>(() => singleTask.value?.steps || [])
+/** 过程卡直接消费 agent_run_event_tb 的真实事件，不再读取固定步骤记录。 */
+const rawSteps = computed<Record<string, any>[]>(() => singleTask.value?.process || [])
 const succeeded = (status?: string) => ['SUCCESS', 'COMPLETED'].includes(String(status || '').toUpperCase())
 const canOpenBatchDetail = (item: Record<string, any>) =>
   succeeded(item.status) && Boolean(item.detailNo && item.forecastNo)
@@ -264,9 +274,9 @@ const openBatchDetail = (item: Record<string, any>) => {
   if (canOpenBatchDetail(item)) emit('batch-detail-selected', item)
 }
 const detailCompletedSteps = (item: Record<string, any>) =>
-  (item.steps || []).filter((step: Record<string, any>) => succeeded(step.status)).length
+  (item.process || []).filter((step: Record<string, any>) => succeeded(step.status)).length
 const detailProgressText = (item: Record<string, any>) => {
-  const steps = item.steps || []
+  const steps = item.process || []
   const active = steps.find((step: Record<string, any>) =>
     ['RUNNING', 'TRAINING', 'FORECASTING'].includes(String(step.status || '').toUpperCase())
   )
@@ -311,6 +321,8 @@ const presentedSteps = computed<Record<string, any>[]>(() =>
   rawSteps.value.map((step, index) => {
     const point = presentationTimeline.value[index]
     const rawStatus = point?.rawStatus || String(step.status || 'PENDING').toUpperCase()
+    // 事件自身带有真实状态和时间，不再以旧的固定步骤动效延迟展示。
+    if (step.eventId) return { ...step, status: rawStatus }
     if (terminalStep(rawStatus) && point?.revealAt && presentationNow.value >= point.revealAt)
       return { ...step, status: rawStatus }
     const previousAllVisible = presentationTimeline.value
@@ -326,10 +338,11 @@ const presentedSteps = computed<Record<string, any>[]>(() =>
   })
 )
 const completedSteps = computed(() => presentedSteps.value.filter((step) => succeeded(step.status)).length)
-const progressPercent = computed(() => Math.round((completedSteps.value / 6) * 100))
+const processCount = computed(() => presentedSteps.value.length)
+const progressPercent = computed(() => processCount.value ? Math.round((completedSteps.value / processCount.value) * 100) : 0)
 const stepData = (code: string) =>
   detailStep(singleTask.value?.detailNo, { stepCode: code }) ||
-  (singleTask.value?.steps || []).find((step: Record<string, any>) => step.stepCode === code)
+  (singleTask.value?.process || []).find((step: Record<string, any>) => step.stepCode === code)
 const presentedStep = (code: string) => presentedSteps.value.find((step) => step.stepCode === code)
 const stepVisibleAsCompleted = (code: string) => succeeded(presentedStep(code)?.status)
 const stepMetrics = (code: string) => {
@@ -375,7 +388,7 @@ const displayStatus = computed(() => {
   if (!steps.length) return singleTask.value?.status || 'PENDING'
   if (steps.some((step: Record<string, any>) => ['FAILED', 'CANCELLED'].includes(String(step.status).toUpperCase())))
     return 'FAILED'
-  if (steps.length >= 6 && steps.every((step: Record<string, any>) => terminalStep(step.status))) return 'SUCCESS'
+  if (steps.length && steps.every((step: Record<string, any>) => terminalStep(step.status))) return 'SUCCESS'
   return steps.some((step: Record<string, any>) => String(step.status).toUpperCase() === 'RUNNING')
     ? 'RUNNING'
     : singleTask.value?.status || 'PENDING'
@@ -416,15 +429,15 @@ const runningSummary = (step: Record<string, any>) =>
     FORECAST: '正在生成未来销量预测',
     FORECAST_ANALYSIS: '正在生成预测结果解读'
   })[step.stepCode] || '正在处理'
-const stepKey = (detailNo: string, step: Record<string, any>) => `${detailNo}:${step.stepCode}`
+const stepKey = (detailNo: string, step: Record<string, any>) => `${detailNo}:${step.eventId || step.stepNo || step.stepCode}`
 const isExpanded = (detailNo: string, step: Record<string, any>) =>
   Boolean(expandedStepKeys.value[stepKey(detailNo, step)])
 const loadStepDetails = async (detailNo: string) => {
   if (detailSteps.value[detailNo] || detailLoading.value[detailNo]) return
   detailLoading.value = { ...detailLoading.value, [detailNo]: true }
   try {
-    const result = await getJson(`/execution-tasks/details/${encodeURIComponent(detailNo)}/steps`)
-    detailSteps.value = { ...detailSteps.value, [detailNo]: result.data?.steps || [] }
+    const result = await getJson(`/execution-tasks/details/${encodeURIComponent(detailNo)}/events`)
+    detailSteps.value = { ...detailSteps.value, [detailNo]: result.data?.process || [] }
   } finally {
     detailLoading.value = { ...detailLoading.value, [detailNo]: false }
   }
@@ -435,7 +448,9 @@ const toggleStep = async (detailNo: string, step: Record<string, any>) => {
   if (expandedStepKeys.value[key]) await loadStepDetails(detailNo)
 }
 const detailStep = (detailNo: string, step: Record<string, any>) =>
-  detailSteps.value[detailNo]?.find((item) => item.stepCode === step.stepCode)
+  detailSteps.value[detailNo]?.find((item) =>
+    (step.eventId && item.eventId === step.eventId) || (!step.eventId && item.stepCode === step.stepCode)
+  )
 const parseJson = (value: any) => {
   if (!value || typeof value !== 'string') return value
   try {
@@ -547,9 +562,13 @@ const detailEntries = (step: Record<string, any>) => {
     })
 }
 const analysisText = computed(() => {
-  const step = detailStep(singleTask.value?.detailNo, { stepCode: 'FORECAST_ANALYSIS' })
+  // 左侧“AI结果分析”和这里都以同一预测记录的 analysisContent 为唯一事实来源。
+  const persisted = compactForecastAnalysis(forecastResult.value?.analysisContent)
+  if (persisted) return persisted
+  const step = detailStep(singleTask.value?.detailNo, { stepCode: 'RESULT_ANALYZE' }) ||
+    detailStep(singleTask.value?.detailNo, { stepCode: 'FORECAST_ANALYSIS' })
   const raw = parseJson(step?.metricsJson) || parseJson(step?.outputJson) || {}
-  const saved = typeof raw === 'object' && raw ? String(raw.analysis || raw.content || raw.result || '') : ''
+  const saved = typeof raw === 'object' && raw ? compactForecastAnalysis(raw.analysis || raw.content || raw.result) : ''
   if (saved) return saved
   // 兼容已完成的历史任务：当时第六步只保存“结果已整理”，没有 analysis 字段。
   // 新任务由后端落库研判；旧任务根据已落库的同一份回测/预测结果补出简短客观说明。
@@ -567,14 +586,17 @@ const analysisText = computed(() => {
   const average = points.length
     ? points.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0) / points.length
     : undefined
-  return `本次预测采用${result.training.bestModel}${Number.isFinite(mape) ? `，MAPE 为${mape.toFixed(2)}%` : ''}。${accuracy}。${average === undefined ? '' : `未来${points.length}天预测均值为${average.toFixed(2)}。`}`
+  return compactForecastAnalysis(`本次预测采用${result.training.bestModel}${Number.isFinite(mape) ? `，MAPE 为${mape.toFixed(2)}%` : ''}。${accuracy}。${average === undefined ? '' : `未来${points.length}天预测均值为${average.toFixed(2)}。`}`)
 })
+const analysisQuestions = computed(() => forecastAnalysisQuestions(forecastResult.value?.analysisQuestionsJson))
 const presentationFinished = computed(
   () =>
     !isBatchTask.value &&
-    rawSteps.value.length === 6 &&
-    rawSteps.value.every((step) => succeeded(step.status)) &&
-    presentedSteps.value.every((step) => succeeded(step.status))
+    Boolean(singleTask.value?.forecastNo) &&
+    succeeded(singleTask.value?.status) &&
+    rawSteps.value.length > 0 &&
+    rawSteps.value.every((step) => terminalStep(step.status)) &&
+    presentedSteps.value.every((step) => terminalStep(step.status))
 )
 const normalizeResult = (data: Record<string, any>) => {
   const record = data.record || {}
@@ -713,14 +735,14 @@ const schedulePresentationTick = () => {
   if (presentationFinished.value) void loadPresentationResult()
 }
 /**
- * 首次读取步骤快照，运行中仅接收 SSE 事件。切换会话时旧请求可能晚到，
+ * 首次读取任务快照，运行中由真实事件流触发刷新。切换会话时旧请求可能晚到，
  * 必须以 taskNo 和序号校验响应，不能让旧任务的数据覆盖当前卡片。
  */
 let refreshSequence = 0
 let eventSource: EventSource | undefined
 let snapshotRefreshTimer: ReturnType<typeof setTimeout> | undefined
 let fallbackPollTimer: ReturnType<typeof setInterval> | undefined
-// 明细快照优先于任务概览：概览可能先标记结束，不能因此提前关闭步骤更新。
+// 明细快照优先于任务概览：概览可能先标记结束，不能因此提前关闭事件更新。
 const taskTerminal = () =>
   records.value.length > 0
     ? records.value.every((item) => terminalStep(item.status))
@@ -739,7 +761,7 @@ const closeEventStream = () => {
 const scheduleBatchSnapshotRefresh = (delay = 400) => {
   if (!isBatchTask.value || taskTerminal()) return
   if (snapshotRefreshTimer) clearTimeout(snapshotRefreshTimer)
-  // 一批任务的多个步骤常在短时间内连续完成；合并为一次快照读取，避免 154 条明细反复重绘。
+  // 一批任务的多个事件常在短时间内连续完成；合并为一次快照读取，避免大量明细反复重绘。
   snapshotRefreshTimer = setTimeout(() => {
     snapshotRefreshTimer = undefined
     void refresh()
@@ -748,7 +770,7 @@ const scheduleBatchSnapshotRefresh = (delay = 400) => {
 const startFallbackPoll = () => {
   if (taskTerminal() || fallbackPollTimer) return
   // SSE 负责即时更新；快照轮询只在代理断流、浏览器后台或首个事件早于订阅时兜底。
-  // 单任务和批量任务都必须覆盖，否则单任务会停在进入页面时的初始步骤快照。
+  // 单任务和批量任务都必须覆盖，否则单任务会停在进入页面时的初始事件快照。
   fallbackPollTimer = setInterval(() => {
     if (taskTerminal()) {
       stopFallbackPoll()
@@ -758,46 +780,16 @@ const startFallbackPoll = () => {
     void refresh()
   }, 10_000)
 }
-const applyStepEvent = (payload: Record<string, any>) => {
-  const detailNo = payload.detailNo
-  const incoming = payload.step
-  if (!detailNo || !incoming) return
-  records.value = records.value.map((item) =>
-    item.detailNo !== detailNo
-      ? item
-      : {
-          ...item,
-          steps: (item.steps || []).map((step: Record<string, any>) =>
-            step.stepCode === incoming.stepCode ? { ...step, ...incoming } : step
-          )
-        }
-  )
-  if (detailSteps.value[detailNo]) {
-    detailSteps.value = {
-      ...detailSteps.value,
-      [detailNo]: detailSteps.value[detailNo].map((step) =>
-        step.stepCode === incoming.stepCode ? { ...step, ...incoming } : step
-      )
-    }
-  }
-  schedulePresentationTick()
-  if (isBatchTask.value) {
-    scheduleBatchSnapshotRefresh()
-    return
-  }
-  if (incoming.stepCode === 'FORECAST_ANALYSIS' && terminalStep(incoming.status)) closeEventStream()
-}
 const openEventStream = () => {
   if (eventSource || !props.taskNo || taskTerminal() || (!singleTask.value && !isBatchTask.value)) return
-  eventSource = new EventSource(`/execution-tasks/${encodeURIComponent(props.taskNo)}/events`)
-  eventSource.addEventListener('task_step_updated', (event) => {
-    try {
-      applyStepEvent(JSON.parse((event as MessageEvent).data))
-    } catch {
-      /* 忽略格式异常事件，快照仍可恢复当前状态。 */
-    }
+  eventSource = new EventSource(`/execution-tasks/${encodeURIComponent(props.taskNo)}/events/stream`)
+  eventSource.addEventListener('task_events', () => {
+    // SSE 发送的是整轮真实事件快照。重新读取任务快照后，服务端会按 taskDetailNo
+    // 分配事件并按 id 排序，避免用 eventCode 覆盖同类重试事件。
+    if (isBatchTask.value) scheduleBatchSnapshotRefresh(120)
+    else void refresh()
   })
-  // EventSource 自动重连前先拉一次快照，避免反向代理关闭长连接后界面一直停在旧步骤。
+  // EventSource 自动重连前先拉一次快照，避免反向代理关闭长连接后界面一直停在旧事件。
   eventSource.onerror = () => {
     if (!taskTerminal()) void refresh()
   }
@@ -1148,6 +1140,16 @@ watch(
   border-radius: 12px;
   background: #fff;
 }
+.task-presentation.compact .task-analysis {
+  margin-top: 0;
+  padding: 12px 15px 15px;
+  border: 0;
+  border-top: 1px solid #e2eaf3;
+  border-radius: 0;
+  background: transparent;
+}
+.task-presentation.compact .analysis-title { font-size: 14px; }
+.task-presentation.compact .task-analysis p { margin-top: 8px; font-size: 13px; line-height: 1.7; }
 .analysis-title {
   display: flex;
   align-items: center;
@@ -1163,6 +1165,35 @@ watch(
   line-height: 1.8;
   white-space: pre-wrap;
 }
+.task-analysis-questions {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf1f6;
+}
+.task-analysis-questions > small {
+  color: #64748b;
+  font-size: 13px;
+}
+.task-analysis-questions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: #f6f9fd;
+  color: #2563eb;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+.task-analysis-questions button:hover { background: #edf5ff; }
+.task-analysis-questions button span { flex: 0 0 auto; font-size: 16px; }
 .result-reveal-enter-active {
   transition:
     opacity 0.36s ease,

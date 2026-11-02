@@ -22,6 +22,7 @@ from gas_model_platform.schemas.modeling import (
 )
 from gas_model_platform.schemas.response import ApiResponse
 from gas_model_platform.services.runtime import ModelRuntime
+from gas_model_platform.services.model_event_reporter import ModelEventReporter
 from gas_model_platform.services.training_registry import (
     TrainingCapacityExceeded,
     TrainingRegistry,
@@ -145,7 +146,8 @@ def execute_forecast(request: ForecastExecuteRequest) -> ApiResponse[ForecastExe
     )
     try:
         with training_registry.running(request.forecast_no, request.model_code):
-            result = _execute(lambda: runtime.execute_forecast(request))
+            reporter = ModelEventReporter(settings, request.run_no, request.forecast_no, request.task_detail_no)
+            result = _execute(lambda: runtime.execute_forecast(request, reporter))
     except TrainingCapacityExceeded as exc:
         raise HTTPException(
             status_code=429,

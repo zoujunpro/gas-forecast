@@ -2,7 +2,7 @@
   <section class="model-page">
     <PageBreadcrumb />
 
-    <AppTablePanel>
+    <AppTablePanel :updated-at="listUpdatedAt">
       <template #filters>
         <el-input
           v-model="keyword"
@@ -23,7 +23,7 @@
         >
       </template>
 
-      <AppTable v-loading="loading" :data="records" stripe border>
+      <AppTable v-loading="loading" :data="records" empty-description="暂无模型配置，可新增模型或同步平台模型" stripe border>
         <el-table-column
           type="index"
           :index="rowIndex"
@@ -392,7 +392,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Box, Histogram, Location, Refresh, Search, Setting, TrendCharts } from '@element-plus/icons-vue'
 import { createRow, getJson, listPage, postJson, updateRow } from '@/api/management'
@@ -410,6 +410,7 @@ defineOptions({ name: 'ModelConfigManagement' })
 
 const endpoint = '/model-config'
 const formRef = ref<FormInstance>()
+const listUpdatedAt = ref('')
 const saving = ref(false)
 const configSaving = ref(false)
 const syncing = ref(false)
@@ -516,6 +517,12 @@ const { loading, keyword, page, size, total, records, loadData, searchData, rese
     fetcher: ({ page, size, keyword, signal }) =>
       listPage(endpoint, { page, size, keyword: keyword || undefined }, signal)
   })
+
+watch(loading, (isLoading, wasLoading) => {
+  if (!isLoading && wasLoading) {
+    listUpdatedAt.value = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+})
 
 const dialogTitle = computed(() => (editingId.value ? '编辑模型' : '新增模型'))
 const configDialogTitle = computed(() => `${configForm.configName || '模型'}配置`)
@@ -854,6 +861,11 @@ onMounted(() => {
   gap: var(--app-gap);
 }
 
+/* 模型中心沿用管理页的色阶与卡片语言，避免编辑页像另一套后台。 */
+.model-page :deep(.el-tag) {
+  border-radius: 6px;
+}
+
 .search-input {
   width: 300px;
 }
@@ -903,10 +915,10 @@ onMounted(() => {
 }
 
 .editor-section {
-  padding: 18px 20px 4px;
-  background: #fbfcfe;
-  border: 1px solid #e6ebf2;
-  border-radius: 12px;
+  padding: 18px 20px 6px;
+  background: #f8fafc;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
 }
 
 .editor-grid {
@@ -935,13 +947,13 @@ onMounted(() => {
   gap: 8px;
   min-height: 78px;
   padding: 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
 }
 .capability-item span { color: #667085; font-size: 13px; }
-.capability-item strong { color: #101828; font-size: 17px; font-weight: 650; }
-.capability-item p { margin: 0; color: #344054; font-size: 14px; line-height: 1.65; }
+.capability-item strong { color: var(--app-text); font-size: 16px; font-weight: 700; }
+.capability-item p { margin: 0; color: var(--app-text-secondary); font-size: 14px; line-height: 1.65; }
 .capability-item-wide { grid-column: 1 / -1; min-height: auto; }
 
 .platform-model-option {
@@ -966,8 +978,8 @@ onMounted(() => {
   margin-bottom: 16px;
   padding: 14px;
   background: #f8fafc;
-  border: 1px solid #e6eaf0;
-  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
 }
 
 .model-avatar {

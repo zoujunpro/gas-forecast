@@ -16,10 +16,12 @@ if __name__ == "__main__" and not __package__:
     sys.path.insert(0, str(package_dir.parent))
 
 from fastapi import Depends, FastAPI, Header
+from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from gas_forecast_agent.config import Settings, get_settings
 from gas_forecast_agent.internal_client import InternalAgentClient
 from gas_forecast_agent.mcp import StreamableHttpMcpClient
+from gas_forecast_agent.run_event_reporter import RunEventReporter
 from gas_forecast_agent.schemas import (
     AgentRuntimeRequest,
     AgentRuntimeResponse,
@@ -39,7 +41,10 @@ from gas_forecast_agent.schemas import (
     ReferenceRelation,
     ReferenceType,
     ExecutionResultResponse,
+    ForecastAnalysisRequest,
+    ForecastAnalysisResponse,
 )
+from gas_forecast_agent.llm import build_llm_client
 from gas_forecast_agent.skills import SemanticExtractionError, SkillRegistry
 from gas_forecast_agent.workflow import persistent_parameters, run_agent_graph
 
@@ -55,11 +60,14 @@ def get_mcp_client(
     authorization: Annotated[str | None, Header()] = None,
     access_token: Annotated[str | None, Header(alias="X-Access-Token")] = None,
     trace_id: Annotated[str | None, Header(alias="x-traceId")] = None,
+    agent_run_no: Annotated[str | None, Header(alias="X-Agent-Run-No")] = None,
 ) -> StreamableHttpMcpClient:
     """按请求创建 MCP 客户端；原样透传用户凭证，由 Java 独立鉴权。"""
     headers = settings.mcp_headers(authorization, access_token)
     if trace_id:
         headers["x-traceId"] = trace_id
+    if agent_run_no:
+        headers["X-Agent-Run-No"] = agent_run_no
     return StreamableHttpMcpClient(
         settings.mcp_url,
         headers,
@@ -82,6 +90,53 @@ def get_internal_agent_client(
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "UP"}
+
+
+@app.post("/api/v1/internal/forecast-analysis", response_model=ForecastAnalysisResponse, response_model_by_alias=True)
+async def forecast_analysis(
+    request: ForecastAnalysisRequest,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ForecastAnalysisResponse:
+    """依据本次预测的可信快照生成研判和三个可点击追问。"""
+    if not settings.llm_api_key or not settings.llm_model:
+        raise HTTPException(status_code=503, detail="预测解读模型配置不完整")
+    prompt = (
+        "你是燃气销售人员的用气预测分析助手。仅依据用户提供的本次预测数据生成业务研判。"
+        "请写一段约80至110个汉字、可供燃气销售人员阅读的简短解读，按以下顺序说明："
+        "一、预测期用气量相对历史期或去年同期是升高、降低还是平稳，并指出关键日期或波动区间；"
+        "二、结合已提供的销量、日期周期、天气和预测点说明可能影响因素；"
+        "三、根据MAPE等回测指标说明本次预测准确性、可信程度及使用边界。"
+        "不要给出客户维护、营销、经营措施、供气保障或客户关系建议。"
+        "销量、天气、回测指标及预测点可作为事实；价格、订单、停产、客户计划、政策和市场变化没有数据证明时，"
+        "只能表述为‘待核实假设’或‘建议进一步核实’，绝不能虚构具体事件。"
+        "当MAPE较高时，明确说明预测仅宜作趋势参考。"
+        "questions字段必须原样返回以下3个简短通用问题：‘本次用气量是升还是降？’、"
+        "‘造成变化的主要原因？’、‘本次预测准确吗？’。不要加入具体数值、日期或解释。只输出JSON对象："
+        "{\"analysis\":\"...\",\"questions\":[\"...\",\"...\",\"...\"]}。"
+    )
+    try:
+        response = await build_llm_client(settings, minimum_timeout=45).chat.completions.create(
+            model=settings.llm_model,
+            temperature=0.65,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": json.dumps(request.context, ensure_ascii=False)},
+            ],
+        )
+        result = ForecastAnalysisResponse.model_validate_json(response.choices[0].message.content or "{}")
+        # 追问按钮使用固定、短小的业务入口；不让模型将日期、指标和推理过程拼进按钮。
+        questions = ["本次用气量是升还是降？", "造成变化的主要原因？", "本次预测准确吗？"]
+        analysis = re.sub(r"\s+", " ", result.analysis.strip())
+        # 前端两处共用该字段；服务端兜底限制长度，避免模型偶尔输出成长报告。
+        if len(analysis) > 110:
+            clipped = analysis[:110]
+            sentence_end = max(clipped.rfind("。"), clipped.rfind("！"), clipped.rfind("？"))
+            analysis = (clipped[:sentence_end + 1] if sentence_end >= 66 else clipped).strip()
+        return ForecastAnalysisResponse(analysis=analysis, questions=questions)
+    except Exception as exc:
+        logger.exception("event=forecast_analysis_failed forecast_no=%s", request.forecast_no)
+        raise HTTPException(status_code=502, detail="预测解读生成失败") from exc
 
 
 @app.post("/api/v1/internal/chat", response_model=AgentChatResponse, response_model_by_alias=True)
@@ -144,6 +199,8 @@ async def agent_chat(
         ],
         metadata=request_metadata,
     )
+    reporter = RunEventReporter(internal_client, request.run_no)
+    understanding_event = await reporter.start(_understanding_event_message(request.message))
 
     # 6. 进入 LangGraph 主流程：加载会话记忆、识别语义、选择 Skill、
     #    执行 Skill、保存记忆并组装结果。图中的每个节点只做一件事。
@@ -155,6 +212,7 @@ async def agent_chat(
             settings=settings,
             skills=skill_registry,
         )
+        await reporter.succeed(understanding_event, "已理解您的需求，正在开始处理。")
     except SemanticExtractionError:
         logger.exception(
             "event=agent_semantics_failed trace_id=%s conversation_no=%s run_no=%s",
@@ -163,6 +221,8 @@ async def agent_chat(
             request.run_no,
         )
         answer = "本轮请求的意图识别暂时失败，尚未执行任何业务工具。请稍后重试。"
+        await reporter.fail(understanding_event, "未能完成请求理解，尚未执行任何业务操作。",
+                            error_code="SEMANTIC_EXTRACTION_FAILED")
         return AgentChatResponse(
             conversation_no=request.conversation_no,
             turn_id=request.turn_id,
@@ -184,6 +244,8 @@ async def agent_chat(
             request.run_no,
         )
         answer = "本轮智能体处理发生系统异常，未确认创建新的业务任务；已经创建的训练或预测任务不受影响。请稍后重试，如仍失败请提供当前会话时间排查。"
+        await reporter.fail(understanding_event, "智能体处理发生异常，正在停止本轮处理。",
+                            error_code="AGENT_EXECUTION_ERROR")
         return AgentChatResponse(
             conversation_no=request.conversation_no,
             turn_id=request.turn_id,
@@ -256,10 +318,15 @@ async def agent_chat_stream(
     async def events():
         # 当前编排在 agent_chat 完成后才会拿到完整的理解结果，不能伪造后续阶段。
         # 仅推送已真实开始的阶段，避免用户误以为已经创建或执行了预测任务。
-        yield f"event: progress\ndata: {json.dumps('正在理解您的预测需求…', ensure_ascii=False)}\n\n"
+        yield f"event: progress\ndata: {json.dumps('正在理解您的需求…', ensure_ascii=False)}\n\n"
         result = await agent_chat(request, client, internal_client, settings, trace_id)
         yield "event: done\ndata: " + result.model_dump_json(by_alias=True) + "\n\n"
     return StreamingResponse(events(), media_type="text/event-stream")
+
+
+def _understanding_event_message(message: str) -> str:
+    """通用起始事件不预判业务类型，具体动作由真实工具事件说明。"""
+    return "正在理解您的需求。"
 
 
 def _chat_status(status: str) -> AgentStatus:

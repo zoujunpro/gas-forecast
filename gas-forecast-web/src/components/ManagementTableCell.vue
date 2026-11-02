@@ -1,5 +1,5 @@
 <template>
-  <el-tag v-if="displayType === 'enabled'" :type="value === 1 ? 'success' : 'info'" effect="plain">
+  <el-tag v-if="displayType === 'enabled'" :class="['management-status-tag', value === 1 ? 'is-success' : 'is-neutral']" effect="plain">
     {{ value === 1 ? '启用' : '停用' }}
   </el-tag>
   <ManagementStatusTag v-else-if="displayType === 'status'" :status="value" />
@@ -15,7 +15,7 @@
   </el-tag>
   <span v-else-if="displayType === 'array'">{{ Array.isArray(value) ? value.join('、') : displayValue(value) }}</span>
   <span v-else-if="displayType === 'date' || displayType === 'datetime'">{{ formatDateTime(value, displayType) }}</span>
-  <span v-else :class="['cell-text', { 'mono-text': displayType === 'hash' }]">{{
+  <span v-else :class="['cell-text', cellClass]">{{
     displayType === 'hash' ? compactHash(value) : mappedValue
   }}</span>
 </template>
@@ -46,6 +46,12 @@ const permissionTypeTagType = computed(() => {
   if (value.value === 'MENU') return 'primary'
   return 'warning'
 })
+const cellClass = computed(() => ({
+  'mono-text': displayType.value === 'hash',
+  'cell-primary': /(^|_)(name|title|code)$|customerName|modelName|fileName/i.test(props.field.prop),
+  'cell-secondary': displayType.value === 'date' || displayType.value === 'datetime',
+  'cell-number': props.field.type === 'number'
+}))
 
 const formatDateTime = (rawValue: unknown, type: string) => {
   const text = String(displayValue(rawValue))
@@ -75,7 +81,20 @@ const compactHash = (rawValue: unknown) => {
 }
 
 .menu-icon-cell .el-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--app-primary-soft);
   color: var(--el-color-primary);
-  font-size: 17px;
+  font-size: 15px;
 }
+
+.management-status-tag { min-width: 56px; justify-content: center; border: 0; font-weight: 600; }
+.management-status-tag.is-success { background: #ecfdf5; color: var(--app-success); }
+.management-status-tag.is-neutral { background: #f1f5f9; color: var(--app-text-muted); }
+.cell-primary { color: var(--app-text); font-weight: 650; }
+.cell-secondary { color: var(--app-text-muted); font-size: 13px; }
+.cell-number { display: block; font-variant-numeric: tabular-nums; text-align: right; }
 </style>

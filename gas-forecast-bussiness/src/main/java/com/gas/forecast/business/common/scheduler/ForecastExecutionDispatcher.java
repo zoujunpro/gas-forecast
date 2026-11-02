@@ -1,27 +1,34 @@
 package com.gas.forecast.business.common.scheduler;
 
 import com.gas.forecast.business.common.client.modelplatform.ModelPlatformClient;
+import com.gas.forecast.business.common.client.agent.PythonAgentChatClient;
+import com.gas.forecast.business.dto.PythonForecastAnalysisRequest;
+import com.gas.forecast.business.dto.PythonForecastAnalysisResponse;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.gas.forecast.business.enums.ExecutionStepCodeEnum;
 import com.gas.forecast.business.enums.ExecutionTargetStatusEnum;
-import com.gas.forecast.business.application.task.step.ExecutionStepRecorder;
 import com.gas.forecast.business.application.task.ExecutionTaskLifecycleService;
 import com.gas.forecast.business.application.forecast.ForecastExecutionPayloadFactory;
 import com.gas.forecast.business.application.forecast.ForecastExecutionRecordService;
 import com.gas.forecast.business.application.forecast.ForecastExecutionResultPersistenceService;
+import com.gas.forecast.business.service.AgentRunEventRecorder;
 import com.gas.forecast.common.util.TextUtils;
 import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import com.gas.forecast.dao.domain.ExecutionTaskTb;
 import com.gas.forecast.dao.domain.ModelExecuteRecordTb;
+import com.gas.forecast.dao.domain.DataDailySalesTb;
+import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
 import com.gas.forecast.dao.mapper.ExecutionTaskDetailTbMapper;
 import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 import com.gas.forecast.dao.mapper.ModelExecuteRecordTbMapper;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -42,12 +49,14 @@ public class ForecastExecutionDispatcher {
     private final ExecutionTaskDetailTbMapper executionTaskDetailMapper;
     private final ExecutionTaskTbMapper executionTaskMapper;
     private final ModelExecuteRecordTbMapper modelExecuteRecordMapper;
+    private final DataDailySalesTbMapper dataDailySalesTbMapper;
     private final ExecutionTaskLifecycleService executionTaskLifecycleService;
     private final ForecastExecutionRecordService forecastExecutionRecordService;
     private final ForecastExecutionPayloadFactory forecastExecutionPayloadFactory;
     private final ForecastExecutionResultPersistenceService forecastExecutionResultPersistenceService;
     private final ModelPlatformClient modelPlatformClient;
-    private final ExecutionStepRecorder executionStepRecorder;
+    private final PythonAgentChatClient pythonAgentChatClient;
+    private final AgentRunEventRecorder agentRunEventRecorder;
     private final ObjectMapper objectMapper;
 
     @Scheduled(fixedDelayString = "${gas.agent.forecast-queue.dispatch-delay-ms:2000}")
@@ -66,49 +75,47 @@ public class ForecastExecutionDispatcher {
 
     private void executeForecast(ExecutionTaskTb executionTask, ExecutionTaskDetailTb executionTaskDetail) {
         ModelExecuteRecordTb modelExecuteRecord = null;
+        Long activeEventId = null;
         try {
             modelExecuteRecord = forecastExecutionRecordService.prepare(executionTaskDetail, executionTask);
-            executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.SALES_DATA_PREPARE, "正在准备历史销量数据");
+            activeEventId = agentRunEventRecorder.start(executionTask.getRunNo(), "DATA_QUERY",
+                    "正在读取历史用气数据。", modelExecuteRecord.getForecastNo(), executionTaskDetail.getDetailNo());
             JsonNode forecastExecutionPayload = forecastExecutionPayloadFactory.build(executionTask, executionTaskDetail, modelExecuteRecord);
             modelExecuteRecord.setRequestParam(forecastExecutionPayload.toString());
             modelExecuteRecordMapper.updateById(modelExecuteRecord);
-            executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.SALES_DATA_PREPARE,
-                    "历史销量数据已准备，共" + modelExecuteRecord.getHistoryRows() + "条，覆盖"
-                            + modelExecuteRecord.getHistoryStartDate() + "至" + modelExecuteRecord.getHistoryEndDate(), null);
+            ObjectNode salesValidation = salesValidationMetrics(modelExecuteRecord);
+            agentRunEventRecorder.success(activeEventId, salesValidationMessage(salesValidation), salesValidation.toString());
+            activeEventId = null;
 
-            executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FACTOR_DATA_PREPARE,
-                    "正在准备日期、周期等基础特征");
+            activeEventId = agentRunEventRecorder.start(executionTask.getRunNo(), "FEATURE_PREPARE",
+                    "正在准备日期和天气特征。", modelExecuteRecord.getForecastNo(), executionTaskDetail.getDetailNo());
             ObjectNode weatherFeatures = weatherFeatureMetrics(forecastExecutionPayload);
-            executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FACTOR_DATA_PREPARE,
-                    weatherFeatureMessage(weatherFeatures), weatherFeatures.toString());
+            agentRunEventRecorder.success(activeEventId, weatherFeatureMessage(weatherFeatures) + "。", weatherFeatures.toString());
+            activeEventId = null;
 
-            executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.DYNAMIC_INDICATOR,
-                    "正在识别本次预测可用的动态指标");
+            activeEventId = agentRunEventRecorder.start(executionTask.getRunNo(), "DYNAMIC_INDICATOR",
+                    "正在检查本次预测可用的动态指标。", modelExecuteRecord.getForecastNo(), executionTaskDetail.getDetailNo());
             ObjectNode dynamicIndicatorMetrics = dynamicIndicatorMetrics();
-            executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.DYNAMIC_INDICATOR,
-                    "本次未接入外部动态指标，训练将使用已准备的销量、日期周期、滞后滚动及天气特征",
-                    dynamicIndicatorMetrics.toString());
+            agentRunEventRecorder.success(activeEventId,
+                    "本次未接入外部动态指标，将结合历史用气、日期规律、近期变化和可用天气信息进行预测。", dynamicIndicatorMetrics.toString());
+            activeEventId = null;
 
-            executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.MODEL_SELECT, "正在训练、回测并筛选模型");
             JsonNode forecastExecutionResult = modelPlatformClient.executeForecast(forecastExecutionPayload);
             applyForecastExecutionResult(modelExecuteRecord, forecastExecutionResult);
             forecastExecutionResultPersistenceService.replace(modelExecuteRecord, forecastExecutionResult);
-            executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.MODEL_SELECT, "模型训练与回测完成", forecastExecutionResult.path("training").toString());
-            executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FORECAST, "正在生成未来销量预测");
-            executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FORECAST,
-                    "预测完成，共" + forecastExecutionResult.path("forecast").path("points").size() + "个数据点", forecastExecutionResult.path("forecast").toString());
-            executionStepRecorder.startByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FORECAST_ANALYSIS,
-                    "正在整理回测与预测结果");
+            activeEventId = agentRunEventRecorder.start(executionTask.getRunNo(), "RESULT_ANALYZE",
+                    "正在整理回测指标和预测解读。", modelExecuteRecord.getForecastNo(), executionTaskDetail.getDetailNo());
             String forecastAnalysis = buildForecastAnalysisMetrics(modelExecuteRecord, forecastExecutionResult);
+            enrichForecastAnalysisWithAi(modelExecuteRecord, forecastExecutionResult);
             modelExecuteRecordMapper.updateById(modelExecuteRecord);
-            executionStepRecorder.successByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.FORECAST_ANALYSIS,
-                    "预测结果研判已生成", forecastAnalysis);
+            agentRunEventRecorder.success(activeEventId, "预测结果、回测指标和AI解读已整理完成。", forecastAnalysis);
+            activeEventId = null;
             executionTaskLifecycleService.completeForecastDetail(executionTaskDetail.getId(), true);
         } catch (RuntimeException exception) {
+            agentRunEventRecorder.failure(activeEventId, "本次预测执行失败：" + exception.getMessage(), "FORECAST_EXECUTION_FAILED", exception);
             if (modelExecuteRecord != null) {
                 modelExecuteRecord.setStatus("FAILED"); modelExecuteRecord.setErrorMessage(exception.getMessage()); modelExecuteRecord.setFinishedAt(new Date()); modelExecuteRecord.setUpdatedAt(new Date());
                 modelExecuteRecordMapper.updateById(modelExecuteRecord);
-                executionStepRecorder.failByForecastNo(modelExecuteRecord.getForecastNo(), ExecutionStepCodeEnum.MODEL_SELECT, "FORECAST_EXECUTION_FAILED", exception);
             }
             executionTaskLifecycleService.completeForecastDetail(executionTaskDetail.getId(), false);
             log.error("统一预测执行失败 detailId={}", executionTaskDetail.getId(), exception);
@@ -162,6 +169,51 @@ public class ForecastExecutionDispatcher {
                 : "基础特征已准备：天气特征共" + supported + "项，实际使用" + used + "项，覆盖" + coveredDays + "天";
     }
 
+    /** 把入模前的历史用气数据校验结果作为真实过程产物上送。 */
+    private ObjectNode salesValidationMetrics(ModelExecuteRecordTb record) {
+        var query = Wrappers.<DataDailySalesTb>lambdaQuery();
+        if (TextUtils.hasText(record.getCustomerCode())) query.eq(DataDailySalesTb::getCustomerCode, record.getCustomerCode());
+        else {
+            if (TextUtils.hasText(record.getRegionCode())) query.eq(DataDailySalesTb::getRegionCode, record.getRegionCode());
+            if (TextUtils.hasText(record.getIndustryCode())) query.eq(DataDailySalesTb::getIndustryCode, record.getIndustryCode());
+        }
+        if (record.getHistoryStartDate() != null) query.ge(DataDailySalesTb::getStatDate, record.getHistoryStartDate().toString());
+        if (record.getHistoryEndDate() != null) query.le(DataDailySalesTb::getStatDate, record.getHistoryEndDate().toString());
+        List<DataDailySalesTb> rows = dataDailySalesTbMapper.selectList(query);
+        int emptySalesCount = (int) rows.stream().filter(item -> !TextUtils.hasText(item.getGasSales())).count();
+        Set<LocalDate> dates = new HashSet<>();
+        for (DataDailySalesTb item : rows) {
+            if (!TextUtils.hasText(item.getGasSales()) || !TextUtils.hasText(item.getStatDate())) continue;
+            try { dates.add(LocalDate.parse(item.getStatDate())); } catch (RuntimeException ignored) { }
+        }
+        LocalDate start = dates.stream().min(LocalDate::compareTo).orElse(record.getHistoryStartDate());
+        LocalDate end = dates.stream().max(LocalDate::compareTo).orElse(record.getHistoryEndDate());
+        long expectedDays = start == null || end == null ? 0 : ChronoUnit.DAYS.between(start, end) + 1;
+        long missingDateCount = Math.max(0, expectedDays - dates.size());
+        int dateGapCount = 0;
+        if (dates.size() > 1) {
+            List<LocalDate> ordered = dates.stream().sorted().toList();
+            for (int index = 1; index < ordered.size(); index++)
+                if (ChronoUnit.DAYS.between(ordered.get(index - 1), ordered.get(index)) > 1) dateGapCount++;
+        }
+        ObjectNode metrics = objectMapper.createObjectNode();
+        metrics.put("rawSalesRows", rows.size());
+        metrics.put("validSalesRows", dates.size());
+        metrics.put("emptySalesCount", emptySalesCount);
+        metrics.put("missingDateCount", missingDateCount);
+        metrics.put("dateGapCount", dateGapCount);
+        if (start != null) metrics.put("startDate", start.toString());
+        if (end != null) metrics.put("endDate", end.toString());
+        return metrics;
+    }
+
+    private String salesValidationMessage(ObjectNode metrics) {
+        String range = metrics.path("startDate").asText("-") + "至" + metrics.path("endDate").asText("-");
+        return "历史用气数据已核验：有效" + metrics.path("validSalesRows").asInt() + "条，空值"
+                + metrics.path("emptySalesCount").asInt() + "条；日期" + range + "，缺失"
+                + metrics.path("missingDateCount").asLong() + "天，断档" + metrics.path("dateGapCount").asInt() + "处。";
+    }
+
     /**
      * 当前预测链路尚未把外部市场指标拼入模型请求，不能把这一步描述为已获取到动态指标。
      * 显式落库本次的实际处理方式，避免前端仅显示一句无法追溯的“处理完成”。
@@ -170,7 +222,7 @@ public class ForecastExecutionDispatcher {
         ObjectNode metrics = objectMapper.createObjectNode();
         metrics.put("dynamicIndicatorSource", "未接入外部市场指标");
         metrics.put("dynamicIndicatorCount", 0);
-        metrics.put("featureSnapshot", "历史销量、日期周期、滞后滚动及天气特征");
+        metrics.put("featureSnapshot", "历史用气、日期周期、滞后滚动及天气特征");
         metrics.put("processingDescription", "本次没有可用的外部动态指标输入；模型将在训练阶段基于已准备的特征快照完成特征处理和模型筛选。");
         return metrics;
     }
@@ -212,9 +264,9 @@ public class ForecastExecutionDispatcher {
         int forecastDays = forecastPoints.isArray() ? forecastPoints.size() : 0;
         BigDecimal meanAbsolutePercentageError = modelExecuteRecord.getMape();
         String accuracyAssessment = meanAbsolutePercentageError == null ? "回测指标未返回，暂不对精度作判断"
-                : meanAbsolutePercentageError.compareTo(BigDecimal.TEN) <= 0 ? "回测精度较好，可作为近期经营参考"
+                : meanAbsolutePercentageError.compareTo(BigDecimal.TEN) <= 0 ? "回测精度较好，可作为近期用气趋势参考"
                 : meanAbsolutePercentageError.compareTo(BigDecimal.valueOf(20)) <= 0 ? "回测精度可用，建议结合实际业务变化持续跟踪"
-                : "回测误差偏高，建议将本次结果作为趋势参考，并结合实际销量持续校正";
+                : "回测误差偏高，建议仅作为用气趋势参考，并结合实际用气持续校正";
         StringBuilder analysisContent = new StringBuilder("本次预测采用")
                 .append(textOf(modelExecuteRecord.getBestModel(), "默认模型"));
         if (backtestDays > 0) analysisContent.append("，基于近").append(backtestDays).append("天回测");
@@ -234,6 +286,33 @@ public class ForecastExecutionDispatcher {
         forecastAnalysisMetrics.put("forecastDays", forecastDays);
         if (meanAbsolutePercentageError != null) forecastAnalysisMetrics.put("mape", meanAbsolutePercentageError);
         return forecastAnalysisMetrics.toString();
+    }
+
+    /**
+     * 用同一份预测快照补充面向业务人员的长解读与推荐追问；模型异常绝不能让预测任务失败。
+     * 规则研判已在调用前写入 analysisContent，因此失败时数据库仍有可追溯的基础结论。
+     */
+    private void enrichForecastAnalysisWithAi(ModelExecuteRecordTb record, JsonNode forecastExecutionResult) {
+        try {
+            ObjectNode context = objectMapper.createObjectNode();
+            context.put("forecastNo", record.getForecastNo());
+            context.put("regionName", textOf(record.getRegionName(), "未提供"));
+            context.put("industryName", textOf(record.getIndustryName(), "未提供"));
+            context.put("customerName", textOf(record.getCustomerName(), "未提供"));
+            context.put("forecastHorizon", record.getForecastHorizon() == null ? 0 : record.getForecastHorizon());
+            context.put("bestModel", textOf(record.getBestModel(), "未提供"));
+            if (record.getMape() != null) context.put("mape", record.getMape());
+            if (record.getWmape() != null) context.put("wmape", record.getWmape());
+            context.put("ruleAnalysis", record.getAnalysisContent());
+            context.set("backtest", forecastExecutionResult.path("backtest"));
+            context.set("forecast", forecastExecutionResult.path("forecast"));
+            PythonForecastAnalysisResponse generated = pythonAgentChatClient.forecastAnalysis(
+                    new PythonForecastAnalysisRequest(record.getForecastNo(), context));
+            record.setAnalysisContent(generated.analysis().trim());
+            record.setAnalysisQuestionsJson(objectMapper.writeValueAsString(generated.questions()));
+        } catch (Exception exception) {
+            log.warn("预测AI解读未生成，保留规则研判 forecastNo={} cause={}", record.getForecastNo(), exception.getMessage());
+        }
     }
 
     private String textOf(String textValue, String fallbackValue) { return TextUtils.hasText(textValue) ? textValue : fallbackValue; }

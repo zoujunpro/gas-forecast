@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import date
 from enum import StrEnum
 from typing import Any
 
@@ -622,7 +623,9 @@ class RequestSemanticExtractor:
             "UNSPECIFIED表示原话没有表达选择方式。‘当前客户’‘这些客户’不是实体名称，应放入references。"
             "‘最新’是查询操作语义，不是上下文指代，不要把LATEST放入references。"
             "scenario仅在用户明确表达短期、月度销量或冬季保供时填写short-term、monthly-sales或winter-supply，否则为null。"
-            "parameters只保存用户明确表达的操作参数，例如forecastHorizon、historyStartDate、historyEndDate。"
+            "parameters只保存用户明确表达的操作参数，例如forecastHorizon、forecastStartDate、forecastEndDate、historyStartDate、historyEndDate。"
+            "用户明确给出预测开始和结束日期时，必须原样提取为YYYY-MM-DD格式的forecastStartDate和forecastEndDate；"
+            "同时可保留其明确给出的forecastHorizon。"
             "仅当输入中确实包含pendingOperation时，才能输出CONFIRM_PENDING、REJECT_PENDING或MODIFY_PENDING；"
             "否则新业务目标使用NEW_REQUEST，无法判断使用UNSPECIFIED。"
             "当inputType为CLARIFICATION_REPLY时，必须结合pendingOperation中的原请求理解用户答案；"
@@ -683,6 +686,11 @@ class RequestSemanticExtractor:
                 industries=self._verified_mentions(request.entities.industries, message, "industry"),
             )
             parameters = request.parameters.to_payload()
+            # 日期范围是比模型推断出的周期更可靠的用户原话事实。即使语义模型
+            # 漏掉了 forecastHorizon，也要把“开始/结束日期”换算成包含首尾两天的
+            # 周期，避免用户已经给出范围却再次被追问“预测多少天”。
+            if intent == SkillIntent.FORECAST:
+                parameters = self._apply_explicit_forecast_dates(parameters, message)
             policy = self._training_policy(parameters)
             if policy != TrainingPolicy.UNSPECIFIED and not self._valid_training_policy(policy, message):
                 parameters["trainingPolicy"] = TrainingPolicy.UNSPECIFIED.value
@@ -732,6 +740,36 @@ class RequestSemanticExtractor:
             for request in normalized_requests
         ]
         return RequestSemantics(dialogue_act=dialogue_act, requests=normalized_requests)
+
+    @staticmethod
+    def _apply_explicit_forecast_dates(parameters: dict[str, object], message: str) -> dict[str, object]:
+        """从原话补全明确日期范围，并按自然日包含首尾换算预测期数。"""
+        values = dict(parameters)
+        pattern = re.compile(r"(?<!\d)(20\d{2})[年./-](\d{1,2})[月./-](\d{1,2})(?:日)?")
+        dates: list[str] = []
+        for year, month, day in pattern.findall(message):
+            try:
+                parsed = date(int(year), int(month), int(day))
+            except ValueError:
+                continue
+            text = parsed.isoformat()
+            if text not in dates:
+                dates.append(text)
+        if not values.get("forecastStartDate") and dates:
+            values["forecastStartDate"] = dates[0]
+        if not values.get("forecastEndDate") and len(dates) >= 2:
+            values["forecastEndDate"] = dates[1]
+        start_text = values.get("forecastStartDate")
+        end_text = values.get("forecastEndDate")
+        try:
+            start = date.fromisoformat(str(start_text))
+            end = date.fromisoformat(str(end_text))
+        except (TypeError, ValueError):
+            return values
+        if end >= start:
+            # 明确区间优先于模型可能臆测或沿用的默认周期。
+            values["forecastHorizon"] = (end - start).days + 1
+        return values
 
     @classmethod
     def _verified_mentions(
