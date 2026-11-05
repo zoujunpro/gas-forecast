@@ -1,0 +1,77 @@
+code: SHORT_TERM_CUSTOMER_FEATURES_V1
+name: 短期客户特征配置
+description: 按客户序列预测；根据行业名称匹配行业特征，不要求模型引擎识别客户编码。
+target_type: INDUSTRY
+required_context: [industry_name]
+
+features:
+  - code: DYNAMIC_PASSTHROUGH_V1
+    required: false
+    params:
+      required_columns: []
+
+  - code: CALENDAR_V1
+    required: true
+    params:
+      features: [dow, month, t, is_weekend]
+
+  - code: HOLIDAY_CN_V1
+    required: true
+    params:
+      features:
+        - is_holiday
+        - is_workday
+        - is_makeup_workday
+        - holiday_type
+        - days_to_holiday
+        - days_after_holiday
+        - days_to_cny
+        - days_to_national_day
+
+planned_features:
+  # 旧城燃正式流程未使用销量Lag和Rolling。保留为实验能力，回测确认有效前不默认启用。
+  - code: LAG_V1
+  - code: ROLLING_V1
+
+rules:
+  - id: CITY_GAS_FEATURES
+    description: 城燃行业按英文天气字段动态生成HDD、CDD、温差及滚动天气特征。
+    match:
+      industry_name: 城燃
+    features:
+      - code: SHORT_TERM_WEATHER_V1
+        required: false
+        params:
+          features:
+            - hdd
+            - cdd
+            - hdd_lag1
+            - hdd_roll3
+            - cdd_roll3
+            - temp_range
+            - temp_roll7
+            - humidity_roll3
+          hdd_base_temperature: 18.0
+          cdd_base_temperature: 26.0
+          hdd_rolling_window: 3
+          cdd_rolling_window: 3
+          temperature_rolling_window: 7
+          humidity_rolling_window: 3
+
+  - id: CHEMICAL_FEATURES
+    description: 化工客户存在生产计划或检修字段时自动启用。
+    match:
+      industry_code: CHEMICAL
+    features:
+      - code: PRODUCTION_PLAN_V1
+        required: false
+      - code: MAINTENANCE_STATUS_V1
+        required: false
+
+  - id: STEEL_FEATURES
+    description: 钢铁客户存在生产计划时自动启用。
+    match:
+      industry_code: STEEL
+    features:
+      - code: PRODUCTION_PLAN_V1
+        required: false

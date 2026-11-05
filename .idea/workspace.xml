@@ -5,7 +5,142 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/docs/forecast-execution-flow.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/_history.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/ewma.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/moving_average.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/naive.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/seasonal_mean.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/seasonal_naive.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/seasonal_trend.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/_base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/_legacy_residual.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/_residual_feature_policy.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/inverse_error_weight.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/median_ensemble.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/nnls_weight.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/prophet_ar_residual.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/prophet_lightgbm_residual.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/prophet_xgboost_ar_residual.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/residual_combination.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/ridge_stacking.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/weighted_average.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/winsorized_average.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/_base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/bayesian_ridge.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/elastic_net.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/huber.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/lasso.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/linear_regression.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/linear_svr.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/pls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/ridge.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/_base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/arima.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/auto_regression.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/exponential_smoothing.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/prophet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/sarimax.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/theta.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/unobserved_components.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/_base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/adaboost.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/bagging_tree.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/catboost.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/decision_tree.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/extra_trees.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/gradient_boosting.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/lightgbm.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/random_forest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/xgboost.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/backtesting/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/backtesting/oof.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/backtesting/planner.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/benchmarking/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/benchmarking/adapters.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/benchmarking/comparison.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/benchmarking/contracts.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/calendar/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/calendar/local_holiday_provider.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/combinations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/combinations/policies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/config/features/catalog.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/config/features/policies/monthly-industry.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/config/features/policies/short-term-customer.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/config/features/policies/winter-supply.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/config/holidays/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/config/holidays/cn-2004-2026.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/data_preparation/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/data_preparation/short_term_customer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/engine.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/evaluation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/contracts.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/forecast_pipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/ports.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/profile_executor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/scenario_strategies/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/scenario_strategies/legacy_short_term_residual.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/scenario_strategies/monthly_industry.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/scenario_strategies/short_term_customer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/scenario_strategies/winter_supply.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/strategies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/features/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/features/base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/features/methods.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/features/pipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/features/policies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/methods.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/contracts.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/monthly_industry.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/registry.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/short_term.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/profiles/winter_supply.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/selection/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/selection/selectors.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/tuning/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/tuning/grid_search.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/validation/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/validation/base.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/validation/monthly_industry.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/validation/short_term_customer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/validation/winter_supply.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_benchmarking.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_config_driven_pipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_evaluation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_feature_policies.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_forecast_pipeline.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_local_holiday_provider.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_oof_residuals.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_profiles.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_short_term_data_cleaner.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_tuning.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/generate_suzhou_validation_charts.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/run_suzhou_new_pipeline_all_candidates.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/validate_suzhou_city_gas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/base.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/base.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/baseline/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/composite/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/contracts.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/contracts.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/linear/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/statistical/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/algorithms/tree/models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/tests/test_composite.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_composite.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-engine/tests/test_contracts.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-engine/tests/test_contracts.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -13,7 +148,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="1496" />
+    <option name="cachedIndexableFilesCount" value="1615" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -107,6 +242,7 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;Notification.DisplayName-DoNotAsk-DatabaseConfigFileWatcher.found&quot;: &quot;New/updated database configurations found&quot;,
     &quot;Notification.DoNotAsk-DatabaseConfigFileWatcher.found&quot;: &quot;true&quot;,
+    &quot;Python.strategies.executor&quot;: &quot;Run&quot;,
     &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
     &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
     &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
@@ -167,7 +303,7 @@
       <command value="mvn spotless:apply" />
     </option>
   </component>
-  <component name="RunManager" selected="Spring Boot.GasForecastStartupApplication">
+  <component name="RunManager" selected="Python.strategies">
     <configuration name="GasForecastBusinessApplication" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="com.gas.forecast.business.GasForecastBusinessApplication" />
       <module name="gas-forecast-bussiness" />
@@ -223,6 +359,30 @@
       <option name="filePath" />
       <method v="2" />
     </configuration>
+    <configuration name="strategies" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="gas-model-engine" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/gas-model-engine/src/gas_model_engine/execution/strategies.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="GasForecastBusinessApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="gas-forecast-bussiness" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.gas.forecast.business.GasForecastBusinessApplication" />
@@ -239,11 +399,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.strategies" />
         <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest.prepareJiangsuPowerDynamicFeaturesWithoutTraining" />
         <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest" />
         <item itemvalue="Application.GasForecastBusinessApplication" />
         <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest.prepareJiangsuPowerDynamicFeaturesWithoutTraining" />
-        <item itemvalue="JUnit.DynamicTrainingFeatureServiceIntegrationTest" />
       </list>
     </recent_temporary>
   </component>
@@ -302,22 +462,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00059" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792376848177</created>
-      <option name="number" value="00059" />
-      <option name="presentableId" value="LOCAL-00059" />
-      <option name="project" value="LOCAL" />
-      <updated>1792376848177</updated>
-    </task>
-    <task id="LOCAL-00060" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792377468241</created>
-      <option name="number" value="00060" />
-      <option name="presentableId" value="LOCAL-00060" />
-      <option name="project" value="LOCAL" />
-      <updated>1792377468241</updated>
     </task>
     <task id="LOCAL-00061" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -695,7 +839,23 @@
       <option name="project" value="LOCAL" />
       <updated>1793588015058</updated>
     </task>
-    <option name="localTasksCounter" value="108" />
+    <task id="LOCAL-00108" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1793588192701</created>
+      <option name="number" value="00108" />
+      <option name="presentableId" value="LOCAL-00108" />
+      <option name="project" value="LOCAL" />
+      <updated>1793588192701</updated>
+    </task>
+    <task id="LOCAL-00109" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1793588201225</created>
+      <option name="number" value="00109" />
+      <option name="presentableId" value="LOCAL-00109" />
+      <option name="project" value="LOCAL" />
+      <updated>1793588201225</updated>
+    </task>
+    <option name="localTasksCounter" value="110" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

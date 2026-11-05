@@ -1,0 +1,102 @@
+version: "1.0"
+
+# 全量特征目录。enabled=false 表示已规划但计算实现尚未接入，解析时不会启用。
+features:
+  - code: DYNAMIC_PASSTHROUGH_V1
+    name: 用户输入数值特征
+    description: 透传调用方在历史和未来数据中同时提供的数值字段，例如天气、计划量和事件值。
+    category: USER_INPUT
+    method_code: DYNAMIC_PASSTHROUGH_V1
+    enabled: true
+    default_required: false
+
+  - code: CALENDAR_V1
+    name: 公共日历特征
+    description: 根据目标日期生成年、月、日、星期和周末标记。
+    category: COMMON
+    method_code: CALENDAR_V1
+    enabled: true
+    default_required: true
+
+  - code: LAG_V1
+    name: 历史目标滞后特征
+    description: 使用目标日期之前若干周期的真实值或递归预测值。
+    category: COMMON
+    method_code: LAG_V1
+    enabled: true
+    default_required: true
+
+  - code: ROLLING_V1
+    name: 历史目标滚动统计
+    description: 使用目标日期之前的历史目标计算滚动均值、标准差、最小值或最大值。
+    category: COMMON
+    method_code: ROLLING_V1
+    enabled: true
+    default_required: true
+
+  - code: HOLIDAY_V1
+    name: 法定节假日特征
+    description: 法定节假日、调休工作日及节前节后标记，后续接入节假日日历实现。
+    category: COMMON
+    method_code: HOLIDAY_V1
+    enabled: false
+    default_required: false
+
+  - code: HOLIDAY_CN_V1
+    name: 中国法定节假日特征
+    description: 使用本地2004至2026年节假日数据生成放假、补班及节日前后距离特征。
+    category: COMMON
+    method_code: HOLIDAY_CN_V1
+    enabled: true
+    default_required: true
+
+  - code: SHORT_TERM_WEATHER_V1
+    name: 短期客户天气派生特征
+    description: 根据temp、tempmax、tempmin和humidity动态生成HDD、CDD及滚动天气特征。
+    category: COMMON
+    method_code: SHORT_TERM_WEATHER_V1
+    enabled: true
+    default_required: false
+
+  - code: HEATING_PERIOD_V1
+    name: 地区采暖期特征
+    description: 根据地区和日期识别法定或实际采暖期，供冬季保供场景使用。
+    category: REGION
+    method_code: HEATING_PERIOD_V1
+    enabled: false
+    default_required: false
+
+  - code: EXTREME_COLD_V1
+    name: 极端低温特征
+    description: 根据地区温度阈值识别极寒过程，供冬季保供场景使用。
+    category: REGION
+    method_code: EXTREME_COLD_V1
+    enabled: false
+    default_required: false
+
+  - code: PRODUCTION_PLAN_V1
+    name: 行业生产计划特征
+    description: 调用方提供的行业或客户生产计划，适用于化工、钢铁等工业用户。
+    category: INDUSTRY
+    method_code: DYNAMIC_PASSTHROUGH_V1
+    enabled: true
+    default_required: false
+    required_columns: [production_plan]
+
+  - code: MAINTENANCE_STATUS_V1
+    name: 行业检修状态特征
+    description: 调用方提供的停产、检修或恢复生产状态。
+    category: INDUSTRY
+    method_code: DYNAMIC_PASSTHROUGH_V1
+    enabled: true
+    default_required: false
+    required_columns: [maintenance_status]
+
+  - code: INDUSTRY_INDEX_V1
+    name: 行业景气指数特征
+    description: 调用方提供的月度行业景气、产量或订单指数。
+    category: INDUSTRY
+    method_code: DYNAMIC_PASSTHROUGH_V1
+    enabled: true
+    default_required: false
+    required_columns: [industry_index]

@@ -24,12 +24,12 @@ def future(size):
     )
 
 
-def test_default_registry_contains_30_atomic_and_7_composite_algorithms():
+def test_default_registry_contains_30_atomic_and_10_composite_algorithms():
     registry = create_default_registry()
     metadata = registry.list_metadata()
-    assert len(metadata) == 37
+    assert len(metadata) == 40
     assert sum(item.kind == "ATOMIC" for item in metadata) == 30
-    assert sum(item.kind == "COMPOSITE" for item in metadata) == 7
+    assert sum(item.kind == "COMPOSITE" for item in metadata) == 10
     assert registry.get("LIGHTGBM_V1").metadata.family == "TREE"
     assert registry.get("RESIDUAL_COMBINATION_V1").metadata.family == "COMPOSITE"
 
@@ -50,10 +50,13 @@ def test_linear_algorithm_uses_standard_contract():
     algorithm = create_default_registry().get("RIDGE_V1")
     train = dataset(np.arange(1, 21), np.arange(1, 21))
     model = algorithm.fit(train, {"alpha": 0.01})
-    prediction = algorithm.predict(model, AlgorithmDataset(
-        features=pd.DataFrame({"x": [21.0, 22.0]}),
-        dates=pd.date_range("2025-02-01", periods=2),
-    ))
+    prediction = algorithm.predict(
+        model,
+        AlgorithmDataset(
+            features=pd.DataFrame({"x": [21.0, 22.0]}),
+            dates=pd.date_range("2025-02-01", periods=2),
+        ),
+    )
     assert prediction.values.shape == (2,)
     assert prediction.values[1] > prediction.values[0]
 

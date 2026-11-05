@@ -32,12 +32,20 @@ algorithms/
 ├── base.py                  # 统一算法抽象类
 ├── contracts.py             # 数据、模型、结果、能力和校验对象
 ├── registry.py              # 算法注册中心及依赖校验
-├── baseline/                # 基线算法
-├── statistical/             # 统计时序算法
-├── linear/                  # 线性及稳健回归算法
-├── tree/                    # 树模型及 Boosting 算法
-└── composite/               # 组合算法
+├── baseline/                # 基线算法，一个算法一个文件
+├── statistical/             # 统计时序算法，一个算法一个文件
+├── linear/                  # 线性及稳健回归，一个算法一个文件
+├── tree/                    # 树模型及 Boosting，一个算法一个文件
+└── composite/               # 组合算法，一个组合策略一个文件
 ```
+
+文件组织约定：
+
+- 每个具体算法只能放在自己的独立文件中；
+- 每个具体组合策略也只能放在自己的独立文件中；
+- `__init__.py` 仅负责导出类和组装默认算法列表；
+- `_base.py`、`_history.py` 只保存同一算法簇共享的抽象实现，不注册为具体算法；
+- 不再创建集中容纳多个算法实现的 `models.py`。
 
 ## 3. 公共接口
 
@@ -111,7 +119,7 @@ result = algorithm.predict(model, future_data)
 ```python
 AlgorithmDataset(
     features=pd.DataFrame(...),
-    target=pd.Series(...),       # 预测阶段可以为 None
+    target=pd.Series(...),  # 预测阶段可以为 None
     dates=pd.DatetimeIndex(...),
     sample_weight=None,
     metadata={},
@@ -210,6 +218,13 @@ ETS 和 Holt-Winters 统一由 `EXPONENTIAL_SMOOTHING_V1` 通过参数区分。
 | `NNLS_WEIGHT_V1` | 非负最小二乘学习权重 | 是 |
 | `RIDGE_STACKING_V1` | 使用 Ridge 学习二层组合关系 | 是 |
 | `RESIDUAL_COMBINATION_V1` | 基础预测加残差预测 | 否 |
+| `PROPHET_AR_RESIDUAL_V1` | 旧短期v1：Prophet加AR(4)残差 | 否 |
+| `PROPHET_XGBOOST_AR_RESIDUAL_V1` | 旧短期v2：XGBoost与AR残差按误差倒数融合后修正Prophet | 否 |
+| `PROPHET_LIGHTGBM_RESIDUAL_V1` | 旧短期v3：LightGBM残差修正Prophet，失败时回退AR | 否 |
+
+> 三个旧短期组合目前已经完成独立编码、注册、成员复用、残差相加、回退/加权和
+> 预测区间调整。v2/v3原脚本中的专用残差特征、内部70%/30%或80%/20%时序划分、
+> early stopping及参数搜索仍需继续等价迁移，当前不能用于新旧结果一致性验收。
 
 ### 6.1 等权与固定权重
 
@@ -392,11 +407,9 @@ class ExampleAlgorithm(BaseAlgorithm):
     def get_default_params(self):
         return {"alpha": 1.0}
 
-    def fit(self, train_data, params):
-        ...
+    def fit(self, train_data, params): ...
 
-    def predict(self, model, future_data):
-        ...
+    def predict(self, model, future_data): ...
 ```
 
 ## 9. 依赖安装

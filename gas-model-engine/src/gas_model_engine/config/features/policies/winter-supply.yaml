@@ -1,0 +1,32 @@
+code: WINTER_SUPPLY_FEATURES_V1
+name: 冬季保供特征配置
+description: 按地区预测；以天气、地区日历、采暖期和极寒过程为主要特征。
+target_type: REGION
+required_context: [region_code]
+
+features:
+  - code: DYNAMIC_PASSTHROUGH_V1
+    required: true
+    params:
+      required_columns: [temperature]
+
+  - code: CALENDAR_V1
+    required: true
+
+  - code: LAG_V1
+    required: true
+    params:
+      lags: [1, 2, 3, 7, 14, 28]
+
+  - code: ROLLING_V1
+    required: true
+    params:
+      windows: [3, 7, 14, 28]
+      statistics: [mean, std, max]
+
+# 以下特征已进入全量目录，但实现完成前 enabled=false，不会被解析器启用。
+planned_features:
+  - code: HEATING_PERIOD_V1
+    required: true
+  - code: EXTREME_COLD_V1
+    required: true

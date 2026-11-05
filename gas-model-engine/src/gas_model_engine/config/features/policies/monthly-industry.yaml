@@ -1,0 +1,33 @@
+code: MONTHLY_INDUSTRY_FEATURES_V1
+name: 月度行业特征配置
+description: 按行业预测；使用月度环比、同比和行业动态指标。
+target_type: INDUSTRY
+required_context: [industry_code]
+
+features:
+  - code: DYNAMIC_PASSTHROUGH_V1
+    required: false
+    params:
+      required_columns: []
+
+  - code: CALENDAR_V1
+    required: true
+
+  - code: LAG_V1
+    required: true
+    params:
+      lags: [1, 2, 3, 12]
+
+  - code: ROLLING_V1
+    required: true
+    params:
+      windows: [3, 6, 12]
+      statistics: [mean, std]
+
+rules:
+  - id: MONTHLY_INDUSTRY_INDEX
+    description: 输入包含行业景气指数时启用。
+    match: {}
+    features:
+      - code: INDUSTRY_INDEX_V1
+        required: false

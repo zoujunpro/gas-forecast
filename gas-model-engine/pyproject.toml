@@ -7,6 +7,7 @@ dependencies = [
     "joblib>=1.3",
     "numpy>=1.24",
     "pandas>=2.0",
+    "pyyaml>=6.0",
     "scikit-learn>=1.4",
     "scipy>=1.10",
     "statsmodels>=0.14",
@@ -15,13 +16,14 @@ dependencies = [
 [project.optional-dependencies]
 boosting = ["lightgbm>=4.0", "xgboost>=2.0", "catboost>=1.2"]
 prophet = ["prophet>=1.1.6"]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.8"]
 all = [
     "lightgbm>=4.0",
     "xgboost>=2.0",
     "catboost>=1.2",
     "prophet>=1.1.6",
     "pytest>=8.0",
+    "ruff>=0.8",
 ]
 
 [build-system]
@@ -31,6 +33,22 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+gas_model_engine = ["config/**/*.yaml", "config/**/*.json", "config/**/*.md"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.lint]
+# 算法参数模板是只读类配置；执行器需要隔离单个候选的第三方库异常。
+ignore = ["BLE001", "RUF012"]

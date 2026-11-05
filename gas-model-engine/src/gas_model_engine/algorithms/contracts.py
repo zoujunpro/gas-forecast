@@ -58,10 +58,13 @@ class AlgorithmDataset:
         if self.sample_weight is not None:
             self.sample_weight = pd.Series(self.sample_weight, dtype=float).reset_index(drop=True)
 
-    def with_target(self, target: pd.Series | np.ndarray) -> "AlgorithmDataset":
+    def with_target(self, target: pd.Series | np.ndarray) -> AlgorithmDataset:
         return AlgorithmDataset(
-            features=self.features.copy(), dates=self.dates.copy(), target=pd.Series(target),
-            sample_weight=self.sample_weight, metadata=dict(self.metadata),
+            features=self.features.copy(),
+            dates=self.dates.copy(),
+            target=pd.Series(target),
+            sample_weight=self.sample_weight,
+            metadata=dict(self.metadata),
         )
 
 
@@ -104,5 +107,5 @@ class ValidationResult:
     warnings: list[ValidationIssue] = field(default_factory=list)
 
     @classmethod
-    def success(cls, params: dict[str, Any] | None = None) -> "ValidationResult":
+    def success(cls, params: dict[str, Any] | None = None) -> ValidationResult:
         return cls(valid=True, normalized_params=dict(params or {}))

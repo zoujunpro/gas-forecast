@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1960" viewBox="0 0 1400 1960" role="img" aria-labelledby="title desc">
+  <title id="title">Gas Model Engine 预测接口完整执行流程</title>
+  <desc id="desc">从 ForecastRequest、Profile 和策略路由，到执行计划、Walk-forward 回测、Tune、Eval、全量重训和 ForecastResult 的完整流程。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fafc; }
+      .phase { fill: #eef2ff; stroke: #818cf8; stroke-width: 2; rx: 18; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; rx: 10; }
+      .decision { fill: #fff7ed; stroke: #fb923c; stroke-width: 1.5; }
+      .success { fill: #ecfdf5; stroke: #34d399; stroke-width: 1.5; rx: 10; }
+      .error { fill: #fff1f2; stroke: #fb7185; stroke-width: 1.5; rx: 10; }
+      .title { font: 700 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #0f172a; }
+      .phase-title { font: 700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #3730a3; }
+      .text { font: 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #1e293b; text-anchor: middle; }
+      .small { font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; text-anchor: middle; }
+      .label { font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #475569; }
+      .line { fill: none; stroke: #64748b; stroke-width: 2; marker-end: url(#arrow); }
+      .dash { fill: none; stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1400" height="1960"/>
+  <text class="title" x="700" y="48" text-anchor="middle">预测接口完整执行流程</text>
+  <text class="small" x="700" y="76">统一输入 ForecastRequest · 场景策略内部路由 · 统一输出 ForecastResult</text>
+
+  <!-- 入口与策略路由 -->
+  <rect class="phase" x="90" y="105" width="1220" height="300"/>
+  <text class="phase-title" x="120" y="140">一、统一入口与场景策略路由</text>
+  <rect class="box" x="500" y="165" width="400" height="58"/>
+  <text class="text" x="700" y="200">ForecastPipeline.run(ForecastRequest)</text>
+  <path class="line" d="M700 223 V250"/>
+  <rect class="box" x="500" y="250" width="400" height="58"/>
+  <text class="text" x="700" y="276">公共基础结构校验（不执行场景清洗）</text>
+  <text class="small" x="700" y="297">校验 dates / features 长度；训练数据必须包含 target</text>
+  <path class="line" d="M700 308 V335"/>
+  <polygon class="decision" points="700,330 850,365 700,400 550,365"/>
+  <text class="text" x="700" y="360">Profile.strategy_code</text>
+  <text class="small" x="700" y="381">StrategyRegistry 路由</text>
+  <path class="dash" d="M550 365 H310 V390"/>
+  <path class="line" d="M700 400 V430"/>
+  <path class="dash" d="M850 365 H1090 V390"/>
+  <text class="label" x="330" y="352">冬季保供</text>
+  <text class="label" x="715" y="420">短期客户</text>
+  <text class="label" x="1020" y="352">月度行业</text>
+
+  <rect class="error" x="120" y="390" width="380" height="82"/>
+  <text class="text" x="310" y="418">WINTER_SUPPLY_V1</text>
+  <text class="small" x="310" y="440">地区校验（待实现）：region_code、历史冬季、天气</text>
+  <text class="small" x="310" y="458">等价迁移前停止，不套用短期流程</text>
+  <rect class="success" x="510" y="430" width="380" height="68"/>
+  <text class="text" x="700" y="458">SHORT_TERM_CUSTOMER_V1</text>
+  <text class="small" x="700" y="480">先清洗，再执行短期客户专属校验；未来特征可选</text>
+  <rect class="box" x="900" y="390" width="380" height="82"/>
+  <text class="text" x="1090" y="418">MONTHLY_INDUSTRY_V1</text>
+  <text class="small" x="1090" y="440">行业校验（待实现）：industry_code、月度唯一性</text>
+  <text class="small" x="1090" y="458">等价迁移前停止，不套用日级流程</text>
+
+  <!-- 执行计划 -->
+  <path class="line" d="M700 498 V535"/>
+  <rect class="phase" x="90" y="535" width="1220" height="300"/>
+  <text class="phase-title" x="120" y="570">二、使用场景清洗结果，解析能力并计算执行计划</text>
+  <rect class="box" x="130" y="600" width="330" height="86"/>
+  <text class="text" x="295" y="628">解析清洗结果与特征配置</text>
+  <text class="small" x="295" y="652">加载本场景实际启用的特征</text>
+  <text class="small" x="295" y="674">计算特征所需历史长度 W</text>
+  <rect class="box" x="535" y="600" width="330" height="86"/>
+  <text class="text" x="700" y="628">解析算法能力</text>
+  <text class="small" x="700" y="652">M = 候选最低有效训练样本</text>
+  <text class="small" x="700" y="674">读取 Profile 业务安全下限 F</text>
+  <rect class="box" x="940" y="600" width="330" height="86"/>
+  <text class="text" x="1105" y="628">解析本次预测范围</text>
+  <text class="small" x="1105" y="652">H = future_data 行数</text>
+  <text class="small" x="1105" y="674">验证窗口 = 真实预测长度 H</text>
+  <path class="line" d="M295 686 V720 H610"/>
+  <path class="line" d="M700 686 V720"/>
+  <path class="line" d="M1105 686 V720 H790"/>
+  <rect class="success" x="470" y="720" width="460" height="82"/>
+  <text class="text" x="700" y="748">T = max(F, M + W)</text>
+  <text class="small" x="700" y="772">根据 N、T、H、min/max folds 计算折数与步长</text>
+  <text class="small" x="700" y="792">均匀生成起点：前段 Tune，末段 Eval</text>
+
+  <!-- 回测 -->
+  <path class="line" d="M700 802 V865"/>
+  <rect class="phase" x="90" y="865" width="1220" height="390"/>
+  <text class="phase-title" x="120" y="900">三、逐折 Walk-forward 回测</text>
+  <rect class="box" x="130" y="930" width="280" height="70"/>
+  <text class="text" x="270" y="958">截取该折训练历史</text>
+  <text class="small" x="270" y="982">训练窗口随起点不断扩展</text>
+  <path class="line" d="M410 965 H475"/>
+  <rect class="box" x="475" y="930" width="280" height="70"/>
+  <text class="text" x="615" y="958">生成训练特征</text>
+  <text class="small" x="615" y="982">删除 Lag / Rolling 预热行</text>
+  <path class="line" d="M755 965 H820"/>
+  <rect class="box" x="820" y="930" width="430" height="70"/>
+  <text class="text" x="1035" y="958">训练所有原子与残差候选</text>
+  <text class="small" x="1035" y="982">非必需失败记录并继续；必需失败终止</text>
+
+  <path class="line" d="M1035 1000 V1030 H700 V1050"/>
+  <polygon class="decision" points="700,1040 875,1085 700,1130 525,1085"/>
+  <text class="text" x="700" y="1080">依赖目标衍生特征？</text>
+  <text class="small" x="700" y="1103">Lag / Rolling</text>
+  <path class="line" d="M525 1085 H360"/>
+  <path class="line" d="M875 1085 H1040"/>
+  <text class="label" x="430" y="1072">否</text>
+  <text class="label" x="950" y="1072">是</text>
+  <rect class="box" x="150" y="1050" width="210" height="70"/>
+  <text class="text" x="255" y="1080">直接多步预测</text>
+  <text class="small" x="255" y="1103">完整验证窗口</text>
+  <rect class="box" x="1040" y="1040" width="230" height="90"/>
+  <text class="text" x="1155" y="1070">逐日递归预测</text>
+  <text class="small" x="1155" y="1093">当天预测写入临时历史</text>
+  <text class="small" x="1155" y="1115">再计算下一天特征</text>
+  <path class="line" d="M255 1120 V1170 H610"/>
+  <path class="line" d="M1155 1130 V1170 H790"/>
+  <rect class="success" x="500" y="1170" width="400" height="58"/>
+  <text class="text" x="700" y="1195">保存该折 OOF 预测</text>
+  <text class="small" x="700" y="1217">继续下一折，直到全部回测完成</text>
+
+  <!-- Tune Eval -->
+  <path class="line" d="M700 1228 V1285"/>
+  <rect class="phase" x="90" y="1285" width="1220" height="280"/>
+  <text class="phase-title" x="120" y="1320">四、Tune 生成组合，Eval 统一选优</text>
+  <rect class="box" x="140" y="1350" width="500" height="170"/>
+  <text class="text" x="390" y="1380">Tune 折</text>
+  <text class="small" x="390" y="1410">计算原子与残差候选指标并排序</text>
+  <text class="small" x="390" y="1438">选择 Top2 / Top3 / Top5 成员</text>
+  <text class="small" x="390" y="1466">生成 Equal / Inverse / Median</text>
+  <text class="small" x="390" y="1494">使用 OOF 学习 NNLS 权重并固定组合</text>
+  <path class="line" d="M640 1435 H760"/>
+  <rect class="success" x="760" y="1350" width="500" height="170"/>
+  <text class="text" x="1010" y="1380">Eval 折</text>
+  <text class="small" x="1010" y="1410">评价已经确定的组合</text>
+  <text class="small" x="1010" y="1438">汇总原子、残差和组合指标</text>
+  <text class="small" x="1010" y="1466">SelectorRegistry 统一排名</text>
+  <text class="small" x="1010" y="1494">得到候选优先级列表</text>
+
+  <!-- 全量训练和返回 -->
+  <path class="line" d="M1010 1520 V1595 H700"/>
+  <rect class="phase" x="90" y="1595" width="1220" height="300"/>
+  <text class="phase-title" x="120" y="1630">五、全量重训、真实未来预测与统一返回</text>
+  <rect class="box" x="140" y="1660" width="330" height="92"/>
+  <text class="text" x="305" y="1690">使用全部历史重新训练</text>
+  <text class="small" x="305" y="1716">重新生成特征并训练成功候选</text>
+  <text class="small" x="305" y="1738">回测结果不直接作为最终模型</text>
+  <path class="line" d="M470 1706 H535"/>
+  <rect class="box" x="535" y="1660" width="330" height="92"/>
+  <text class="text" x="700" y="1690">预测真实未来</text>
+  <text class="small" x="700" y="1716">目标特征模型逐日递归</text>
+  <text class="small" x="700" y="1738">其他模型直接多步预测</text>
+  <path class="line" d="M865 1706 H930"/>
+  <rect class="box" x="930" y="1660" width="330" height="92"/>
+  <text class="text" x="1095" y="1690">按排名选择成功候选</text>
+  <text class="small" x="1095" y="1716">最优候选失败则尝试下一名</text>
+  <text class="small" x="1095" y="1738">确定最终最优预测</text>
+  <path class="line" d="M1095 1752 V1790 H700"/>
+  <rect class="success" x="420" y="1790" width="560" height="78"/>
+  <text class="text" x="700" y="1820">返回统一 ForecastResult</text>
+  <text class="small" x="700" y="1846">全部候选预测 · 最优预测 · 指标排名 · 执行计划 · 失败原因</text>
+
+  <text class="small" x="700" y="1925">Tune / Eval 只使用历史回测数据；真实未来只参与最终预测，不参与模型选优。</text>
+</svg>
