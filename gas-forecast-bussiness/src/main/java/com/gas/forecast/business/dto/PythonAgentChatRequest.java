@@ -32,7 +32,7 @@ public record PythonAgentChatRequest(
 
     public PythonAgentChatRequest {
         inputType = inputType == null ? "TEXT" : inputType;
-        conversationContext = conversationContext == null ? new ConversationContext(null, null, List.of()) : conversationContext;
+        conversationContext = conversationContext == null ? new ConversationContext(null, null, List.of(), List.of()) : conversationContext;
     }
 
     /**
@@ -51,14 +51,29 @@ public record PythonAgentChatRequest(
             /** 较早会话内容的压缩摘要；尚未生成时为空。 */
             String summary,
             /** 当前待澄清交互的恢复快照；普通对话为空。 */
-            AgentPendingOperation pendingOperation, /** 最近原始消息，按创建时间正序排列，不包含本轮用户消息。 */
-            List<RecentMessage> recentMessages) {
+            AgentPendingOperation pendingOperation,
+            /** 最近原始消息，按创建时间正序排列，不包含本轮用户消息。 */
+            List<RecentMessage> recentMessages,
+            /** 当前会话最近的预测任务，按任务时间从新到旧排列。 */
+            List<RecentForecastTask> recentForecastTasks) {
         public ConversationContext {
             recentMessages = recentMessages == null ? List.of() : List.copyOf(recentMessages);
+            recentForecastTasks = recentForecastTasks == null ? List.of() : List.copyOf(recentForecastTasks);
         }
     }
 
     /** Java从数据库读取的一条最近原始消息。 */
     public record RecentMessage(String role, String content) {
+    }
+
+    /** 会话中一个预测任务及其成功产生的预测明细。 */
+    public record RecentForecastTask(String taskNo, String status, List<ForecastDetail> details) {
+        public RecentForecastTask {
+            details = details == null ? List.of() : List.copyOf(details);
+        }
+    }
+
+    /** 一个最小预测目标对应的结果编号。 */
+    public record ForecastDetail(String detailNo, String forecastNo, String agentCode, String status) {
     }
 }

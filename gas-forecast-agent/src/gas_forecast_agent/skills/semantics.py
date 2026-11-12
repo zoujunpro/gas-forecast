@@ -623,7 +623,10 @@ class RequestSemanticExtractor:
             "\"references\":{},\"parameters\":{},\"dependsOn\":[]}]}."
             "一句话包含多个独立操作时拆成多个requests并按出现顺序编号；后一个请求依赖前一个结果时填写dependsOn。"
             "intent就是Skill分类，只能从skills提供的intent中选择；识别出intent即确定唯一Skill。"
-            "TRAIN和FORECAST都创建统一预测任务；训练、回测和预测结果查询都属于QUERY。"
+            "TRAIN和FORECAST都创建统一预测任务。"
+            "读取、查看、解释、比较或分析已有预测结果均使用ANALYZE，"
+            "包括预测值、趋势、峰谷、同比、环比、波动、回测、误差、准确性、原因和风险。"
+            "QUERY仅用于客户、地区、行业、任务状态和执行步骤等基础信息。"
             "具体查询内容和工具调用由后续Skill根据原话、参数和工具结果决定，本层不得输出工具名称。"
             "contextRelation默认NEW：NEW不得继承历史业务过滤条件；仅当用户明确承接上一轮时用CONTINUE，"
             "明确替换或取消上一轮条件时用MODIFY。clearParameters只可填region、industry、customer，"
@@ -694,6 +697,9 @@ class RequestSemanticExtractor:
             intent = request.intent
             if intent and allowed_intents and intent.value not in allowed_intents:
                 intent = None
+            # 业务边界高于模型分类：明确的预测结果问题必须进入分析 Skill。
+            if intent not in {SkillIntent.FORECAST, SkillIntent.TRAIN} and self._is_forecast_result_question(message):
+                intent = SkillIntent.ANALYZE
 
             entities = RequestEntities(
                 customers=self._verified_mentions(request.entities.customers, message, "customer"),
@@ -755,6 +761,18 @@ class RequestSemanticExtractor:
             for request in normalized_requests
         ]
         return RequestSemantics(dialogue_act=dialogue_act, requests=normalized_requests)
+
+    @staticmethod
+    def _is_forecast_result_question(message: str) -> bool:
+        """识别高确定性的预测结果问题，不用单独的“预测”二字覆盖新建预测请求。"""
+        text = re.sub(r"\s+", "", message).lower()
+        if re.search(r"(?<![A-Za-z0-9_-])FORECAST[-_A-Za-z0-9]+(?![A-Za-z0-9_-])", message, re.I):
+            return True
+        return any(term in text for term in (
+            "预测结果", "预测值", "预测数据", "趋势", "走势", "升还是降",
+            "上升", "下降", "峰值", "谷值", "最高", "最低", "波动", "同比", "环比",
+            "回测", "误差", "准确", "精度", "为什么", "原因", "异常", "风险", "分析", "研判",
+        ))
 
     @staticmethod
     def _apply_explicit_forecast_dates(parameters: dict[str, object], message: str) -> dict[str, object]:

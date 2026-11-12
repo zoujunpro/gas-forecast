@@ -757,6 +757,28 @@ class ActionExecutor:
                 values[key] = match.group(1)
                 # 用户明确输入的业务编号属于强标识，模型不得截断或改写。
                 locked_parameters.add(key)
+        # 用户未指定分析对象时，使用当前会话最近的成功预测任务。
+        # 单明细任务可以唯一确定forecastNo；批量任务包含多个结果时
+        # 不能静默选第一个，必须请用户明确客户、地区或行业。
+        explicit_scope = any(values.get(key) not in (None, "", []) for key in (
+            "customerCode", "customerCodes", "customerName", "customerNames",
+            "regionCode", "regionCodes", "regionName", "regionNames",
+            "industryCode", "industryCodes", "industryName", "industryNames",
+        ))
+        if skill_name == "forecast-analysis" and not values.get("forecastNo") and not explicit_scope:
+            recent_tasks = metadata.get("recentForecastTasks") or []
+            latest_task = recent_tasks[0] if recent_tasks and isinstance(recent_tasks[0], dict) else None
+            details = latest_task.get("details") if latest_task else []
+            valid_details = [
+                item for item in details or []
+                if isinstance(item, dict) and item.get("forecastNo")
+            ]
+            if len(valid_details) == 1:
+                values["forecastNo"] = valid_details[0]["forecastNo"]
+                locked_parameters.add("forecastNo")
+            elif len(valid_details) > 1:
+                values["_clarificationQuestion"] = "最近一次是批量预测，请说明要分析的客户、地区或行业。"
+                values["_clarificationPendingTool"] = "forecast_result_query"
         # 实体、指代和时间范围统一由 understand_request 的语义层处理；Skill
         # 执行阶段只消费结构化结果，不再从原句用正则重新猜测客户或日期。
         if skill_name == "model-training-management" and any(word in message for word in ("重新训练", "重训", "重新建模")):

@@ -99,6 +99,10 @@ async def execute_action(
             item.model_dump(mode="json", by_alias=True, exclude_none=True)
             for item in request.history_references
         ],
+        "recentForecastTasks": [
+            item.model_dump(mode="json", by_alias=True, exclude_none=True)
+            for item in request.recent_forecast_tasks
+        ],
     }
     execution_metadata = {key: value for key, value in execution_metadata.items() if value is not None}
     execution_metadata["inputType"] = request.input_type.value

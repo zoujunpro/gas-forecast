@@ -24,6 +24,7 @@ import com.gas.forecast.business.enums.AiInteractionTypeEnum;
 import com.gas.forecast.business.enums.AiInteractionStatusEnum;
 import com.gas.forecast.business.enums.AiMessageReferenceRelationEnum;
 import com.gas.forecast.business.enums.AiMessageRoleEnum;
+import com.gas.forecast.business.enums.ExecutionTargetStatusEnum;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
@@ -32,11 +33,15 @@ import com.gas.forecast.dao.domain.AiConversationInteractionTb;
 import com.gas.forecast.dao.domain.AiConversationMessageTb;
 import com.gas.forecast.dao.domain.AiConversationTb;
 import com.gas.forecast.dao.domain.AiMessageRefTb;
+import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
+import com.gas.forecast.dao.domain.ExecutionTaskTb;
 import com.gas.forecast.dao.mapper.AgentRunTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationInteractionTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationMessageTbMapper;
 import com.gas.forecast.dao.mapper.AiConversationTbMapper;
 import com.gas.forecast.dao.mapper.AiMessageRefTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionTaskDetailTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,6 +66,8 @@ public class AiChatPersistenceService {
     private final AiConversationInteractionTbMapper interactionMapper;
     private final AgentRunTbMapper runMapper;
     private final AiMessageRefTbMapper referenceMapper;
+    private final ExecutionTaskTbMapper executionTaskMapper;
+    private final ExecutionTaskDetailTbMapper executionTaskDetailMapper;
     private final ObjectMapper objectMapper;
 
     /**
@@ -77,10 +84,11 @@ public class AiChatPersistenceService {
 
         // 3. 加载近期消息；结构化回复同时从交互表加载待恢复操作。
         List<PythonAgentChatRequest.RecentMessage> recentMessages = loadRecentMessages(conversation.getId(), 20);
+        List<PythonAgentChatRequest.RecentForecastTask> recentForecastTasks = loadRecentForecastTasks(conversation.getConversationNo(), 5);
         AgentPendingOperation pendingOperation = validateAndLoadPendingOperation(conversation, request);
 
         // 5. 组合摘要、结构化记忆和近期消息，形成完整会话上下文。
-        PythonAgentChatRequest.ConversationContext conversationContext = new PythonAgentChatRequest.ConversationContext(trimToNull(conversation.getSummary()), pendingOperation, recentMessages);
+        PythonAgentChatRequest.ConversationContext conversationContext = new PythonAgentChatRequest.ConversationContext(trimToNull(conversation.getSummary()), pendingOperation, recentMessages, recentForecastTasks);
 
         // 6. 创建本轮turnId并先保存用户消息；同轮助手消息完成后继续使用该turnId。
         String turnId = "TURN-" + compactUuid();
@@ -298,6 +306,29 @@ public class AiChatPersistenceService {
             result.add(new PythonAgentChatRequest.RecentMessage(message.getRole(), message.getContent()));
         }
         return result;
+    }
+
+    /**
+     * 加载当前会话最近的预测任务和成功明细，供Python解析“刚才的预测”。
+     *
+     * <p>
+     * 批量任务保留所有成功明细，不在Java侧静默挑选第一个预测结果。
+     * </p>
+     */
+    private List<PythonAgentChatRequest.RecentForecastTask> loadRecentForecastTasks(String conversationNo, int limit) {
+        List<ExecutionTaskTb> tasks = executionTaskMapper.selectList(Wrappers.<ExecutionTaskTb>lambdaQuery().eq(ExecutionTaskTb::getConversationNo, conversationNo).orderByDesc(ExecutionTaskTb::getId).last("limit " + limit));
+        if (tasks.isEmpty()) {
+            return List.of();
+        }
+        List<PythonAgentChatRequest.RecentForecastTask> result = new ArrayList<>();
+        for (ExecutionTaskTb task : tasks) {
+            List<ExecutionTaskDetailTb> details = executionTaskDetailMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery().eq(ExecutionTaskDetailTb::getTaskNo, task.getTaskNo()).eq(ExecutionTaskDetailTb::getStatus, ExecutionTargetStatusEnum.SUCCESS.getCode()).isNotNull(ExecutionTaskDetailTb::getForecastNo).orderByAsc(ExecutionTaskDetailTb::getId));
+            List<PythonAgentChatRequest.ForecastDetail> forecasts = details.stream().filter(detail -> TextUtils.hasText(detail.getForecastNo())).map(detail -> new PythonAgentChatRequest.ForecastDetail(detail.getDetailNo(), detail.getForecastNo(), detail.getAgentCode(), detail.getStatus())).toList();
+            if (!forecasts.isEmpty()) {
+                result.add(new PythonAgentChatRequest.RecentForecastTask(task.getTaskNo(), task.getStatus(), forecasts));
+            }
+        }
+        return List.copyOf(result);
     }
 
     private AgentPendingOperation readPendingOperation(String json) {

@@ -182,6 +182,7 @@ async def agent_chat(
         conversation_summary=conversation_context.summary,
         current_business_context=request.business_context,
         history_references=history_references,
+        recent_forecast_tasks=conversation_context.recent_forecast_tasks,
         memory=ConversationMemory(pending_operation=conversation_context.pending_operation),
         history=[
             AgentHistoryMessage(role=item.role.lower(), content=item.content)

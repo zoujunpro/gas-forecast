@@ -1,12 +1,11 @@
 ---
 name: business-data-query
 intent: QUERY
-description: 只读查询客户、地区、行业、预测和统一任务的状态与结果。
+description: 只读查询客户、地区、行业以及统一任务的状态和执行步骤；不负责预测结果。
 allowed-tools:
   - region_list
   - industry_list
   - customer_list
-  - forecast_result_query
   - task_status_get
   - task_steps_get
 read-only: true
@@ -20,3 +19,4 @@ read-only: true
 - 编号类型不明确时允许先校验业务编号。
 - 工具返回空数据、歧义或失败时直接保留真实状态，不得编造结果。
 - 分页结果必须区分当前页数量与总数量。
+- 预测结果的读取、比较和解释统一由 forecast-analysis Skill 处理。

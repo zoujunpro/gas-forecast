@@ -15,6 +15,7 @@ from gas_forecast_agent.schemas import (
 from gas_forecast_agent.skills import (
     ActionExecutor,
     DialogueAct,
+    RequestSemanticExtractor,
     RequestSemantics,
     SkillDefinition,
     SkillIntent,
@@ -60,6 +61,57 @@ def skill_definition(
 def empty_memory() -> ConversationMemory:
     """新会话没有可恢复的业务参数。"""
     return ConversationMemory()
+
+
+@pytest.mark.parametrize("message", [
+    "未来10天用气趋势如何？",
+    "本次预测值是多少？",
+    "为什么用气量下降？",
+    "分析 FORECAST-20261112105210-000391",
+])
+def test_forecast_result_question_corrects_query_intent_to_analyze(message: str) -> None:
+    extractor = RequestSemanticExtractor(model_settings())
+    normalized = extractor._normalize(
+        RequestSemantics.model_validate({"intent": "QUERY"}), message, None,
+        [{"intent": intent.value} for intent in SkillIntent],
+    )
+    assert normalized.intent == SkillIntent.ANALYZE
+
+
+def test_forecast_analysis_uses_only_result_from_latest_single_detail_task() -> None:
+    values = ActionExecutor._initial_parameters(
+        "为什么下降？", empty_memory(), {
+            "agentCode": "short-term",
+            "recentForecastTasks": [{
+                "taskNo": "TASK-1", "status": "COMPLETED",
+                "details": [{
+                    "detailNo": "TASK-1-1", "forecastNo": "FORECAST-1",
+                    "agentCode": "short-term", "status": "SUCCESS",
+                }],
+            }],
+        }, "AICHAT-1", "forecast-analysis",
+        RequestSemantics.model_validate({"intent": "ANALYZE"}),
+    )
+    assert values["forecastNo"] == "FORECAST-1"
+    assert "forecastNo" in values["_lockedParameters"]
+
+
+def test_forecast_analysis_does_not_guess_detail_from_latest_batch_task() -> None:
+    values = ActionExecutor._initial_parameters(
+        "为什么下降？", empty_memory(), {
+            "agentCode": "short-term",
+            "recentForecastTasks": [{
+                "taskNo": "TASK-1", "status": "COMPLETED",
+                "details": [
+                    {"detailNo": "TASK-1-1", "forecastNo": "FORECAST-1", "agentCode": "short-term", "status": "SUCCESS"},
+                    {"detailNo": "TASK-1-2", "forecastNo": "FORECAST-2", "agentCode": "short-term", "status": "SUCCESS"},
+                ],
+            }],
+        }, "AICHAT-1", "forecast-analysis",
+        RequestSemantics.model_validate({"intent": "ANALYZE"}),
+    )
+    assert "forecastNo" not in values
+    assert values["_clarificationPendingTool"] == "forecast_result_query"
 
 
 def pending_memory(

@@ -910,16 +910,10 @@
           <button class="ai-clear" @click="clearChat">清空</button>
         </div>
       </div>
-      <nav v-if="isShortTerm" class="short-term-side-tabs" aria-label="短期客户预测侧边内容">
-        <button type="button" :class="{ active: shortTermSideTab === 'chat' }" @click="shortTermSideTab = 'chat'">智能体对话</button>
-        <button type="button" :class="{ active: shortTermSideTab === 'tasks' }" @click="shortTermSideTab = 'tasks'">
-          预测记录 <span v-if="shortTermTaskMessages.length" class="short-term-task-count">{{ shortTermTaskMessages.length }}</span>
-        </button>
-      </nav>
-      <div v-if="isShortTerm && shortTermSideTab === 'chat'" class="short-term-chat-scope">
+      <div v-if="isShortTerm" class="short-term-chat-scope">
         ◎ 已关联当前预测范围：{{ shortTermDisplayedScope }}
       </div>
-      <div v-if="!isShortTerm || shortTermSideTab === 'chat'" class="ai-messages" ref="messagesRef" @scroll="loadOlderMessagesOnScroll">
+      <div class="ai-messages" ref="messagesRef" @scroll="loadOlderMessagesOnScroll">
         <template v-for="msg in messages" :key="msg.id">
           <div
             v-show="msg.role === 'user' || msg.content"
@@ -1012,19 +1006,7 @@
           </div>
         </div>
       </div>
-      <section v-else class="short-term-task-list" aria-label="短期客户预测记录">
-        <el-empty v-if="!shortTermTaskMessages.length" description="当前会话暂无预测任务" :image-size="72" />
-        <article v-for="message in shortTermTaskMessages" :key="message.id" class="short-term-task-card">
-          <div class="short-term-task-card-head">
-            <strong>{{ shortTermTaskTitle(message) }}</strong>
-            <span :class="message.executionResult ? 'done' : 'pending'">{{ message.executionResult ? '已完成' : '处理中' }}</span>
-          </div>
-          <p>{{ shortTermTaskScope(message) }}<em v-if="shortTermTaskRange(message)">预测区间：{{ shortTermTaskRange(message) }}</em></p>
-          <small>{{ message.time }}<template v-if="message.taskNo"> <i>· {{ message.taskNo }}</i></template></small>
-          <button type="button" @click="openShortTermTask(message)">查看对话与结果 →</button>
-        </article>
-      </section>
-      <div v-if="!isShortTerm || shortTermSideTab === 'chat'" class="ai-input">
+      <div class="ai-input">
         <el-input
           v-model="inputMessage"
           type="textarea"
@@ -1040,7 +1022,7 @@
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10L18 2L10 18L8 11L2 10Z" /></svg>
         </button>
       </div>
-      <p v-if="isShortTerm && shortTermSideTab === 'chat'" class="short-term-chat-footer">ⓘ 已关联当前预测</p>
+      <p v-if="isShortTerm" class="short-term-chat-footer">ⓘ 已关联当前预测</p>
     </aside>
   </div>
 </template>
@@ -1117,7 +1099,6 @@ const _futureChartTypes = [
 const isRunning = ref(false)
 const chartType = ref('line')
 const futureChartType = ref('line')
-const shortTermSideTab = ref<'chat' | 'tasks'>('chat')
 const localDateText = (date: Date) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -1222,44 +1203,6 @@ const shouldKeepProcessExpanded = (message: ChatMessage) =>
 const eventTime = (event: AgentRunEvent) => {
   const value = event.updatedAt || event.createdAt
   return value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''
-}
-
-const shortTermTaskMessages = computed(() =>
-  messages.value
-    .filter((message) => message.role === 'assistant' && Boolean(message.taskNo || message.executionResult))
-    .slice()
-    .reverse()
-)
-const shortTermTaskPayload = (message: ChatMessage): Record<string, any> => {
-  const result = message.executionResult || {}
-  return result.data || result.forecastResult || result
-}
-const shortTermTaskTitle = (message: ChatMessage) => {
-  const payload = shortTermTaskPayload(message)
-  const customer = payload.customerName || payload.customer_name
-  return customer ? `${customer}短期用气预测` : '短期客户预测任务'
-}
-const shortTermTaskScope = (message: ChatMessage) => {
-  const payload = shortTermTaskPayload(message)
-  const scope = [payload.regionName || payload.region_name, payload.industryName || payload.industry_name, payload.customerName || payload.customer_name]
-    .filter(Boolean)
-    .join(' / ')
-  return scope || '预测范围以任务详情为准'
-}
-const shortTermTaskRange = (message: ChatMessage) => {
-  const payload = shortTermTaskPayload(message)
-  const points = payload.points || payload.forecastPoints || payload.forecast?.points || []
-  const dates = Array.isArray(points)
-    ? points.map((point: any) => point?.date || point?.forecastDate || point?.forecast_date).filter(Boolean).map(String).sort()
-    : []
-  return dates.length ? `${dates[0]} 至 ${dates[dates.length - 1]}` : ''
-}
-const openShortTermTask = (message: ChatMessage) => {
-  shortTermSideTab.value = 'chat'
-  nextTick(() => {
-    const task = document.querySelector(`[data-task-message-id="${message.id}"]`)
-    task?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  })
 }
 
 // === 拖动分隔条 ===
@@ -3353,7 +3296,6 @@ watch(agentId, (newId, oldId) => {
   if (newId === oldId) return
   saveChatToMemory(activeChatId.value)
   activeChatId.value = newId
-  shortTermSideTab.value = 'chat'
   activeConversationNo.value = conversationMemory.get(newId) || null
   modelResult.value = null
   currentResult.value = null
@@ -5153,20 +5095,6 @@ watch(futureChartType, () => {
 .short-term-workbench .ai-title { color: #153a63; }
 .short-term-workbench .ai-avatar { background: linear-gradient(135deg, #0075ff, #269cff); }
 .short-term-workbench .ai-input { padding: 10px 12px 12px; border-color: #e3eef9; }
-.short-term-side-tabs { display:flex; flex:0 0 auto; gap:10px; padding:0 14px; border-bottom:1px solid #e7eef8; background:#fff; }
-.short-term-side-tabs button { position:relative; height:43px; padding:0 6px; border:0; border-bottom:2px solid transparent; background:transparent; color:#6d8198; font:600 13px var(--app-font-family); cursor:pointer; }
-.short-term-side-tabs button.active { color:#0878ed; border-bottom-color:#087cf4; }
-.short-term-task-count { display:inline-grid; min-width:17px; height:17px; margin-left:3px; place-items:center; border-radius:9px; background:#eaf4ff; color:#0878ed; font-size:10px; }
-.short-term-task-list { min-height:0; flex:1; overflow:auto; padding:12px; background:#fbfdff; }
-.short-term-task-card { margin-bottom:9px; padding:12px; border:1px solid #e3edf8; border-radius:9px; background:#fff; box-shadow:0 2px 7px rgba(41,89,141,.04); }
-.short-term-task-card-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.short-term-task-card-head strong { overflow:hidden; color:#27486a; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
-.short-term-task-card-head span { flex:0 0 auto; padding:2px 7px; border-radius:10px; font-size:10px; }
-.short-term-task-card-head .done { background:#e8f9ef; color:#169c62; }
-.short-term-task-card-head .pending { background:#fff6df; color:#c47a00; }
-.short-term-task-card p { margin:8px 0 4px; overflow:hidden; color:#6f849c; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
-.short-term-task-card small { display:block; color:#9aabba; font-size:11px; }
-.short-term-task-card button { margin-top:10px; padding:0; border:0; background:transparent; color:#0878ed; font:600 12px var(--app-font-family); cursor:pointer; }
 
 /* Short-term customer page: the source workbench is a real three-column page,
    not the standard agent detail split view.  Flatten the generic wrappers only
@@ -5273,25 +5201,9 @@ watch(futureChartType, () => {
   box-shadow:none;
 }
 .short-term-workbench .ai-header { display:none; }
-.short-term-workbench .short-term-side-tabs {
-  min-height:56px;
-  padding:0 15px;
-  gap:10px;
-  border-bottom:1px solid #e7eef8;
-}
-.short-term-workbench .short-term-side-tabs button {
-  height:56px;
-  padding:0 20px;
-  border-bottom:3px solid transparent;
-  color:#102240;
-  font-size:16px;
-  font-weight:500;
-}
-.short-term-workbench .short-term-side-tabs button.active { color:#0075ff; border-bottom-color:#1683ff; font-weight:600; }
 .short-term-workbench .short-term-agent-flow { display:none; }
 .short-term-workbench .ai-messages { padding:14px 15px 8px; }
 .short-term-workbench .ai-input { padding:8px 15px; border-top:0; }
-.short-term-workbench .short-term-task-list { padding:14px 15px; }
 .short-term-workbench .short-term-title-row h1 { font-size:23px; }
 .short-term-workbench .short-term-title-row span { font-size:14px; }
 
@@ -5316,10 +5228,8 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-filter-grid :deep(.el-select__wrapper) { min-height:44px; padding:0 12px; border:1px solid #ced9e9; border-radius:7px; box-shadow:none; }
 .short-term-workbench .short-term-filter-grid :deep(.el-select__selected-item),
 .short-term-workbench .short-term-filter-grid :deep(.el-select__placeholder) { font-size:15px; font-weight:400; }
-.short-term-workbench .short-term-result-tabs,
-.short-term-workbench .short-term-side-tabs { gap: 12px; }
-.short-term-workbench .short-term-result-tabs button,
-.short-term-workbench .short-term-side-tabs button {
+.short-term-workbench .short-term-result-tabs { gap: 12px; }
+.short-term-workbench .short-term-result-tabs button {
   box-sizing: border-box;
   height: 56px;
   padding: 0 22px;
@@ -5328,8 +5238,7 @@ watch(futureChartType, () => {
   font-size: 16px;
   font-weight: 400;
 }
-.short-term-workbench .short-term-result-tabs button.active,
-.short-term-workbench .short-term-side-tabs button.active {
+.short-term-workbench .short-term-result-tabs button.active {
   border-bottom-color: #1683ff;
   color: #0075ff;
   font-weight: 600;
@@ -5347,7 +5256,6 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-result-table h3 { font-size:17px; }
 .short-term-workbench .forecast-meta-info { padding:12px 14px; font-size:14px; }
 .short-term-workbench .short-term-questions button { font-size:15px; }
-.short-term-workbench .short-term-side-tabs button { font-size:16px; }
 
 /* Keep each column as an independent vertical rail.  The previous placement
    used a fixed top margin for the questions card, so font changes made it
@@ -5561,7 +5469,6 @@ watch(futureChartType, () => {
   height: calc(100vh - 85px - var(--short-term-ai-offset, 0px)) !important;
   flex: 0 0 auto;
 }
-.short-term-workbench > .ai-panel .short-term-task-list,
 .short-term-workbench > .ai-panel .ai-messages {
   flex: 1 1 auto;
   min-height: 0;
@@ -5782,10 +5689,8 @@ watch(futureChartType, () => {
   font-size: 13px;
 }
 .short-term-workbench .short-term-ai-insight button:hover { border-color: #93c5fd; background: var(--st-blue-soft); }
-.short-term-workbench .short-term-result-tabs button,
-.short-term-workbench .short-term-side-tabs button { color: #64748b; font-size: 14px; }
-.short-term-workbench .short-term-result-tabs button.active,
-.short-term-workbench .short-term-side-tabs button.active { color: #2563eb; border-bottom-color: #2563eb; }
+.short-term-workbench .short-term-result-tabs button { color: #64748b; font-size: 14px; }
+.short-term-workbench .short-term-result-tabs button.active { color: #2563eb; border-bottom-color: #2563eb; }
 .short-term-workbench .future-comparison-summary { gap: 12px; }
 .short-term-workbench .future-comparison-summary > div {
   min-height: 104px;
@@ -5869,8 +5774,7 @@ watch(futureChartType, () => {
 }
 .short-term-workbench .short-term-filter-actions .el-button:hover { border-color: #93c5fd; color: #2563eb; background: #f8fbff; }
 .short-term-workbench .chart-toggle .toggle-btn,
-.short-term-workbench .short-term-result-tabs button,
-.short-term-workbench .short-term-side-tabs button { transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
+.short-term-workbench .short-term-result-tabs button { transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
 .short-term-workbench .chart-toggle .toggle-btn:hover:not(.active) { color: #2563eb; background: #f5f9ff; }
 .short-term-workbench .future-comparison-summary > div > div > span {
   color: #64748b;
@@ -5919,17 +5823,10 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-ai-insight button span { color: #94a3b8; font-size: 14px; font-weight: 400; }
 .short-term-workbench .short-term-ai-insight button:hover { transform: none; border-color: #bfdbfe; background: #f8fbff; }
 .short-term-workbench .short-term-finished,
-.short-term-workbench .model-selected,
-.short-term-workbench .short-term-task-card-head .done {
+.short-term-workbench .model-selected {
   border: 1px solid #bfe2dc;
   background: #edf8f6;
   color: var(--st-teal);
-  font-weight: 650;
-}
-.short-term-workbench .short-term-task-card-head .pending {
-  border: 1px solid #f3d9ae;
-  background: #fff8eb;
-  color: var(--st-amber);
   font-weight: 650;
 }
 .short-term-workbench .agent-process-item.running { border-color: #bfdbfe; background: #f5f9ff; }
@@ -5946,15 +5843,12 @@ watch(futureChartType, () => {
 .short-term-workbench .send-btn:disabled { background: #cbd5e1; box-shadow: none; }
 
 /* 原有布局内的最后一轮精修：状态更克制、数据更易扫读、加载不留白。 */
-.short-term-workbench .short-term-result-tabs button,
-.short-term-workbench .short-term-side-tabs button {
+.short-term-workbench .short-term-result-tabs button {
   position: relative;
   border-bottom-color: transparent;
 }
-.short-term-workbench .short-term-result-tabs button.active,
-.short-term-workbench .short-term-side-tabs button.active { border-bottom-color: transparent; }
-.short-term-workbench .short-term-result-tabs button.active::after,
-.short-term-workbench .short-term-side-tabs button.active::after {
+.short-term-workbench .short-term-result-tabs button.active { border-bottom-color: transparent; }
+.short-term-workbench .short-term-result-tabs button.active::after {
   position: absolute;
   right: 22%;
   bottom: -1px;
@@ -5993,10 +5887,6 @@ watch(futureChartType, () => {
 .short-term-workbench .error-positive { color: var(--st-teal); }
 .short-term-workbench .error-negative { color: var(--st-amber); }
 .short-term-workbench .error-empty { color: #aab5c3; font-weight: 400; }
-.short-term-workbench .short-term-task-card p { display: flex; flex-direction: column; gap: 4px; }
-.short-term-workbench .short-term-task-card p em { color: #64748b; font-size: 12px; font-style: normal; }
-.short-term-workbench .short-term-task-card small i { color: #a0acba; font-style: normal; }
-
 @media (max-width: 1200px) {
   .agent-detail.short-term-workbench {
     grid-template-columns:240px minmax(0, 1fr);

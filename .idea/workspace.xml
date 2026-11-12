@@ -4,14 +4,90 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化" />
+    <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change afterPath="$PROJECT_DIR$/work/add_full_table_detail_sheets.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/add_table_field_sheets.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/build_metadata_docx.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/extract_mysql_metadata.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/fill_metadata_template.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/filled_preview/表信息.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/filled_preview/表字段信息.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/font-cache/51d91e522ebcde82ff3baa9d44550580-le64.cache-9" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/font-cache/895fff032678f4bd45700c669d15922a-le64.cache-11" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/font-cache/895fff032678f4bd45700c669d15922a-le64.cache-9" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/font-cache/b4c7fc3029161022044432b6e0cabdff-le64.cache-9" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/fontconfig-metadata.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/fonts/ArialUnicode.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/auditors.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/contact-sheet.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/lng_report_tasks.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/lng_reports.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/market_hotspots.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/price_index.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/submissions.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/full_table_sheets_preview/users.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/help_table.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/inspect_metadata_template.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/mysql_metadata.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/node_modules" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/render_template.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata/contact-sheet.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata/page-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata/page-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata/page-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata/元数据采集_submission数据库.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v2/contact-sheet.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v2/page-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v2/page-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v2/page-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v2/元数据采集_submission数据库.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v3/page-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v3/page-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v3/page-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v3/元数据采集_submission数据库.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v4/page-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v4/page-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v4/page-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v4/page-4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v4/page-5.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/rendered_metadata_v4/元数据采集_submission数据库.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/auditors.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/contact-sheet.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/lng_report_tasks.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/lng_reports.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/market_hotspots.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/price_index.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/submissions.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/table_sheets_preview/users.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/template_preview/表信息.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/template_preview/表字段信息.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/verify_added_sheets.mjs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/work/verify_full_table_detail.mjs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/skills/business-data-query/SKILL.md" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/skills/business-data-query/SKILL.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/workflow_nodes/execute_action.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/workflow_nodes/execute_action.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/workflow_nodes/understand_request.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/workflow_nodes/understand_request.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skills.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skills.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/PythonAgentChatRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/PythonAgentChatRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiChatPersistenceService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiChatPersistenceService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/output/TRBATCH-20261010-00020_original_v3_backtest.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/output/TRBATCH-20261010-00020_original_v3_backtest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/output/TRBATCH-20261010-00020_original_v3_metrics.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/output/TRBATCH-20261010-00020_v1_v3_separate.png" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="25431" />
+    <option name="cachedIndexableFilesCount" value="25335" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">

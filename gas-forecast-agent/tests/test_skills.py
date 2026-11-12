@@ -34,8 +34,7 @@ def test_loads_skill_documents_and_tool_allowlists() -> None:
     assert training.read_only is False
     assert query.read_only is True
     assert set(query.allowed_tools) == {
-        "region_list", "industry_list", "customer_list", "forecast_result_query",
-        "task_status_get", "task_steps_get",
+        "region_list", "industry_list", "customer_list", "task_status_get", "task_steps_get",
     }
     assert analysis.allowed_tools == ["forecast_result_by_no", "forecast_result_query"]
     assert chat.allowed_tools == []

@@ -468,4 +468,6 @@ def _conversation_context(request: AgentRuntimeRequest, memory: ConversationMemo
         context["pageContext"] = request.current_business_context.model_dump(by_alias=True, exclude_none=True)
     if request.history_references:
         context["historyReferences"] = [item.model_dump(by_alias=True, exclude_none=True) for item in request.history_references]
+    if request.recent_forecast_tasks:
+        context["recentForecastTasks"] = [item.model_dump(by_alias=True, exclude_none=True) for item in request.recent_forecast_tasks]
     return context

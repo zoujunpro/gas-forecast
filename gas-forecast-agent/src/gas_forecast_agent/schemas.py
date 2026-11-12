@@ -201,6 +201,23 @@ class AgentRecentMessage(ApiModel):
     )
 
 
+class AgentForecastDetail(ApiModel):
+    """会话预测任务中一个成功的最小执行结果。"""
+
+    detail_no: str = Field(min_length=1, max_length=96)
+    forecast_no: str = Field(min_length=1, max_length=64)
+    agent_code: str = Field(min_length=1, max_length=64)
+    status: str = Field(min_length=1, max_length=32)
+
+
+class AgentRecentForecastTask(ApiModel):
+    """当前会话中的一个近期预测任务。"""
+
+    task_no: str = Field(min_length=1, max_length=64)
+    status: str = Field(min_length=1, max_length=32)
+    details: list[AgentForecastDetail] = Field(default_factory=list, max_length=1000)
+
+
 class AgentConversationContext(ApiModel):
     """
     Java 统一加载的会话上下文。
@@ -222,6 +239,11 @@ class AgentConversationContext(ApiModel):
         default_factory=list,
         max_length=50,
         description="最近原始消息，按创建时间正序排列，不包含本轮用户消息",
+    )
+    recent_forecast_tasks: list[AgentRecentForecastTask] = Field(
+        default_factory=list,
+        max_length=20,
+        description="当前会话最近的预测任务，按从新到旧排列",
     )
 
 
@@ -663,6 +685,7 @@ class AgentRuntimeRequest(BaseModel):
     conversation_summary: str | None = None
     current_business_context: BusinessContext | None = None
     history_references: list[AgentHistoryReferences] = Field(default_factory=list)
+    recent_forecast_tasks: list[AgentRecentForecastTask] = Field(default_factory=list)
     memory: ConversationMemory = Field(default_factory=ConversationMemory)
     history: list[AgentHistoryMessage] = Field(default_factory=list)
 
