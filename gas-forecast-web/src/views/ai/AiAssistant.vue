@@ -128,10 +128,11 @@ interface ForecastPoint { date: string; value: number }
 interface ForecastResult { batchNo: string; average: number; minimum: number; maximum: number; points: ForecastPoint[]; training?: { batchNo: string } }
 interface TrainingBacktestPoint { date: string; actualValue?: number; predictedValue?: number; absoluteError?: number; errorRate?: number }
 interface TrainingResult { batchNo: string; status?: string; customerName?: string; regionName?: string; industryName?: string; trainStartDate?: string; trainEndDate?: string; bestModel?: string; modelVersion?: string; trainDurationSeconds?: number; mape?: number; wmape?: number; smape?: number; mae?: number; rmse?: number; r2?: number; backtestPoints?: TrainingBacktestPoint[] }
-interface Presentation { type: 'TEXT' | 'LIST' | 'PROGRESS' | 'FORECAST_CHART' | 'TRAINING_BACKTEST'; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
-interface BusinessReference { referenceType: 'EXECUTION_TASK' | 'FORECAST'; referenceNo: string; relationType: 'CREATED' | 'REFERENCED' | 'DISPLAYED'; title?: string; status?: string }
-interface Clarification { interactionId: string; interactionType: 'CLARIFICATION' | 'CONFIRMATION'; replyToTurnId: string; requestId?: string; reason: string; resumeFrom: string; prompt: string }
-interface Message { id: string; role: Role; content: string; clarification?: Clarification; clarificationResolved?: boolean; references?: BusinessReference[]; progress?: ExecutionProgress; forecastResult?: ForecastResult; trainingResult?: TrainingResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
+interface Presentation { type?: string; chartType?: 'LINE' | 'BAR'; title?: string; trainingResult?: TrainingResult }
+interface ClarificationOption { value: string; label: string }
+interface Clarification { interactionId: string; field: string; inputType: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'MULTI_SELECT' | 'CONFIRM'; options: ClarificationOption[] }
+interface ContentBlock { type: 'MARKDOWN' | 'CHART' | 'TABLE' | 'TASK_CARD' | 'RESULT_LINK'; data: Record<string, any> }
+interface Message { id: string; turnId?: string; role: Role; content: string; clarification?: Clarification; clarificationResolved?: boolean; blocks?: ContentBlock[]; progress?: ExecutionProgress; forecastResult?: ForecastResult; trainingResult?: TrainingResult; presentation?: Presentation; executionResult?: Record<string, any>; analysis?: string; suggestedQuestions?: string[] }
 interface Session { id: string; conversationNo?: string; title: string; updatedAt: string; messages: Message[] }
 
 const welcomeMessage = (): Message => ({
@@ -224,14 +225,15 @@ const switchSession = async (id: string) => {
     const detail = response.data
     if (detail?.messages) {
       session.messages = detail.messages.map((item: any) => ({
-        id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+        id: String(item.id), turnId: item.turnId || undefined, role: item.role,
+        content: item.role === 'assistant' ? renderMarkdown(markdownContent(item) || item.content) : item.content,
         clarification: item.clarification || undefined,
-        references: item.references || undefined,
+        blocks: contentBlocks(item),
         progress: item.progress || undefined,
         forecastResult: item.forecastResult || undefined,
-        trainingResult: item.trainingResult || item.presentation?.trainingResult || undefined,
-        presentation: item.presentation || item.resultData?.presentation || undefined,
-        executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
+        trainingResult: item.trainingResult || blockData(item, 'CHART')?.trainingResult || undefined,
+        presentation: blockData(item, 'CHART') || undefined,
+        executionResult: blockData(item, 'TABLE') || undefined,
         analysis: item.analysis || undefined,
         suggestedQuestions: item.suggestedQuestions || undefined
       }))
@@ -249,15 +251,18 @@ const switchSession = async (id: string) => {
   }
 }
 const scrollBottom = () => nextTick(() => { if (messageContainer.value) messageContainer.value.scrollTop = messageContainer.value.scrollHeight })
+const contentBlocks = (value: any): ContentBlock[] => Array.isArray(value?.blocks) ? value.blocks : []
+const blockData = (value: any, type: ContentBlock['type']) => contentBlocks(value).find((block) => block.type === type)?.data
+const markdownContent = (value: any) => contentBlocks(value).filter((block) => block.type === 'MARKDOWN').map((block) => String(block.data?.content || '')).filter(Boolean).join('\n')
 const listRows = (message: Message): Record<string, any>[] => {
   const result = message.executionResult
   const records = result?.data?.records || result?.records
   return Array.isArray(records) ? records : []
 }
 const trainingResultOf = (message: Message) => message.trainingResult || message.presentation?.trainingResult
-const executionTaskNos = (message: Message) => [...new Set((message.references || [])
-  .filter((item) => item.referenceType === 'EXECUTION_TASK' && Boolean(item.referenceNo))
-  .map((item) => item.referenceNo))]
+const executionTaskNos = (message: Message) => [...new Set((message.blocks || [])
+  .filter((block) => block.type === 'TASK_CARD' && Boolean(block.data?.taskNo))
+  .map((block) => String(block.data.taskNo)))]
 const listColumns = (message: Message) => {
   const first = listRows(message)[0] || {}
   const labels: Record<string, string> = {
@@ -300,13 +305,13 @@ const pendingInteraction = () => {
 
 const isExpiredInteractionError = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error || '')
-  return /当前会话没有等待处理|澄清交互已过期|回复类型与当前待处理交互不匹配/.test(message)
+  return /当前会话没有等待处理|澄清交互不存在|澄清交互已过期|回复类型与交互记录不匹配/.test(message)
 }
 const send = async (_contextualFollowUp = false, structured?: StructuredReply) => {
   const pending = structured ? undefined : pendingInteraction()
   const effectiveReply = structured || (pending ? {
     source: pending,
-    inputType: pending.clarification!.interactionType === 'CONFIRMATION'
+    inputType: pending.clarification!.inputType === 'CONFIRM'
       ? 'INTERACTION_REPLY' as const
       : 'CLARIFICATION_REPLY' as const,
     displayText: input.value.trim()
@@ -329,7 +334,7 @@ const send = async (_contextualFollowUp = false, structured?: StructuredReply) =
       message: text,
       inputType: reply?.inputType || 'TEXT',
       interactionId: reply?.source.clarification?.interactionId || null,
-      replyToTurnId: reply?.source.clarification?.replyToTurnId || null,
+      replyToTurnId: reply?.source.turnId || null,
       agentCode: 'general'
   })
   let staleClarification = false
@@ -351,13 +356,12 @@ const send = async (_contextualFollowUp = false, structured?: StructuredReply) =
       session.id = data.conversationNo
       activeSessionId.value = data.conversationNo
     }
-    answer.content = renderMarkdown(data.message || 'AI 未返回有效内容')
+    answer.turnId = data.turnId || undefined
+    answer.blocks = contentBlocks(data)
+    answer.content = renderMarkdown(markdownContent(data) || 'AI 未返回有效内容')
     answer.clarification = data.clarification || undefined
-    answer.references = data.references || undefined
-    // 查询接口的列表和图表数据在本轮响应中即可展示，不能只依赖随后重新
-    // 加载会话历史；否则用户会先看到“结果已展示”却没有任何表格。
-    answer.presentation = data.presentation || undefined
-    answer.executionResult = data.executionResult || undefined
+    answer.presentation = blockData(data, 'CHART') || undefined
+    answer.executionResult = blockData(data, 'TABLE') || undefined
     await loadServerSessions(session)
   } catch (error: any) {
     if (effectiveReply && !staleClarification) effectiveReply.source.clarificationResolved = false
@@ -395,12 +399,15 @@ const refreshActiveBulkProgress = async () => {
     const response = await getJson<any>(`/ai/conversations/detail?conversationNo=${encodeURIComponent(session.conversationNo)}`)
     if (!response.data?.messages) return
     session.messages = response.data.messages.map((item: any) => ({
-      id: String(item.id), role: item.role, content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+      id: String(item.id), turnId: item.turnId || undefined, role: item.role,
+      content: item.role === 'assistant' ? renderMarkdown(markdownContent(item) || item.content) : item.content,
+      clarification: item.clarification || undefined,
+      blocks: contentBlocks(item),
       progress: item.progress || undefined,
       forecastResult: item.forecastResult || undefined,
-      trainingResult: item.trainingResult || item.presentation?.trainingResult || undefined,
-      presentation: item.presentation || item.resultData?.presentation || undefined,
-      executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
+      trainingResult: item.trainingResult || blockData(item, 'CHART')?.trainingResult || undefined,
+      presentation: blockData(item, 'CHART') || undefined,
+      executionResult: blockData(item, 'TABLE') || undefined,
       analysis: item.analysis || undefined,
       suggestedQuestions: item.suggestedQuestions || undefined
     }))

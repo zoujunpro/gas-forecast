@@ -3,9 +3,7 @@ package com.gas.forecast.business.application.mcp;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gas.forecast.business.application.mcp.AgentBusinessQueryService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.core.PageInfoDTO;
 import com.gas.forecast.common.util.TextUtils;
@@ -13,11 +11,13 @@ import com.gas.forecast.dao.domain.BaseCustomerTb;
 import com.gas.forecast.dao.domain.BaseIndustryTb;
 import com.gas.forecast.dao.domain.BaseRegionTb;
 import com.gas.forecast.dao.domain.ExecutionTaskTb;
+import com.gas.forecast.dao.domain.ExecutionTaskDetailTb;
 import com.gas.forecast.dao.domain.ModelExecuteRecordTb;
 import com.gas.forecast.dao.mapper.BaseCustomerTbMapper;
 import com.gas.forecast.dao.mapper.BaseIndustryTbMapper;
 import com.gas.forecast.dao.mapper.BaseRegionTbMapper;
 import com.gas.forecast.dao.mapper.ExecutionTaskTbMapper;
+import com.gas.forecast.dao.mapper.ExecutionTaskDetailTbMapper;
 import com.gas.forecast.dao.mapper.ModelExecuteRecordTbMapper;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,14 +39,17 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     private final BaseCustomerTbMapper customerMapper;
     private final ModelExecuteRecordTbMapper executeRecordMapper;
     private final ExecutionTaskTbMapper taskMapper;
+    private final ExecutionTaskDetailTbMapper taskDetailMapper;
     private final ObjectMapper objectMapper;
 
     @Override
     public Object regions(String keyword, Integer pageNo, Integer pageSize, boolean fetchAll) {
         var query = Wrappers.<BaseRegionTb>lambdaQuery();
-        if (TextUtils.hasText(keyword)) query.and(row -> row.like(BaseRegionTb::getRegionCode, keyword).or().like(BaseRegionTb::getRegionName, keyword));
+        if (TextUtils.hasText(keyword))
+            query.and(row -> row.like(BaseRegionTb::getRegionCode, keyword).or().like(BaseRegionTb::getRegionName, keyword));
         query.orderByAsc(BaseRegionTb::getRegionName).orderByAsc(BaseRegionTb::getId);
-        if (fetchAll) return all(regionMapper.selectList(query.last("limit " + (MAX_FETCH_ALL_SIZE + 1))));
+        if (fetchAll)
+            return all(regionMapper.selectList(query.last("limit " + (MAX_FETCH_ALL_SIZE + 1))));
         IPage<BaseRegionTb> page = regionMapper.selectPage(page(pageNo, pageSize), query);
         return PageInfoDTO.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
@@ -54,9 +57,11 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     @Override
     public Object industries(String keyword, Integer pageNo, Integer pageSize, boolean fetchAll) {
         var query = Wrappers.<BaseIndustryTb>lambdaQuery();
-        if (TextUtils.hasText(keyword)) query.and(row -> row.like(BaseIndustryTb::getIndustryCode, keyword).or().like(BaseIndustryTb::getIndustryName, keyword));
+        if (TextUtils.hasText(keyword))
+            query.and(row -> row.like(BaseIndustryTb::getIndustryCode, keyword).or().like(BaseIndustryTb::getIndustryName, keyword));
         query.orderByAsc(BaseIndustryTb::getIndustryName).orderByAsc(BaseIndustryTb::getId);
-        if (fetchAll) return all(industryMapper.selectList(query.last("limit " + (MAX_FETCH_ALL_SIZE + 1))));
+        if (fetchAll)
+            return all(industryMapper.selectList(query.last("limit " + (MAX_FETCH_ALL_SIZE + 1))));
         IPage<BaseIndustryTb> page = industryMapper.selectPage(page(pageNo, pageSize), query);
         return PageInfoDTO.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
@@ -64,11 +69,15 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     @Override
     public Object customers(String keyword, String regionCode, String industryCode, Integer pageNo, Integer pageSize, boolean fetchAll) {
         var query = Wrappers.<BaseCustomerTb>lambdaQuery();
-        if (TextUtils.hasText(keyword)) query.and(row -> row.like(BaseCustomerTb::getCustomerCode, keyword).or().like(BaseCustomerTb::getCustomerName, keyword));
-        if (TextUtils.hasText(regionCode)) query.eq(BaseCustomerTb::getRegionCode, regionCode);
-        if (TextUtils.hasText(industryCode)) query.eq(BaseCustomerTb::getIndustryCode, industryCode);
+        if (TextUtils.hasText(keyword))
+            query.and(row -> row.like(BaseCustomerTb::getCustomerCode, keyword).or().like(BaseCustomerTb::getCustomerName, keyword));
+        if (TextUtils.hasText(regionCode))
+            query.eq(BaseCustomerTb::getRegionCode, regionCode);
+        if (TextUtils.hasText(industryCode))
+            query.eq(BaseCustomerTb::getIndustryCode, industryCode);
         query.orderByAsc(BaseCustomerTb::getCustomerName).orderByAsc(BaseCustomerTb::getId);
-        if (fetchAll) return all(customerMapper.selectList(query.last("limit " + (MAX_FETCH_ALL_SIZE + 1))));
+        if (fetchAll)
+            return all(customerMapper.selectList(query.last("limit " + (MAX_FETCH_ALL_SIZE + 1))));
         IPage<BaseCustomerTb> page = customerMapper.selectPage(page(pageNo, pageSize), query);
         return PageInfoDTO.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
@@ -81,10 +90,11 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
 
     @Override
     public Object forecastByNo(String forecastNo, boolean includePoints) {
-        if (!TextUtils.hasText(forecastNo)) throw new BusinessException("forecastNo不能为空");
-        ModelExecuteRecordTb record = executeRecordMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery()
-                .eq(ModelExecuteRecordTb::getForecastNo, forecastNo.trim()).last("limit 1"));
-        if (record == null) throw new BusinessException("没有找到预测编号对应的执行记录：" + forecastNo);
+        if (!TextUtils.hasText(forecastNo))
+            throw new BusinessException("forecastNo不能为空");
+        ModelExecuteRecordTb record = executeRecordMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery().eq(ModelExecuteRecordTb::getForecastNo, forecastNo.trim()).last("limit 1"));
+        if (record == null)
+            throw new BusinessException("没有找到预测编号对应的执行记录：" + forecastNo);
         return forecastResult(record);
     }
 
@@ -99,18 +109,21 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
     }
 
     private Object json(String value) {
-        if (!TextUtils.hasText(value)) return Map.of();
-        try { return objectMapper.readValue(value, Object.class); }
-        catch (Exception ignored) { return Map.of("raw", value); }
+        if (!TextUtils.hasText(value))
+            return Map.of();
+        try {
+            return objectMapper.readValue(value, Object.class);
+        } catch (Exception ignored) {
+            return Map.of("raw", value);
+        }
     }
-
 
     @Override
     public Object resolveBusinessReference(String reference) {
-        if (!TextUtils.hasText(reference)) throw new BusinessException("reference不能为空");
+        if (!TextUtils.hasText(reference))
+            throw new BusinessException("reference不能为空");
         String value = reference.trim();
-        ModelExecuteRecordTb execution = executeRecordMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery()
-                .eq(ModelExecuteRecordTb::getForecastNo, value).last("limit 1"));
+        ModelExecuteRecordTb execution = executeRecordMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery().eq(ModelExecuteRecordTb::getForecastNo, value).last("limit 1"));
         if (execution != null) {
             Map<String, Object> result = reference("FORECAST", value, execution.getStatus(), execution.getAgentCode());
             result.put("customerCode", execution.getCustomerCode());
@@ -118,10 +131,10 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
             result.put("supportedActions", List.of("STATUS", "RESULT"));
             return result;
         }
-        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
-                .eq(ExecutionTaskTb::getTaskNo, value).last("limit 1"));
+        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery().eq(ExecutionTaskTb::getTaskNo, value).last("limit 1"));
         if (task != null) {
-            Map<String, Object> result = reference("TASK", value, task.getStatus(), task.getAgentCode());
+            ExecutionTaskDetailTb detail = taskDetailMapper.selectOne(Wrappers.<ExecutionTaskDetailTb>lambdaQuery().eq(ExecutionTaskDetailTb::getTaskNo, value).orderByAsc(ExecutionTaskDetailTb::getId).last("limit 1"));
+            Map<String, Object> result = reference("TASK", value, task.getStatus(), detail == null ? null : detail.getAgentCode());
             result.put("supportedActions", List.of("STATUS", "STEPS"));
             return result;
         }
@@ -130,25 +143,33 @@ public class AgentBusinessQueryServiceImpl implements AgentBusinessQueryService 
 
     private ModelExecuteRecordTb latestExecution(String customerCode, String regionCode, String industryCode, String agentCode) {
         var query = Wrappers.<ModelExecuteRecordTb>lambdaQuery();
-        if (TextUtils.hasText(customerCode)) query.eq(ModelExecuteRecordTb::getCustomerCode, customerCode);
-        if (TextUtils.hasText(regionCode)) query.eq(ModelExecuteRecordTb::getRegionCode, regionCode);
-        if (TextUtils.hasText(industryCode)) query.eq(ModelExecuteRecordTb::getIndustryCode, industryCode);
-        if (TextUtils.hasText(agentCode)) query.eq(ModelExecuteRecordTb::getAgentCode, agentCode);
-        ModelExecuteRecordTb record = executeRecordMapper.selectOne(query.orderByDesc(ModelExecuteRecordTb::getCreatedAt)
-                .orderByDesc(ModelExecuteRecordTb::getId).last("limit 1"));
-        if (record == null) throw new BusinessException("没有找到符合条件的预测执行记录");
+        if (TextUtils.hasText(customerCode))
+            query.eq(ModelExecuteRecordTb::getCustomerCode, customerCode);
+        if (TextUtils.hasText(regionCode))
+            query.eq(ModelExecuteRecordTb::getRegionCode, regionCode);
+        if (TextUtils.hasText(industryCode))
+            query.eq(ModelExecuteRecordTb::getIndustryCode, industryCode);
+        if (TextUtils.hasText(agentCode))
+            query.eq(ModelExecuteRecordTb::getAgentCode, agentCode);
+        ModelExecuteRecordTb record = executeRecordMapper.selectOne(query.orderByDesc(ModelExecuteRecordTb::getCreatedAt).orderByDesc(ModelExecuteRecordTb::getId).last("limit 1"));
+        if (record == null)
+            throw new BusinessException("没有找到符合条件的预测执行记录");
         return record;
     }
 
     private <T> Map<String, Object> all(List<T> records) {
-        if (records.size() > MAX_FETCH_ALL_SIZE) throw new BusinessException("查询结果超过" + MAX_FETCH_ALL_SIZE + "条，请增加筛选条件后重试");
+        if (records.size() > MAX_FETCH_ALL_SIZE)
+            throw new BusinessException("查询结果超过" + MAX_FETCH_ALL_SIZE + "条，请增加筛选条件后重试");
         return Map.of("records", records, "total", records.size(), "page", 1, "size", records.size(), "fetchedCount", records.size(), "allFetched", true);
     }
 
     private Map<String, Object> reference(String type, String reference, Object status, String agentCode) {
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("found", true); result.put("reference", reference); result.put("actualType", type);
-        result.put("status", status); result.put("agentCode", agentCode);
+        result.put("found", true);
+        result.put("reference", reference);
+        result.put("actualType", type);
+        result.put("status", status);
+        result.put("agentCode", agentCode);
         return result;
     }
 

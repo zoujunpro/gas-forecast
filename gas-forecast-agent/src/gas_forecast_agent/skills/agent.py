@@ -705,8 +705,8 @@ class ActionExecutor:
         )
         # 只有本次尚未完成的交互可恢复操作快照；已完成操作不再缓存参数。
         pending = memory.pending_operation
-        has_pending_action = pending is not None and bool(pending.pending_tool)
-        values = pending.parameters.to_payload() if pending else {}
+        has_pending_action = pending is not None and bool(pending.action)
+        values = pending.arguments.to_payload() if pending else {}
         values.pop("confirmed", None)
         # 页面焦点只用于明确的上下文指代，不为普通新预测填入客户或天数。
         references = semantics.primary_request.references if semantics and semantics.primary_request else None
@@ -715,22 +715,13 @@ class ActionExecutor:
             and relation in {ContextRelation.CONTINUE, ContextRelation.MODIFY}
             and bool(references and references.is_explicit)
         )
-        remembered_context = ActionExecutor._business_context_values(
-            memory.current_business_context.model_dump(by_alias=True, exclude_none=True)
-            if memory.current_business_context else None
-        ) if inherit_context else {}
         current_context = ActionExecutor._business_context_values(
             metadata.get("currentBusinessContext")
         ) if inherit_context else {}
-        values.update(remembered_context)
         values.update(current_context)
         values["conversationNo"] = conversation_no
         if metadata.get("agentCode"):
             values["agentCode"] = metadata["agentCode"]
-        if skill_name == "forecast-analysis" and not values.get("forecastNo"):
-            forecast_no = ActionExecutor._latest_forecast_reference(metadata.get("historyReferences"))
-            if forecast_no:
-                values["forecastNo"] = forecast_no
         if semantics and semantics.intent is not None:
             values["_intent"] = semantics.intent.value
         if relation == ContextRelation.MODIFY and semantics and semantics.primary_request:
@@ -750,7 +741,7 @@ class ActionExecutor:
             values.update(forceRetrain=False, autoTrain=True, trainingPreference="AUTO")
         if explicit_confirmation and has_pending_action:
             locked_parameters.update(key for key in values if not key.startswith("_"))
-            values["_pendingTool"] = pending.pending_tool
+            values["_pendingTool"] = pending.action
             values["confirmed"] = True
         if not (explicit_confirmation and has_pending_action and values.get("idempotencyKey")):
             seed = str(metadata.get("turnId") or f"{conversation_no}:{skill_name}:{message.strip()}")
@@ -866,7 +857,7 @@ class ActionExecutor:
             "customer-gas-forecast": "forecast_start",
             "model-training-management": "forecast_start",
         }.get(skill_name)
-        current_focus = current_context or remembered_context
+        current_focus = current_context
         if not current_focus:
             current_focus = ActionExecutor._business_context_values(values)
         if (
@@ -933,32 +924,6 @@ class ActionExecutor:
         if locked_parameters:
             values["_lockedParameters"] = sorted(locked_parameters)
         return values
-
-    @staticmethod
-    def _latest_forecast_reference(history_references: Any) -> str | None:
-        """从可信会话引用中反向获取最近一次成功预测，不依赖自然语言猜测。"""
-        if not isinstance(history_references, list):
-            return None
-        for message in reversed(history_references):
-            if not isinstance(message, dict):
-                continue
-            references = message.get("references")
-            if not isinstance(references, list):
-                continue
-            for reference in reversed(references):
-                if not isinstance(reference, dict):
-                    continue
-                ref_type = reference.get("referenceType") or reference.get("reference_type")
-                ref_no = reference.get("referenceNo") or reference.get("reference_no")
-                status = str(reference.get("status") or "").upper()
-                if (
-                    str(ref_type or "").upper() == "FORECAST"
-                    and status == "SUCCESS"
-                    and isinstance(ref_no, str)
-                    and ref_no.strip()
-                ):
-                    return ref_no.strip()
-        return None
 
     @staticmethod
     def _business_context_values(value: object) -> dict[str, Any]:

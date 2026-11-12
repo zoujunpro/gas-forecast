@@ -1,4 +1,17 @@
-"""理解本轮请求：恢复待处理操作、理解语义、校验实体、累积可信参数。"""
+"""Agent 工作流的请求理解节点。
+
+本节点负责把用户本轮自然语言及会话上下文转换为后续执行节点可直接使用的
+``RequestUnderstanding``，主要包括：
+
+1. 恢复并校验上一轮尚未完成的澄清或确认操作；
+2. 识别本轮对话行为、业务意图、实体、引用和预测参数；
+3. 通过 Java 内部接口将地区、行业、客户名称解析为可信主数据编码；
+4. 选择匹配的 Skill，合并已确认参数，并整理仍需澄清的问题；
+5. 记录语义理解耗时，供运行链路观测。
+
+本节点只负责“理解和校验”，不会创建训练或预测任务，也不会调用业务 MCP
+工具；所有产生业务副作用的操作统一由后续 ``execute_action`` 节点执行。
+"""
 
 from __future__ import annotations
 
@@ -251,7 +264,7 @@ def _collect_clarification_parameters(
     resolved_entities: EntityParameters,
 ) -> OperationParameters:
     """先恢复当前未完成操作，再覆盖本轮有效字段；空值不清除已有答案。"""
-    values = pending.parameters.to_payload() if pending else {}
+    values = pending.arguments.to_payload() if pending else {}
     entity_keys = {field.alias or name for name, field in EntityParameters.model_fields.items()}
     semantic_values = {
         key: value for key, value in semantics.parameter_overrides().items()
@@ -260,7 +273,7 @@ def _collect_clarification_parameters(
     entity_values = {key: value for key, value in resolved_entities.to_payload().items() if value not in (None, "", [])}
     values.update(semantic_values)
     values.update(entity_values)
-    locked = set(pending.parameters.locked_parameters if pending else [])
+    locked = set(pending.arguments.locked_parameters if pending else [])
     locked.update(semantic_values)
     locked.update(entity_values)
     if locked:
@@ -309,14 +322,7 @@ def _pending_interaction(request: AgentRuntimeRequest, memory: ConversationMemor
     pending = memory.pending_operation
     if pending is None:
         raise ValueError("当前会话没有等待处理的交互")
-    interaction = pending.interaction
-    if request.interaction_id != interaction.interaction_id:
-        raise ValueError("交互已过期，请根据最新问题重新操作")
-    if request.reply_to_turn_id != interaction.source_turn_id:
-        raise ValueError("交互回复对应的轮次不一致")
-    expected = InteractionType.CLARIFICATION if request.input_type == UserInputType.CLARIFICATION_REPLY else InteractionType.CONFIRMATION
-    if interaction.interaction_type != expected:
-        raise ValueError("交互类型不匹配")
+    # interactionId、回复轮次和交互类型已由Java结合澄清表校验；Python只恢复业务操作。
     return pending
 
 
@@ -346,7 +352,18 @@ def _is_complete_new_business_request(message: str) -> bool:
 def _pending_semantics(pending: PendingOperation | None) -> RequestSemantics:
     if pending is None:
         raise ValueError("交互缺少原请求语义，请重新发起请求")
-    return pending.semantics
+    arguments = pending.arguments.to_payload()
+    intent = "FORECAST" if pending.action == "forecast_start" else None
+    semantic_keys = {field.alias or name for name, field in SemanticParameters.model_fields.items()}
+    return RequestSemantics.model_validate({"requests": [{
+        "intent": intent,
+        "entities": {
+            "customers": arguments.get("customerNames") or [],
+            "regions": arguments.get("regionNames") or [],
+            "industries": arguments.get("industryNames") or [],
+        },
+        "parameters": {key: value for key, value in arguments.items() if key in semantic_keys},
+    }]})
 
 
 async def _validate_entities(semantics: RequestSemantics, internal_client: Any) -> EntityResolution:
@@ -447,10 +464,8 @@ def _conversation_context(request: AgentRuntimeRequest, memory: ConversationMemo
     context: dict[str, object] = {"recentMessages": [message.model_dump(by_alias=True) for message in request.history[-8:]]}
     if request.conversation_summary:
         context["summary"] = request.conversation_summary
-    if request.metadata.current_business_context is not None:
-        context["pageContext"] = request.metadata.current_business_context.model_dump(by_alias=True, exclude_none=True)
-    if request.metadata.history_references:
-        context["historyReferences"] = [item.model_dump(by_alias=True, exclude_none=True) for item in request.metadata.history_references]
-    if memory.current_business_context is not None:
-        context["memory"] = {"currentBusinessContext": memory.current_business_context.model_dump(by_alias=True, exclude_none=True)}
+    if request.current_business_context is not None:
+        context["pageContext"] = request.current_business_context.model_dump(by_alias=True, exclude_none=True)
+    if request.history_references:
+        context["historyReferences"] = [item.model_dump(by_alias=True, exclude_none=True) for item in request.history_references]
     return context

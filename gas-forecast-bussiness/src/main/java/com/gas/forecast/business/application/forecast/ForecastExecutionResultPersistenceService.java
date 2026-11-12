@@ -25,18 +25,18 @@ public class ForecastExecutionResultPersistenceService {
     @Transactional
     public void replace(ModelExecuteRecordTb record, JsonNode result) {
         String forecastNo = record.getForecastNo();
-        if (!TextUtils.hasText(forecastNo)) return;
-        modelBacktestResultTbMapper.delete(Wrappers.<ModelBacktestResultTb>lambdaQuery()
-                .eq(ModelBacktestResultTb::getForecastNo, forecastNo));
-        modelForecastResultTbMapper.delete(Wrappers.<ModelForecastResultTb>lambdaQuery()
-                .eq(ModelForecastResultTb::getForecastNo, forecastNo));
+        if (!TextUtils.hasText(forecastNo))
+            return;
+        modelBacktestResultTbMapper.delete(Wrappers.<ModelBacktestResultTb>lambdaQuery().eq(ModelBacktestResultTb::getForecastNo, forecastNo));
+        modelForecastResultTbMapper.delete(Wrappers.<ModelForecastResultTb>lambdaQuery().eq(ModelForecastResultTb::getForecastNo, forecastNo));
 
         Date now = new Date();
         for (JsonNode point : points(result.path("backtest"), "points", "rolling_backtest_results")) {
             String date = text(point, "train_date", "stat_date", "date", "statDate");
             BigDecimal actual = decimal(point, "actual_value", "actualValue", "actual");
             BigDecimal predicted = decimal(point, "predicted_value", "predictedValue", "prediction", "predicted");
-            if (!TextUtils.hasText(date) || actual == null || predicted == null) continue;
+            if (!TextUtils.hasText(date) || actual == null || predicted == null)
+                continue;
             ModelBacktestResultTb item = new ModelBacktestResultTb();
             item.setForecastNo(forecastNo);
             item.setTrainDate(date);
@@ -48,7 +48,8 @@ public class ForecastExecutionResultPersistenceService {
         for (JsonNode point : points(result.path("forecast"), "points")) {
             String date = text(point, "forecast_date", "forecastDate", "date", "stat_date");
             BigDecimal value = decimal(point, "forecast_value", "forecastValue", "prediction", "value");
-            if (!TextUtils.hasText(date) || value == null) continue;
+            if (!TextUtils.hasText(date) || value == null)
+                continue;
             ModelForecastResultTb item = new ModelForecastResultTb();
             item.setForecastNo(forecastNo);
             item.setForecastDate(date);
@@ -59,15 +60,19 @@ public class ForecastExecutionResultPersistenceService {
     }
 
     private JsonNode points(JsonNode parent, String... fields) {
-        if (parent == null || parent.isMissingNode()) return com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
-        for (String field : fields) if (parent.path(field).isArray()) return parent.path(field);
+        if (parent == null || parent.isMissingNode())
+            return com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
+        for (String field : fields)
+            if (parent.path(field).isArray())
+                return parent.path(field);
         return parent.isArray() ? parent : com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
     }
 
     private String text(JsonNode node, String... fields) {
         for (String field : fields) {
             String value = node.path(field).asText(null);
-            if (TextUtils.hasText(value)) return value;
+            if (TextUtils.hasText(value))
+                return value;
         }
         return null;
     }
@@ -75,8 +80,13 @@ public class ForecastExecutionResultPersistenceService {
     private BigDecimal decimal(JsonNode node, String... fields) {
         for (String field : fields) {
             JsonNode value = node.path(field);
-            if (value.isNumber()) return value.decimalValue();
-            if (value.isTextual()) try { return new BigDecimal(value.asText()); } catch (NumberFormatException ignored) { }
+            if (value.isNumber())
+                return value.decimalValue();
+            if (value.isTextual())
+                try {
+                    return new BigDecimal(value.asText());
+                } catch (NumberFormatException ignored) {
+                }
         }
         return null;
     }

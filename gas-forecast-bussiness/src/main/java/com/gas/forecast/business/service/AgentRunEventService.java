@@ -49,9 +49,9 @@ public class AgentRunEventService {
     @Transactional
     public AgentRunEventResponse update(String runNo, Long eventId, AgentRunEventUpdateRequest request) {
         requireOwnedRun(runNo);
-        AgentRunEventTb event = eventMapper.selectOne(Wrappers.<AgentRunEventTb>lambdaQuery()
-                .eq(AgentRunEventTb::getId, eventId).eq(AgentRunEventTb::getRunNo, runNo).last("limit 1"));
-        if (event == null) throw new BusinessException("运行事件不存在或不属于当前运行");
+        AgentRunEventTb event = eventMapper.selectOne(Wrappers.<AgentRunEventTb>lambdaQuery().eq(AgentRunEventTb::getId, eventId).eq(AgentRunEventTb::getRunNo, runNo).last("limit 1"));
+        if (event == null)
+            throw new BusinessException("运行事件不存在或不属于当前运行");
         event.setStatus(normalizeStatus(request.getStatus(), null));
         event.setMessage(request.getMessage().trim());
         event.setEventDataJson(trimToNull(request.getEventDataJson()));
@@ -74,14 +74,11 @@ public class AgentRunEventService {
     }
 
     private List<AgentRunEventResponse> listByRunNo(String runNo) {
-        return eventMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery()
-                .eq(AgentRunEventTb::getRunNo, runNo).orderByAsc(AgentRunEventTb::getId))
-                .stream().map(this::toResponse).toList();
+        return eventMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery().eq(AgentRunEventTb::getRunNo, runNo).orderByAsc(AgentRunEventTb::getId)).stream().map(this::toResponse).toList();
     }
 
     /**
-     * 供本服务内的异步业务执行器记录事件。运行归属已在任务创建时确定，后台线程
-     * 没有用户安全上下文，因此这里只确认 run 存在，不重复做前端访问权限校验。
+     * 供本服务内的异步业务执行器记录事件。运行归属已在任务创建时确定，后台线程 没有用户安全上下文，因此这里只确认 run 存在，不重复做前端访问权限校验。
      */
     @Transactional
     public Long startInternal(String runNo, String eventCode, String message, String forecastNo, String taskDetailNo) {
@@ -90,7 +87,8 @@ public class AgentRunEventService {
 
     @Transactional
     public Long startInternal(String runNo, String eventCode, String message, String eventDataJson, String forecastNo, String taskDetailNo) {
-        if (!TextUtils.hasText(runNo)) return null;
+        if (!TextUtils.hasText(runNo))
+            return null;
         requireRun(runNo);
         AgentRunEventTb event = new AgentRunEventTb();
         event.setRunNo(runNo.trim());
@@ -118,18 +116,19 @@ public class AgentRunEventService {
     }
 
     /**
-     * 供模型/业务服务在同一运行事件内上送真实进度或心跳。
-     * RUNNING 更新只刷新当前状态和 updated_at，不会追加冗余事件记录。
+     * 供模型/业务服务在同一运行事件内上送真实进度或心跳。 RUNNING 更新只刷新当前状态和 updated_at，不会追加冗余事件记录。
      */
     @Transactional
-    public void updateInternal(Long eventId, String status, String message, String eventDataJson,
-            String errorCode, String errorMessage) {
-        if (eventId == null) return;
+    public void updateInternal(Long eventId, String status, String message, String eventDataJson, String errorCode, String errorMessage) {
+        if (eventId == null)
+            return;
         AgentRunEventTb event = eventMapper.selectById(eventId);
-        if (event == null) return;
+        if (event == null)
+            return;
         event.setStatus(normalizeStatus(status, "RUNNING"));
         event.setMessage(message);
-        if (eventDataJson != null) event.setEventDataJson(trimToNull(eventDataJson));
+        if (eventDataJson != null)
+            event.setEventDataJson(trimToNull(eventDataJson));
         event.setErrorCode(trimToNull(errorCode));
         event.setErrorMessage(trimToNull(errorMessage));
         event.setUpdatedAt(new Date());
@@ -138,35 +137,35 @@ public class AgentRunEventService {
 
     private AgentRunTb requireOwnedRun(String runNo) {
         AgentRunTb run = requireRun(runNo);
-        AiConversationTb conversation = conversationMapper.selectOne(Wrappers.<AiConversationTb>lambdaQuery()
-                .eq(AiConversationTb::getId, run.getConversationId())
-                .eq(AiConversationTb::getCreatedBy, currentUserId())
-                .eq(AiConversationTb::getDeletedFlag, 0).last("limit 1"));
-        if (conversation == null) throw new BusinessException("智能体运行不存在或无权访问");
+        AiConversationTb conversation = conversationMapper.selectOne(Wrappers.<AiConversationTb>lambdaQuery().eq(AiConversationTb::getId, run.getConversationId()).eq(AiConversationTb::getCreatedBy, currentUserId()).eq(AiConversationTb::getDeletedFlag, 0).last("limit 1"));
+        if (conversation == null)
+            throw new BusinessException("智能体运行不存在或无权访问");
         return run;
     }
 
     private AgentRunTb requireRun(String runNo) {
-        AgentRunTb run = runMapper.selectOne(Wrappers.<AgentRunTb>lambdaQuery()
-                .eq(AgentRunTb::getRunNo, runNo).last("limit 1"));
-        if (run == null) throw new BusinessException("智能体运行不存在");
+        AgentRunTb run = runMapper.selectOne(Wrappers.<AgentRunTb>lambdaQuery().eq(AgentRunTb::getRunNo, runNo).last("limit 1"));
+        if (run == null)
+            throw new BusinessException("智能体运行不存在");
         return run;
     }
 
     private String normalizeStatus(String value, String defaultValue) {
         String status = TextUtils.hasText(value) ? value.trim().toUpperCase() : defaultValue;
-        if (!STATUSES.contains(status)) throw new BusinessException("不支持的事件状态：" + status);
+        if (!STATUSES.contains(status))
+            throw new BusinessException("不支持的事件状态：" + status);
         return status;
     }
-    private String trimToNull(String value) { return TextUtils.hasText(value) ? value.trim() : null; }
+    private String trimToNull(String value) {
+        return TextUtils.hasText(value) ? value.trim() : null;
+    }
     private String currentUserId() {
         Long userId = SecurityContextHolder.getUserId();
-        if (userId == null) throw new BusinessException("登录状态已失效");
+        if (userId == null)
+            throw new BusinessException("登录状态已失效");
         return String.valueOf(userId);
     }
     private AgentRunEventResponse toResponse(AgentRunEventTb event) {
-        return new AgentRunEventResponse(event.getId(), event.getRunNo(), event.getEventCode(), event.getMessage(), event.getEventDataJson(),
-                event.getStatus(), event.getForecastNo(), event.getTaskDetailNo(), event.getErrorCode(),
-                event.getErrorMessage(), event.getCreatedAt(), event.getUpdatedAt());
+        return new AgentRunEventResponse(event.getId(), event.getRunNo(), event.getEventCode(), event.getMessage(), event.getEventDataJson(), event.getStatus(), event.getForecastNo(), event.getTaskDetailNo(), event.getErrorCode(), event.getErrorMessage(), event.getCreatedAt(), event.getUpdatedAt());
     }
 }

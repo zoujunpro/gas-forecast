@@ -7,9 +7,11 @@ import lombok.Data;
 /** Python Agent 创建真实过程事件的请求。 */
 @Data
 public class AgentRunEventCreateRequest {
-    @NotBlank @Size(max = 64)
+    @NotBlank
+    @Size(max = 64)
     private String eventCode;
-    @NotBlank @Size(max = 10000)
+    @NotBlank
+    @Size(max = 10000)
     private String message;
     @Size(max = 50000)
     private String eventDataJson;

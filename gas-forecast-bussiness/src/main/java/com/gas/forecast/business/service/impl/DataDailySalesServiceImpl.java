@@ -25,9 +25,7 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         LambdaQueryWrapper<DataDailySalesTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(DataDailySalesTb::getRegionCode, keyword).or().like(DataDailySalesTb::getRegionName, keyword).or().like(DataDailySalesTb::getIndustryCode, keyword).or()
-                    .like(DataDailySalesTb::getIndustryName, keyword).or().like(DataDailySalesTb::getCustomerCode, keyword).or().like(DataDailySalesTb::getCustomerName, keyword).or()
-                    .like(DataDailySalesTb::getFileId, keyword));
+            query.and(wrapper -> wrapper.like(DataDailySalesTb::getRegionCode, keyword).or().like(DataDailySalesTb::getRegionName, keyword).or().like(DataDailySalesTb::getIndustryCode, keyword).or().like(DataDailySalesTb::getIndustryName, keyword).or().like(DataDailySalesTb::getCustomerCode, keyword).or().like(DataDailySalesTb::getCustomerName, keyword).or().like(DataDailySalesTb::getFileId, keyword));
         }
         if (TextUtils.hasText(reqDTO.startDate())) {
             query.ge(DataDailySalesTb::getStatDate, reqDTO.startDate());
@@ -55,7 +53,6 @@ public class DataDailySalesServiceImpl implements DataDailySalesService {
         if (item == null) {
             return null;
         }
-        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getStatMonth(), item.getStatTenday(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(),
-                item.getIndustryName(), item.getCustomerCode(), item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
+        return new DataSalesResponse(item.getId(), item.getStatDate(), item.getStatMonth(), item.getStatTenday(), item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(), item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
     }
 }

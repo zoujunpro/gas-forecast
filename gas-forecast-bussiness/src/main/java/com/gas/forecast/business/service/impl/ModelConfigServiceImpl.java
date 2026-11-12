@@ -68,8 +68,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         LambdaQueryWrapper<ModelConfigTb> query = Wrappers.lambdaQuery();
         String keyword = request.getKeyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(ModelConfigTb::getModelCode, keyword).or().like(ModelConfigTb::getModelName, keyword).or().like(ModelConfigTb::getAgentCode, keyword).or()
-                    .like(ModelConfigTb::getDescription, keyword));
+            query.and(wrapper -> wrapper.like(ModelConfigTb::getModelCode, keyword).or().like(ModelConfigTb::getModelName, keyword).or().like(ModelConfigTb::getAgentCode, keyword).or().like(ModelConfigTb::getDescription, keyword));
         }
         query.orderByDesc(ModelConfigTb::getUpdatedAt).orderByDesc(ModelConfigTb::getId);
         IPage<ModelConfigTb> result = modelConfigTbMapper.selectPage(PageUtils.pageRequest(request.getPage(), request.getSize()), query);
@@ -156,8 +155,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         modelConfig.setCreatedAt(now);
         modelConfig.setUpdatedAt(now);
         modelConfigTbMapper.insert(modelConfig);
-        saveScopes(modelConfig.getId(), modelConfig.getModelCode(), agent, reqDTO.getRegionCode(), reqDTO.getIndustryCode(), reqDTO.getCustomerCode(), reqDTO.getRegionCodes(),
-                reqDTO.getIndustryCodes(), reqDTO.getCustomerCodes());
+        saveScopes(modelConfig.getId(), modelConfig.getModelCode(), agent, reqDTO.getRegionCode(), reqDTO.getIndustryCode(), reqDTO.getCustomerCode(), reqDTO.getRegionCodes(), reqDTO.getIndustryCodes(), reqDTO.getCustomerCodes());
         return toResp(modelConfig, loadScopeContext(List.of(modelConfig)));
     }
 
@@ -209,8 +207,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         }
         exists.setUpdatedAt(new Date());
         modelConfigTbMapper.updateById(exists);
-        saveScopes(exists.getId(), exists.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(), reqDTO.regionCodes(), reqDTO.industryCodes(),
-                reqDTO.customerCodes());
+        saveScopes(exists.getId(), exists.getModelCode(), agent, reqDTO.regionCode(), reqDTO.industryCode(), reqDTO.customerCode(), reqDTO.regionCodes(), reqDTO.industryCodes(), reqDTO.customerCodes());
         saveFeatureRefs(reqDTO.id(), reqDTO.featureRefs());
         ModelConfigTb updated = modelConfigTbMapper.selectById(reqDTO.id());
         return toResp(updated, loadScopeContext(List.of(updated)));
@@ -285,22 +282,16 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             return leftOrder == rightOrder ? left.getId().compareTo(right.getId()) : Integer.compare(leftOrder, rightOrder);
         }).map(ref -> {
             ModelFeatureDefinitionTb definition = scopeContext.features().get(ref.getFeatureId());
-            return new ModelFeatureRefResponse(ref.getId(), ref.getFeatureId(), definition == null ? null : definition.getFeatureCode(), definition == null ? null : definition.getFeatureName(),
-                    TextUtils.hasText(ref.getOutputFeatureCode()) ? ref.getOutputFeatureCode() : definition == null ? null : definition.getFeatureCode(), ref.getRequiredFlag(), ref.getFeatureOrder());
+            return new ModelFeatureRefResponse(ref.getId(), ref.getFeatureId(), definition == null ? null : definition.getFeatureCode(), definition == null ? null : definition.getFeatureName(), TextUtils.hasText(ref.getOutputFeatureCode()) ? ref.getOutputFeatureCode() : definition == null ? null : definition.getFeatureCode(), ref.getRequiredFlag(), ref.getFeatureOrder());
         }).toList();
         // 每个维度独立表达“全部”：例如指定行业但未指定地区，代表所有地区，
         // 不能只有三个维度都为空时才显示“全部”。
         boolean allRegions = regionCodes.isEmpty();
         boolean allIndustries = industryCodes.isEmpty();
         boolean allCustomers = customerCodes.isEmpty();
-        return new ModelConfigResponse(modelConfig.getId(), modelConfig.getModelCode(), modelConfig.getModelName(), modelConfig.getModelVersion(), modelConfig.getAgentCode(),
-                agent == null ? null : agent.getAgentName(), modelConfig.getEnabled(), agent == null ? null : agent.getSceneCode(), agent == null ? null : agent.getStrategyType(), regionCode,
-                allRegions ? "全部" : region == null ? null : region.getRegionName(), industryCode, allIndustries ? "全部" : industry == null ? null : industry.getIndustryName(), customerCode,
-                allCustomers ? "全部" : customer == null ? null : customer.getCustomerName(), regionCodes, allRegions ? List.of("全部") : regionNames, industryCodes,
-                allIndustries ? List.of("全部") : industryNames, customerCodes, allCustomers ? List.of("全部") : customerNames, featureRefs, modelConfig.getTimeGranularity(),
-                modelConfig.getMinForecastHorizon(), modelConfig.getMaxForecastHorizon(), modelConfig.getMinimumTrainingRows(),
-                modelConfig.getRecommendedTrainingPeriods(), normalizeTrainingRangeMode(modelConfig.getDefaultTrainingRangeMode(), "RECOMMENDED"), modelConfig.getDefaultTrainingPeriods(), modelConfig.getTrainingDataRequirement(),
-                modelConfig.getDescription(), modelConfig.getCreatedAt(), modelConfig.getUpdatedAt());
+        return new ModelConfigResponse(modelConfig.getId(), modelConfig.getModelCode(), modelConfig.getModelName(), modelConfig.getModelVersion(), modelConfig.getAgentCode(), agent == null ? null : agent.getAgentName(), modelConfig.getEnabled(), agent == null ? null : agent.getSceneCode(), agent == null ? null : agent
+                .getStrategyType(), regionCode, allRegions ? "全部" : region == null ? null : region.getRegionName(), industryCode, allIndustries ? "全部" : industry == null ? null : industry.getIndustryName(), customerCode, allCustomers ? "全部" : customer == null ? null : customer.getCustomerName(), regionCodes, allRegions ? List.of("全部") : regionNames, industryCodes, allIndustries ? List.of("全部") : industryNames, customerCodes, allCustomers ? List.of("全部") : customerNames, featureRefs, modelConfig
+                        .getTimeGranularity(), modelConfig.getMinForecastHorizon(), modelConfig.getMaxForecastHorizon(), modelConfig.getMinimumTrainingRows(), modelConfig.getRecommendedTrainingPeriods(), normalizeTrainingRangeMode(modelConfig.getDefaultTrainingRangeMode(), "RECOMMENDED"), modelConfig.getDefaultTrainingPeriods(), modelConfig.getTrainingDataRequirement(), modelConfig.getDescription(), modelConfig.getCreatedAt(), modelConfig.getUpdatedAt());
     }
 
     private ScopeContext loadScopeContext(List<ModelConfigTb> configs) {
@@ -308,39 +299,25 @@ public class ModelConfigServiceImpl implements ModelConfigService {
             return ScopeContext.empty();
         }
         List<Long> configIds = configs.stream().map(ModelConfigTb::getId).toList();
-        List<ModelConfigScopeTb> scopes = modelConfigScopeTbMapper
-                .selectList(Wrappers.<ModelConfigScopeTb>lambdaQuery().in(ModelConfigScopeTb::getModelId, configIds).orderByDesc(ModelConfigScopeTb::getId));
+        List<ModelConfigScopeTb> scopes = modelConfigScopeTbMapper.selectList(Wrappers.<ModelConfigScopeTb>lambdaQuery().in(ModelConfigScopeTb::getModelId, configIds).orderByDesc(ModelConfigScopeTb::getId));
         Map<Long, List<ModelConfigScopeTb>> scopeByConfigId = scopes.stream().filter(scope -> scope.getModelId() != null).collect(Collectors.groupingBy(ModelConfigScopeTb::getModelId));
-        List<ModelFeatureRef> featureRefs = modelFeatureRefMapper
-                .selectList(Wrappers.<ModelFeatureRef>lambdaQuery().in(ModelFeatureRef::getModelId, configIds).orderByAsc(ModelFeatureRef::getFeatureOrder).orderByAsc(ModelFeatureRef::getId));
+        List<ModelFeatureRef> featureRefs = modelFeatureRefMapper.selectList(Wrappers.<ModelFeatureRef>lambdaQuery().in(ModelFeatureRef::getModelId, configIds).orderByAsc(ModelFeatureRef::getFeatureOrder).orderByAsc(ModelFeatureRef::getId));
         Map<Long, List<ModelFeatureRef>> featureRefsByModelId = featureRefs.stream().collect(Collectors.groupingBy(ModelFeatureRef::getModelId));
         List<Long> featureIds = featureRefs.stream().map(ModelFeatureRef::getFeatureId).filter(id -> id != null).distinct().toList();
-        Map<Long, ModelFeatureDefinitionTb> features = featureIds.isEmpty()
-                ? Collections.emptyMap()
-                : modelFeatureDefinitionTbMapper.selectBatchIds(featureIds).stream().collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity(), (left, right) -> left));
+        Map<Long, ModelFeatureDefinitionTb> features = featureIds.isEmpty() ? Collections.emptyMap() : modelFeatureDefinitionTbMapper.selectBatchIds(featureIds).stream().collect(Collectors.toMap(ModelFeatureDefinitionTb::getId, Function.identity(), (left, right) -> left));
 
         List<String> regionCodes = scopes.stream().map(ModelConfigScopeTb::getRegionCode).filter(TextUtils::hasText).distinct().toList();
         List<String> industryCodes = scopes.stream().map(ModelConfigScopeTb::getIndustryCode).filter(TextUtils::hasText).distinct().toList();
         List<String> customerCodes = scopes.stream().map(ModelConfigScopeTb::getCustomerCode).filter(TextUtils::hasText).distinct().toList();
 
-        Map<String, BaseRegionTb> regions = regionCodes.isEmpty()
-                ? Collections.emptyMap()
-                : baseRegionTbMapper.selectList(Wrappers.<BaseRegionTb>lambdaQuery().in(BaseRegionTb::getRegionCode, regionCodes)).stream()
-                        .collect(Collectors.toMap(BaseRegionTb::getRegionCode, Function.identity(), (left, right) -> left));
-        Map<String, BaseIndustryTb> industries = industryCodes.isEmpty()
-                ? Collections.emptyMap()
-                : baseIndustryTbMapper.selectList(Wrappers.<BaseIndustryTb>lambdaQuery().in(BaseIndustryTb::getIndustryCode, industryCodes)).stream()
-                        .collect(Collectors.toMap(BaseIndustryTb::getIndustryCode, Function.identity(), (left, right) -> left));
-        Map<String, BaseCustomerTb> customers = customerCodes.isEmpty()
-                ? Collections.emptyMap()
-                : baseCustomerTbMapper.selectList(Wrappers.<BaseCustomerTb>lambdaQuery().in(BaseCustomerTb::getCustomerCode, customerCodes)).stream()
-                        .collect(Collectors.toMap(BaseCustomerTb::getCustomerCode, Function.identity(), (left, right) -> left));
+        Map<String, BaseRegionTb> regions = regionCodes.isEmpty() ? Collections.emptyMap() : baseRegionTbMapper.selectList(Wrappers.<BaseRegionTb>lambdaQuery().in(BaseRegionTb::getRegionCode, regionCodes)).stream().collect(Collectors.toMap(BaseRegionTb::getRegionCode, Function.identity(), (left, right) -> left));
+        Map<String, BaseIndustryTb> industries = industryCodes.isEmpty() ? Collections.emptyMap() : baseIndustryTbMapper.selectList(Wrappers.<BaseIndustryTb>lambdaQuery().in(BaseIndustryTb::getIndustryCode, industryCodes)).stream().collect(Collectors.toMap(BaseIndustryTb::getIndustryCode, Function.identity(), (left, right) -> left));
+        Map<String, BaseCustomerTb> customers = customerCodes.isEmpty() ? Collections.emptyMap() : baseCustomerTbMapper.selectList(Wrappers.<BaseCustomerTb>lambdaQuery().in(BaseCustomerTb::getCustomerCode, customerCodes)).stream().collect(Collectors.toMap(BaseCustomerTb::getCustomerCode, Function.identity(), (left, right) -> left));
 
         return new ScopeContext(scopeByConfigId, regions, industries, customers, featureRefsByModelId, features);
     }
 
-    private void saveScopes(Long modelId, String modelCode, ForecastAgentEnum agent, String regionCode, String industryCode, String customerCode, List<String> regionCodes, List<String> industryCodes,
-            List<String> customerCodes) {
+    private void saveScopes(Long modelId, String modelCode, ForecastAgentEnum agent, String regionCode, String industryCode, String customerCode, List<String> regionCodes, List<String> industryCodes, List<String> customerCodes) {
         modelConfigScopeTbMapper.delete(Wrappers.<ModelConfigScopeTb>lambdaQuery().eq(ModelConfigScopeTb::getModelId, modelId));
 
         List<String> normalizedRegionCodes = normalizeCodes(regionCodes, regionCode);
@@ -390,14 +367,12 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         if (featureRefs == null || featureRefs.isEmpty()) {
             return;
         }
-        List<ModelConfigScopeUpdateRequest.FeatureRefItem> distinctRefs = new ArrayList<>(featureRefs.stream().filter(item -> item.featureId() != null)
-                .collect(Collectors.toMap(ModelConfigScopeUpdateRequest.FeatureRefItem::featureId, Function.identity(), (left, right) -> left, LinkedHashMap::new)).values());
+        List<ModelConfigScopeUpdateRequest.FeatureRefItem> distinctRefs = new ArrayList<>(featureRefs.stream().filter(item -> item.featureId() != null).collect(Collectors.toMap(ModelConfigScopeUpdateRequest.FeatureRefItem::featureId, Function.identity(), (left, right) -> left, LinkedHashMap::new)).values());
         List<Long> featureIds = distinctRefs.stream().map(ModelConfigScopeUpdateRequest.FeatureRefItem::featureId).toList();
         if (featureIds.isEmpty()) {
             return;
         }
-        List<ModelFeatureDefinitionTb> enabledFeatures = modelFeatureDefinitionTbMapper
-                .selectList(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().in(ModelFeatureDefinitionTb::getId, featureIds).eq(ModelFeatureDefinitionTb::getEnabled, 1));
+        List<ModelFeatureDefinitionTb> enabledFeatures = modelFeatureDefinitionTbMapper.selectList(Wrappers.<ModelFeatureDefinitionTb>lambdaQuery().in(ModelFeatureDefinitionTb::getId, featureIds).eq(ModelFeatureDefinitionTb::getEnabled, 1));
         List<Long> enabledFeatureIds = enabledFeatures.stream().map(ModelFeatureDefinitionTb::getId).toList();
         List<Long> invalidFeatureIds = featureIds.stream().filter(id -> !enabledFeatureIds.contains(id)).toList();
         if (!invalidFeatureIds.isEmpty()) {
@@ -464,8 +439,7 @@ public class ModelConfigServiceImpl implements ModelConfigService {
         if (modelConfig == null || modelConfig.getId() == null) {
             return;
         }
-        modelConfigScopeTbMapper.update(null,
-                Wrappers.<ModelConfigScopeTb>lambdaUpdate().eq(ModelConfigScopeTb::getModelId, modelConfig.getId()).set(ModelConfigScopeTb::getModelCode, modelConfig.getModelCode()));
+        modelConfigScopeTbMapper.update(null, Wrappers.<ModelConfigScopeTb>lambdaUpdate().eq(ModelConfigScopeTb::getModelId, modelConfig.getId()).set(ModelConfigScopeTb::getModelCode, modelConfig.getModelCode()));
     }
 
     @Data

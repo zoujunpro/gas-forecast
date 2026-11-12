@@ -24,7 +24,7 @@ SHORT_TERM_PROFILE = AlgorithmProfile(
         CandidateSpec("xgboost", "XGBOOST_V1"),
         CandidateSpec("lightgbm", "LIGHTGBM_V1"),
         CandidateSpec(
-            "city_gas_v1",
+            "prophet_ar",
             "PROPHET_AR_RESIDUAL_V1",
             {
                 "prophet_params": {
@@ -50,8 +50,8 @@ SHORT_TERM_PROFILE = AlgorithmProfile(
             search_space={"prophet_params.changepoint_prior_scale": [0.01, 0.05, 0.1]},
         ),
         CandidateSpec(
-            "city_gas_v2",
-            "PROPHET_XGBOOST_AR_RESIDUAL_V1",
+            "prophet_xgboost",
+            "PROPHET_XGBOOST_RESIDUAL_V1",
             {
                 "prophet_params": {
                     "seasonality_mode": "additive",
@@ -72,8 +72,7 @@ SHORT_TERM_PROFILE = AlgorithmProfile(
                         "rounds": 30,
                     },
                 },
-                "ar_params": {"lags": 4},
-                # V2需要目标历史特征，并在未来日期逐日递推。
+                # XGBoost残差模型需要目标历史特征，并在未来日期逐日递推。
                 "residual_feature_policy": "TARGET_HISTORY_V1",
                 "oof_params": {"folds": 3, "minimum_train_size": 30},
                 "residual_clip": {
@@ -88,7 +87,7 @@ SHORT_TERM_PROFILE = AlgorithmProfile(
             },
         ),
         CandidateSpec(
-            "city_gas_v3",
+            "prophet_lightgbm",
             "PROPHET_LIGHTGBM_RESIDUAL_V1",
             {
                 "prophet_params": {
@@ -113,9 +112,8 @@ SHORT_TERM_PROFILE = AlgorithmProfile(
                         "rounds": 30,
                     },
                 },
-                "ar_params": {"lags": 4},
                 "minimum_lightgbm_rows": 40,
-                # 城燃V3仅消费配置生成的行业特征，不增加销量Lag，也不递归。
+                # LightGBM仅消费配置生成的行业特征，不增加销量Lag，也不递归。
                 "residual_feature_policy": "PASSTHROUGH_V1",
                 "oof_params": {"folds": 3, "minimum_train_size": 30},
                 "residual_clip": {
@@ -131,7 +129,7 @@ SHORT_TERM_PROFILE = AlgorithmProfile(
         ),
     ),
     aggregation=AggregationMode.MEAN,
-    strategy_code="SHORT_TERM_CUSTOMER_V1",
+    scenario_code="SHORT_TERM_CUSTOMER_V1",
     feature_policy_code="SHORT_TERM_CUSTOMER_FEATURES_V1",
     features=(
         MethodSpec("DYNAMIC_PASSTHROUGH_V1"),

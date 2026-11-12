@@ -46,7 +46,6 @@ public class ModelConfigTb {
     /** 支持的时间粒度：DAY/TENDAY/MONTH。 */
     private String timeGranularity;
 
-
     /** 最小预测周期数。 */
     private Integer minForecastHorizon;
 

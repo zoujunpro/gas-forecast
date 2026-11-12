@@ -88,15 +88,13 @@ def test_legacy_short_term_residual_combinations_are_registered():
         "PROPHET_V1",
         "AUTOREGRESSION_V1",
     )
-    assert registry.get("PROPHET_XGBOOST_AR_RESIDUAL_V1").dependencies() == (
+    assert registry.get("PROPHET_XGBOOST_RESIDUAL_V1").dependencies() == (
         "PROPHET_V1",
         "XGBOOST_V1",
-        "AUTOREGRESSION_V1",
     )
     assert registry.get("PROPHET_LIGHTGBM_RESIDUAL_V1").dependencies() == (
         "PROPHET_V1",
         "LIGHTGBM_V1",
-        "AUTOREGRESSION_V1",
     )
     registry.validate_dependencies()
     assert registry.get("PROPHET_AR_RESIDUAL_V1").validate_params({}).valid
@@ -145,7 +143,7 @@ def test_lightgbm_residual_uses_direct_features_but_xgboost_uses_target_history(
         == "PASSTHROUGH_V1"
     )
     assert (
-        registry.get("PROPHET_XGBOOST_AR_RESIDUAL_V1").get_default_params()[
+        registry.get("PROPHET_XGBOOST_RESIDUAL_V1").get_default_params()[
             "residual_feature_policy"
         ]
         == "TARGET_HISTORY_V1"

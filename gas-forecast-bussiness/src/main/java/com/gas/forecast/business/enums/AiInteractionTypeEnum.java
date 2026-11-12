@@ -10,7 +10,9 @@ public enum AiInteractionTypeEnum {
 
     private final String code;
 
-    AiInteractionTypeEnum(String code) { this.code = code; }
+    AiInteractionTypeEnum(String code) {
+        this.code = code;
+    }
 
     public static boolean contains(String value) {
         return Arrays.stream(values()).anyMatch(item -> item.code.equals(value));

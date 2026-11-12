@@ -2,7 +2,6 @@
 
 from gas_forecast_agent.operation_models import OperationParameters
 from gas_forecast_agent.schemas import MemoryPatch, PendingOperation
-from gas_forecast_agent.workflow_nodes.interactions import _interaction_details
 from gas_forecast_agent.workflow_nodes.state import AgentGraphState
 
 
@@ -10,14 +9,14 @@ def memory_patch_for(state: AgentGraphState) -> MemoryPatch:
     """等待时整体替换快照；完成或拒绝时清除，避免新任务继承旧参数。"""
     result = state.require_result()
     understanding = state.require_understanding()
-    interaction = _interaction_details(state.request, result, understanding.semantics)
+    previous = state.request.memory.pending_operation
+    intent = understanding.semantics.intent.value if understanding.semantics.intent else None
     pending = PendingOperation(
-        interaction=interaction,
-        semantics=understanding.semantics,
-        parameters=result.parameters.pending_snapshot(),
-        pending_tool=result.pending_tool,
+        original_message=previous.original_message if previous else state.request.message,
+        action=result.pending_tool or ("forecast_start" if intent == "FORECAST" else None),
+        arguments=result.parameters.pending_snapshot(),
         issues=result.resolution_issues,
-    ) if interaction is not None else None
+    ) if result.resolution_issues else None
     return MemoryPatch(pending_operation=pending)
 
 

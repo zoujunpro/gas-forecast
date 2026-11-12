@@ -36,9 +36,6 @@ public class AiConversationTb {
     /** 逻辑删除时间。 */
     private Date deletedAt;
 
-    /** 可变会话记忆，包括当前业务焦点、已确认参数和待处理动作。 */
-    private String memoryJson;
-
     /** 最近消息时间。 */
     private Date lastMessageAt;
 

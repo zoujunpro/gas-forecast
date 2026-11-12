@@ -60,7 +60,7 @@ class AlgorithmProfile:
     version: str
     candidates: tuple[CandidateSpec, ...]
     aggregation: AggregationMode
-    strategy_code: str = "DIRECT_PROFILE_V1"
+    scenario_code: str = "DEFAULT_FORECAST_SCENARIO_V1"
     feature_policy_code: str | None = None
     features: tuple[MethodSpec, ...] = ()
     backtest: BacktestSpec = field(default_factory=BacktestSpec)

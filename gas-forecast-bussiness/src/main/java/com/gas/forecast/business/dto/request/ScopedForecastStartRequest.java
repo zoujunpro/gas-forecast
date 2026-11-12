@@ -15,15 +15,19 @@ import lombok.Data;
 /**
  * 页面或智能体按已确认范围发起预测。
  *
- * <p>该请求直接进入统一预测业务流程；系统会在同一任务内完成训练、回测和未来预测。</p>
+ * <p>
+ * 该请求直接进入统一预测业务流程；系统会在同一任务内完成训练、回测和未来预测。
+ * </p>
  */
 @Data
 public class ScopedForecastStartRequest {
     /**
      * 预测场景编码。
      *
-     * <p>支持 {@code short-term}（短期客户预测）、{@code monthly-sales}（月度销量预测）和
-     * {@code winter-supply}（冬季保供预测）。</p>
+     * <p>
+     * 支持 {@code short-term}（短期客户预测）、{@code monthly-sales}（月度销量预测）和
+     * {@code winter-supply}（冬季保供预测）。
+     * </p>
      */
     @NotBlank(message = "智能体类型不能为空")
     @Size(max = 64)
@@ -49,8 +53,9 @@ public class ScopedForecastStartRequest {
     /**
      * 预测周期数。
      *
-     * <p>未传时由预测场景和模型配置决定默认值；短期预测通常表示天数，月度预测表示月数，
-     * 冬季保供预测表示旬数。</p>
+     * <p>
+     * 未传时由预测场景和模型配置决定默认值；短期预测通常表示天数，月度预测表示月数， 冬季保供预测表示旬数。
+     * </p>
      */
     @Min(value = 1, message = "预测周期必须大于0")
     @Max(value = 365, message = "预测周期不能超过365期")
@@ -63,8 +68,7 @@ public class ScopedForecastStartRequest {
     private String forecastFrequency;
 
     /**
-     * 模型训练和回测使用的历史数据范围。
-     * 开始、结束日期均为空时，执行层使用该目标全部可用历史数据。
+     * 模型训练和回测使用的历史数据范围。 开始、结束日期均为空时，执行层使用该目标全部可用历史数据。
      */
     @NotNull(message = "训练数据范围不能为空")
     @Valid

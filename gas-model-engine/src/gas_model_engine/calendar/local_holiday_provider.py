@@ -11,6 +11,10 @@ class LocalHolidayProvider:
     """读取项目内维护的中国法定节假日和调休补班数据。"""
 
     DEFAULT_RESOURCE = "config/holidays/cn-2004-2026.json"
+    # 连续放假达到3天时视为长假；影响期向假期起止日期两侧各扩展2天。
+    LONG_HOLIDAY_MIN_DAYS = 3
+    LONG_HOLIDAY_LEAD_DAYS = 2
+    LONG_HOLIDAY_LAG_DAYS = 2
 
     def __init__(self, path: str | Path | None = None) -> None:
         self.path = Path(path) if path is not None else None
@@ -59,7 +63,114 @@ class LocalHolidayProvider:
                     ),
                 }
             )
-        return pd.DataFrame(rows)
+        calendar = pd.DataFrame(rows)
+        phases = self._holiday_phases()
+        for column in (
+            "holiday_day_index",
+            "holiday_total_days",
+            "days_until_holiday_end",
+        ):
+            calendar[column] = [phases.get(date, {}).get(column, 0) for date in index]
+        holiday_ends = pd.DatetimeIndex(
+            [values["holiday_end"] for values in phases.values()]
+        ).unique()
+        calendar["days_since_holiday_end"] = [
+            0 if date in phases else self._days_since(date, holiday_ends) for date in index
+        ]
+        long_holiday_windows = self._long_holiday_windows()
+        calendar["is_long_holiday_window"] = [
+            int(any(start <= date <= end for start, end, _ in long_holiday_windows))
+            for date in index
+        ]
+        return calendar
+
+    def build_prophet_events(self) -> pd.DataFrame:
+        """生成Prophet事件；长假覆盖实际假期以及开始前、结束后各2天。"""
+        rows = []
+        for block in self._holiday_blocks():
+            start = block[0][0]
+            name_en = self._dominant_holiday_name(block)
+            is_long_holiday = len(block) >= self.LONG_HOLIDAY_MIN_DAYS
+            if is_long_holiday:
+                # Prophet的窗口以ds为基准，所以upper_window需要包含整个假期长度。
+                rows.append(
+                    {
+                        "holiday": name_en,
+                        "ds": start,
+                        "lower_window": -self.LONG_HOLIDAY_LEAD_DAYS,
+                        "upper_window": len(block) - 1 + self.LONG_HOLIDAY_LAG_DAYS,
+                    }
+                )
+            else:
+                for date, _ in block:
+                    rows.append(
+                        {
+                            "holiday": name_en,
+                            "ds": date,
+                            "lower_window": 0,
+                            "upper_window": 0,
+                        }
+                    )
+        return pd.DataFrame(rows).sort_values(["ds", "holiday"]).reset_index(drop=True)
+
+    def _holiday_phases(self) -> dict[pd.Timestamp, dict[str, int | pd.Timestamp]]:
+        """把同名且日期连续的放假记录识别为一个假期区间。"""
+        blocks = self._holiday_blocks()
+        phases = {}
+        for block in blocks:
+            end = block[-1][0]
+            total = len(block)
+            for offset, (date, _) in enumerate(block):
+                phases[date] = {
+                    "holiday_day_index": offset + 1,
+                    "holiday_total_days": total,
+                    "days_until_holiday_end": (end - date).days,
+                    "holiday_end": end,
+                }
+        return phases
+
+    def _holiday_blocks(self) -> list[list[tuple[pd.Timestamp, str]]]:
+        """按连续日期切分实际放假区间；相连的中秋、国庆也属于同一长假。"""
+        entries = []
+        for value, info in self.data["holidays"].items():
+            name_en, _, _ = self._parse_info(info)
+            entries.append((pd.Timestamp(value), name_en))
+        entries.sort()
+        blocks: list[list[tuple[pd.Timestamp, str]]] = []
+        for entry in entries:
+            if (
+                blocks
+                and (entry[0] - blocks[-1][-1][0]).days == 1
+            ):
+                blocks[-1].append(entry)
+            else:
+                blocks.append([entry])
+        return blocks
+
+    @staticmethod
+    def _dominant_holiday_name(block: list[tuple[pd.Timestamp, str]]) -> str:
+        """用区间内出现天数最多的节日命名，保证跨节日长假的名称稳定。"""
+        names = [name for _, name in block]
+        return max(dict.fromkeys(names), key=names.count)
+
+    def _long_holiday_windows(self) -> list[tuple[pd.Timestamp, pd.Timestamp, str]]:
+        """返回长假影响区间：假期开始前2天至假期结束后2天。"""
+        delta_before = pd.Timedelta(days=self.LONG_HOLIDAY_LEAD_DAYS)
+        delta_after = pd.Timedelta(days=self.LONG_HOLIDAY_LAG_DAYS)
+        return [
+            (
+                block[0][0] - delta_before,
+                block[-1][0] + delta_after,
+                self._dominant_holiday_name(block),
+            )
+            for block in self._holiday_blocks()
+            if len(block) >= self.LONG_HOLIDAY_MIN_DAYS
+        ]
+
+    @staticmethod
+    def _days_since(date: pd.Timestamp, candidates: pd.DatetimeIndex) -> int:
+        previous = candidates[candidates < date]
+        return int((date - previous.max()).days) if len(previous) else 365
 
     @staticmethod
     def _parse_info(info: str | None) -> tuple[str | None, str | None, int]:

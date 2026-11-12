@@ -1,9 +1,9 @@
 from .inverse_error_weight import InverseErrorWeightAlgorithm
 from .median_ensemble import MedianEnsembleAlgorithm
 from .nnls_weight import NnlsWeightAlgorithm
-from .prophet_ar_residual import ProphetArResidualAlgorithm
-from .prophet_lightgbm_residual import ProphetLightgbmResidualAlgorithm
-from .prophet_xgboost_ar_residual import ProphetXgboostArResidualAlgorithm
+from .prophet_ar import ProphetArAlgorithm
+from .prophet_lightgbm import ProphetLightgbmAlgorithm
+from .prophet_xgboost import ProphetXgboostAlgorithm
 from .residual_combination import ResidualCombinationAlgorithm
 from .ridge_stacking import RidgeStackingAlgorithm
 from .weighted_average import WeightedAverageAlgorithm
@@ -19,9 +19,9 @@ def composite_algorithms(registry):
         NnlsWeightAlgorithm(registry),
         RidgeStackingAlgorithm(registry),
         ResidualCombinationAlgorithm(registry),
-        ProphetArResidualAlgorithm(registry),
-        ProphetXgboostArResidualAlgorithm(registry),
-        ProphetLightgbmResidualAlgorithm(registry),
+        ProphetArAlgorithm(registry),
+        ProphetXgboostAlgorithm(registry),
+        ProphetLightgbmAlgorithm(registry),
     ]
 
 
@@ -29,9 +29,9 @@ __all__ = [
     "InverseErrorWeightAlgorithm",
     "MedianEnsembleAlgorithm",
     "NnlsWeightAlgorithm",
-    "ProphetArResidualAlgorithm",
-    "ProphetLightgbmResidualAlgorithm",
-    "ProphetXgboostArResidualAlgorithm",
+    "ProphetArAlgorithm",
+    "ProphetLightgbmAlgorithm",
+    "ProphetXgboostAlgorithm",
     "ResidualCombinationAlgorithm",
     "RidgeStackingAlgorithm",
     "WeightedAverageAlgorithm",

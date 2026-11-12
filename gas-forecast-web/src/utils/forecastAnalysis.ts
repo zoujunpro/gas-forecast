@@ -14,8 +14,20 @@ export const compactForecastAnalysis = (value: unknown, limit = 110) => {
   return (sentenceEnd >= Math.floor(limit * 0.6) ? clipped.slice(0, sentenceEnd + 1) : clipped).trim()
 }
 
-/**
- * 追问是固定的三个业务入口，避免模型把具体数值、日期和很长的解释塞进按钮。
- * 参数保留是为了兼容历史记录调用；页面展示不再依赖其中的自由文本。
- */
-export const forecastAnalysisQuestions = (_value?: unknown) => DEFAULT_FORECAST_ANALYSIS_QUESTIONS
+/** 优先展示本次预测生成的三个追问；历史空值或异常数据使用通用问题兜底。 */
+export const forecastAnalysisQuestions = (value?: unknown): string[] => {
+  try {
+    const parsed = Array.isArray(value) ? value : JSON.parse(String(value || '[]'))
+    if (!Array.isArray(parsed)) return DEFAULT_FORECAST_ANALYSIS_QUESTIONS
+    const questions = parsed
+      .map((question: unknown) => typeof question === 'string' ? question : String((question as Record<string, unknown>)?.text || ''))
+      .map((question: string) => question.replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+    if (questions.length !== 3 || new Set(questions).size !== 3 || questions.some((question) => question.length > 30)) {
+      return DEFAULT_FORECAST_ANALYSIS_QUESTIONS
+    }
+    return questions
+  } catch {
+    return DEFAULT_FORECAST_ANALYSIS_QUESTIONS
+  }
+}

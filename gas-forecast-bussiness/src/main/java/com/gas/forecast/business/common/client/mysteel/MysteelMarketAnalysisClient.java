@@ -69,8 +69,7 @@ public class MysteelMarketAnalysisClient {
     private String request(String query) {
         try {
             ObjectNode payload = objectMapper.createObjectNode().put("query", query);
-            HttpRequest request = HttpRequest.newBuilder(URI.create(analysisUrl)).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Content-Type", "application/json")
-                    .header("token", apiKey.trim()).POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload))).build();
+            HttpRequest request = HttpRequest.newBuilder(URI.create(analysisUrl)).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Content-Type", "application/json").header("token", apiKey.trim()).POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload))).build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new IllegalStateException("接口返回HTTP " + response.statusCode() + "：" + abbreviate(response.body(), 200));

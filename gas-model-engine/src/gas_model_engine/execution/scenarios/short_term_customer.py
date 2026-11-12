@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from ...data_preparation import ShortTermCustomerDataCleaner
 from ...validation import ShortTermCustomerValidator
-from ..strategies import ConfigDrivenForecastStrategy
+from ..scenario import ForecastScenario
 
 
-class ShortTermCustomerStrategy(ConfigDrivenForecastStrategy):
+class ShortTermCustomerScenario(ForecastScenario):
     """短期客户预测策略。
 
     复用公共配置驱动流程：按本次预测长度验证、均匀安排 Walk-forward

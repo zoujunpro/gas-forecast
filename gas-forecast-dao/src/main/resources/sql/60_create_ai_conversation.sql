@@ -9,7 +9,6 @@ create table if not exists ai_conversation_tb (
     status varchar(20) not null default 'ACTIVE' comment '会话状态：ACTIVE正常、ARCHIVED归档',
     deleted_flag tinyint not null default 0 comment '逻辑删除标识：0否、1是',
     deleted_at datetime default null comment '逻辑删除时间',
-    memory_json json default null comment '可变会话记忆，包括当前业务焦点、已确认参数和待处理动作；不作为会话绑定条件',
     last_message_at datetime default null comment '最近消息时间',
     created_by varchar(64) not null comment '创建人编码',
     created_at datetime not null default current_timestamp comment '创建时间',

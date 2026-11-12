@@ -9,13 +9,7 @@ public enum ExecutionTargetStatusEnum {
     /** 统一预测执行器已领取该任务明细。 */
     RUNNING("RUNNING", false),
     /** 已失败任务重新进入统一预测执行器。 */
-    RETRYING("RETRYING", false),
-    TRAINING("TRAINING", false),
-    WAITING_FORECAST("WAITING_FORECAST", false),
-    FORECASTING("FORECASTING", false),
-    SUCCESS("SUCCESS", true),
-    FAILED("FAILED", true),
-    CANCELLED("CANCELLED", true);
+    RETRYING("RETRYING", false), TRAINING("TRAINING", false), WAITING_FORECAST("WAITING_FORECAST", false), FORECASTING("FORECASTING", false), SUCCESS("SUCCESS", true), FAILED("FAILED", true), CANCELLED("CANCELLED", true);
 
     private final String code;
     private final boolean terminal;

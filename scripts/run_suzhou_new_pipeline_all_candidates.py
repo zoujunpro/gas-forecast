@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import argparse
 import sys
 import time
 from pathlib import Path
@@ -17,7 +18,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from gas_model_engine import ForecastRequest, create_default_forecast_pipeline
 from gas_model_engine.evaluation import calculate_metrics
-from validate_suzhou_city_gas import HORIZON, dataset, load_data
+from validate_suzhou_city_gas import HORIZON as DEFAULT_HORIZON, dataset, load_data
 
 
 OUTPUT = ROOT / "outputs" / "suzhou-city-gas-new-pipeline"
@@ -32,10 +33,30 @@ def serializable(value):
 
 
 def main() -> None:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--horizon", type=int, default=DEFAULT_HORIZON)
+    parser.add_argument("--output", type=Path, default=OUTPUT)
+    parser.add_argument(
+        "--holdout-end",
+        type=str,
+        help="留出集结束日期（YYYY-MM-DD）；默认使用数据库最后日期",
+    )
+    args = parser.parse_args()
+    horizon = args.horizon
+    output = args.output
+    if horizon < 1:
+        raise ValueError("horizon必须大于0")
+    output.mkdir(parents=True, exist_ok=True)
     frame = load_data()
-    train = frame.iloc[:-HORIZON].copy()
-    holdout = frame.iloc[-HORIZON:].copy()
+    if args.holdout_end:
+        holdout_end = pd.Timestamp(args.holdout_end)
+        frame = frame.loc[frame["ds"] <= holdout_end].reset_index(drop=True)
+        if frame.empty or frame["ds"].max().normalize() != holdout_end.normalize():
+            raise ValueError(f"数据库中不存在留出结束日期: {args.holdout_end}")
+    if len(frame) <= horizon:
+        raise ValueError("历史数据不足以构造指定留出集")
+    train = frame.iloc[:-horizon].copy()
+    holdout = frame.iloc[-horizon:].copy()
     actual = holdout["y"].to_numpy(dtype=float)
 
     started = time.perf_counter()
@@ -56,7 +77,7 @@ def main() -> None:
         holdout_metrics[candidate_id] = calculate_metrics(actual, prediction.values)
 
     prediction_frame.to_csv(
-        OUTPUT / "all-candidate-predictions.csv", index=False, encoding="utf-8-sig"
+        output / "all-candidate-predictions.csv", index=False, encoding="utf-8-sig"
     )
     metric_rows = []
     for candidate_id, metrics in result.backtest.candidate_metrics.items():
@@ -75,7 +96,7 @@ def main() -> None:
     metrics_frame = pd.DataFrame(metric_rows).sort_values(
         ["backtest_mape", "candidate"], na_position="last"
     )
-    metrics_frame.to_csv(OUTPUT / "all-candidate-metrics.csv", index=False, encoding="utf-8-sig")
+    metrics_frame.to_csv(output / "all-candidate-metrics.csv", index=False, encoding="utf-8-sig")
 
     report = {
         "data": {
@@ -95,7 +116,7 @@ def main() -> None:
         "holdout_metrics": holdout_metrics,
         "failures": result.prediction.failed_candidates,
     }
-    (OUTPUT / "report.json").write_text(
+    (output / "report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2, default=serializable),
         encoding="utf-8",
     )

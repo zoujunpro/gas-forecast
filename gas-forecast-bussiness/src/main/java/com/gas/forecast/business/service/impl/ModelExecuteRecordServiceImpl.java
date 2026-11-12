@@ -25,23 +25,28 @@ public class ModelExecuteRecordServiceImpl implements ModelExecuteRecordService 
     @Override
     public PageInfoDTO<ModelExecuteRecordTb> listPage(ModelExecuteRecordPageRequest request) {
         var query = Wrappers.<ModelExecuteRecordTb>lambdaQuery();
-        if (TextUtils.hasText(request.getForecastNo())) query.like(ModelExecuteRecordTb::getForecastNo, request.getForecastNo());
-        if (TextUtils.hasText(request.getAgentCode())) query.eq(ModelExecuteRecordTb::getAgentCode, request.getAgentCode());
-        if (TextUtils.hasText(request.getStatus())) query.eq(ModelExecuteRecordTb::getStatus, request.getStatus());
-        if (TextUtils.hasText(request.getRegionCode())) query.and(wrapper -> wrapper.eq(ModelExecuteRecordTb::getRegionCode, request.getRegionCode()).or().like(ModelExecuteRecordTb::getRegionName, request.getRegionCode()));
-        if (TextUtils.hasText(request.getIndustryCode())) query.and(wrapper -> wrapper.eq(ModelExecuteRecordTb::getIndustryCode, request.getIndustryCode()).or().like(ModelExecuteRecordTb::getIndustryName, request.getIndustryCode()));
-        if (TextUtils.hasText(request.getCustomerCode())) query.and(wrapper -> wrapper.eq(ModelExecuteRecordTb::getCustomerCode, request.getCustomerCode()).or().like(ModelExecuteRecordTb::getCustomerName, request.getCustomerCode()));
-        IPage<ModelExecuteRecordTb> page = modelExecuteRecordTbMapper.selectPage(
-                new Page<>(request.getPage(), request.getSize()), query.orderByDesc(ModelExecuteRecordTb::getCreatedAt));
+        if (TextUtils.hasText(request.getForecastNo()))
+            query.like(ModelExecuteRecordTb::getForecastNo, request.getForecastNo());
+        if (TextUtils.hasText(request.getAgentCode()))
+            query.eq(ModelExecuteRecordTb::getAgentCode, request.getAgentCode());
+        if (TextUtils.hasText(request.getStatus()))
+            query.eq(ModelExecuteRecordTb::getStatus, request.getStatus());
+        if (TextUtils.hasText(request.getRegionCode()))
+            query.and(wrapper -> wrapper.eq(ModelExecuteRecordTb::getRegionCode, request.getRegionCode()).or().like(ModelExecuteRecordTb::getRegionName, request.getRegionCode()));
+        if (TextUtils.hasText(request.getIndustryCode()))
+            query.and(wrapper -> wrapper.eq(ModelExecuteRecordTb::getIndustryCode, request.getIndustryCode()).or().like(ModelExecuteRecordTb::getIndustryName, request.getIndustryCode()));
+        if (TextUtils.hasText(request.getCustomerCode()))
+            query.and(wrapper -> wrapper.eq(ModelExecuteRecordTb::getCustomerCode, request.getCustomerCode()).or().like(ModelExecuteRecordTb::getCustomerName, request.getCustomerCode()));
+        IPage<ModelExecuteRecordTb> page = modelExecuteRecordTbMapper.selectPage(new Page<>(request.getPage(), request.getSize()), query.orderByDesc(ModelExecuteRecordTb::getCreatedAt));
         page.getRecords().forEach(record -> record.setLastYearPoints(forecastLastYearComparisonService.lastYearPoints(record)));
         return PageInfoDTO.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
 
     @Override
     public ModelExecuteRecordTb detail(String forecastNo) {
-        ModelExecuteRecordTb record = modelExecuteRecordTbMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery()
-                .eq(ModelExecuteRecordTb::getForecastNo, forecastNo).last("limit 1"));
-        if (record != null) record.setLastYearPoints(forecastLastYearComparisonService.lastYearPoints(record));
+        ModelExecuteRecordTb record = modelExecuteRecordTbMapper.selectOne(Wrappers.<ModelExecuteRecordTb>lambdaQuery().eq(ModelExecuteRecordTb::getForecastNo, forecastNo).last("limit 1"));
+        if (record != null)
+            record.setLastYearPoints(forecastLastYearComparisonService.lastYearPoints(record));
         return record;
     }
 }

@@ -19,6 +19,8 @@ export interface PredictionResult {
 
 export interface ChatMessage {
   id: string
+  /** 同一轮用户消息和助手消息共用的轮次编号。 */
+  turnId?: string
   role: 'user' | 'assistant'
   content: string
   time: string
@@ -61,24 +63,17 @@ export interface ChatClarificationOption {
   label: string
 }
 
-export interface ChatClarificationField {
-  parameterCode: string
-  parameterName: string
-  reason: string
+export interface ChatClarification {
+  interactionId: string
+  /** 当前一次只澄清一个字段。 */
+  field: string
   inputType: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'MULTI_SELECT' | 'CONFIRM'
-  required: boolean
   options: ChatClarificationOption[]
 }
 
-export interface ChatClarification {
-  interactionId: string
-  interactionType: 'CLARIFICATION' | 'CONFIRMATION'
-  replyToTurnId: string
-  requestId?: string
-  reason: string
-  resumeFrom: string
-  prompt: string
-  fields: ChatClarificationField[]
+export interface AiChatContentBlock {
+  type: 'MARKDOWN' | 'CHART' | 'TABLE' | 'TASK_CARD' | 'RESULT_LINK'
+  data: Record<string, any>
 }
 
 export interface StreamEvent {

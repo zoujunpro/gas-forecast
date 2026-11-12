@@ -46,8 +46,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         LambdaQueryWrapper<BaseCustomerTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.getKeyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword).or().like(BaseCustomerTb::getCustomerName, keyword).or().like(BaseCustomerTb::getRegionName, keyword).or()
-                    .like(BaseCustomerTb::getIndustryName, keyword));
+            query.and(wrapper -> wrapper.like(BaseCustomerTb::getCustomerCode, keyword).or().like(BaseCustomerTb::getCustomerName, keyword).or().like(BaseCustomerTb::getRegionName, keyword).or().like(BaseCustomerTb::getIndustryName, keyword));
         }
         if (TextUtils.hasText(reqDTO.getRegionCode())) {
             query.eq(BaseCustomerTb::getRegionCode, reqDTO.getRegionCode().trim());
@@ -106,8 +105,7 @@ public class BaseCustomerServiceImpl implements BaseCustomerService {
         if (customer == null) {
             return null;
         }
-        return new BaseCustomerResponse(customer.getId(), customer.getCustomerCode(), customer.getCustomerName(), customer.getIndustryCode(), customer.getIndustryName(), customer.getRegionCode(),
-                customer.getRegionName(), customer.getRawRegionName(), customer.getRawIndustryName(), customer.getCreatedAt(), customer.getUpdatedAt());
+        return new BaseCustomerResponse(customer.getId(), customer.getCustomerCode(), customer.getCustomerName(), customer.getIndustryCode(), customer.getIndustryName(), customer.getRegionCode(), customer.getRegionName(), customer.getRawRegionName(), customer.getRawIndustryName(), customer.getCreatedAt(), customer.getUpdatedAt());
     }
 
     private BaseCustomerTb toEntity(BaseCustomerCreateRequest reqDTO) {

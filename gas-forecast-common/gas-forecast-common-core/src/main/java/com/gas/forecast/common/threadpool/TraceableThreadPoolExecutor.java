@@ -15,8 +15,10 @@ import org.slf4j.MDC;
 /**
  * 带任务全生命周期日志的线程池。
  *
- * <p>请使用 {@link #executeTracked(String, String, Runnable)} 或
- * {@link #submitTracked(String, String, Callable)} 提交任务，以保证提交、执行、成功、失败和拒绝日志完整。</p>
+ * <p>
+ * 请使用 {@link #executeTracked(String, String, Runnable)} 或
+ * {@link #submitTracked(String, String, Callable)} 提交任务，以保证提交、执行、成功、失败和拒绝日志完整。
+ * </p>
  */
 public final class TraceableThreadPoolExecutor extends ThreadPoolExecutor {
     private static final Logger log = LoggerFactory.getLogger(TraceableThreadPoolExecutor.class);
@@ -25,9 +27,7 @@ public final class TraceableThreadPoolExecutor extends ThreadPoolExecutor {
     private final String poolName;
 
     TraceableThreadPoolExecutor(ThreadPoolConfig config) {
-        super(config.corePoolSize(), config.maximumPoolSize(), config.keepAliveTime(), config.keepAliveUnit(),
-                new LinkedBlockingQueue<>(config.queueCapacity()), new NamedThreadFactory(config.poolName()),
-                new LoggingAbortPolicy(config.poolName()));
+        super(config.corePoolSize(), config.maximumPoolSize(), config.keepAliveTime(), config.keepAliveUnit(), new LinkedBlockingQueue<>(config.queueCapacity()), new NamedThreadFactory(config.poolName()), new LoggingAbortPolicy(config.poolName()));
         this.poolName = config.poolName();
     }
 
@@ -51,8 +51,7 @@ public final class TraceableThreadPoolExecutor extends ThreadPoolExecutor {
     }
 
     private void submitted(TraceableTask task) {
-        log.info("[thread-pool] task submitted: pool={}, taskId={}, taskName={}, traceId={}, activeCount={}, poolSize={}, queueSize={}",
-                poolName, task.taskId, task.taskName, task.traceId, getActiveCount(), getPoolSize(), getQueue().size());
+        log.info("[thread-pool] task submitted: pool={}, taskId={}, taskName={}, traceId={}, activeCount={}, poolSize={}, queueSize={}", poolName, task.taskId, task.taskName, task.traceId, getActiveCount(), getPoolSize(), getQueue().size());
     }
 
     private static String requiredTaskName(String taskName) {
@@ -89,18 +88,15 @@ public final class TraceableThreadPoolExecutor extends ThreadPoolExecutor {
         }
 
         final void started() {
-            log.info("[thread-pool] task started: pool={}, taskId={}, taskName={}, traceId={}, thread={}",
-                    poolName, taskId, taskName, traceId, Thread.currentThread().getName());
+            log.info("[thread-pool] task started: pool={}, taskId={}, taskName={}, traceId={}, thread={}", poolName, taskId, taskName, traceId, Thread.currentThread().getName());
         }
 
         final void succeeded(long startedAt) {
-            log.info("[thread-pool] task succeeded: pool={}, taskId={}, taskName={}, traceId={}, durationMs={}",
-                    poolName, taskId, taskName, traceId, System.currentTimeMillis() - startedAt);
+            log.info("[thread-pool] task succeeded: pool={}, taskId={}, taskName={}, traceId={}, durationMs={}", poolName, taskId, taskName, traceId, System.currentTimeMillis() - startedAt);
         }
 
         final void failed(long startedAt, Throwable exception) {
-            log.error("[thread-pool] task failed: pool={}, taskId={}, taskName={}, traceId={}, durationMs={}",
-                    poolName, taskId, taskName, traceId, System.currentTimeMillis() - startedAt, exception);
+            log.error("[thread-pool] task failed: pool={}, taskId={}, taskName={}, traceId={}, durationMs={}", poolName, taskId, taskName, traceId, System.currentTimeMillis() - startedAt, exception);
         }
     }
 
@@ -170,9 +166,7 @@ public final class TraceableThreadPoolExecutor extends ThreadPoolExecutor {
 
         @Override
         public void rejectedExecution(Runnable task, ThreadPoolExecutor executor) {
-            log.error("[thread-pool] task rejected: pool={}, activeCount={}, poolSize={}, queueSize={}, completedTaskCount={}, shutdown={}",
-                    poolName, executor.getActiveCount(), executor.getPoolSize(), executor.getQueue().size(),
-                    executor.getCompletedTaskCount(), executor.isShutdown());
+            log.error("[thread-pool] task rejected: pool={}, activeCount={}, poolSize={}, queueSize={}, completedTaskCount={}, shutdown={}", poolName, executor.getActiveCount(), executor.getPoolSize(), executor.getQueue().size(), executor.getCompletedTaskCount(), executor.isShutdown());
             throw new RejectedExecutionException("线程池任务被拒绝：" + poolName);
         }
     }

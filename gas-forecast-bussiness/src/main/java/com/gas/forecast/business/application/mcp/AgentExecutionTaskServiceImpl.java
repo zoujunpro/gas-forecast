@@ -1,7 +1,6 @@
 package com.gas.forecast.business.application.mcp;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.gas.forecast.business.application.mcp.AgentExecutionTaskService;
 import com.gas.forecast.common.core.BusinessException;
 import com.gas.forecast.common.security.context.SecurityContextHolder;
 import com.gas.forecast.common.util.TextUtils;
@@ -28,8 +27,7 @@ public class AgentExecutionTaskServiceImpl implements AgentExecutionTaskService 
     @Override
     public Object status(String taskNo, boolean includeRecovery) {
         ExecutionTaskTb task = owned(taskNo);
-        List<ExecutionTaskDetailTb> details = executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery()
-                .eq(ExecutionTaskDetailTb::getTaskNo, taskNo).orderByAsc(ExecutionTaskDetailTb::getDetailNo));
+        List<ExecutionTaskDetailTb> details = executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery().eq(ExecutionTaskDetailTb::getTaskNo, taskNo).orderByAsc(ExecutionTaskDetailTb::getDetailNo));
         Map<String, Long> summary = new LinkedHashMap<>();
         summary.put("total", (long) details.size());
         summary.put("pending", details.stream().filter(item -> "PENDING".equals(item.getStatus()) || "WAITING_FORECAST".equals(item.getStatus())).count());
@@ -38,33 +36,35 @@ public class AgentExecutionTaskServiceImpl implements AgentExecutionTaskService 
         summary.put("failed", details.stream().filter(item -> "FAILED".equals(item.getStatus())).count());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("taskNo", task.getTaskNo());
-        result.put("dimensionType", task.getDimensionType()); result.put("status", task.getStatus());
-        result.put("currentStepCode", task.getCurrentStepCode()); result.put("errorCode", task.getErrorCode());
-        result.put("errorMessage", task.getErrorMessage()); result.put("summary", summary);
-        result.put("details", details); result.put("nextAction", terminal(task.getStatus()) ? "NONE" : "WAIT");
+        result.put("dimensionType", task.getDimensionType());
+        result.put("status", task.getStatus());
+        result.put("currentStepCode", task.getCurrentStepCode());
+        result.put("errorCode", task.getErrorCode());
+        result.put("errorMessage", task.getErrorMessage());
+        result.put("summary", summary);
+        result.put("details", details);
+        result.put("nextAction", terminal(task.getStatus()) ? "NONE" : "WAIT");
         return result;
     }
 
     @Override
     public Object steps(String taskNo, boolean includeBusinessSteps, boolean includeAttempts) {
         ExecutionTaskTb task = owned(taskNo);
-        List<String> detailNos = executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery()
-                .select(ExecutionTaskDetailTb::getDetailNo).eq(ExecutionTaskDetailTb::getTaskNo, taskNo))
-                .stream().map(ExecutionTaskDetailTb::getDetailNo).toList();
-        List<AgentRunEventTb> events = task.getRunNo() == null ? List.of() : agentRunEventTbMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery()
-                .eq(AgentRunEventTb::getRunNo, task.getRunNo())
-                .in(!detailNos.isEmpty(), AgentRunEventTb::getTaskDetailNo, detailNos)
-                .orderByAsc(AgentRunEventTb::getId));
+        List<String> detailNos = executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery().select(ExecutionTaskDetailTb::getDetailNo).eq(ExecutionTaskDetailTb::getTaskNo, taskNo)).stream().map(ExecutionTaskDetailTb::getDetailNo).toList();
+        List<AgentRunEventTb> events = task.getRunNo() == null ? List.of() : agentRunEventTbMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery().eq(AgentRunEventTb::getRunNo, task.getRunNo()).in(!detailNos.isEmpty(), AgentRunEventTb::getTaskDetailNo, detailNos).orderByAsc(AgentRunEventTb::getId));
         return Map.of("taskNo", taskNo, "events", events);
     }
 
     private ExecutionTaskTb owned(String taskNo) {
-        if (!TextUtils.hasText(taskNo)) throw new BusinessException("taskNo不能为空");
-        ExecutionTaskTb task = executionTaskTbMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
-                .eq(ExecutionTaskTb::getTaskNo, taskNo).eq(ExecutionTaskTb::getCreatedBy, String.valueOf(SecurityContextHolder.getUserId())).last("limit 1"));
-        if (task == null) throw new BusinessException("任务不存在或无权访问");
+        if (!TextUtils.hasText(taskNo))
+            throw new BusinessException("taskNo不能为空");
+        ExecutionTaskTb task = executionTaskTbMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery().eq(ExecutionTaskTb::getTaskNo, taskNo).eq(ExecutionTaskTb::getCreatedBy, String.valueOf(SecurityContextHolder.getUserId())).last("limit 1"));
+        if (task == null)
+            throw new BusinessException("任务不存在或无权访问");
         return task;
     }
 
-    private boolean terminal(String status) { return "COMPLETED".equals(status) || "FAILED".equals(status) || "CANCELLED".equals(status); }
+    private boolean terminal(String status) {
+        return "COMPLETED".equals(status) || "FAILED".equals(status) || "CANCELLED".equals(status);
+    }
 }

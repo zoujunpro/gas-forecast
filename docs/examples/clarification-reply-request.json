@@ -1,0 +1,327 @@
+
+{
+  // ==================== 1. 请求基本信息 ====================
+
+  // 会话编号：整个聊天会话保持不变
+  "conversationNo": "AICHAT-20261111-0001",
+
+  // 当前对话轮次：用户每次输入生成新的 Turn
+  // 当前是第二轮，用户正在回答上一轮的澄清问题
+  "turnId": "TURN-20261111-0002",
+
+  // 当前 Agent 执行编号
+  // 假设每次 Java 调用 Python 都创建新的 Run
+  "runNo": "RUN-20261111-0002",
+
+  // 当前用户输入内容
+  "message": "30天",
+
+  // 输入类型：CLARIFICATION_REPLY 表示澄清回复
+  // 与普通用户新请求区分
+  "inputType": "CLARIFICATION_REPLY",
+
+  // 本次回复所对应的澄清交互 ID
+  "interactionId": "INT-20261111-0001",
+
+  // 当前回复指向的上一轮对话
+  // 第一次澄清时，通常也是原始问题所在 Turn
+  "replyToTurnId": "TURN-20261111-0001",
+
+  // 智能体编码：短期客户预测智能体
+  "agentCode": "short-term",
+
+
+  // ==================== 2. 业务上下文 ====================
+
+  // 当前会话提供的业务维度上下文
+  // 注意：这里为空，不代表原始任务没有识别出客户
+  "businessContext": {
+    "regionCode": null,       // 地区编码
+    "regionName": null,       // 地区名称
+    "industryCode": null,     // 行业编码
+    "industryName": null,     // 行业名称
+    "customerCode": null,     // 客户编码
+    "customerName": null      // 客户名称
+  },
+
+
+  // ==================== 3. 会话上下文 ====================
+
+  "conversationContext": {
+
+    // 历史会话摘要
+    // 当前为空，表示没有提供摘要
+    "summary": null,
+
+
+    // ==================== 3.1 待恢复操作 ====================
+
+    // 上一次 Agent 因缺少参数而中断的业务操作
+    // Java 将已保存的状态传给 Python，以便继续处理
+    "pendingOperation": {
+
+      // ---------- 3.1.1 业务恢复位置 ----------
+
+      // 当前交互编号、交互类型和提问轮次已经由请求外层字段表达，
+      // pendingOperation 内不再重复保存交互身份。
+
+      // 原始语义请求 ID，用于关联 semantics.requests 中的具体请求
+      "requestId": "R1",
+
+      // 用户回答后，Agent 从哪个处理阶段继续
+      "resumeFrom": "UNDERSTAND_REQUEST",
+
+
+      // ---------- 3.1.2 原始请求语义 ----------
+
+      // 上一轮 Python Agent 已识别的语义结果
+      // 澄清回复时可在此基础上补充信息
+      "semantics": {
+
+        // 原始输入被识别为新请求
+        // 注意：这是原始请求的语义，不是当前“30天”的语义
+        "dialogueAct": "NEW_REQUEST",
+
+        // 一个用户输入可能解析出多个业务请求
+        "requests": [
+          {
+
+            // 请求标识，与 pendingOperation.requestId 对应
+            "requestId": "R1",
+
+            // 业务意图：预测
+            "intent": "FORECAST",
+
+            // 预测场景：短期客户预测
+            "scenario": "short-term",
+
+            // 预测对象由用户明确指定
+            "targetSelection": "EXPLICIT",
+
+            // 原始请求与此前上下文的关系：新请求
+            "contextRelation": "NEW",
+
+            // 本次请求明确要求清除的参数
+            "clearParameters": [],
+
+            // 从原始用户问题中提取的实体名称
+            "entities": {
+
+              // 地区实体
+              "regions": [],
+
+              // 行业实体
+              "industries": [],
+
+              // 客户实体：用户明确提到“高邮安源”
+              "customers": [
+                "高邮安源"
+              ]
+            },
+
+            // 原始请求中的指代信息
+            // 例如“上次”“这个客户”等，当前为空
+            "references": {},
+
+            // 原始语义层解析出的参数
+            // 当前为空；已解析的业务参数保存在下方 parameters
+            "parameters": {},
+
+            // 该请求依赖的其他请求 ID
+            // 当前没有依赖
+            "dependsOn": []
+          }
+        ]
+      },
+
+
+      // ---------- 3.1.3 已解析的业务参数 ----------
+
+      // Agent 中断前已经确认的参数
+      // 澄清回复后应在这些参数基础上补全，而不是全部重新生成
+      "parameters": {
+
+        // 已识别并匹配的客户编码
+        "customerCode": "CUS-001",
+
+        // 客户名称
+        "customerName": "高邮安源",
+
+        // 预测时间单位：天
+        "forecastUnit": "DAY",
+
+        // 预测频率：每日
+        "forecastFrequency": "DAILY",
+
+        // 所属会话编号
+        "conversationNo": "AICHAT-20261111-0001",
+
+        // 智能体编码
+        "agentCode": "short-term",
+
+        // 预测对象维度：客户
+        "dimensionType": "CUSTOMER",
+
+        // 预测目标集合，支持单客户或批量对象
+        "targets": [
+          {
+            // 目标地区编码集合
+            "regionCodes": [],
+
+            // 目标行业编码集合
+            "industryCodes": [],
+
+            // 目标客户编码集合
+            "customerCodes": [
+              "CUS-001"
+            ]
+          }
+        ],
+
+        // 实体解析后的业务范围
+        "resolvedScope": {
+
+          // 匹配到的地区名称
+          "regionNames": [],
+
+          // 匹配到的行业名称
+          "industryNames": [],
+
+          // 匹配到的客户名称
+          "customerNames": [
+            "高邮安源"
+          ],
+
+          // 是否全部匹配成功
+          // 当前为 false，具体原因需要结合实体匹配逻辑判断
+          "allMatched": false
+        },
+
+        // 业务操作幂等键
+        // 用于避免同一业务操作重复执行
+        "idempotencyKey": "a9f8434017f74c699bf878c2626a12d4",
+
+        // 是否强制重新训练
+        "forceRetrain": false,
+
+        // 是否允许自动训练
+        "autoTrain": true,
+
+        // 训练策略：自动
+        "trainingPreference": "AUTO",
+
+        // 是否批量执行
+        "bulk": false,
+
+        // 已锁定参数
+        // 澄清时应避免无依据地覆盖这些参数
+        "_lockedParameters": [
+          "customerCode",
+          "customerName"
+        ],
+
+        // 已完成实体校验的参数
+        "_validatedEntityParameters": [
+          "customerCode"
+        ],
+
+        // 是否已经执行过实体批量解析
+        "_entityBatchResolved": true
+      },
+
+
+      // ---------- 3.1.4 待执行工具 ----------
+
+      // 原始任务准备调用的工具
+      // 因为参数缺失而暂未执行
+      "pendingTool": "forecast_start",
+
+
+      // ---------- 3.1.5 当前待解决的问题 ----------
+
+      // Agent 在上一轮发现的参数问题
+      "issues": [
+        {
+
+          // 问题原因：参数缺失
+          "reason": "PARAMETER_MISSING",
+
+          // 缺失字段：预测天数
+          "field": "forecastHorizon",
+
+          // 展示给用户的澄清问题
+          "message": "请补充需要预测的天数",
+
+          // 期望的输入类型：数字
+          "inputType": "NUMBER",
+
+          // 是否必须填写
+          "required": true,
+
+          // 候选选项
+          // 数字自由输入时可以为空
+          "options": [],
+
+          // 补充信息
+          "details": {
+
+            // 候选值
+            "candidates": [],
+
+            // 实体类型
+            // 当前缺失的是数值参数，不是业务实体
+            "entityType": null
+          }
+        }
+      ]
+    },
+
+
+    // ==================== 3.2 最近聊天消息 ====================
+
+    // Java 提供给 Python 的最近消息历史
+    // 当前包含第一轮用户问题和 Agent 澄清问题
+    "recentMessages": [
+      {
+
+        // 消息唯一 ID
+        "messageId": 10001,
+
+        // 所属对话轮次
+        "turnId": "TURN-20261111-0001",
+
+        // 消息角色：用户
+        "role": "USER",
+
+        // 原始用户输入
+        "content": "帮我预测高邮安源",
+
+        // 消息创建时间
+        "createdAt": "2026-11-11T14:00:00+08:00",
+
+        // 关联业务任务编号，当前为空
+        "taskNo": null
+      },
+      {
+
+        // 消息唯一 ID
+        "messageId": 10002,
+
+        // 与上一条用户消息属于同一轮对话
+        "turnId": "TURN-20261111-0001",
+
+        // 消息角色：助手
+        "role": "ASSISTANT",
+
+        // Agent 返回的澄清问题
+        "content": "请补充需要预测的天数",
+
+        // 消息创建时间
+        "createdAt": "2026-11-11T14:00:02+08:00",
+
+        // 关联业务任务编号，当前为空
+        "taskNo": null
+      }
+    ]
+  }
+}

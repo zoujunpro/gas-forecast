@@ -1,0 +1,23 @@
+<component name="ProjectCodeStyleConfiguration">
+  <code_scheme name="Project" version="173">
+    <option name="RIGHT_MARGIN" value="500" />
+    <JavaCodeStyleSettings>
+      <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
+      <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
+    </JavaCodeStyleSettings>
+    <codeStyleSettings language="JAVA">
+      <option name="KEEP_LINE_BREAKS" value="false" />
+      <option name="KEEP_FIRST_COLUMN_COMMENT" value="true" />
+      <option name="WRAP_LONG_LINES" value="false" />
+      <option name="METHOD_PARAMETERS_WRAP" value="0" />
+      <option name="CALL_PARAMETERS_WRAP" value="0" />
+      <option name="METHOD_CALL_CHAIN_WRAP" value="0" />
+      <option name="EXTENDS_LIST_WRAP" value="0" />
+      <option name="THROWS_LIST_WRAP" value="0" />
+      <option name="BINARY_OPERATION_WRAP" value="0" />
+      <option name="TERNARY_OPERATION_WRAP" value="0" />
+      <option name="ASSIGNMENT_WRAP" value="0" />
+      <option name="ARRAY_INITIALIZER_WRAP" value="0" />
+    </codeStyleSettings>
+  </code_scheme>
+</component>

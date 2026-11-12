@@ -15,7 +15,7 @@ def test_short_term_policy_resolves_common_and_available_industry_features():
 
     selected = {item["code"] for item in plan.selected_features}
     assert {"CALENDAR_V1", "HOLIDAY_CN_V1", "PRODUCTION_PLAN_V1"} <= selected
-    assert "LAG_V1" not in selected
+    assert {"LAG_V1", "TARGET_CHANGE_V1"} <= selected
     assert "ROLLING_V1" not in selected
     assert any(item["code"] == "MAINTENANCE_STATUS_V1" for item in plan.skipped_features)
     dynamic = next(spec for spec in plan.specs if spec.code == "DYNAMIC_PASSTHROUGH_V1")

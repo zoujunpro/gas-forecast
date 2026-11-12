@@ -9,12 +9,15 @@ public class MigrateExecutionStepScopeSql {
     public static void main(String[] args) throws Exception {
         try (Connection c = DriverManager.getConnection(URL, "root", "mysql2026"); Statement s = c.createStatement()) {
             if (column(s, "execution_task_detail_tb", "task_id")) {
-                dropIndex(s, "execution_task_detail_tb", "uk_task_detail_seq"); dropIndex(s, "execution_task_detail_tb", "uk_task_target");
+                dropIndex(s, "execution_task_detail_tb", "uk_task_detail_seq");
+                dropIndex(s, "execution_task_detail_tb", "uk_task_target");
                 s.execute("alter table execution_task_detail_tb drop column task_id");
                 s.execute("alter table execution_task_detail_tb add unique key uk_task_detail_seq (task_no, detail_seq), add unique key uk_task_target (task_no, dimension_type, region_code, industry_code, customer_code)");
             }
             if (column(s, "execution_step_tb", "task_no")) {
-                dropIndex(s, "execution_step_tb", "uk_task_attempt_step"); dropIndex(s, "execution_step_tb", "idx_task_order"); dropIndex(s, "execution_step_tb", "idx_task_status");
+                dropIndex(s, "execution_step_tb", "uk_task_attempt_step");
+                dropIndex(s, "execution_step_tb", "idx_task_order");
+                dropIndex(s, "execution_step_tb", "idx_task_status");
                 s.execute("alter table execution_step_tb drop column task_no");
             }
             if (!column(s, "execution_step_tb", "task_detail_no"))
@@ -28,8 +31,19 @@ public class MigrateExecutionStepScopeSql {
             System.out.println("execution task detail and step schema ready");
         }
     }
-    private static boolean column(Statement s, String t, String n) throws Exception { return exists(s, "columns", "table_name='"+t+"' and column_name='"+n+"'"); }
-    private static boolean index(Statement s, String t, String n) throws Exception { return exists(s, "statistics", "table_name='"+t+"' and index_name='"+n+"'"); }
-    private static void dropIndex(Statement s, String t, String n) throws Exception { if (index(s,t,n)) s.execute("alter table "+t+" drop index "+n); }
-    private static boolean exists(Statement s, String kind, String where) throws Exception { try (ResultSet r=s.executeQuery("select 1 from information_schema."+kind+" where table_schema=database() and "+where+" limit 1")) { return r.next(); } }
+    private static boolean column(Statement s, String t, String n) throws Exception {
+        return exists(s, "columns", "table_name='" + t + "' and column_name='" + n + "'");
+    }
+    private static boolean index(Statement s, String t, String n) throws Exception {
+        return exists(s, "statistics", "table_name='" + t + "' and index_name='" + n + "'");
+    }
+    private static void dropIndex(Statement s, String t, String n) throws Exception {
+        if (index(s, t, n))
+            s.execute("alter table " + t + " drop index " + n);
+    }
+    private static boolean exists(Statement s, String kind, String where) throws Exception {
+        try (ResultSet r = s.executeQuery("select 1 from information_schema." + kind + " where table_schema=database() and " + where + " limit 1")) {
+            return r.next();
+        }
+    }
 }

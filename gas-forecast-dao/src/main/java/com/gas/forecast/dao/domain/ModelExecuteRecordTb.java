@@ -14,7 +14,9 @@ import lombok.Data;
 /**
  * 一次预测任务明细的模型执行记录。
  *
- * <p>训练、回测与未来预测共享 {@code forecastNo}，模型产物保存于该编号对应的目录。</p>
+ * <p>
+ * 训练、回测与未来预测共享 {@code forecastNo}，模型产物保存于该编号对应的目录。
+ * </p>
  */
 @Data
 @TableName("model_execute_record_tb")

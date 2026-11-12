@@ -34,6 +34,22 @@ features:
     enabled: true
     default_required: true
 
+  - code: TARGET_CHANGE_V1
+    name: 历史目标变化特征
+    description: 基于预测日前已知目标生成短期、周度和月度差值及安全截断比例。
+    category: COMMON
+    method_code: TARGET_CHANGE_V1
+    enabled: true
+    default_required: true
+
+  - code: FORECAST_ERROR_HISTORY_V1
+    name: 历史生产预测偏差
+    description: 使用已结算日期的生产预测与实际值生成偏差滞后及滚动统计；等待输入契约提供历史预测快照。
+    category: COMMON
+    method_code: FORECAST_ERROR_HISTORY_V1
+    enabled: false
+    default_required: false
+
   - code: HOLIDAY_V1
     name: 法定节假日特征
     description: 法定节假日、调休工作日及节前节后标记，后续接入节假日日历实现。

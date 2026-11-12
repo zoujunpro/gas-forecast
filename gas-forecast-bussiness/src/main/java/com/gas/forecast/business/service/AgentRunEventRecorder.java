@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 /**
  * Java 业务层统一过程事件记录器。
  *
- * <p>业务服务只描述自己实际开始和完成的操作；事件记录异常不能影响主业务。</p>
+ * <p>
+ * 业务服务只描述自己实际开始和完成的操作；事件记录异常不能影响主业务。
+ * </p>
  */
 @Slf4j
 @Component
@@ -17,7 +19,8 @@ public class AgentRunEventRecorder {
     private final AgentRunEventService eventService;
 
     public Long start(String runNo, String eventCode, String message, String forecastNo, String taskDetailNo) {
-        if (!TextUtils.hasText(runNo)) return null;
+        if (!TextUtils.hasText(runNo))
+            return null;
         try {
             return eventService.startInternal(runNo, eventCode, message, forecastNo, taskDetailNo);
         } catch (RuntimeException exception) {
@@ -37,7 +40,8 @@ public class AgentRunEventRecorder {
 
     /** 更新同一条运行事件的真实进展，同时作为长任务心跳刷新。 */
     public void progress(Long eventId, String message, String eventDataJson) {
-        if (eventId == null) return;
+        if (eventId == null)
+            return;
         try {
             eventService.updateInternal(eventId, "RUNNING", message, eventDataJson, null, null);
         } catch (RuntimeException exception) {
@@ -49,9 +53,9 @@ public class AgentRunEventRecorder {
         complete(eventId, false, message, null, errorCode, error == null ? null : error.getMessage());
     }
 
-    private void complete(Long eventId, boolean success, String message, String eventDataJson,
-            String errorCode, String errorMessage) {
-        if (eventId == null) return;
+    private void complete(Long eventId, boolean success, String message, String eventDataJson, String errorCode, String errorMessage) {
+        if (eventId == null)
+            return;
         try {
             eventService.completeInternal(eventId, success, message, eventDataJson, errorCode, errorMessage);
         } catch (RuntimeException exception) {

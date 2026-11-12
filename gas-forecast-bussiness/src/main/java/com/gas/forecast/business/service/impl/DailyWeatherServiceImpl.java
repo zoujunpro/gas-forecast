@@ -39,8 +39,7 @@ public class DailyWeatherServiceImpl implements DailyWeatherService {
         LambdaQueryWrapper<DataRegionWeatherDailyTb> query = Wrappers.lambdaQuery();
         if (TextUtils.hasText(request.getKeyword())) {
             String keyword = request.getKeyword().trim();
-            query.and(w -> w.like(DataRegionWeatherDailyTb::getRegionName, keyword).or().like(DataRegionWeatherDailyTb::getRegionCode, keyword).or()
-                    .like(DataRegionWeatherDailyTb::getSourceCode, keyword).or().like(DataRegionWeatherDailyTb::getWeatherVersion, keyword));
+            query.and(w -> w.like(DataRegionWeatherDailyTb::getRegionName, keyword).or().like(DataRegionWeatherDailyTb::getRegionCode, keyword).or().like(DataRegionWeatherDailyTb::getSourceCode, keyword).or().like(DataRegionWeatherDailyTb::getWeatherVersion, keyword));
         }
         if (TextUtils.hasText(request.getRegionCode()))
             query.eq(DataRegionWeatherDailyTb::getRegionCode, request.getRegionCode().trim());
@@ -128,9 +127,7 @@ public class DailyWeatherServiceImpl implements DailyWeatherService {
     }
 
     private void ensureUnique(DataRegionWeatherDailyTb entity, Long excludeId) {
-        LambdaQueryWrapper<DataRegionWeatherDailyTb> query = Wrappers.<DataRegionWeatherDailyTb>lambdaQuery().eq(DataRegionWeatherDailyTb::getRegionCode, entity.getRegionCode())
-                .eq(DataRegionWeatherDailyTb::getStatDate, entity.getStatDate()).eq(DataRegionWeatherDailyTb::getWeatherType, entity.getWeatherType())
-                .eq(DataRegionWeatherDailyTb::getWeatherVersion, entity.getWeatherVersion()).eq(DataRegionWeatherDailyTb::getSourceCode, entity.getSourceCode());
+        LambdaQueryWrapper<DataRegionWeatherDailyTb> query = Wrappers.<DataRegionWeatherDailyTb>lambdaQuery().eq(DataRegionWeatherDailyTb::getRegionCode, entity.getRegionCode()).eq(DataRegionWeatherDailyTb::getStatDate, entity.getStatDate()).eq(DataRegionWeatherDailyTb::getWeatherType, entity.getWeatherType()).eq(DataRegionWeatherDailyTb::getWeatherVersion, entity.getWeatherVersion()).eq(DataRegionWeatherDailyTb::getSourceCode, entity.getSourceCode());
         if (excludeId != null)
             query.ne(DataRegionWeatherDailyTb::getId, excludeId);
         if (mapper.selectCount(query) > 0)

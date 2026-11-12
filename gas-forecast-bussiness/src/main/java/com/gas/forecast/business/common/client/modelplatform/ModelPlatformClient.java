@@ -39,8 +39,8 @@ public class ModelPlatformClient {
     }
 
     /**
-     * 一次完成训练、回测与未来预测的统一接口。
-     * 调用方传入 forecast_no、history_dataset 和 future_dataset，返回同一 forecast_no 下的完整结果。
+     * 一次完成训练、回测与未来预测的统一接口。 调用方传入 forecast_no、history_dataset 和 future_dataset，返回同一
+     * forecast_no 下的完整结果。
      */
     public JsonNode executeForecast(JsonNode request) {
         return successfulData(postJson(executeUrl, request, "统一模型预测执行失败", trainingTimeoutMs), "统一模型预测执行失败");

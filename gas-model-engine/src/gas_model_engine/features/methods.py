@@ -169,6 +169,11 @@ class ChinaHolidayFeatureMethod:
                     "days_after_holiday",
                     "days_to_cny",
                     "days_to_national_day",
+                    "holiday_day_index",
+                    "holiday_total_days",
+                    "days_until_holiday_end",
+                    "days_since_holiday_end",
+                    "is_long_holiday_window",
                 ],
             )
         )
@@ -306,6 +311,44 @@ class RollingFeatureMethod:
         return _copy(train_data, train), _copy(future_data, future)
 
 
+class TargetChangeFeatureMethod:
+    """生成目标的短期、周度和月度变化；只使用预测日之前的目标。"""
+
+    metadata = MethodMetadata("TARGET_CHANGE_V1", "目标变化特征")
+
+    def transform(self, train_data, future_data, params):
+        if train_data.target is None:
+            raise ValueError("TARGET_CHANGE_V1需要历史目标")
+        periods = sorted({int(value) for value in params.get("periods", [1, 7, 28])})
+        if not periods or min(periods) < 1:
+            raise ValueError("change periods必须为正整数")
+        include_ratio = bool(params.get("include_ratio", True))
+        ratio_clip = float(params.get("ratio_clip", 3.0))
+        history = train_data.target.reset_index(drop=True).astype(float)
+        train = train_data.features.copy()
+        future = future_data.features.copy()
+        extended = pd.concat(
+            [history, pd.Series([np.nan] * len(future), dtype=float)], ignore_index=True
+        ).ffill()
+
+        def add(frame, series, offset=0):
+            latest = series.shift(1)
+            for period in periods:
+                reference = series.shift(period + 1)
+                diff_name = f"target_diff_{period}"
+                ratio_name = f"target_change_ratio_{period}"
+                diff = latest - reference
+                frame[diff_name] = diff.iloc[offset : offset + len(frame)].to_numpy()
+                if include_ratio:
+                    denominator = reference.abs().clip(lower=1e-6)
+                    ratio = (diff / denominator).clip(-ratio_clip, ratio_clip)
+                    frame[ratio_name] = ratio.iloc[offset : offset + len(frame)].to_numpy()
+
+        add(train, history)
+        add(future, extended, len(history))
+        return _copy(train_data, train), _copy(future_data, future)
+
+
 def create_default_feature_registry() -> FeatureMethodRegistry:
     return FeatureMethodRegistry(
         [
@@ -315,5 +358,6 @@ def create_default_feature_registry() -> FeatureMethodRegistry:
             ShortTermWeatherFeatureMethod(),
             LagFeatureMethod(),
             RollingFeatureMethod(),
+            TargetChangeFeatureMethod(),
         ]
     )

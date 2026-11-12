@@ -54,17 +54,11 @@ public class McpServerController {
      *            客户端声明的MCP协议版本
      */
     @PostMapping(path = "${gas.forecast.mcp.endpoint:/mcp}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<JsonRpcResponse<?>> handle(
-            @Valid @RequestBody JsonRpcRequest request,
-            @RequestHeader(value = "MCP-Protocol-Version", required = false) String protocolVersion,
-            @RequestHeader(value = "x-user", required = false) String userId,
-            @RequestHeader(value = "x-traceId", required = false) String traceId,
-            @RequestHeader(value = "X-Agent-Run-No", required = false) String agentRunNo) {
+    public ResponseEntity<JsonRpcResponse<?>> handle(@Valid @RequestBody JsonRpcRequest request, @RequestHeader(value = "MCP-Protocol-Version", required = false) String protocolVersion, @RequestHeader(value = "x-user", required = false) String userId, @RequestHeader(value = "x-traceId", required = false) String traceId, @RequestHeader(value = "X-Agent-Run-No", required = false) String agentRunNo) {
         JsonNode id = request.id();
         String method = request.method();
         String effectiveTraceId = TextUtils.hasText(traceId) ? traceId : MDC.get("x-traceId");
-        LOGGER.info("event=mcp_request_started user_id={} trace_id={} method={} request_id={}",
-                TextUtils.hasText(userId) ? userId : "-", TextUtils.hasText(effectiveTraceId) ? effectiveTraceId : "-", method, id);
+        LOGGER.info("event=mcp_request_started user_id={} trace_id={} method={} request_id={}", TextUtils.hasText(userId) ? userId : "-", TextUtils.hasText(effectiveTraceId) ? effectiveTraceId : "-", method, id);
         if (!"2.0".equals(request.jsonrpc()))
             return jsonRpcError(id, -32600, "INVALID_REQUEST", "JSON-RPC版本必须为2.0");
         if (method.startsWith("notifications/"))
@@ -78,8 +72,7 @@ public class McpServerController {
             case "tools/call" -> callTool(id, request.params(), agentRunNo);
             default -> jsonRpcError(id, -32601, "METHOD_NOT_FOUND", "不支持的方法：" + method);
         };
-        LOGGER.info("event=mcp_request_completed user_id={} trace_id={} method={} request_id={} status={}",
-                TextUtils.hasText(userId) ? userId : "-", TextUtils.hasText(effectiveTraceId) ? effectiveTraceId : "-", method, id, response.getStatusCode().value());
+        LOGGER.info("event=mcp_request_completed user_id={} trace_id={} method={} request_id={} status={}", TextUtils.hasText(userId) ? userId : "-", TextUtils.hasText(effectiveTraceId) ? effectiveTraceId : "-", method, id, response.getStatusCode().value());
         return response;
     }
 

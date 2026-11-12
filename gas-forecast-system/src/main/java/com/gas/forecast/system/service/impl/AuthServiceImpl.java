@@ -96,9 +96,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private List<AuthMenuResponse> buildChildren(Long parentId, Map<Long, List<SysPermissionTb>> byParent) {
-        return byParent.getOrDefault(parentId, List.of()).stream().sorted(Comparator.comparing(SysPermissionTb::getSortNo).thenComparing(SysPermissionTb::getId))
-                .map(item -> new AuthMenuResponse(item.getId(), item.getParentId(), item.getPermissionName(), item.getPath(), item.getComponent(), item.getIcon(), item.getSortNo(), item.getHidden(),
-                        new ArrayList<>(buildChildren(item.getId(), byParent))))
-                .toList();
+        return byParent.getOrDefault(parentId, List.of()).stream().sorted(Comparator.comparing(SysPermissionTb::getSortNo).thenComparing(SysPermissionTb::getId)).map(item -> new AuthMenuResponse(item.getId(), item.getParentId(), item.getPermissionName(), item.getPath(), item.getComponent(), item.getIcon(), item.getSortNo(), item.getHidden(), new ArrayList<>(buildChildren(item.getId(), byParent)))).toList();
     }
 }

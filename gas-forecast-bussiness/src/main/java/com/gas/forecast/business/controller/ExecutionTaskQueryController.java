@@ -27,8 +27,7 @@ public class ExecutionTaskQueryController {
     }
 
     @GetMapping("/{taskNo}/details")
-    public ResponseResult<Map<String, Object>> details(@PathVariable String taskNo, @RequestParam(defaultValue = "1") long pageNo,
-            @RequestParam(defaultValue = "20") long pageSize, @RequestParam(required = false) String status) {
+    public ResponseResult<Map<String, Object>> details(@PathVariable String taskNo, @RequestParam(defaultValue = "1") long pageNo, @RequestParam(defaultValue = "20") long pageSize, @RequestParam(required = false) String status) {
         return ResponseResult.success(executionTaskQueryService.details(taskNo, pageNo, pageSize, status));
     }
 

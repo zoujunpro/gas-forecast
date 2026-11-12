@@ -9,11 +9,9 @@ from gas_forecast_agent.presentation import PresentationPlanner
 from gas_forecast_agent.schemas import (
     AgentRuntimeRequest,
     AgentRuntimeResponse,
-    AgentType,
     PresentationResponse,
     SkillSelectionResponse,
 )
-from gas_forecast_agent.skills import SkillDefinition
 from gas_forecast_agent.workflow_nodes.common import elapsed_ms
 from gas_forecast_agent.workflow_nodes.interactions import _interaction_details
 from gas_forecast_agent.workflow_nodes.memory_patch import memory_patch_for
@@ -58,7 +56,7 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
     interaction = _interaction_details(request, result, understanding.semantics)
     response = AgentRuntimeResponse(
         conversation_no=request.conversation_no,
-        agent_type=resolve_agent_type(request, skill),
+        agent_type=request.agent_code,
         intent_code=(
             understanding.semantics.intent.value
             if understanding.semantics.intent is not None
@@ -112,24 +110,6 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
         elapsed_ms(state.timing.started_at),
     )
     return {"response": response}
-
-
-
-
-def resolve_agent_type(
-    request: AgentRuntimeRequest,
-    skill: SkillDefinition,
-) -> AgentType | None:
-    """没有显式 Agent 类型时，根据预测业务语义补全。"""
-    if request.agent_type is not None:
-        return request.agent_type
-    if skill.name != "customer-gas-forecast":
-        return None
-    if "冬季" in request.message or "保供" in request.message:
-        return AgentType.WINTER_SUPPLY
-    if "月度" in request.message or "销量" in request.message:
-        return AgentType.MONTHLY_SALES
-    return AgentType.SHORT_TERM
 
 
 def training_result_summary(training: dict[str, Any]) -> str:

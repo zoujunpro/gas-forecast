@@ -71,16 +71,9 @@ def pending_memory(
     """按当前 pendingOperation 协议构造一轮尚未完成的操作。"""
     return ConversationMemory(
         pending_operation=PendingOperation(
-            interaction=PendingInteraction(
-                interaction_id="INT-TEST-1",
-                interaction_type=interaction_type,
-                source_turn_id="TURN-TEST-1",
-                reason=ClarificationReason.PARAMETER_MISSING,
-                resume_from="PlanValidator",
-            ),
-            semantics=RequestSemantics(intent=SkillIntent.FORECAST),
-            parameters=OperationParameters.model_validate(parameters),
-            pending_tool=pending_tool,
+            original_message="预测高邮安源",
+            action=pending_tool,
+            arguments=OperationParameters.model_validate(parameters),
         ),
     )
 
@@ -907,24 +900,6 @@ def test_router_uses_skill_from_structured_model_understanding() -> None:
     assert selection.skill_name == "business-data-query"
     assert selection.confidence == 0.8
     assert selection.reason == "由结构化请求 R1 的意图直接选择。"
-
-
-def test_latest_forecast_reference_uses_most_recent_success_only() -> None:
-    history = [
-        {"references": [{"referenceType": "FORECAST", "referenceNo": "FORECAST-1", "status": "SUCCESS"}]},
-        {"references": [{"referenceType": "FORECAST", "referenceNo": "FORECAST-2", "status": "FAILED"}]},
-        {"references": [{"referenceType": "FORECAST", "referenceNo": "FORECAST-3", "status": "RUNNING"}]},
-    ]
-
-    assert ActionExecutor._latest_forecast_reference(history) == "FORECAST-1"
-
-
-def test_latest_forecast_reference_returns_none_without_success() -> None:
-    history = [{"references": [
-        {"referenceType": "FORECAST", "referenceNo": "FORECAST-2", "status": "FAILED"},
-    ]}]
-
-    assert ActionExecutor._latest_forecast_reference(history) is None
 
 
 def test_forecast_result_accepts_persisted_analysis_questions() -> None:

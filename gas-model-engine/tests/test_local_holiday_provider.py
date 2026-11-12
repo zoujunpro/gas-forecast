@@ -26,3 +26,32 @@ def test_local_holiday_provider_distinguishes_holiday_and_makeup_workday():
 
     assert calendar.iloc[2]["is_workday"] == 1
     assert calendar.iloc[3]["holiday_calendar_confirmed"] == 0
+
+
+def test_long_holiday_window_covers_two_days_before_and_after_actual_holiday():
+    calendar = LocalHolidayProvider().build_calendar(
+        pd.to_datetime(
+            [
+                "2026-09-22",
+                "2026-09-29",
+                "2026-10-01",
+                "2026-10-07",
+                "2026-10-09",
+                "2026-10-10",
+            ]
+        )
+    )
+
+    assert calendar["is_long_holiday_window"].tolist() == [0, 1, 1, 1, 1, 0]
+
+
+def test_prophet_long_holiday_event_uses_full_holiday_plus_two_day_window():
+    events = LocalHolidayProvider().build_prophet_events()
+    national_day = events[
+        (events["holiday"] == "National Day")
+        & (events["ds"] == pd.Timestamp("2026-10-01"))
+    ].iloc[0]
+
+    assert national_day["lower_window"] == -2
+    # 2026年国庆实际连续放假7天：相对10月1日覆盖到10月9日，即+8。
+    assert national_day["upper_window"] == 8

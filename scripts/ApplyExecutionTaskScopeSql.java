@@ -8,8 +8,7 @@ public class ApplyExecutionTaskScopeSql {
     private static final String URL = "jdbc:mysql://127.0.0.1:3306/gas_data?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true";
 
     public static void main(String[] args) throws Exception {
-        try (Connection connection = DriverManager.getConnection(URL, "root", "mysql2026");
-                Statement statement = connection.createStatement()) {
+        try (Connection connection = DriverManager.getConnection(URL, "root", "mysql2026"); Statement statement = connection.createStatement()) {
             statement.execute("drop table execution_task_detail_tb");
             statement.execute("""
                     create table execution_task_detail_tb (

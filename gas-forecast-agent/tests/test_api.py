@@ -23,7 +23,6 @@ from gas_forecast_agent.main import (
 from gas_forecast_agent.mcp import McpClientError
 from gas_forecast_agent.operation_models import OperationParameters
 from gas_forecast_agent.schemas import (
-    AgentRuntimeMetadata,
     AgentRuntimeRequest,
     ClarificationReason,
 )
@@ -264,7 +263,7 @@ def internal_request(
         "businessContext": {"customerCode": "CUS-1", "customerName": "高邮安源"},
         "conversationContext": {
             "summary": None,
-            "memory": {},
+            "pendingOperation": None,
             "recentMessages": [],
         },
     }
@@ -330,19 +329,11 @@ def install_extractor(
 def test_plain_greeting_does_not_reuse_pending_operation(api_client: tuple[TestClient, FakeMcpClient, FakeEntityResolver]) -> None:
     client, mcp, _ = api_client
     request = internal_request("你好", turn_id="TURN-CHAT-1", run_no="RUN-CHAT-1", agent_code="short-term")
-    request["conversationContext"]["memory"] = {
-        "pendingOperation": {
-            "interaction": {
-                "interactionId": "INT-OLD",
-                "interactionType": "CLARIFICATION",
-                "sourceTurnId": "TURN-OLD",
-                "reason": "PARAMETER_MISSING",
-                "resumeFrom": "PlanValidator",
-            },
-            "semantics": semantics(SkillIntent.FORECAST, customers=["高邮安源"]).model_dump(by_alias=True),
-            "parameters": {"customerCodes": ["CUS-OLD"], "forecastHorizon": 30},
-            "pendingTool": "forecast_start",
-        },
+    request["conversationContext"]["pendingOperation"] = {
+            "originalMessage": "预测高邮安源",
+            "action": "forecast_start",
+            "arguments": {"customerCodes": ["CUS-OLD"], "forecastHorizon": 30},
+            "issues": [],
     }
 
     response = client.post("/api/v1/internal/chat", json=request)
@@ -350,12 +341,10 @@ def test_plain_greeting_does_not_reuse_pending_operation(api_client: tuple[TestC
     body = response.json()
     assert response.status_code == 200
     assert body["status"] == "SUCCESS"
-    assert body["intentCode"] == "CHAT"
-    assert body["skillCode"] == "general-chat"
     assert body["clarification"] is None
     assert [name for name, _ in mcp.calls].count("forecast_start") == 0
-    # 普通新消息不会恢复旧操作；Java 收到 null 后清理已过期的 pendingOperation。
-    assert body["memoryPatch"] == {"pendingOperation": None}
+    # 普通新消息不会恢复旧操作，也不会返回澄清恢复快照。
+    assert body["clarification"] is None
 
 
 def test_unknown_intent_returns_current_clarification_protocol(
@@ -370,11 +359,9 @@ def test_unknown_intent_returns_current_clarification_protocol(
     body = response.json()
     assert response.status_code == 200
     assert body["status"] == "WAITING"
-    assert body["intentCode"] == "CHAT"
-    assert body["skillCode"] == "general-chat"
-    assert body["clarification"]["interactionType"] == "CLARIFICATION"
     assert body["clarification"]["reason"] == "INTENT_AMBIGUOUS"
-    assert body["memoryPatch"]["pendingOperation"]["issues"][0]["field"] == "intent"
+    assert body["clarification"]["field"] == "intent"
+    assert body["clarification"]["pendingOperation"]["issues"][0]["field"] == "intent"
     assert mcp.calls == []
 
 
@@ -387,16 +374,11 @@ def test_model_receives_summary_history_page_context_and_current_memory(
     request = internal_request("查询客户", turn_id="TURN-CONTEXT-2", run_no="RUN-CONTEXT-2")
     request["conversationContext"] = {
         "summary": "用户上一轮查询了高邮安源。",
-        "memory": {
-            "currentBusinessContext": {"customerCode": "CUS-1", "customerName": "高邮安源"},
-        },
-        "recentMessages": [{
-            "messageId": 1,
-            "turnId": "TURN-CONTEXT-1",
-            "role": "ASSISTANT",
-            "content": "已找到高邮安源。",
-            "references": [],
-        }],
+            "pendingOperation": None,
+            "recentMessages": [{
+                "role": "ASSISTANT",
+                "content": "已找到高邮安源。",
+            }],
     }
 
     response = client.post("/api/v1/internal/chat", json=request)
@@ -406,9 +388,7 @@ def test_model_receives_summary_history_page_context_and_current_memory(
     assert context is not None
     assert context["summary"] == "用户上一轮查询了高邮安源。"
     assert context["recentMessages"] == [{"role": "assistant", "content": "已找到高邮安源。"}]
-    assert context["memory"] == {
-        "currentBusinessContext": {"customerCode": "CUS-1", "customerName": "高邮安源"},
-    }
+    assert "memory" not in context
     assert context["pageContext"] == {"customerCode": "CUS-1", "customerName": "高邮安源"}
 
 
@@ -428,7 +408,7 @@ def test_semantic_extraction_failure_has_distinct_error_code(
     # 非 SemanticExtractionError 的内部异常走统一失败分支。
     assert response.status_code == 200
     assert body["status"] == "FAILED"
-    assert body["errorCode"] == "AGENT_EXECUTION_ERROR"
+    assert body["error"]["code"] == "AGENT_EXECUTION_ERROR"
     assert mcp.calls == []
 
 
@@ -461,9 +441,10 @@ def test_compressed_summary_is_kept_with_recent_messages() -> None:
     request = AgentRuntimeRequest(
         turn_id="TURN-1",
         conversation_no="C-1",
+        run_no="RUN-1",
+        agent_code="general",
         message="继续",
         conversation_summary="用户此前选择了浙江地区。",
-        metadata=AgentRuntimeMetadata(run_no="RUN-1", agent_code="general"),
         history=[{"role": "user", "content": f"历史消息 {index}"} for index in range(10)],
     )
 
@@ -492,11 +473,7 @@ def test_task_and_forecast_references_are_extracted_from_current_result_shape() 
         "forecast_start",
     )
 
-    assert [(item.reference_type, item.reference_no) for item in references] == [
-        ("EXECUTION_TASK", "TASK-1"),
-        ("FORECAST", "FORECAST-1"),
-        ("FORECAST", "FORECAST-2"),
-    ]
+    assert [item.task_no for item in references] == ["TASK-1"]
 
 
 def test_text_clarification_then_direct_forecast_restores_pending_operation(
@@ -520,23 +497,21 @@ def test_text_clarification_then_direct_forecast_restores_pending_operation(
     ).json()
     assert first["status"] == "WAITING"
     assert first["clarification"]["reason"] == "PARAMETER_MISSING"
-    assert first["clarification"]["fields"][0]["parameterCode"] == "forecastHorizon"
-    pending_after_first = first["memoryPatch"]["pendingOperation"]
-    assert pending_after_first["parameters"]["customerCodes"] == ["CUS-1"]
-    assert "pendingAction" not in first["memoryPatch"]
+    assert first["clarification"]["field"] == "forecastHorizon"
+    pending_after_first = first["clarification"]["pendingOperation"]
+    assert pending_after_first["arguments"]["customerCodes"] == ["CUS-1"]
 
     second_request = internal_request("30天", turn_id="TURN-2", run_no="RUN-2", agent_code="short-term")
     second_request.update({
         "inputType": "CLARIFICATION_REPLY",
-        "interactionId": first["clarification"]["interactionId"],
-        "replyToTurnId": first["clarification"]["replyToTurnId"],
+        "interactionId": "INT-1",
+        "replyToTurnId": "TURN-1",
     })
-    second_request["conversationContext"]["memory"] = first["memoryPatch"]
+    second_request["conversationContext"]["pendingOperation"] = pending_after_first
     second = client.post("/api/v1/internal/chat", json=second_request).json()
 
     assert second["status"] == "SUCCESS"
     assert second["clarification"] is None
-    assert second["memoryPatch"] == {"pendingOperation": None}
     forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
     assert forecast_arguments["confirmed"] is True
     assert forecast_arguments["forecastHorizon"] == 30
@@ -563,19 +538,19 @@ def test_corrected_entity_name_is_resolved_again_from_plain_text(
     ).json()
     assert first["status"] == "WAITING"
     assert first["clarification"]["reason"] == "ENTITY_NOT_FOUND"
+    pending_after_first = first["clarification"]["pendingOperation"]
 
     second_request = internal_request("扬州中燃", turn_id="TURN-ENTITY-2", run_no="RUN-ENTITY-2")
     second_request.update({
         "inputType": "CLARIFICATION_REPLY",
-        "interactionId": first["clarification"]["interactionId"],
-        "replyToTurnId": first["clarification"]["replyToTurnId"],
+        "interactionId": "INT-ENTITY-1",
+        "replyToTurnId": "TURN-ENTITY-1",
     })
-    second_request["conversationContext"]["memory"] = first["memoryPatch"]
+    second_request["conversationContext"]["pendingOperation"] = pending_after_first
     second = client.post("/api/v1/internal/chat", json=second_request).json()
 
     assert second["status"] == "SUCCESS"
     assert second["clarification"] is None
-    assert second["memoryPatch"] == {"pendingOperation": None}
     assert [call["customerNames"] for call in resolver.calls] == [["不存在的客户"], ["扬州中燃"]]
     forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
     assert forecast_arguments["confirmed"] is True
@@ -609,7 +584,6 @@ def test_multiple_customers_are_validated_by_internal_entity_service_before_dire
     forecast_arguments = next(arguments for name, arguments in mcp.calls if name == "forecast_start")
     assert forecast_arguments["confirmed"] is True
     assert forecast_arguments["targets"][0]["customerCodes"] == ["CUS-1", "CUS-2"]
-    assert body["memoryPatch"] == {"pendingOperation": None}
 
 
 def test_legacy_answers_field_is_not_part_of_current_internal_protocol() -> None:
@@ -651,7 +625,7 @@ def test_mcp_failure_returns_structured_failed_agent_result(
 
     assert response.status_code == 200
     assert response.json()["status"] == "FAILED"
-    assert response.json()["errorCode"] == "AGENT_EXECUTION_ERROR"
+    assert response.json()["error"]["code"] == "AGENT_EXECUTION_ERROR"
 
 
 def test_customer_and_task_queries_use_read_only_skill(
@@ -675,9 +649,7 @@ def test_customer_and_task_queries_use_read_only_skill(
     ).json()
 
     assert customer["status"] == "SUCCESS"
-    assert customer["intentCode"] == "QUERY"
-    assert customer["skillCode"] == "business-data-query"
-    assert customer["executionResult"]["data"]["records"][0]["customerCode"] == "CUS-1"
+    execution = next(block["data"] for block in customer["blocks"] if block["type"] == "TABLE" and "resultType" in block["data"])
+    assert execution["data"]["records"][0]["customerCode"] == "CUS-1"
     assert task["status"] == "SUCCESS"
-    assert task["skillCode"] == "business-data-query"
     assert [name for name, _ in mcp.calls] == ["customer_list", "task_status_get"]

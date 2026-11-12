@@ -34,8 +34,10 @@ public class McpToolDispatcher {
      * 业务参数错误不可重试；未预期的运行时异常会标记为可重试。
      * </p>
      *
-     * @param toolName tools/list公布的工具名称
-     * @param arguments MCP客户端传入的工具参数，可为空
+     * @param toolName
+     *            tools/list公布的工具名称
+     * @param arguments
+     *            MCP客户端传入的工具参数，可为空
      * @return 统一的MCP工具执行结果
      */
     public McpToolResult invoke(String toolName, Map<String, Object> arguments) {
@@ -49,16 +51,12 @@ public class McpToolDispatcher {
             McpToolResult result = switch (toolName) {
                 case "region_list" -> success(toolName, "地区列表查询成功", queryService.regions(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "industry_list" -> success(toolName, "行业列表查询成功", queryService.industries(text(args, "keyword"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
-                case "customer_list" -> success(toolName, "客户列表查询成功",
-                        queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
+                case "customer_list" -> success(toolName, "客户列表查询成功", queryService.customers(text(args, "keyword"), text(args, "regionCode"), text(args, "industryCode"), integer(args, "pageNo"), integer(args, "pageSize"), bool(args, "fetchAll", false)));
                 case "forecast_start" -> success(toolName, "预测任务已受理", forecastService.start(forecastCommand(args, runNo)));
-                case "forecast_result_query" -> success(toolName, "已读取最近一次成功预测的结果和回测数据，正在分析",
-                        queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
-                case "forecast_result_by_no" -> success(toolName, "已读取本次预测的结果和回测数据，正在分析",
-                        queryService.forecastByNo(requiredText(args, "forecastNo"), bool(args, "includePoints", true)));
+                case "forecast_result_query" -> success(toolName, "已读取最近一次成功预测的结果和回测数据，正在分析", queryService.latestForecast(text(args, "customerCode"), text(args, "regionCode"), text(args, "industryCode"), text(args, "agentCode"), bool(args, "includePoints", true)));
+                case "forecast_result_by_no" -> success(toolName, "已读取本次预测的结果和回测数据，正在分析", queryService.forecastByNo(requiredText(args, "forecastNo"), bool(args, "includePoints", true)));
                 case "task_status_get" -> success(toolName, "任务状态查询成功", taskService.status(requiredText(args, "taskNo"), bool(args, "includeRecovery", true)));
-                case "task_steps_get" -> success(toolName, "任务步骤查询成功",
-                        taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));
+                case "task_steps_get" -> success(toolName, "任务步骤查询成功", taskService.steps(requiredText(args, "taskNo"), bool(args, "includeBusinessSteps", true), bool(args, "includeAttempts", false)));
                 default -> failure(toolName, "TOOL_NOT_FOUND", "未知工具：" + toolName, false);
             };
             eventRecorder.success(eventId, result.message());
@@ -78,18 +76,12 @@ public class McpToolDispatcher {
     private ForecastCommand forecastCommand(Map<String, Object> args, String runNo) {
         String dimensionType = requiredDimension(args);
         List<ExecutionTarget> targets = targets(args, dimensionType);
-        return new ForecastCommand(
-                text(args, "conversationNo"),
-                runNo,
-                defaultText(text(args, "agentCode"), "short-term"),
-                ExecutionDimensionTypeEnum.fromCode(dimensionType).orElseThrow(),
-                targets,
-                new ForecastOptions(text(args, "forecastStartDate"), integer(args, "forecastHorizon"), defaultText(text(args, "forecastUnit"), text(args, "forecastFrequency"))),
-                new TrainingDataRange(text(args, "historyStartDate"), text(args, "historyEndDate")),
-                new ExecutionOptions(bool(args, "confirmed", false)));
+        return new ForecastCommand(text(args, "conversationNo"), runNo, defaultText(text(args, "agentCode"), "short-term"), ExecutionDimensionTypeEnum.fromCode(dimensionType).orElseThrow(), targets, new ForecastOptions(text(args, "forecastStartDate"), integer(args, "forecastHorizon"), defaultText(text(args, "forecastUnit"), text(args, "forecastFrequency"))), new TrainingDataRange(text(args, "historyStartDate"), text(args, "historyEndDate")), new ExecutionOptions(bool(args, "confirmed", false)));
     }
 
-    private String eventCode(String toolName) { return toolName != null && toolName.endsWith("_list") ? "DATA_QUERY" : "TOOL_CALL"; }
+    private String eventCode(String toolName) {
+        return toolName != null && toolName.endsWith("_list") ? "DATA_QUERY" : "TOOL_CALL";
+    }
     private String startMessage(String toolName) {
         return switch (toolName == null ? "" : toolName) {
             case "forecast_result_by_no" -> "已确认本次需要分析的预测，正在读取相关数据。";
@@ -100,10 +92,12 @@ public class McpToolDispatcher {
 
     private List<ExecutionTarget> targets(Map<String, Object> args, String dimension) {
         Object raw = args.get("targets");
-        if (!(raw instanceof List<?> items) || items.isEmpty()) throw new BusinessException("targets不能为空");
+        if (!(raw instanceof List<?> items) || items.isEmpty())
+            throw new BusinessException("targets不能为空");
         List<ExecutionTarget> result = new java.util.ArrayList<>();
         for (Object item : items) {
-            if (!(item instanceof Map<?, ?> map)) throw new BusinessException("targets中的每项必须是对象");
+            if (!(item instanceof Map<?, ?> map))
+                throw new BusinessException("targets中的每项必须是对象");
             List<String> regions = values(map, "regionCodes");
             List<String> industries = values(map, "industryCodes");
             List<String> customers = values(map, "customerCodes");
@@ -114,8 +108,7 @@ public class McpToolDispatcher {
     }
 
     private void validateTarget(String dimension, List<String> regions, List<String> industries, List<String> customers) {
-        ExecutionDimensionTypeEnum type = ExecutionDimensionTypeEnum.fromCode(dimension)
-                .orElseThrow(() -> new BusinessException("dimensionType必须是CUSTOMER、REGION或INDUSTRY"));
+        ExecutionDimensionTypeEnum type = ExecutionDimensionTypeEnum.fromCode(dimension).orElseThrow(() -> new BusinessException("dimensionType必须是CUSTOMER、REGION或INDUSTRY"));
         if (type == ExecutionDimensionTypeEnum.REGION && regions.isEmpty())
             throw new BusinessException("REGION维度必须提供regionCodes");
         if (type == ExecutionDimensionTypeEnum.REGION && (!industries.isEmpty() || !customers.isEmpty()))
@@ -138,7 +131,8 @@ public class McpToolDispatcher {
 
     private List<String> values(Map<?, ?> map, String key) {
         Object value = map.get(key);
-        if (!(value instanceof List<?> values)) return List.of();
+        if (!(value instanceof List<?> values))
+            return List.of();
         return values.stream().filter(item -> item != null && TextUtils.hasText(String.valueOf(item))).map(item -> String.valueOf(item).trim()).distinct().toList();
     }
 
@@ -159,11 +153,16 @@ public class McpToolDispatcher {
     }
 
     private String resultType(String toolName) {
-        if (toolName.endsWith("_list") || toolName.endsWith("_history_get") || toolName.equals("task_steps_get")) return "PAGE";
-        if (toolName.endsWith("_search")) return "ENTITY";
-        if (toolName.endsWith("_start")) return "TASK";
-        if (toolName.endsWith("_status_get")) return "PROGRESS";
-        if (toolName.endsWith("_result_get") || toolName.endsWith("_latest_get")) return "RESULT";
+        if (toolName.endsWith("_list") || toolName.endsWith("_history_get") || toolName.equals("task_steps_get"))
+            return "PAGE";
+        if (toolName.endsWith("_search"))
+            return "ENTITY";
+        if (toolName.endsWith("_start"))
+            return "TASK";
+        if (toolName.endsWith("_status_get"))
+            return "PROGRESS";
+        if (toolName.endsWith("_result_get") || toolName.endsWith("_latest_get"))
+            return "RESULT";
         return "OBJECT";
     }
 
@@ -186,11 +185,7 @@ public class McpToolDispatcher {
         Object value = args.get(key);
         if (!(value instanceof List<?> values))
             return List.of();
-        return values.stream()
-                .filter(item -> item != null && TextUtils.hasText(String.valueOf(item)))
-                .map(item -> String.valueOf(item).trim())
-                .distinct()
-                .toList();
+        return values.stream().filter(item -> item != null && TextUtils.hasText(String.valueOf(item))).map(item -> String.valueOf(item).trim()).distinct().toList();
     }
 
     /** 读取可选整数参数；格式错误时返回明确的业务参数异常。 */
@@ -220,17 +215,21 @@ public class McpToolDispatcher {
 
     /** 根据业务异常文本映射为供智能体判断的稳定错误码。 */
     private String classify(String message) {
-        if (message != null && (message.contains("全部为0") || message.contains("全部为空"))) return "TRAINING_DATA_QUALITY_FAILED";
-        if (message != null && message.contains("确认")) return "CONFIRMATION_REQUIRED";
-        if (message != null && (message.contains("冲突") || message.contains("不匹配") || message.contains("超出") || message.contains("超过"))) return "PARAMETER_CONFLICT";
-        if (message != null && (message.contains("缺少") || message.contains("不能为空") || message.contains("必须"))) return "INVALID_ARGUMENT";
-        if (message != null && (message.contains("不存在") || message.contains("没有找到"))) return "NOT_FOUND";
+        if (message != null && (message.contains("全部为0") || message.contains("全部为空")))
+            return "TRAINING_DATA_QUALITY_FAILED";
+        if (message != null && message.contains("确认"))
+            return "CONFIRMATION_REQUIRED";
+        if (message != null && (message.contains("冲突") || message.contains("不匹配") || message.contains("超出") || message.contains("超过")))
+            return "PARAMETER_CONFLICT";
+        if (message != null && (message.contains("缺少") || message.contains("不能为空") || message.contains("必须")))
+            return "INVALID_ARGUMENT";
+        if (message != null && (message.contains("不存在") || message.contains("没有找到")))
+            return "NOT_FOUND";
         return "BUSINESS_ERROR";
     }
 
     /**
-     * 创建包含具体原因和建议动作的结构化失败结果。
-     * data字段用于让大模型可靠判断是补参数、让用户确认、改查实体，还是稍后重试。
+     * 创建包含具体原因和建议动作的结构化失败结果。 data字段用于让大模型可靠判断是补参数、让用户确认、改查实体，还是稍后重试。
      */
     private McpToolResult failure(String toolName, String errorCode, String reason, boolean retryable) {
         Map<String, Object> detail = new LinkedHashMap<>();
@@ -254,8 +253,7 @@ public class McpToolDispatcher {
     private String nextAction(String errorCode, String toolName) {
         return switch (errorCode) {
             case "INVALID_ARGUMENT", "CONFIRMATION_REQUIRED", "PARAMETER_CONFLICT", "TRAINING_DATA_QUALITY_FAILED" -> "ASK_USER";
-            case "NOT_FOUND" -> toolName.endsWith("_search") || toolName.endsWith("_start")
-                    ? "ASK_USER" : "QUERY_STATUS";
+            case "NOT_FOUND" -> toolName.endsWith("_search") || toolName.endsWith("_start") ? "ASK_USER" : "QUERY_STATUS";
             case "TOOL_NOT_FOUND" -> "FAIL";
             case "INTERNAL_ERROR" -> "QUERY_STATUS";
             default -> "MODEL_DECISION";
@@ -266,10 +264,14 @@ public class McpToolDispatcher {
     private List<String> allowedActions(String action, boolean retryable) {
         List<String> actions = new java.util.ArrayList<>();
         actions.add(action);
-        if (!actions.contains("QUERY_STATUS")) actions.add("QUERY_STATUS");
-        if (!actions.contains("ASK_USER")) actions.add("ASK_USER");
-        if (retryable) actions.add("RETRY");
-        if (!actions.contains("FAIL")) actions.add("FAIL");
+        if (!actions.contains("QUERY_STATUS"))
+            actions.add("QUERY_STATUS");
+        if (!actions.contains("ASK_USER"))
+            actions.add("ASK_USER");
+        if (retryable)
+            actions.add("RETRY");
+        if (!actions.contains("FAIL"))
+            actions.add("FAIL");
         return actions;
     }
 

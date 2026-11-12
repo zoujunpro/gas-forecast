@@ -1065,7 +1065,7 @@ import {
   TrendCharts,
   VideoPlay
 } from '@element-plus/icons-vue'
-import type { AgentRunEvent, ChatMessage } from '@/types'
+import type { AgentRunEvent, AiChatContentBlock, ChatMessage } from '@/types'
 import AiExecutionTask from '@/views/ai/AiExecutionTask.vue'
 import { compactForecastAnalysis, forecastAnalysisQuestions } from '@/utils/forecastAnalysis'
 import ForecastComparisonChart from '@/components/ForecastComparisonChart.vue'
@@ -2180,17 +2180,12 @@ const shortTermResultFromTaskPresentation = (result: Record<string, any>) => {
   }
 }
 
-/** 会话完成总结与左侧、任务卡解析共用同一条已落库研判，避免同一次预测出现两套结论。 */
+/** 聊天气泡只提示任务完成；完整研判统一由下方任务卡展示，避免同一分析重复出现。 */
 const setCompletionSummary = (message: ChatMessage, result: Record<string, any>) => {
-  const persistedAnalysis = compactForecastAnalysis(result.analysisContent || result.record?.analysisContent)
-  if (persistedAnalysis) {
-    message.completionSummary = renderMarkdown(persistedAnalysis)
-    return
-  }
-  const model = result.bestModel || result.modelName
-  const mape = result.mape ?? result.metrics?.mape
-  const fallback = `预测已完成${model ? `，最佳模型为 **${model}**` : ''}${mape !== undefined && mape !== null ? `，回测 MAPE 为 **${mape}%**` : ''}。详细回测曲线和未来预测结果已展示在本消息下方。`
-  message.completionSummary = renderMarkdown(fallback)
+  const model = result.bestModel || result.modelName || result.record?.bestModel
+  const mape = result.mape ?? result.metrics?.mape ?? result.record?.mape
+  const summary = `预测已完成${model ? `，采用 **${model}** 模型` : ''}${mape !== undefined && mape !== null ? `，回测 MAPE 为 **${Number(mape).toFixed(2)}%**` : ''}。完整预测结果和AI研判见下方。`
+  message.completionSummary = renderMarkdown(summary)
 }
 
 /** 右侧任务流程完成后，左侧自动切到同一地区、行业、客户，并加载最新预测结果。 */
@@ -2813,24 +2808,29 @@ const stopStreaming = () => {
 }
 
 const chatMemory = new Map<string, ChatMessage[]>()
-const clarificationDraft = reactive<Record<string, Record<string, any>>>({})
 /** 当前智能体右侧面板正在使用的服务端会话；切换业务对象不会改变它。 */
 const activeConversationNo = ref<string | null>(null)
 const hasMoreHistoryMessages = ref(false)
 const loadingOlderMessages = ref(false)
 const oldestHistoryMessageId = ref<number | null>(null)
 
+const contentBlocks = (value: any): AiChatContentBlock[] => Array.isArray(value?.blocks) ? value.blocks : []
+const blockData = (value: any, type: AiChatContentBlock['type']) => contentBlocks(value).find((block) => block.type === type)?.data
+const markdownContent = (value: any) => contentBlocks(value).filter((block) => block.type === 'MARKDOWN').map((block) => String(block.data?.content || '')).filter(Boolean).join('\n')
+const taskNoFromBlocks = (value: any) => blockData(value, 'TASK_CARD')?.taskNo
+
 const conversationMessage = (item: any): ChatMessage => ({
   id: String(item.id),
+  turnId: item.turnId || undefined,
   role: item.role,
-  content: item.role === 'assistant' ? renderMarkdown(item.content) : item.content,
+  content: item.role === 'assistant' ? renderMarkdown(markdownContent(item) || item.content) : item.content,
   clarification: item.clarification || undefined,
   clarificationResolved: Boolean(item.clarification),
-  presentation: item.presentation || item.resultData?.presentation || undefined,
-  executionResult: item.executionResult || item.execution_result || item.resultData?.executionResult || undefined,
+  presentation: blockData(item, 'CHART') || undefined,
+  executionResult: blockData(item, 'TABLE') || undefined,
   taskNo:
-    item.taskNo ||
-    (item.references || []).find((reference: any) => reference.referenceType === 'EXECUTION_TASK')?.referenceNo,
+    taskNoFromBlocks(item) ||
+    (item.references || []).find((reference: any) => Boolean(reference.taskNo))?.taskNo,
   runNo: item.runNo || undefined,
   runStatus: item.runStatus || undefined,
   runStartedAt: item.runStartedAt || undefined,
@@ -2938,7 +2938,6 @@ const restoreLatestAgentConversation = async (targetAgentCode = agentId.value) =
       const latestMessage = messages.value[messages.value.length - 1]
       if (latestMessage?.role === 'assistant' && latestMessage.clarification) {
         latestMessage.clarificationResolved = false
-        clarificationDraft[latestMessage.id] = {}
       }
       saveChatToMemory(activeChatId.value)
       scrollToBottom()
@@ -3011,42 +3010,7 @@ const activeBusinessContext = () => {
 interface AgentStructuredReply {
   source: ChatMessage
   inputType: 'CLARIFICATION_REPLY' | 'INTERACTION_REPLY'
-  answers: Record<string, any>
   displayText: string
-}
-
-const setAgentClarificationValue = (messageId: string, field: string, value: any) => {
-  if (!clarificationDraft[messageId]) clarificationDraft[messageId] = {}
-  clarificationDraft[messageId][field] = value
-}
-const _setAgentClarificationEvent = (messageId: string, field: string, event: Event) => {
-  setAgentClarificationValue(messageId, field, (event.target as HTMLInputElement | HTMLSelectElement)?.value)
-}
-const _replyClarification = (message: ChatMessage, directAnswers?: Record<string, any>, directLabel?: string) => {
-  const clarification = message.clarification
-  if (!clarification) return
-  const answers = directAnswers || { ...(clarificationDraft[message.id] || {}) }
-  const missing = clarification.fields.filter(
-    (field) =>
-      field.required &&
-      field.inputType !== 'CONFIRM' &&
-      (answers[field.parameterCode] === undefined || answers[field.parameterCode] === '')
-  )
-  if (missing.length) {
-    ElMessage.warning(`请先填写：${missing.map((field) => field.parameterName).join('、')}`)
-    return
-  }
-  const displayText =
-    directLabel ||
-    clarification.fields
-      .map((field) => {
-        const value = answers[field.parameterCode]
-        return field.options.find((option) => option.value === value)?.label || String(value || '')
-      })
-      .filter(Boolean)
-      .join('；') ||
-    '补充信息'
-  void sendMessage({ source: message, inputType: 'CLARIFICATION_REPLY', answers, displayText })
 }
 const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo?: string) => {
   // 用户始终通过同一个输入框对话。若上一轮正在等补充信息，则把这句自然语言
@@ -3063,8 +3027,7 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
       ? ({
           source: pending,
           inputType:
-            pending.clarification!.interactionType === 'CONFIRMATION' ? 'INTERACTION_REPLY' : 'CLARIFICATION_REPLY',
-          answers: {},
+            pending.clarification!.inputType === 'CONFIRM' ? 'INTERACTION_REPLY' : 'CLARIFICATION_REPLY',
           displayText: inputMessage.value.trim()
         } as AgentStructuredReply)
       : undefined)
@@ -3096,14 +3059,14 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
   let staleInteraction = false
   const expiredInteraction = (error: unknown) => {
     const message = error instanceof Error ? error.message : String(error || '')
-    return /当前会话没有等待处理|澄清交互已过期|回复类型与当前待处理交互不匹配/.test(message)
+    return /当前会话没有等待处理|澄清交互不存在|澄清交互已过期|回复类型与交互记录不匹配/.test(message)
   }
   const requestBody = (reply?: AgentStructuredReply) => ({
     conversationNo: activeConversationNo.value || conversationMemory.get(streamId) || null,
     message: requestMessage,
     inputType: reply?.inputType || 'TEXT',
     interactionId: reply?.source.clarification?.interactionId || null,
-    replyToTurnId: reply?.source.clarification?.replyToTurnId || null,
+    replyToTurnId: reply?.source.turnId || null,
     agentCode: agentId.value,
     businessContext: activeBusinessContext()
   })
@@ -3151,18 +3114,16 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
       conversationMemory.set(streamId, data.conversationNo)
       activeConversationNo.value = data.conversationNo
     }
-    fullResponse = data.message || 'AI 未返回有效内容'
+    fullResponse = markdownContent(data) || 'AI 未返回有效内容'
     if (activeChatId.value === streamId) {
       const msg = messages.value.find((item) => item.id === msgId)
       if (msg) {
         msg.content = renderMarkdown(fullResponse)
+        msg.turnId = data.turnId || msg.turnId
         msg.clarification = data.clarification || undefined
-        msg.presentation = data.presentation || data.resultData?.presentation || undefined
-        msg.executionResult =
-          data.executionResult || data.execution_result || data.resultData?.executionResult || undefined
-        msg.taskNo =
-          data.taskNo ||
-          (data.references || []).find((item: any) => item.referenceType === 'EXECUTION_TASK')?.referenceNo
+        msg.presentation = blockData(data, 'CHART') || undefined
+        msg.executionResult = blockData(data, 'TABLE') || undefined
+        msg.taskNo = taskNoFromBlocks(data)
         msg.runNo = data.runNo || msg.runNo
         const responseStatus = String(data.status || '').toUpperCase()
         msg.runStatus = msg.taskNo && !['WAITING', 'FAILED', 'CANCELLED'].includes(responseStatus)
@@ -3176,7 +3137,6 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
         if (msg.runNo && msg.taskNo && !['FAILED', 'CANCELLED'].includes(String(msg.runStatus).toUpperCase())) {
           startRunEventRefresh(msg)
         }
-        if (msg.clarification) clarificationDraft[msg.id] = {}
       }
       saveChatToMemory(streamId)
       scrollToBottom()

@@ -52,17 +52,14 @@ public class ApplyModelManagementSql {
                 """);
         ensureColumn(statement, "model_config_tb", "config_code", "alter table model_config_tb add column config_code varchar(64) null comment '配置编码' after id");
         ensureColumn(statement, "model_config_tb", "config_name", "alter table model_config_tb add column config_name varchar(128) null comment '配置名称' after config_code");
-        ensureColumn(statement, "model_config_tb", "scene_code",
-                "alter table model_config_tb add column scene_code varchar(32) null comment '场景编码：WINTER_SUPPLY/MONTHLY_SALES/SHORT_CUSTOMER' after agent_code");
+        ensureColumn(statement, "model_config_tb", "scene_code", "alter table model_config_tb add column scene_code varchar(32) null comment '场景编码：WINTER_SUPPLY/MONTHLY_SALES/SHORT_CUSTOMER' after agent_code");
         ensureColumn(statement, "model_config_tb", "create_time", "alter table model_config_tb add column create_time datetime not null default current_timestamp comment '创建时间'");
-        ensureColumn(statement, "model_config_tb", "update_time",
-                "alter table model_config_tb add column update_time datetime not null default current_timestamp on update current_timestamp comment '更新时间'");
+        ensureColumn(statement, "model_config_tb", "update_time", "alter table model_config_tb add column update_time datetime not null default current_timestamp on update current_timestamp comment '更新时间'");
         copyIfColumnsExist(statement, "model_config_tb", "config_code", "model_code");
         copyIfColumnsExist(statement, "model_config_tb", "config_name", "model_name");
         copyIfColumnsExist(statement, "model_config_tb", "create_time", "created_at");
         copyIfColumnsExist(statement, "model_config_tb", "update_time", "updated_at");
-        statement.execute(
-                "update model_config_tb set scene_code = case agent_code when 'winter-supply' then 'WINTER_SUPPLY' when 'monthly-sales' then 'MONTHLY_SALES' when 'short-term' then 'SHORT_CUSTOMER' else scene_code end where scene_code is null or scene_code = ''");
+        statement.execute("update model_config_tb set scene_code = case agent_code when 'winter-supply' then 'WINTER_SUPPLY' when 'monthly-sales' then 'MONTHLY_SALES' when 'short-term' then 'SHORT_CUSTOMER' else scene_code end where scene_code is null or scene_code = ''");
         statement.execute("update model_config_tb set config_code = concat('MODEL-', id) where config_code is null or config_code = ''");
         statement.execute("update model_config_tb set config_name = config_code where config_name is null or config_name = ''");
         statement.execute("alter table model_config_tb modify column config_code varchar(64) not null comment '配置编码'");
@@ -94,10 +91,8 @@ public class ApplyModelManagementSql {
                     (6102, 61, '模型配置', null, null, 'BUTTON', 'model:config:update', null, 6102, 1, 1),
                     (6103, 61, '删除模型', null, null, 'BUTTON', 'model:config:delete', null, 6103, 1, 1)
                 """);
-        statement.execute(
-                "update sys_permission_tb set permission_name = '模型管理', path = '/model', component = null, perms = null, icon = 'DataAnalysis', sort_no = 60, hidden = 0, status = 1 where id = 60");
-        statement.execute(
-                "update sys_permission_tb set parent_id = 60, permission_name = '模型列表', path = '/model/list', component = 'views/model/ModelConfigManagement.vue', permission_type = 'MENU', perms = 'model:config:list', sort_no = 61, hidden = 0, status = 1 where id = 61");
+        statement.execute("update sys_permission_tb set permission_name = '模型管理', path = '/model', component = null, perms = null, icon = 'DataAnalysis', sort_no = 60, hidden = 0, status = 1 where id = 60");
+        statement.execute("update sys_permission_tb set parent_id = 60, permission_name = '模型列表', path = '/model/list', component = 'views/model/ModelConfigManagement.vue', permission_type = 'MENU', perms = 'model:config:list', sort_no = 61, hidden = 0, status = 1 where id = 61");
         statement.execute("update sys_permission_tb set parent_id = 61, permission_name = '新增模型', permission_type = 'BUTTON', perms = 'model:config:create', hidden = 1, status = 1 where id = 6101");
         statement.execute("update sys_permission_tb set parent_id = 61, permission_name = '模型配置', permission_type = 'BUTTON', perms = 'model:config:update', hidden = 1, status = 1 where id = 6102");
         statement.execute("update sys_permission_tb set parent_id = 61, permission_name = '删除模型', permission_type = 'BUTTON', perms = 'model:config:delete', hidden = 1, status = 1 where id = 6103");
@@ -121,8 +116,7 @@ public class ApplyModelManagementSql {
     }
 
     private static void copyIfColumnsExist(Statement statement, String table, String targetColumn, String sourceColumn) throws Exception {
-        if (exists(statement, "select 1 from information_schema.columns where table_schema = database() and table_name = '" + table + "' and column_name = '" + sourceColumn + "'")
-                && exists(statement, "select 1 from information_schema.columns where table_schema = database() and table_name = '" + table + "' and column_name = '" + targetColumn + "'")) {
+        if (exists(statement, "select 1 from information_schema.columns where table_schema = database() and table_name = '" + table + "' and column_name = '" + sourceColumn + "'") && exists(statement, "select 1 from information_schema.columns where table_schema = database() and table_name = '" + table + "' and column_name = '" + targetColumn + "'")) {
             statement.execute("update " + table + " set " + targetColumn + " = " + sourceColumn + " where " + targetColumn + " is null");
         }
     }
@@ -144,11 +138,9 @@ public class ApplyModelManagementSql {
 
     private static void printPermission(Statement statement) throws Exception {
         System.out.println("MODEL PERMISSIONS");
-        try (ResultSet rs = statement
-                .executeQuery("select id, parent_id, permission_name, path, component, permission_type, perms from sys_permission_tb where id in (60, 61, 6101, 6102, 6103) order by id")) {
+        try (ResultSet rs = statement.executeQuery("select id, parent_id, permission_name, path, component, permission_type, perms from sys_permission_tb where id in (60, 61, 6101, 6102, 6103) order by id")) {
             while (rs.next()) {
-                System.out.println(rs.getLong("id") + "\t" + rs.getObject("parent_id") + "\t" + rs.getString("permission_name") + "\t" + rs.getString("path") + "\t" + rs.getString("component") + "\t"
-                        + rs.getString("permission_type") + "\t" + rs.getString("perms"));
+                System.out.println(rs.getLong("id") + "\t" + rs.getObject("parent_id") + "\t" + rs.getString("permission_name") + "\t" + rs.getString("path") + "\t" + rs.getString("component") + "\t" + rs.getString("permission_type") + "\t" + rs.getString("perms"));
             }
         }
     }

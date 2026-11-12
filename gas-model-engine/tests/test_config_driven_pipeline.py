@@ -59,6 +59,31 @@ def test_target_features_drop_warmup_rows_without_backfill_leakage():
     assert train.features.iloc[0]["target_rolling_mean_3"] == 2
 
 
+def test_short_term_target_features_are_causal_and_support_recursive_future_rows():
+    history = AlgorithmDataset(
+        features=pd.DataFrame(index=range(35)),
+        dates=pd.date_range("2025-01-01", periods=35),
+        target=pd.Series(np.arange(1, 36, dtype=float)),
+    )
+    future = AlgorithmDataset(
+        features=pd.DataFrame(index=range(2)),
+        dates=pd.date_range("2025-02-05", periods=2),
+    )
+    specs = (
+        MethodSpec("LAG_V1", {"lags": [1, 2, 7, 14, 28]}),
+        MethodSpec("ROLLING_V1", {"windows": [7, 14, 28], "statistics": ["mean", "std"]}),
+        MethodSpec("TARGET_CHANGE_V1", {"periods": [1, 7, 28]}),
+    )
+
+    train, predicted = ConfiguredFeatureProcessor().prepare(history, future, specs)
+
+    assert train.features.iloc[-1]["target_lag_1"] == 34
+    assert train.features.iloc[-1]["target_rolling_mean_7"] == 31
+    assert train.features.iloc[-1]["target_diff_7"] == 7
+    assert predicted.features.iloc[0]["target_lag_1"] == 35
+    assert predicted.features.iloc[0]["target_diff_28"] == 28
+
+
 def test_config_driven_pipeline_ranks_algorithms_and_legal_combinations():
     values = np.arange(1, 81, dtype=float)
     history = AlgorithmDataset(
@@ -78,7 +103,7 @@ def test_config_driven_pipeline_ranks_algorithms_and_legal_combinations():
             CandidateSpec("ridge", "RIDGE_V1"),
         ),
         aggregation=AggregationMode.MEAN,
-        strategy_code="CONFIG_DRIVEN_FORECAST_V1",
+        scenario_code="DEFAULT_FORECAST_SCENARIO_V1",
         features=(
             MethodSpec("DYNAMIC_PASSTHROUGH_V1"),
             MethodSpec("CALENDAR_V1"),

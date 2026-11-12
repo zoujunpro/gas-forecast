@@ -27,8 +27,7 @@ public class AgentStrategyConfigServiceImpl implements AgentStrategyConfigServic
     public PageInfoDTO<AgentStrategyConfigTb> listPage(AgentStrategyConfigPageRequest request) {
         var query = Wrappers.<AgentStrategyConfigTb>lambdaQuery();
         if (TextUtils.hasText(request.getKeyword())) {
-            query.and(w -> w.like(AgentStrategyConfigTb::getAgentCode, request.getKeyword()).or().like(AgentStrategyConfigTb::getAgentName, request.getKeyword()).or()
-                    .like(AgentStrategyConfigTb::getDescription, request.getKeyword()));
+            query.and(w -> w.like(AgentStrategyConfigTb::getAgentCode, request.getKeyword()).or().like(AgentStrategyConfigTb::getAgentName, request.getKeyword()).or().like(AgentStrategyConfigTb::getDescription, request.getKeyword()));
         }
         query.orderByAsc(AgentStrategyConfigTb::getId);
         IPage<AgentStrategyConfigTb> page = mapper.selectPage(PageUtils.pageRequest(request.getPage(), request.getSize()), query);

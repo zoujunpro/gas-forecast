@@ -1,10 +1,8 @@
 package com.gas.forecast.dao.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.math.BigDecimal;
 import java.util.Date;
 import lombok.Data;
 
@@ -64,49 +62,4 @@ public class ExecutionTaskTb {
     /** 更新时间。 */
     private Date updatedAt;
 
-    /* 以下字段只保留源代码迁移期的编译兼容性，数据库不再持久化。 */
-    @TableField(exist = false)
-    private String batchNo;
-    @TableField(exist = false)
-    private String businessNo;
-    @TableField(exist = false)
-    private String agentCode;
-    @TableField(exist = false)
-    private String scopeType;
-    @TableField(exist = false)
-    private String regionCode;
-    @TableField(exist = false)
-    private String regionName;
-    @TableField(exist = false)
-    private String industryCode;
-    @TableField(exist = false)
-    private String industryName;
-    @TableField(exist = false)
-    private String customerCode;
-    @TableField(exist = false)
-    private String customerName;
-    @TableField(exist = false)
-    private String currentStage;
-    @TableField(exist = false)
-    private BigDecimal progressPercent;
-    @TableField(exist = false)
-    private Integer attemptNo;
-    @TableField(exist = false)
-    private Integer maxAttempts;
-    @TableField(exist = false)
-    private Date nextRetryAt;
-    @TableField(exist = false)
-    private String workerId;
-    @TableField(exist = false)
-    private Date heartbeatAt;
-    @TableField(exist = false)
-    private Date leaseExpiresAt;
-    @TableField(exist = false)
-    private String requestJson;
-    @TableField(exist = false)
-    private String checkpointJson;
-    @TableField(exist = false)
-    private String resultJson;
-    @TableField(exist = false)
-    private String idempotencyKey;
 }

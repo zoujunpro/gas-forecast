@@ -45,8 +45,17 @@ __pycache__/
 .venv/
 *.egg-info/
 
+# Local Python environments, downloaded models and generated model outputs
+/gas-model-engine/.chronos-venv/
+/gas-model-engine/.models/
+/gas-model-engine/output/
+
 ### VS Code ###
 .vscode/
+
+# Editor temporary files
+*.swp
+*.swo
 
 ### Mac OS ###
 .DS_Store
@@ -54,6 +63,9 @@ __pycache__/
 ### Runtime logs ###
 /logs/
 *.log
+
+# Local runtime services and databases
+/.runtime/
 
 # Local generated reports and database exports
 /outputs/city_gas_backtest_report/

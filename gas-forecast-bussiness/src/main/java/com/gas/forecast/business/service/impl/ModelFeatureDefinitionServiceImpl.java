@@ -33,9 +33,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         LambdaQueryWrapper<ModelFeatureDefinitionTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(ModelFeatureDefinitionTb::getFeatureCode, keyword).or().like(ModelFeatureDefinitionTb::getFeatureName, keyword).or()
-                    .like(ModelFeatureDefinitionTb::getSourceType, keyword).or().like(ModelFeatureDefinitionTb::getValueSource, keyword).or().like(ModelFeatureDefinitionTb::getSourceField, keyword)
-                    .or().like(ModelFeatureDefinitionTb::getStatus, keyword).or().like(ModelFeatureDefinitionTb::getDescription, keyword));
+            query.and(wrapper -> wrapper.like(ModelFeatureDefinitionTb::getFeatureCode, keyword).or().like(ModelFeatureDefinitionTb::getFeatureName, keyword).or().like(ModelFeatureDefinitionTb::getSourceType, keyword).or().like(ModelFeatureDefinitionTb::getValueSource, keyword).or().like(ModelFeatureDefinitionTb::getSourceField, keyword).or().like(ModelFeatureDefinitionTb::getStatus, keyword).or().like(ModelFeatureDefinitionTb::getDescription, keyword));
         }
         if (TextUtils.hasText(reqDTO.sourceType())) {
             query.eq(ModelFeatureDefinitionTb::getSourceType, normalizeSourceType(reqDTO.sourceType()));
@@ -99,9 +97,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         if (entity == null) {
             return null;
         }
-        return new ModelFeatureDefinitionResponse(entity.getId(), entity.getFeatureCode(), entity.getFeatureName(), entity.getSourceType(), entity.getValueSource(), entity.getSourceField(),
-                entity.getCalculationType(), entity.getCalculationParams(), entity.getAggregationMethod(), entity.getMissingValueStrategy(), entity.getStatus(), entity.getEnabled(),
-                entity.getDescription(), entity.getCreatedAt(), entity.getCreatedBy(), entity.getUpdatedByName());
+        return new ModelFeatureDefinitionResponse(entity.getId(), entity.getFeatureCode(), entity.getFeatureName(), entity.getSourceType(), entity.getValueSource(), entity.getSourceField(), entity.getCalculationType(), entity.getCalculationParams(), entity.getAggregationMethod(), entity.getMissingValueStrategy(), entity.getStatus(), entity.getEnabled(), entity.getDescription(), entity.getCreatedAt(), entity.getCreatedBy(), entity.getUpdatedByName());
     }
 
     private ModelFeatureDefinitionTb toEntity(ModelFeatureDefinitionCreateRequest reqDTO) {
@@ -144,8 +140,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         }
     }
 
-    private void fillValueSource(ModelFeatureDefinitionTb entity, String valueSource, String sourceField, String calculationType, String calculationParams, String aggregationMethod,
-            String missingValueStrategy) {
+    private void fillValueSource(ModelFeatureDefinitionTb entity, String valueSource, String sourceField, String calculationType, String calculationParams, String aggregationMethod, String missingValueStrategy) {
         String normalizedSource = valueSource.trim().toUpperCase();
         java.util.Set<String> sources = java.util.Set.of("WEATHER_DAILY", "SALES_DAILY", "FEATURE_VALUE", "CALCULATED", "MODEL_INTERNAL");
         if (!sources.contains(normalizedSource))
@@ -177,8 +172,7 @@ public class ModelFeatureDefinitionServiceImpl implements ModelFeatureDefinition
         if ("SALES_DAILY".equals(valueSource)) {
             allowed = java.util.Set.of("gas_sales");
         } else if ("WEATHER_DAILY".equals(valueSource)) {
-            allowed = java.util.Set.of("temp_max", "temp_min", "temp_avg", "feels_like_max", "feels_like_min", "feels_like_avg", "dew_point", "humidity", "precipitation", "wind_gust", "wind_speed",
-                    "sea_level_pressure", "cloud_cover", "visibility", "solar_radiation", "solar_energy", "uv_index", "hdd");
+            allowed = java.util.Set.of("temp_max", "temp_min", "temp_avg", "feels_like_max", "feels_like_min", "feels_like_avg", "dew_point", "humidity", "precipitation", "wind_gust", "wind_speed", "sea_level_pressure", "cloud_cover", "visibility", "solar_radiation", "solar_energy", "uv_index", "hdd");
         } else if ("CALCULATED".equals(valueSource)) {
             allowed = java.util.Set.of("temp_max", "temp_min", "temp_avg", "hdd", "extreme_cold_days");
         } else {

@@ -8,7 +8,9 @@ public final class ThreadPoolUtils {
     /**
      * 创建具名、容量受限且具备任务追踪日志的线程池。
      *
-     * <p>调用方应在应用关闭时主动调用 {@link TraceableThreadPoolExecutor#shutdown()}。</p>
+     * <p>
+     * 调用方应在应用关闭时主动调用 {@link TraceableThreadPoolExecutor#shutdown()}。
+     * </p>
      */
     public static TraceableThreadPoolExecutor create(ThreadPoolConfig config) {
         return new TraceableThreadPoolExecutor(config);

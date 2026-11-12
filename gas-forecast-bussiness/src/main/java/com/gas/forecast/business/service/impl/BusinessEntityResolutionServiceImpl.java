@@ -20,8 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolutionService {
-    private static final Map<String, String> INDUSTRY_ALIASES = Map.ofEntries(Map.entry("城市燃气", "城燃"), Map.entry("城市燃气行业", "城燃"), Map.entry("城镇燃气", "城燃"),
-            Map.entry("城镇燃气行业", "城燃"), Map.entry("电力", "发电"), Map.entry("发电行业", "发电"), Map.entry("化工行业", "化工"));
+    private static final Map<String, String> INDUSTRY_ALIASES = Map.ofEntries(Map.entry("城市燃气", "城燃"), Map.entry("城市燃气行业", "城燃"), Map.entry("城镇燃气", "城燃"), Map.entry("城镇燃气行业", "城燃"), Map.entry("电力", "发电"), Map.entry("发电行业", "发电"), Map.entry("化工行业", "化工"));
     private final BaseCustomerTbMapper customerMapper;
     private final BaseRegionTbMapper regionMapper;
     private final BaseIndustryTbMapper industryMapper;
@@ -42,20 +41,21 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
         if (matches.isEmpty() && TextUtils.hasText(customerName)) {
             var embeddedNameQuery = Wrappers.<BaseCustomerTb>lambdaQuery();
             applyCustomerScope(embeddedNameQuery, query);
-            matches = customerMapper.selectList(embeddedNameQuery.orderByAsc(BaseCustomerTb::getCustomerName)).stream()
-                    .filter(item -> TextUtils.hasText(item.getCustomerName()) && customerName.contains(item.getCustomerName()))
-                    .limit(limit)
-                    .toList();
+            matches = customerMapper.selectList(embeddedNameQuery.orderByAsc(BaseCustomerTb::getCustomerName)).stream().filter(item -> TextUtils.hasText(item.getCustomerName()) && customerName.contains(item.getCustomerName())).limit(limit).toList();
         }
         List<EntityCandidate> rows = matches.stream().map(this::customer).toList();
         return result("客户", rows);
     }
 
     private void applyCustomerScope(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BaseCustomerTb> wrapper, EntityQuery query) {
-        if (TextUtils.hasText(query.regionCode())) wrapper.eq(BaseCustomerTb::getRegionCode, query.regionCode());
-        if (TextUtils.hasText(query.regionName())) wrapper.eq(BaseCustomerTb::getRegionName, normalizeRegion(query.regionName()));
-        if (TextUtils.hasText(query.industryCode())) wrapper.eq(BaseCustomerTb::getIndustryCode, query.industryCode());
-        if (TextUtils.hasText(query.industryName())) wrapper.eq(BaseCustomerTb::getIndustryName, normalizeIndustry(query.industryName()));
+        if (TextUtils.hasText(query.regionCode()))
+            wrapper.eq(BaseCustomerTb::getRegionCode, query.regionCode());
+        if (TextUtils.hasText(query.regionName()))
+            wrapper.eq(BaseCustomerTb::getRegionName, normalizeRegion(query.regionName()));
+        if (TextUtils.hasText(query.industryCode()))
+            wrapper.eq(BaseCustomerTb::getIndustryCode, query.industryCode());
+        if (TextUtils.hasText(query.industryName()))
+            wrapper.eq(BaseCustomerTb::getIndustryName, normalizeIndustry(query.industryName()));
     }
 
     @Override
@@ -66,8 +66,7 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
             wrapper.eq(BaseRegionTb::getRegionCode, query.regionCode());
         if (TextUtils.hasText(name))
             wrapper.and(q -> q.eq(BaseRegionTb::getRegionName, name).or().like(BaseRegionTb::getRegionName, name));
-        List<EntityCandidate> rows = regionMapper.selectList(wrapper.orderByAsc(BaseRegionTb::getRegionName).last("limit " + limit(query.limit()))).stream()
-                .map(row -> new EntityCandidate("REGION", row.getRegionCode(), row.getRegionName(), "地区", row.getRegionCode(), row.getRegionName(), null, null)).toList();
+        List<EntityCandidate> rows = regionMapper.selectList(wrapper.orderByAsc(BaseRegionTb::getRegionName).last("limit " + limit(query.limit()))).stream().map(row -> new EntityCandidate("REGION", row.getRegionCode(), row.getRegionName(), "地区", row.getRegionCode(), row.getRegionName(), null, null)).toList();
         return result("地区", rows);
     }
 
@@ -79,8 +78,7 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
             wrapper.eq(BaseIndustryTb::getIndustryCode, query.industryCode());
         if (TextUtils.hasText(name))
             wrapper.and(q -> q.eq(BaseIndustryTb::getIndustryName, name).or().like(BaseIndustryTb::getIndustryName, name));
-        List<EntityCandidate> rows = industryMapper.selectList(wrapper.orderByAsc(BaseIndustryTb::getIndustryName).last("limit " + limit(query.limit()))).stream()
-                .map(row -> new EntityCandidate("INDUSTRY", row.getIndustryCode(), row.getIndustryName(), "行业", null, null, row.getIndustryCode(), row.getIndustryName())).toList();
+        List<EntityCandidate> rows = industryMapper.selectList(wrapper.orderByAsc(BaseIndustryTb::getIndustryName).last("limit " + limit(query.limit()))).stream().map(row -> new EntityCandidate("INDUSTRY", row.getIndustryCode(), row.getIndustryName(), "行业", null, null, row.getIndustryCode(), row.getIndustryName())).toList();
         return result("行业", rows);
     }
 
@@ -103,9 +101,7 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
             case "MULTIPLE" -> "部分实体存在多个候选，请逐项选择";
             default -> "部分实体没有找到，请修正名称后重试";
         };
-        Map<String, Object> proposed = "UNIQUE".equals(status)
-                ? proposedParameters(items)
-                : Map.of();
+        Map<String, Object> proposed = "UNIQUE".equals(status) ? proposedParameters(items) : Map.of();
         return new BatchResolutionResult(status, message, List.copyOf(items), proposed);
     }
 
@@ -130,27 +126,26 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
     }
 
     private ResolvedTarget resolveTarget(EntityTargetQuery target, Integer limit) {
-        if (target == null) throw new IllegalArgumentException("实体目标组合不能为空");
+        if (target == null)
+            throw new IllegalArgumentException("实体目标组合不能为空");
         List<BatchResolutionItem> items = new ArrayList<>();
         resolveNames(distinctNames(target.customerNames()), "CUSTOMER", limit, items);
         resolveNames(distinctNames(target.regionNames()), "REGION", limit, items);
         resolveNames(distinctNames(target.industryNames()), "INDUSTRY", limit, items);
-        if (items.isEmpty()) throw new IllegalArgumentException("每个目标组合至少提供一个客户、地区或行业名称");
+        if (items.isEmpty())
+            throw new IllegalArgumentException("每个目标组合至少提供一个客户、地区或行业名称");
         boolean missing = items.stream().anyMatch(item -> "NOT_FOUND".equals(item.status()));
         boolean multiple = items.stream().anyMatch(item -> "MULTIPLE".equals(item.status()));
         String status = missing ? "NOT_FOUND" : multiple ? "MULTIPLE" : "UNIQUE";
         List<String> customers = codes(items, "CUSTOMER");
         List<String> regions = codes(items, "REGION");
         List<String> industries = codes(items, "INDUSTRY");
-        String message = "UNIQUE".equals(status) ? "目标组合解析成功"
-                : "MULTIPLE".equals(status) ? "目标组合存在多个候选" : "目标组合存在未命中实体";
+        String message = "UNIQUE".equals(status) ? "目标组合解析成功" : "MULTIPLE".equals(status) ? "目标组合存在多个候选" : "目标组合存在未命中实体";
         return new ResolvedTarget(status, message, customers, regions, industries, List.copyOf(items));
     }
 
     private List<String> codes(List<BatchResolutionItem> items, String type) {
-        return items.stream().filter(item -> type.equals(item.entityType()))
-                .filter(item -> "UNIQUE".equals(item.status()))
-                .map(item -> item.candidates().get(0).code()).distinct().toList();
+        return items.stream().filter(item -> type.equals(item.entityType())).filter(item -> "UNIQUE".equals(item.status())).map(item -> item.candidates().get(0).code()).distinct().toList();
     }
 
     /** 返回意图层可直接消费的范围；执行类意图附带维度，查询类意图只保留组合筛选条件。 */
@@ -169,8 +164,7 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
         return result;
     }
 
-    private void resolveNames(List<String> names, String type, Integer limit,
-                              List<BatchResolutionItem> target) {
+    private void resolveNames(List<String> names, String type, Integer limit, List<BatchResolutionItem> target) {
         for (String name : names) {
             EntityQuery query = switch (type) {
                 case "CUSTOMER" -> new EntityQuery(null, name, null, null, null, null, limit);
@@ -182,19 +176,14 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
                 case "REGION" -> resolveRegion(query);
                 default -> resolveIndustry(query);
             };
-            target.add(new BatchResolutionItem(
-                    type, name, result.status(), result.message(), result.candidates()));
+            target.add(new BatchResolutionItem(type, name, result.status(), result.message(), result.candidates()));
         }
     }
 
     private List<String> distinctNames(List<String> values) {
         if (values == null)
             return List.of();
-        return values.stream()
-                .filter(TextUtils::hasText)
-                .map(String::trim)
-                .distinct()
-                .toList();
+        return values.stream().filter(TextUtils::hasText).map(String::trim).distinct().toList();
     }
 
     private Map<String, Object> proposedParameters(List<BatchResolutionItem> items) {
@@ -205,12 +194,8 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
         return result;
     }
 
-    private void putResolved(Map<String, Object> target, List<BatchResolutionItem> items,
-                             String type, String codeKey, String nameKey) {
-        List<EntityCandidate> candidates = items.stream()
-                .filter(item -> type.equals(item.entityType()))
-                .map(item -> item.candidates().get(0))
-                .toList();
+    private void putResolved(Map<String, Object> target, List<BatchResolutionItem> items, String type, String codeKey, String nameKey) {
+        List<EntityCandidate> candidates = items.stream().filter(item -> type.equals(item.entityType())).map(item -> item.candidates().get(0)).toList();
         if (candidates.isEmpty())
             return;
         target.put(codeKey, candidates.stream().map(EntityCandidate::code).distinct().toList());
@@ -218,8 +203,7 @@ public class BusinessEntityResolutionServiceImpl implements BusinessEntityResolu
     }
 
     private EntityCandidate customer(BaseCustomerTb row) {
-        return new EntityCandidate("CUSTOMER", row.getCustomerCode(), row.getCustomerName(), row.getRegionName() + " / " + row.getIndustryName(), row.getRegionCode(), row.getRegionName(),
-                row.getIndustryCode(), row.getIndustryName());
+        return new EntityCandidate("CUSTOMER", row.getCustomerCode(), row.getCustomerName(), row.getRegionName() + " / " + row.getIndustryName(), row.getRegionCode(), row.getRegionName(), row.getIndustryCode(), row.getIndustryName());
     }
 
     private ResolutionResult result(String label, List<EntityCandidate> rows) {

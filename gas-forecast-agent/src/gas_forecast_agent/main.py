@@ -2,6 +2,7 @@
 
 import logging
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Annotated, Any
@@ -27,33 +28,29 @@ from gas_forecast_agent.schemas import (
     AgentRuntimeResponse,
     AgentHistoryMessage,
     AgentHistoryReferences,
-    AgentRuntimeMetadata,
     AgentChatRequest,
     AgentChatResponse,
-    AgentIntentData,
-    AgentResultData,
     AgentStatus,
-    ClarificationField,
-    ClarificationResponse,
-    MemoryPatch,
+    ContentBlock,
+    ContentBlockType,
+    ConversationMemory,
+    ErrorInfo,
     MessageReferenceResponse,
-    PresentationResponse,
+    PythonClarification,
     ReferenceRelation,
-    ReferenceType,
-    ExecutionResultResponse,
     ForecastAnalysisRequest,
     ForecastAnalysisResponse,
 )
 from gas_forecast_agent.llm import build_llm_client
+from gas_forecast_agent.recommendation import select_forecast_questions, validated_questions
 from gas_forecast_agent.skills import SemanticExtractionError, SkillRegistry
-from gas_forecast_agent.workflow import persistent_parameters, run_agent_graph
+from gas_forecast_agent.workflow import run_agent_graph
 
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Gas Forecast Agent", version="0.1.0")
 skill_registry = SkillRegistry()
-
 
 def get_mcp_client(
     settings: Annotated[Settings, Depends(get_settings)],
@@ -98,8 +95,13 @@ async def forecast_analysis(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> ForecastAnalysisResponse:
     """依据本次预测的可信快照生成研判和三个可点击追问。"""
+    selected_questions = select_forecast_questions(request.context)
+    if len(selected_questions) != 3:
+        raise HTTPException(status_code=422, detail="当前预测数据不足以生成三个可回答的推荐问题")
+    question_candidates = [item.__dict__ for item in selected_questions]
+    fallback_analysis = str(request.context.get("ruleAnalysis") or "本次预测已完成，请结合预测结果和回测指标进行判断。").strip()
     if not settings.llm_api_key or not settings.llm_model:
-        raise HTTPException(status_code=503, detail="预测解读模型配置不完整")
+        return ForecastAnalysisResponse(analysis=fallback_analysis, questions=question_candidates)
     prompt = (
         "你是燃气销售人员的用气预测分析助手。仅依据用户提供的本次预测数据生成业务研判。"
         "请写一段约80至110个汉字、可供燃气销售人员阅读的简短解读，按以下顺序说明："
@@ -110,23 +112,25 @@ async def forecast_analysis(
         "销量、天气、回测指标及预测点可作为事实；价格、订单、停产、客户计划、政策和市场变化没有数据证明时，"
         "只能表述为‘待核实假设’或‘建议进一步核实’，绝不能虚构具体事件。"
         "当MAPE较高时，明确说明预测仅宜作趋势参考。"
-        "questions字段必须原样返回以下3个简短通用问题：‘本次用气量是升还是降？’、"
-        "‘造成变化的主要原因？’、‘本次预测准确吗？’。不要加入具体数值、日期或解释。只输出JSON对象："
-        "{\"analysis\":\"...\",\"questions\":[\"...\",\"...\",\"...\"]}。"
+        "questions由系统业务规则预先选定。你只能优化每项text的自然表达，必须原样保留code和category，"
+        "不得新增、删除、替换问题类别。每个text只问一件事、以问号结尾，包含标点绝对不超过30个字符。"
+        "问题应尽量引用输入中的实际天数、趋势或MAPE，但不得虚构数据。"
+        "只输出JSON对象："
+        "{\"analysis\":\"...\",\"questions\":[{\"code\":\"...\",\"category\":\"...\",\"text\":\"...\"}]}。"
     )
     try:
-        response = await build_llm_client(settings, minimum_timeout=45).chat.completions.create(
+        client = build_llm_client(settings, minimum_timeout=45)
+        response = await client.chat.completions.create(
             model=settings.llm_model,
-            temperature=0.65,
+            temperature=0.45,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": prompt},
-                {"role": "user", "content": json.dumps(request.context, ensure_ascii=False)},
+                {"role": "user", "content": json.dumps({"forecast": request.context, "questionCandidates": question_candidates}, ensure_ascii=False)},
             ],
         )
         result = ForecastAnalysisResponse.model_validate_json(response.choices[0].message.content or "{}")
-        # 追问按钮使用固定、短小的业务入口；不让模型将日期、指标和推理过程拼进按钮。
-        questions = ["本次用气量是升还是降？", "造成变化的主要原因？", "本次预测准确吗？"]
+        questions = validated_questions(result.questions, selected_questions)
         analysis = re.sub(r"\s+", " ", result.analysis.strip())
         # 前端两处共用该字段；服务端兜底限制长度，避免模型偶尔输出成长报告。
         if len(analysis) > 110:
@@ -136,7 +140,7 @@ async def forecast_analysis(
         return ForecastAnalysisResponse(analysis=analysis, questions=questions)
     except Exception as exc:
         logger.exception("event=forecast_analysis_failed forecast_no=%s", request.forecast_no)
-        raise HTTPException(status_code=502, detail="预测解读生成失败") from exc
+        return ForecastAnalysisResponse(analysis=fallback_analysis, questions=question_candidates)
 
 
 @app.post("/api/v1/internal/chat", response_model=AgentChatResponse, response_model_by_alias=True)
@@ -156,49 +160,36 @@ async def agent_chat(
     # 1. 当前业务焦点来自用户发送消息时正在查看的页面对象。它可以随页面选择
     #    变化，只作为指代消解候选，不代表用户已经确认用它创建训练或预测任务。
     # 2. conversationContext 是 Java 从数据库加载的可信会话快照，包含近期消息
-    #    以及每条消息关联的执行任务或预测结果。
+    #    以及每条消息关联的执行任务。
     conversation_context = request.conversation_context
 
     # 4. 单独提取历史消息的业务对象引用并保留消息归属关系。
     #    普通对话历史只传 role/content；引用放入 metadata，供 Skill 判断用户说的
     #    “这个任务”“上次预测”等对象具体指向哪个业务编号。
-    history_references = [
-        AgentHistoryReferences(
-            message_id=item.message_id,
-            turn_id=item.turn_id,
-            references=item.references,
-        )
-        for item in conversation_context.recent_messages
-        # 没有关联对象的消息无需出现在 historyReferences 中，减少上下文体积。
-        if item.references
-    ]
-    request_metadata = AgentRuntimeMetadata(
-        run_no=request.run_no,
-        agent_code=request.agent_code,
-        current_business_context=request.business_context,
-        history_references=history_references,
-    )
-
+    history_references = []
     # 5. 将对外的 Java 请求适配为现有 Agent 编排层使用的内部请求。
     #    仅 USER/ASSISTANT 消息进入自然语言对话历史；SYSTEM/TOOL 消息不会在此处
     #    直接注入模型，以免外部持久化内容改变 Python 侧的系统指令或工具协议。
     agent_request = AgentRuntimeRequest(
         turn_id=request.turn_id,
         conversation_no=request.conversation_no,
+        run_no=request.run_no,
+        agent_code=request.agent_code,
         message=request.message,
         input_type=request.input_type,
         interaction_id=request.interaction_id,
         reply_to_turn_id=request.reply_to_turn_id,
-        agent_type=request.agent_code,
         conversation_summary=conversation_context.summary,
-        memory=conversation_context.memory.model_copy(deep=True),
+        current_business_context=request.business_context,
+        history_references=history_references,
+        memory=ConversationMemory(pending_operation=conversation_context.pending_operation),
         history=[
             AgentHistoryMessage(role=item.role.lower(), content=item.content)
             for item in conversation_context.recent_messages
             if item.role.upper() in {"USER", "ASSISTANT"}
         ],
-        metadata=request_metadata,
     )
+    # 事件上送
     reporter = RunEventReporter(internal_client, request.run_no)
     understanding_event = await reporter.start(_understanding_event_message(request.message))
 
@@ -229,9 +220,8 @@ async def agent_chat(
             run_no=request.run_no,
             agent_code=request.agent_code,
             status=AgentStatus.FAILED,
-            message=answer,
-            error_code="SEMANTIC_EXTRACTION_FAILED",
-            error_message=answer,
+            blocks=[ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": answer})],
+            error=ErrorInfo(code="SEMANTIC_EXTRACTION_FAILED"),
         )
     except Exception:
         # 7. 未预期异常统一转换为稳定的业务响应。
@@ -252,9 +242,8 @@ async def agent_chat(
             run_no=request.run_no,
             agent_code=request.agent_code,
             status=AgentStatus.FAILED,
-            message=answer,
-            error_code="AGENT_EXECUTION_ERROR",
-            error_message=answer,
+            blocks=[ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": answer})],
+            error=ErrorInfo(code="AGENT_EXECUTION_ERROR"),
         )
 
     # 8. 将内部运行结果规范化为 Java 会话服务约定的响应结构。
@@ -276,33 +265,10 @@ async def agent_chat(
         # Agent 未推导出更具体的类型时，回退到 Java 已确定的会话智能体。
         agent_code=reply.agent_type or request.agent_code,
         status=status,
-        message=reply.message,
+        blocks=_content_blocks(reply, execution, references),
         # WAITING 状态返回结构化补充项；其他状态通常为空。
         clarification=_clarification(reply, status),
-        # references 只携带轻量编号，任务进度和结果仍由对应业务接口查询。
-        references=references,
-        # 意图与持久参数用于审计及后续轮次恢复，不保存单轮控制参数。
-        intent_code=_intent_code(reply),
-        intent_data=AgentIntentData(
-            parameters=persistent_parameters(reply.parameters),
-            entity_resolution=(reply.entity_resolution.model_dump(mode="json", by_alias=True)
-                               if reply.entity_resolution else {}),
-        ),
-        skill_code=reply.skill_name,
-        # resultData 保存轻量执行摘要，不重复嵌入可能很大的完整工具响应。
-        result_data=AgentResultData(
-            executed_tool=reply.executed_tool,
-            tool_status=_find_text(execution, "status"),
-            decision_reason=reply.decision_reason,
-            references=references,
-        ),
-        memory_patch=MemoryPatch.model_validate(reply.memory_patch),
-        presentation=(PresentationResponse.model_validate(reply.presentation)
-                      if reply.presentation else None),
-        execution_result=ExecutionResultResponse.model_validate(execution),
-        # 只有最终失败时才填写稳定错误码和可展示错误信息。
-        error_code="AGENT_RESULT_FAILED" if status == AgentStatus.FAILED else None,
-        error_message=reply.message if status == AgentStatus.FAILED else None,
+        error=ErrorInfo(code="AGENT_RESULT_FAILED") if status == AgentStatus.FAILED else None,
     )
 
 
@@ -357,55 +323,50 @@ def _chat_references(
                 else ReferenceRelation.DISPLAYED)
     status = _find_text(execution_result, "status")
     references: list[MessageReferenceResponse] = []
-    for field, reference_type in (
-        ("taskNo", ReferenceType.EXECUTION_TASK),
-        ("forecastNo", ReferenceType.FORECAST),
-    ):
-        for reference_no in _find_texts(execution_result, field):
-            references.append(MessageReferenceResponse(
-                reference_type=reference_type,
-                reference_no=reference_no,
-                relation_type=relation,
-                status=status,
-            ))
+    for task_no in _find_texts(execution_result, "taskNo"):
+        references.append(MessageReferenceResponse(task_no=task_no, relation_type=relation, status=status))
     return references
 
 
 def _clarification(
     reply: AgentRuntimeResponse,
     status: AgentStatus,
-) -> ClarificationResponse | None:
+) -> PythonClarification | None:
     """把 Agent 的缺失参数转换成前端可渲染的结构化补充请求。"""
     if (
         status != AgentStatus.WAITING
         or not reply.resolution_issues
-        or not reply.interaction_id
-        or reply.interaction_type is None
-        or not reply.reply_to_turn_id
-        or reply.clarification_reason is None
-        or not reply.resume_from
+        or reply.memory_patch.pending_operation is None
     ):
         return None
-    return ClarificationResponse(
-        interaction_id=reply.interaction_id,
-        interaction_type=reply.interaction_type,
-        reply_to_turn_id=reply.reply_to_turn_id,
-        request_id=reply.request_id,
-        reason=reply.clarification_reason,
-        resume_from=reply.resume_from,
-        prompt=reply.message,
-        fields=[
-            ClarificationField(
-                parameter_code=issue.field,
-                parameter_name=_parameter_name(issue.field),
-                reason=issue.reason,
-                input_type=issue.input_type,
-                required=issue.required,
-                options=issue.options,
-            )
-            for issue in reply.resolution_issues
-        ],
+    issue = next((item for item in reply.resolution_issues if item.required), reply.resolution_issues[0])
+    return PythonClarification(
+        field=issue.field,
+        reason=issue.reason,
+        input_type=issue.input_type,
+        options=issue.options,
+        pending_operation=reply.memory_patch.pending_operation,
     )
+
+
+def _content_blocks(
+    reply: AgentRuntimeResponse,
+    execution: dict[str, object],
+    references: list[MessageReferenceResponse],
+) -> list[ContentBlock]:
+    """把Python运行结果转换成Java和Vue统一使用的内容块。"""
+    blocks = [ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": reply.message})]
+    if reply.presentation is not None:
+        presentation = reply.presentation.model_dump(mode="json", by_alias=True, exclude_none=True)
+        block_type = ContentBlockType.CHART if str(reply.presentation.type).upper() == "CHART" else ContentBlockType.TABLE
+        blocks.append(ContentBlock(type=block_type, data=presentation))
+    if execution:
+        blocks.append(ContentBlock(type=ContentBlockType.TABLE, data=execution))
+    blocks.extend(ContentBlock(
+        type=ContentBlockType.TASK_CARD,
+        data=reference.model_dump(mode="json", by_alias=True, exclude_none=True),
+    ) for reference in references)
+    return blocks
 
 
 def _parameter_name(parameter: str) -> str:
@@ -428,29 +389,6 @@ def _parameter_name(parameter: str) -> str:
         "regionNames": "地区名称",
         "industryNames": "行业名称",
     }.get(base, parameter)
-
-
-def _intent_code(reply: AgentRuntimeResponse) -> str:
-    """优先返回语义理解的稳定意图；仅为旧运行结果保留工具名兜底。"""
-    if reply.intent_code:
-        return reply.intent_code
-
-    skill_intents = {
-        "model-training-management": "FORECAST",
-        "customer-gas-forecast": "FORECAST",
-        "business-data-query": "QUERY",
-        "forecast-analysis": "ANALYZE",
-        "general-chat": "CHAT",
-    }
-    if reply.skill_name in skill_intents:
-        return skill_intents[reply.skill_name]
-
-    tool = reply.executed_tool or ""
-    if tool.startswith("forecast_"):
-        return "FORECAST" if tool == "forecast_start" else "QUERY"
-    if tool:
-        return "QUERY"
-    return "CHAT"
 
 
 def _find_text(value: Any, name: str) -> str | None:

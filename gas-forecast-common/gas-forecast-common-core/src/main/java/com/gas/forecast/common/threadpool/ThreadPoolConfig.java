@@ -6,16 +6,12 @@ import java.util.concurrent.TimeUnit;
 /**
  * 线程池显式配置。
  *
- * <p>遵循《阿里巴巴 Java 开发手册》：业务线程池必须通过 {@code ThreadPoolExecutor}
- * 明确声明核心参数，禁止直接使用 {@code Executors} 创建线程池。</p>
+ * <p>
+ * 遵循《阿里巴巴 Java 开发手册》：业务线程池必须通过 {@code ThreadPoolExecutor} 明确声明核心参数，禁止直接使用
+ * {@code Executors} 创建线程池。
+ * </p>
  */
-public record ThreadPoolConfig(
-        String poolName,
-        int corePoolSize,
-        int maximumPoolSize,
-        int queueCapacity,
-        long keepAliveTime,
-        TimeUnit keepAliveUnit) {
+public record ThreadPoolConfig(String poolName, int corePoolSize, int maximumPoolSize, int queueCapacity, long keepAliveTime, TimeUnit keepAliveUnit) {
 
     public ThreadPoolConfig {
         if (poolName == null || poolName.isBlank()) {

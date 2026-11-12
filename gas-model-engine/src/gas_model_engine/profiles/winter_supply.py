@@ -12,6 +12,6 @@ WINTER_SUPPLY_PROFILE = AlgorithmProfile(
         CandidateSpec("xgboost", "XGBOOST_V1", {}),
     ),
     aggregation=AggregationMode.MEDIAN,
-    strategy_code="WINTER_SUPPLY_V1",
+    scenario_code="WINTER_SUPPLY_V1",
     feature_policy_code="WINTER_SUPPLY_FEATURES_V1",
 )

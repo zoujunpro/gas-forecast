@@ -9,5 +9,7 @@ public enum AiIntentEnum {
 
     private final String code;
 
-    AiIntentEnum(String code) { this.code = code; }
+    AiIntentEnum(String code) {
+        this.code = code;
+    }
 }

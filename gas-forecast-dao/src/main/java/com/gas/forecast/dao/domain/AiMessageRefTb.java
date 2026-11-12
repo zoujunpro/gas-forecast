@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 import lombok.Data;
 
-/** AI消息与执行任务、预测记录的多值引用关系。 */
+/** AI消息与执行任务的多值引用关系。 */
 @Data
 @TableName("ai_message_ref_tb")
 public class AiMessageRefTb {
@@ -17,11 +17,8 @@ public class AiMessageRefTb {
     /** 关联消息ID，关联ai_conversation_message_tb.id。 */
     private Long messageId;
 
-    /** 引用类型：EXECUTION_TASK、FORECAST。 */
-    private String refType;
-
-    /** 引用对象编号。 */
-    private String refNo;
+    /** 执行任务编号，对应execution_task_tb.task_no。 */
+    private String taskNo;
 
     /** 关联类型：CREATED、REFERENCED、DISPLAYED。 */
     private String relationType;

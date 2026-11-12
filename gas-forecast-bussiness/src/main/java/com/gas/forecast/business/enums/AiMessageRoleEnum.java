@@ -10,7 +10,9 @@ public enum AiMessageRoleEnum {
 
     private final String code;
 
-    AiMessageRoleEnum(String code) { this.code = code; }
+    AiMessageRoleEnum(String code) {
+        this.code = code;
+    }
 
     public static boolean contains(String value) {
         return Arrays.stream(values()).anyMatch(item -> item.code.equalsIgnoreCase(value));

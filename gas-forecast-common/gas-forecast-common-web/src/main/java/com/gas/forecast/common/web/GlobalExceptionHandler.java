@@ -31,16 +31,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ResponseResult<Void>> handleValidationException(MethodArgumentNotValidException exception, HttpServletRequest request) {
-        String message = exception.getBindingResult().getFieldErrors().stream().findFirst()
-                .map(error -> error.getDefaultMessage() == null ? BusinessResponseCode.PARAM_ERROR.getMessage() : error.getDefaultMessage()).orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
+        String message = exception.getBindingResult().getFieldErrors().stream().findFirst().map(error -> error.getDefaultMessage() == null ? BusinessResponseCode.PARAM_ERROR.getMessage() : error.getDefaultMessage()).orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
         log.warn("Validation failed, uri={}, message={}", request.getRequestURI(), message);
         return ResponseEntity.badRequest().body(ResponseResult.error(BusinessResponseCode.PARAM_ERROR, message));
     }
 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ResponseResult<Void>> handleBindException(BindException exception, HttpServletRequest request) {
-        String message = exception.getBindingResult().getFieldErrors().stream().findFirst()
-                .map(error -> error.getDefaultMessage() == null ? BusinessResponseCode.PARAM_ERROR.getMessage() : error.getDefaultMessage()).orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
+        String message = exception.getBindingResult().getFieldErrors().stream().findFirst().map(error -> error.getDefaultMessage() == null ? BusinessResponseCode.PARAM_ERROR.getMessage() : error.getDefaultMessage()).orElse(BusinessResponseCode.PARAM_ERROR.getMessage());
         log.warn("Bind failed, uri={}, message={}", request.getRequestURI(), message);
         return ResponseEntity.badRequest().body(ResponseResult.error(BusinessResponseCode.PARAM_ERROR, message));
     }

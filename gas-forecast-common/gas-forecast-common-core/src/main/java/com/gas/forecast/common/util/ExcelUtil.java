@@ -221,9 +221,7 @@ public class ExcelUtil {
         log.info("sheetName:{}", sheetName);
         log.info("list:{}", list);
 
-        EasyExcel.write(absoluteFile, clazz).sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1").head(clazz).registerWriteHandler(getHorizontalCellStyleStrategy())
-                .registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz)))
-                .registerWriteHandler(new CustomCellWriteWidthConfig()).doWrite(list);
+        EasyExcel.write(absoluteFile, clazz).sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1").head(clazz).registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz))).registerWriteHandler(new CustomCellWriteWidthConfig()).doWrite(list);
         log.info("{}文件生成完毕", absoluteFile);
     }
 
@@ -237,9 +235,7 @@ public class ExcelUtil {
             response.setCharacterEncoding("utf-8");
             response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8") + ".xlsx");
             // 创建excel
-            EasyExcel.write(response.getOutputStream(), clazz).sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1").head(clazz).registerWriteHandler(getHorizontalCellStyleStrategy())
-                    .registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz)))
-                    .registerWriteHandler(new CustomCellWriteWidthConfig()).doWrite(list);
+            EasyExcel.write(response.getOutputStream(), clazz).sheet(TextUtils.hasText(sheetName) ? sheetName : "sheet1").head(clazz).registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new SelectedSheetWriteHandler(resolveSelectedAnnotation(clazz))).registerWriteHandler(new CustomCellWriteWidthConfig()).doWrite(list);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -306,8 +302,7 @@ public class ExcelUtil {
             response.setCharacterEncoding("utf-8");
             response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
             ExcelWriterBuilder writerBuilder = EasyExcel.write();
-            writerBuilder.registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new CustomCellWriteWidthConfig())
-                    .excelType(ExcelTypeEnum.XLSX);
+            writerBuilder.registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new CustomCellWriteWidthConfig()).excelType(ExcelTypeEnum.XLSX);
             writerBuilder.autoCloseStream(true);
             writerBuilder.file(out);
             writerBuilder.head(convertHead(headList)).sheet("sheet1").doWrite(convertData(headList, dataList));
@@ -338,8 +333,7 @@ public class ExcelUtil {
         writerBuilder.excelType(ExcelTypeEnum.XLSX);
         writerBuilder.autoCloseStream(true);
 
-        writerBuilder.registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new CustomCellWriteWidthConfig())
-                .head(convertHead(headList)).sheet("sheet1").doWrite(convertData(headList, dataList));
+        writerBuilder.registerWriteHandler(getHorizontalCellStyleStrategy()).registerWriteHandler(new CustomCellWriteHeightConfig()).registerWriteHandler(new CustomCellWriteWidthConfig()).head(convertHead(headList)).sheet("sheet1").doWrite(convertData(headList, dataList));
     }
 
     private static Map<String, Integer> reversalHead(Map headMap) {

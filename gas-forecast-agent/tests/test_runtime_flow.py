@@ -79,7 +79,7 @@ class Conversation:
         body = {
             "conversationNo": "C-1", "turnId": f"TURN-{self.turn}", "runNo": f"RUN-{self.turn}",
             "agentCode": "short-term", "businessContext": {}, "message": message, "inputType": input_type,
-            "conversationContext": {"memory": self.memory, "recentMessages": []},
+            "conversationContext": {"pendingOperation": self.memory.get("pendingOperation"), "recentMessages": []},
         }
         if input_type != "TEXT":
             interaction = self.last["clarification"]
@@ -88,12 +88,13 @@ class Conversation:
         response = self.client.post("/api/v1/internal/chat", json=body)
         assert response.status_code == 200, response.text
         self.last = response.json()
-        patch = self.last["memoryPatch"]
-        if patch is not None:
-            if patch["pendingOperation"] is None:
-                self.memory.pop("pendingOperation", None)
-            else:
-                self.memory["pendingOperation"] = patch["pendingOperation"]
+        clarification = self.last.get("clarification")
+        if clarification is not None:
+            pending = clarification["pendingOperation"]
+            self.last["clarification"] = {**clarification, "interactionId": f"INT-{self.turn}", "replyToTurnId": self.last["turnId"]}
+            self.memory["pendingOperation"] = pending
+        elif self.last["status"] != "FAILED":
+            self.memory.pop("pendingOperation", None)
         return self.last
 
     @property
@@ -131,17 +132,18 @@ def test_candidate_then_horizon_then_direct_forecast_keeps_same_operation(conver
     assert chat.send("预测安源")["status"] == "WAITING"
     assert chat.pending.issues[0].details.candidates[0].parameters.customer_codes == ["CUS-1"]
     assert chat.send("1", "CLARIFICATION_REPLY")["status"] == "WAITING"
-    assert chat.pending.parameters.customer_codes == ["CUS-1"]
-    assert chat.pending.parameters.forecast_horizon is None
+    assert chat.pending.arguments.customer_codes == ["CUS-1"]
+    assert chat.pending.arguments.forecast_horizon is None
     reply = chat.send("30天", "CLARIFICATION_REPLY")
     assert reply["status"] == "SUCCESS", reply
     assert len(entities.calls) == 1  # 补天数不再重复查已确认客户。
-    assert reply["references"][0]["referenceNo"] == "TASK-1"
+    assert any(block["type"] == "TASK_CARD" and block["data"]["taskNo"] == "TASK-1" for block in reply["blocks"])
     assert len(tools.created) == 1
     assert tools.created[0]["targets"][0]["customerCodes"] == ["CUS-1"]
     assert tools.created[0]["forecastHorizon"] == 30
     assert "pendingOperation" not in chat.memory
-    assert isinstance(ToolExecutionResult.model_validate(reply["executionResult"]).data, TaskCreatedResult)
+    execution = next(block["data"] for block in reply["blocks"] if block["type"] == "TABLE" and "resultType" in block["data"])
+    assert isinstance(ToolExecutionResult.model_validate(execution).data, TaskCreatedResult)
 
 
 def test_new_request_does_not_inherit_pending_or_completed_parameters(conversation):
@@ -149,13 +151,13 @@ def test_new_request_does_not_inherit_pending_or_completed_parameters(conversati
     assert chat.send("预测两个客户30天")["status"] == "SUCCESS"
     assert "pendingOperation" not in chat.memory
     chat.send("预测客户二")  # TEXT 新请求，不回答上个操作的确认。
-    assert chat.pending.parameters.customer_codes == ["CUS-2"]
-    assert chat.pending.parameters.forecast_horizon is None
+    assert chat.pending.arguments.customer_codes == ["CUS-2"]
+    assert chat.pending.arguments.forecast_horizon is None
     assert chat.send("30天", "CLARIFICATION_REPLY")["status"] == "SUCCESS"
     assert len(tools.created) == 2
     chat.send("预测高邮安源")
-    assert chat.pending.parameters.customer_codes == ["CUS-1"]
-    assert chat.pending.parameters.forecast_horizon is None
+    assert chat.pending.arguments.customer_codes == ["CUS-1"]
+    assert chat.pending.arguments.forecast_horizon is None
 
 
 def test_batch_targets_execute_directly_after_required_parameters_are_present(conversation):
@@ -175,7 +177,7 @@ def test_cancel_during_parameter_clarification_abandons_operation(conversation):
     reply = chat.send("取消", "CLARIFICATION_REPLY")
 
     assert reply["status"] == "SUCCESS"
-    assert reply["message"] == "已取消本次待确认操作。"
+    assert reply["blocks"][0] == {"type": "MARKDOWN", "data": {"content": "已取消本次待确认操作。"}}
     assert "pendingOperation" not in chat.memory
     assert not tools.created
 
@@ -185,20 +187,16 @@ def test_non_numeric_horizon_reply_keeps_pending_operation(conversation):
     chat.send("预测两个客户")
     reply = chat.send("嗯", "CLARIFICATION_REPLY")
     assert reply["status"] == "WAITING"
-    assert chat.pending.parameters.forecast_horizon is None
+    assert chat.pending.arguments.forecast_horizon is None
     assert not tools.created
 
 
-def test_failed_turn_preserves_pending_operation_and_stale_reply_cannot_execute(conversation):
+def test_failed_turn_preserves_pending_operation(conversation):
     chat, tools, _ = conversation
     chat.send("预测高邮安源")
     original = copy.deepcopy(chat.memory)
-    reply = chat.send("确认", "INTERACTION_REPLY", interactionId="INT-expired")
-    assert reply["status"] == "FAILED"
-    assert reply["memoryPatch"] is None
-    assert chat.memory == original
     reply = chat.send("模型故障")
-    assert reply["errorCode"] == "SEMANTIC_EXTRACTION_FAILED"
+    assert reply["error"]["code"] == "SEMANTIC_EXTRACTION_FAILED"
     assert chat.memory == original
     assert not tools.created
 

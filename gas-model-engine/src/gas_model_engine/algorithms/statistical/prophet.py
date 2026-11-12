@@ -1,5 +1,6 @@
 import pandas as pd
 
+from ...calendar import LocalHolidayProvider
 from ..contracts import AlgorithmCapabilities, AlgorithmFamily, AlgorithmMetadata, PredictionResult
 from ._base import StatisticalAlgorithm
 
@@ -32,7 +33,12 @@ class ProphetAlgorithm(StatisticalAlgorithm):
         from prophet import Prophet
 
         self.ensure_valid_input(train_data, "TRAIN")
-        model = Prophet(**self.normalized_params(params))
+        # 节假日既作为公共数值特征提供给所有算法，也以Prophet原生事件形式
+        # 注入，避免把春节、国庆等不同节日压缩成同一个is_holiday变量。
+        model = Prophet(
+            holidays=LocalHolidayProvider().build_prophet_events(),
+            **self.normalized_params(params),
+        )
         frame = pd.DataFrame({"ds": train_data.dates, "y": train_data.target})
         names = list(train_data.features.columns)
         for name in names:

@@ -1,0 +1,56 @@
+{
+  "conversationNo": "AICHAT-20261112-0001",
+  "turnId": "TURN-20261112-0002",
+  "runNo": "RUN-20261112-0002",
+  "message": "30天",
+  "inputType": "CLARIFICATION_REPLY",
+  "interactionId": "INT-20261112-0001",
+  "replyToTurnId": "TURN-20261112-0001",
+  "agentCode": "short-term",
+  "businessContext": {
+    "regionCode": null,
+    "regionName": null,
+    "industryCode": null,
+    "industryName": null,
+    "customerCode": null,
+    "customerName": null
+  },
+  "conversationContext": {
+    "summary": null,
+    "recentMessages": [
+      {
+        "role": "USER",
+        "content": "预测高邮安源"
+      },
+      {
+        "role": "ASSISTANT",
+        "content": "请问需要预测未来多少天？"
+      }
+    ],
+    "pendingOperation": {
+      "originalMessage": "预测高邮安源",
+      "action": "forecast_start",
+      "arguments": {
+        "customerCodes": [
+          "CUS-001"
+        ],
+        "customerNames": [
+          "高邮安源"
+        ],
+        "forecastUnit": "DAY",
+        "autoTrain": true
+      },
+      "issues": [
+        {
+          "reason": "PARAMETER_MISSING",
+          "field": "forecastHorizon",
+          "message": "请提供预测天数",
+          "inputType": "NUMBER",
+          "required": true,
+          "options": [],
+          "details": {}
+        }
+      ]
+    }
+  }
+}

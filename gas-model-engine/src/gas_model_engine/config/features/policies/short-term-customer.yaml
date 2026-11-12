@@ -1,73 +1,140 @@
+# 策略唯一编码。V1表示第一版配置契约，不是预测算法的版本。
 code: SHORT_TERM_CUSTOMER_FEATURES_V1
 name: 短期客户特征配置
 description: 按客户序列预测；根据行业名称匹配行业特征，不要求模型引擎识别客户编码。
+# 表示规则按行业信息匹配；不是把多个客户销量合并成一条行业序列。
 target_type: INDUSTRY
+# 调用方至少要提供industry_name，否则无法判断需要加载哪个行业规则。
 required_context: [industry_name]
 
+# 所有短期客户默认使用的公共特征，之后再叠加rules中的行业专属特征。
 features:
+  # 把调用方提供的数值字段原样传给算法，例如已准备好的业务指标。
+  # required=false表示没有这类字段时跳过，不阻断预测。
   - code: DYNAMIC_PASSTHROUGH_V1
     required: false
     params:
+      # 空列表表示不强制要求某个固定字段，实际可用列由输入数据决定。
       required_columns: []
 
+  # 从预测日期自动生成日历特征，不依赖调用方额外提供。
   - code: CALENDAR_V1
+    # required=true表示生成失败时应终止本次预测，不能静默忽略。
     required: true
     params:
+      # dow：星期几（0=周一，6=周日）。
+      # month：月份；t：从训练起点开始的连续天数；is_weekend：是否周末。
       features: [dow, month, t, is_weekend]
 
+  # 使用项目内中国法定节假日与调休日历生成通用节假日特征。
   - code: HOLIDAY_CN_V1
     required: true
     params:
       features:
+        # 当天是否为法定休息日。
         - is_holiday
+        # 当天是否工作，包括普通工作日和调休补班日。
         - is_workday
+        # 当天是否为周末调休补班。
         - is_makeup_workday
+        # 节假日类别编号；0表示非节假日。
         - holiday_type
+        # 距离下一个节假日日期的天数；节假日期间为0。
         - days_to_holiday
+        # 距离最近一个节假日日期的天数；节假日期间为0。
         - days_after_holiday
+        # 距离最近春节日期的绝对天数。
         - days_to_cny
+        # 距离最近国庆节日期的绝对天数。
         - days_to_national_day
+        # 当前是本次连续假期的第几天；非假期为0。
+        - holiday_day_index
+        # 本次连续假期一共有多少天；非假期为0。
+        - holiday_total_days
+        # 距离本次连续假期结束还有几天；假期最后一天为0。
+        - days_until_holiday_end
+        # 距离最近一次连续假期结束已有几天；假期内为0。
+        - days_since_holiday_end
+        # 是否处于长假影响期：连续放假至少3天，覆盖假期开始前2天至结束后2天。
+        - is_long_holiday_window
 
-planned_features:
-  # 旧城燃正式流程未使用销量Lag和Rolling。保留为实验能力，回测确认有效前不默认启用。
+  # 历史销量滞后特征。预测时只能使用预测时点之前已知的真实销量；
+  # 多步预测中尚未发生的日期会使用前序预测值递推，不能读取未来真实销量。
   - code: LAG_V1
-  - code: ROLLING_V1
+    required: true
+    params:
+      # 分别提供前1、2、7、14、28天的销量，用于表达近期、周周期和月周期水平。
+      lags: [1, 2, 7, 14, 28]
 
+  # 描述历史销量相对过去若干天的变化方向和幅度。
+  - code: TARGET_CHANGE_V1
+    required: true
+    params:
+      # 计算相对前1、7、28天的差值/变化率。
+      periods: [1, 7, 28]
+      # true表示除绝对差值外，同时生成比例变化特征。
+      include_ratio: true
+      # 比例最大裁剪到正负3倍，避免接近0的历史销量导致比例爆炸。
+      ratio_clip: 3.0
+
+# 已规划但尚未启用的特征。这里仅用于说明，不会进入当前模型训练。
+planned_features:
+  # 近期预测偏差需要调用方提供历史生产预测快照，不能用训练拟合值替代。
+  - code: FORECAST_ERROR_HISTORY_V1
+
+# 行业专属规则：match匹配成功后，把对应features追加到上面的公共特征中。
 rules:
+  # 城市燃气对温度、湿度等天气变化较敏感，因此追加天气派生特征。
   - id: CITY_GAS_FEATURES
     description: 城燃行业按英文天气字段动态生成HDD、CDD、温差及滚动天气特征。
     match:
+      # metadata.industry_name严格等于“城燃”时启用本规则。
       industry_name: 城燃
     features:
       - code: SHORT_TERM_WEATHER_V1
+        # 天气字段缺失时允许跳过，避免无天气数据导致整个预测失败。
         required: false
         params:
           features:
+            # 采暖度日：低于基准温度的冷负荷。
             - hdd
+            # 制冷度日：高于基准温度的热负荷。
             - cdd
+            # 前一天HDD。
             - hdd_lag1
+            # 最近3天HDD均值。
             - hdd_roll3
+            # 最近3天CDD均值。
             - cdd_roll3
+            # 当天最高温减最低温。
             - temp_range
+            # 最近7天平均温度。
             - temp_roll7
+            # 最近3天平均湿度。
             - humidity_roll3
+          # HDD基准温度：低于18℃的部分计为采暖需求。
           hdd_base_temperature: 18.0
+          # CDD基准温度：高于26℃的部分计为制冷需求。
           cdd_base_temperature: 26.0
+          # 下列参数分别控制天气滚动统计的窗口天数。
           hdd_rolling_window: 3
           cdd_rolling_window: 3
           temperature_rolling_window: 7
           humidity_rolling_window: 3
 
+  # 化工客户如果输入中存在生产计划或检修状态，就把它们作为未来业务信号。
   - id: CHEMICAL_FEATURES
     description: 化工客户存在生产计划或检修字段时自动启用。
     match:
       industry_code: CHEMICAL
     features:
+      # required=false：对应输入列不存在时分别跳过。
       - code: PRODUCTION_PLAN_V1
         required: false
       - code: MAINTENANCE_STATUS_V1
         required: false
 
+  # 钢铁客户目前只追加生产计划特征。
   - id: STEEL_FEATURES
     description: 钢铁客户存在生产计划时自动启用。
     match:

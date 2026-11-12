@@ -37,15 +37,18 @@ public interface ForecastApplicationService {
             /** 预测时间参数。 */
             ForecastOptions forecast,
             /** 训练和回测数据范围。 */
-            TrainingDataRange trainingDataRange,
-            /** AI 会话中用户确认执行的状态。 */
-            ExecutionOptions execution
-) {
+            TrainingDataRange trainingDataRange, /** AI 会话中用户确认执行的状态。 */
+            ExecutionOptions execution) {
 
-        public String dimensionTypeCode() { return dimensionType == null ? null : dimensionType.getCode(); }
-        public boolean confirmed() { return execution != null && execution.confirmed(); }
+        public String dimensionTypeCode() {
+            return dimensionType == null ? null : dimensionType.getCode();
+        }
+        public boolean confirmed() {
+            return execution != null && execution.confirmed();
+        }
     }
 
     /** AI 会话中用户确认执行的状态。 */
-    record ExecutionOptions(boolean confirmed) { }
+    record ExecutionOptions(boolean confirmed) {
+    }
 }

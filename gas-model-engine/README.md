@@ -43,7 +43,7 @@ result = pipeline.run(
 
 ```text
 ForecastPipeline             一次完整预测任务
-└── ForecastStrategy         任务的流程编排方式
+└── ForecastScenario         场景的数据准备和参数钩子
     ├── Profile              本场景允许使用的配置
     ├── FeatureRegistry      特征怎么算
     ├── BacktestRegistry     回测计划怎么算
@@ -202,7 +202,7 @@ Profile 只引用 Policy 编码，不复制全量特征定义：
 ```python
 AlgorithmProfile(
     code="short-term",
-    strategy_code="SHORT_TERM_CUSTOMER_V1",
+    scenario_code="SHORT_TERM_CUSTOMER_V1",
     feature_policy_code="SHORT_TERM_CUSTOMER_FEATURES_V1",
     ...,
 )
@@ -306,7 +306,7 @@ Tune 与 Eval 的职责必须分开：
 
 Profile 不是算法，也不是城市或行业代码。它是一组可复用的预测方案配置，主要声明：
 
-- 使用哪种执行策略；
+- 使用哪个场景钩子；
 - 加载哪些特征方法及参数；
 - 支持哪些候选算法及参数；
 - 使用哪种回测方法及计算预算；
@@ -322,41 +322,28 @@ Profile 不是算法，也不是城市或行业代码。它是一组可复用的
 执行包负责“什么时候做什么”，不实现具体算法公式。主要对象：
 
 - `ForecastPipeline`：统一入口。
-- `ConfigDrivenForecastStrategy`：特征、回测、组合、选优、重训和预测的公共流程模板。
-- `scenario_strategies/short_term_customer.py`：短期客户场景策略。
-- `scenario_strategies/winter_supply.py`：冬季保供场景策略；旧逻辑等价迁移完成前拒绝执行。
-- `scenario_strategies/legacy_short_term_residual.py`：旧短期残差流程的独立迁移位置。
+- `ForecastScenario`：场景清洗、参数钩子和流程依赖的公共基类。
+- `scenarios/`：不同业务场景的数据准备和参数钩子，不定义另一套预测流程。
 - `data_preparation/`：只负责数据转换、缺失值处理和排序，不决定数据是否合法。
 - `validation/short_term_customer.py`：短期客户专属校验；未来特征可选，传入则校验。
 - `validation/winter_supply.py`：冬季保供专属校验入口。
 - `validation/monthly_industry.py`：月度行业专属校验入口。
 - `validation/base.py`：三个场景复用的日期、目标值和行数等基础检查工具。
-- `DirectProfileStrategy`：不回测选优，直接训练 Profile 指定候选的简单流程。
 - `AlgorithmProfileExecutor`：连接 Profile 与内部 `AlgorithmEngine`。
 - `ForecastRequest` / `ForecastResult`：完整任务输入输出。
 - `BacktestResult`：候选指标、OOF 预测和执行计划元数据。
 
-所有场景策略的公开接口完全一致：
-
-```python
-def execute(
-    request: ForecastRequest,
-    profile: AlgorithmProfile,
-    executor: AlgorithmProfileExecutor,
-) -> ForecastResult:
-    ...
-```
-
-上层不会直接调用策略。`ForecastPipeline` 根据 Profile 的 `strategy_code` 在内部选择策略，始终接收 `ForecastRequest` 并返回 `ForecastResult`。场景策略只能改变内部回测划分、训练顺序、评价指标或后处理，不能改变接口契约。
+上层只调用 `ForecastPipeline.run()`。所有 Profile 都执行同一条生产流程，并始终接收
+`ForecastRequest`、返回 `ForecastResult`。`scenario_code` 只选择场景的数据清洗、校验和
+参数钩子，不会切换到另一套训练或预测流程。
 
 ```text
-同一个 ForecastRequest / ForecastResult
-├── SHORT_TERM_CUSTOMER_V1   已实现，复用公共配置驱动模板
-├── WINTER_SUPPLY_V1         独立文件，等待冬季旧逻辑等价迁移
-└── 其他场景策略             后续按相同接口扩展
+ForecastPipeline.run()
+└── 清洗与特征 → 回测 → Tune/Eval → 选优 → 全量重训 → 未来预测
 ```
 
-候选算法、特征参数或 TopK 不同，优先使用 Profile 配置；只有流程步骤、回测划分或评价逻辑不同，才新增场景 Strategy。公共事件、日志、阶段状态和异常格式应保留在公共模板中，避免每个场景复制整套流程。
+候选算法、特征参数和回测参数由 Profile 或场景钩子提供；完整流程步骤、阶段状态和
+异常格式统一保留在 ForecastPipeline 中，禁止每个场景复制整套流程。
 
 ## 3. 稳定编码规则
 
@@ -407,7 +394,7 @@ flowchart TD
     B1 --> B2[基础结构校验：未来 dates / features]
     B2 --> C[根据 profile_code 加载 AlgorithmProfile]
     C --> C1[读取候选算法、特征、回测、组合和选优配置]
-    C1 --> D[根据 strategy_code 从 StrategyRegistry 加载策略]
+    C1 --> D[根据 scenario_code 加载场景参数钩子]
 
     D --> D1{场景策略}
     D1 -->|SHORT_TERM_CUSTOMER_V1| E[短期客户策略]
@@ -526,7 +513,7 @@ flowchart TD
 
 ### 4.2 解析 Profile
 
-Pipeline 根据 `profile_code` 找到候选算法、特征、回测、组合和选优配置，再根据 `strategy_code` 选择确定性的执行策略。
+Pipeline 根据 `profile_code` 找到候选算法、特征、回测、组合和选优配置，再根据 `scenario_code` 选择确定性的执行策略。
 
 ### 4.3 计算执行计划
 

@@ -139,7 +139,7 @@ Python 返回的 `memoryPatch.pendingOperation` 替换当前操作，值为 `nul
 
 ## 记忆边界
 
-- 短期记忆：保存在 Java `ai_conversation_tb.memory_json`，只记录未完成操作和页面焦点。每次 HTTP 请求创建新的图状态，不引入第二套 Checkpointer 持久化。
+- 待澄清操作：保存在 Java `ai_conversation_interaction_tb.operation_json`。页面业务上下文只随当前请求传入，不写入会话表；每次 HTTP 请求创建新的图状态，不引入第二套 Checkpointer 持久化。
 - 长期记忆：当前不启用。跨会话用户偏好、常用客户等信息以后应使用独立用户记忆表和MCP工具，并支持查看、修改和删除，不能把全部聊天内容永久保存。
 
 ## 当前接口

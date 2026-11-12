@@ -40,22 +40,19 @@ public class ExecutionTaskLifecycleService {
 
     /** 创建一次用户原始意图对应的任务及最小目标关联行。 */
     @Transactional
-    public ExecutionTaskTb create(String conversationNo, String agentCode,
-            String dimensionType, List<ExecutionTarget> targets, String taskName) {
+    public ExecutionTaskTb create(String conversationNo, String agentCode, String dimensionType, List<ExecutionTarget> targets, String taskName) {
         return create(conversationNo, agentCode, dimensionType, targets, taskName, null);
     }
 
     /** 创建任务时持久化业务命令快照，供异步执行器恢复完整预测参数。 */
     @Transactional
-    public ExecutionTaskTb create(String conversationNo, String agentCode,
-            String dimensionType, List<ExecutionTarget> targets, String taskName, String requestParam) {
+    public ExecutionTaskTb create(String conversationNo, String agentCode, String dimensionType, List<ExecutionTarget> targets, String taskName, String requestParam) {
         return create(conversationNo, null, agentCode, dimensionType, targets, taskName, requestParam);
     }
 
     /** 创建任务时将发起它的智能体运行一并保存，供异步执行过程持续回写。 */
     @Transactional
-    public ExecutionTaskTb create(String conversationNo, String runNo, String agentCode,
-            String dimensionType, List<ExecutionTarget> targets, String taskName, String requestParam) {
+    public ExecutionTaskTb create(String conversationNo, String runNo, String agentCode, String dimensionType, List<ExecutionTarget> targets, String taskName, String requestParam) {
         Date now = new Date();
         ExecutionTaskTb task = new ExecutionTaskTb();
         task.setTaskNo(newTaskNo());
@@ -72,7 +69,8 @@ public class ExecutionTaskLifecycleService {
         executionTaskTbMapper.insert(task);
 
         List<ExecutionTaskDetailTb> relations = expand(task.getTaskNo(), agentCode, dimensionType, targets, now);
-        if (relations.isEmpty()) throw new BusinessException("当前范围内没有可执行目标");
+        if (relations.isEmpty())
+            throw new BusinessException("当前范围内没有可执行目标");
         for (int index = 0; index < relations.size(); index++) {
             ExecutionTaskDetailTb detail = relations.get(index);
             detail.setDetailNo(task.getTaskNo() + "-" + String.format("%06d", index + 1));
@@ -86,8 +84,9 @@ public class ExecutionTaskLifecycleService {
     /**
      * 仅展开并校验用户选择的范围，用于确认提示。
      *
-     * <p>这里绝不能创建任务、任务明细或执行步骤。确认前产生任务会导致用户点击
-     * “确认”后再次调用创建接口时出现两个 taskNo。</p>
+     * <p>
+     * 这里绝不能创建任务、任务明细或执行步骤。确认前产生任务会导致用户点击 “确认”后再次调用创建接口时出现两个 taskNo。
+     * </p>
      */
     @Transactional(readOnly = true)
     public int previewTargetCount(String agentCode, String dimensionType, List<ExecutionTarget> targets) {
@@ -99,12 +98,9 @@ public class ExecutionTaskLifecycleService {
      */
     @Transactional
     public ExecutionTaskDetailTb claimForecastDetail(Long detailId) {
-        int affected = executionTaskDetailTbMapper.update(null, Wrappers.<ExecutionTaskDetailTb>lambdaUpdate()
-                .eq(ExecutionTaskDetailTb::getId, detailId)
-                .in(ExecutionTaskDetailTb::getStatus, ExecutionTargetStatusEnum.PENDING.getCode(), ExecutionTargetStatusEnum.FAILED.getCode())
-                .set(ExecutionTaskDetailTb::getStatus, ExecutionTargetStatusEnum.RUNNING.getCode())
-                .set(ExecutionTaskDetailTb::getUpdatedAt, new Date()));
-        if (affected != 1) return null;
+        int affected = executionTaskDetailTbMapper.update(null, Wrappers.<ExecutionTaskDetailTb>lambdaUpdate().eq(ExecutionTaskDetailTb::getId, detailId).in(ExecutionTaskDetailTb::getStatus, ExecutionTargetStatusEnum.PENDING.getCode(), ExecutionTargetStatusEnum.FAILED.getCode()).set(ExecutionTaskDetailTb::getStatus, ExecutionTargetStatusEnum.RUNNING.getCode()).set(ExecutionTaskDetailTb::getUpdatedAt, new Date()));
+        if (affected != 1)
+            return null;
         ExecutionTaskDetailTb detail = executionTaskDetailTbMapper.selectById(detailId);
         refreshTaskStatus(detail.getTaskNo());
         return detail;
@@ -114,7 +110,8 @@ public class ExecutionTaskLifecycleService {
     @Transactional
     public void bindForecastNo(Long detailId, String forecastNo) {
         ExecutionTaskDetailTb detail = executionTaskDetailTbMapper.selectById(detailId);
-        if (detail == null) throw new BusinessException("任务明细不存在");
+        if (detail == null)
+            throw new BusinessException("任务明细不存在");
         if (TextUtils.hasText(detail.getForecastNo()) && !detail.getForecastNo().equals(forecastNo))
             throw new BusinessException("任务明细已绑定预测编号，不能替换");
         if (!TextUtils.hasText(detail.getForecastNo())) {
@@ -128,7 +125,8 @@ public class ExecutionTaskLifecycleService {
     @Transactional
     public void completeForecastDetail(Long detailId, boolean success) {
         ExecutionTaskDetailTb detail = executionTaskDetailTbMapper.selectById(detailId);
-        if (detail == null) throw new BusinessException("任务明细不存在");
+        if (detail == null)
+            throw new BusinessException("任务明细不存在");
         detail.setStatus(success ? ExecutionTargetStatusEnum.SUCCESS.getCode() : ExecutionTargetStatusEnum.FAILED.getCode());
         detail.setUpdatedAt(new Date());
         executionTaskDetailTbMapper.updateById(detail);
@@ -136,16 +134,13 @@ public class ExecutionTaskLifecycleService {
     }
 
     public List<ExecutionTaskDetailTb> relations(String taskNo) {
-        return executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery()
-                .eq(ExecutionTaskDetailTb::getTaskNo, taskNo)
-                .orderByAsc(ExecutionTaskDetailTb::getDetailNo));
+        return executionTaskDetailTbMapper.selectList(Wrappers.<ExecutionTaskDetailTb>lambdaQuery().eq(ExecutionTaskDetailTb::getTaskNo, taskNo).orderByAsc(ExecutionTaskDetailTb::getDetailNo));
     }
 
-    private List<ExecutionTaskDetailTb> expand(String taskNo, String agentCode, String dimensionType,
-            List<ExecutionTarget> targets, Date now) {
-        if (targets == null || targets.isEmpty()) throw new BusinessException("targets不能为空");
-        ExecutionDimensionTypeEnum type = ExecutionDimensionTypeEnum.fromCode(dimensionType)
-                .orElseThrow(() -> new BusinessException("不支持的执行维度：" + dimensionType));
+    private List<ExecutionTaskDetailTb> expand(String taskNo, String agentCode, String dimensionType, List<ExecutionTarget> targets, Date now) {
+        if (targets == null || targets.isEmpty())
+            throw new BusinessException("targets不能为空");
+        ExecutionDimensionTypeEnum type = ExecutionDimensionTypeEnum.fromCode(dimensionType).orElseThrow(() -> new BusinessException("不支持的执行维度：" + dimensionType));
         Map<String, ExecutionTaskDetailTb> relations = new LinkedHashMap<>();
         for (ExecutionTarget target : targets) {
             switch (type) {
@@ -158,8 +153,7 @@ public class ExecutionTaskLifecycleService {
     }
 
     /** 客户维度中，地区和行业只是客户筛选条件；最终最小执行单位永远是一个真实客户。 */
-    private void expandCustomers(String taskNo, String agentCode, ExecutionTarget target, Date now,
-            Map<String, ExecutionTaskDetailTb> relations) {
+    private void expandCustomers(String taskNo, String agentCode, ExecutionTarget target, Date now, Map<String, ExecutionTaskDetailTb> relations) {
         var query = Wrappers.<BaseCustomerTb>lambdaQuery();
         List<String> customerCodes = codes(target.customerCodes());
         if (!customerCodes.isEmpty()) {
@@ -168,45 +162,44 @@ public class ExecutionTaskLifecycleService {
         } else {
             List<String> regionCodes = codes(target.regionCodes());
             List<String> industryCodes = codes(target.industryCodes());
-            if (!regionCodes.isEmpty()) query.in(BaseCustomerTb::getRegionCode, regionCodes);
-            if (!industryCodes.isEmpty()) query.in(BaseCustomerTb::getIndustryCode, industryCodes);
+            if (!regionCodes.isEmpty())
+                query.in(BaseCustomerTb::getRegionCode, regionCodes);
+            if (!industryCodes.isEmpty())
+                query.in(BaseCustomerTb::getIndustryCode, industryCodes);
         }
-        baseCustomerTbMapper.selectList(query).forEach(customer -> put(relations,
-                relation(taskNo, agentCode, ExecutionDimensionTypeEnum.CUSTOMER, customer.getRegionCode(), customer.getIndustryCode(),
-                        customer.getCustomerCode(), now)));
+        baseCustomerTbMapper.selectList(query).forEach(customer -> put(relations, relation(taskNo, agentCode, ExecutionDimensionTypeEnum.CUSTOMER, customer.getRegionCode(), customer.getIndustryCode(), customer.getCustomerCode(), now)));
     }
 
     /** 地区维度不接受行业、客户条件，一个地区就是一个最小执行目标。 */
-    private void expandRegions(String taskNo, String agentCode, ExecutionTarget target, Date now,
-            Map<String, ExecutionTaskDetailTb> relations) {
+    private void expandRegions(String taskNo, String agentCode, ExecutionTarget target, Date now, Map<String, ExecutionTaskDetailTb> relations) {
         if (!codes(target.industryCodes()).isEmpty() || !codes(target.customerCodes()).isEmpty())
             throw new BusinessException("地区维度只允许传regionCodes");
         List<String> regionCodes = codes(target.regionCodes());
-        if (regionCodes.isEmpty()) throw new BusinessException("地区维度必须传regionCodes");
-        regionCodes.forEach(regionCode -> put(relations,
-                relation(taskNo, agentCode, ExecutionDimensionTypeEnum.REGION, regionCode, "", "", now)));
+        if (regionCodes.isEmpty())
+            throw new BusinessException("地区维度必须传regionCodes");
+        regionCodes.forEach(regionCode -> put(relations, relation(taskNo, agentCode, ExecutionDimensionTypeEnum.REGION, regionCode, "", "", now)));
     }
 
     /** 行业维度可按地区限制；未给行业时展开该地区（或全局）的全部实际行业。 */
-    private void expandIndustries(String taskNo, String agentCode, ExecutionTarget target, Date now,
-            Map<String, ExecutionTaskDetailTb> relations) {
-        if (!codes(target.customerCodes()).isEmpty()) throw new BusinessException("行业维度不允许传customerCodes");
+    private void expandIndustries(String taskNo, String agentCode, ExecutionTarget target, Date now, Map<String, ExecutionTaskDetailTb> relations) {
+        if (!codes(target.customerCodes()).isEmpty())
+            throw new BusinessException("行业维度不允许传customerCodes");
         List<String> regionCodes = codes(target.regionCodes());
         List<String> industryCodes = codes(target.industryCodes());
         if (!industryCodes.isEmpty()) {
             List<String> scopes = regionCodes.isEmpty() ? List.of("") : regionCodes;
-            for (String regionCode : scopes) for (String industryCode : industryCodes)
-                put(relations, relation(taskNo, agentCode, ExecutionDimensionTypeEnum.INDUSTRY, regionCode, industryCode, "", now));
+            for (String regionCode : scopes)
+                for (String industryCode : industryCodes)
+                    put(relations, relation(taskNo, agentCode, ExecutionDimensionTypeEnum.INDUSTRY, regionCode, industryCode, "", now));
             return;
         }
         var query = Wrappers.<BaseCustomerTb>lambdaQuery().select(BaseCustomerTb::getRegionCode, BaseCustomerTb::getIndustryCode);
-        if (!regionCodes.isEmpty()) query.in(BaseCustomerTb::getRegionCode, regionCodes);
-        baseCustomerTbMapper.selectList(query).forEach(customer -> put(relations,
-                relation(taskNo, agentCode, ExecutionDimensionTypeEnum.INDUSTRY, customer.getRegionCode(), customer.getIndustryCode(), "", now)));
+        if (!regionCodes.isEmpty())
+            query.in(BaseCustomerTb::getRegionCode, regionCodes);
+        baseCustomerTbMapper.selectList(query).forEach(customer -> put(relations, relation(taskNo, agentCode, ExecutionDimensionTypeEnum.INDUSTRY, customer.getRegionCode(), customer.getIndustryCode(), "", now)));
     }
 
-    private ExecutionTaskDetailTb relation(String taskNo, String agentCode, ExecutionDimensionTypeEnum dimensionType,
-            String regionCode, String industryCode, String customerCode, Date now) {
+    private ExecutionTaskDetailTb relation(String taskNo, String agentCode, ExecutionDimensionTypeEnum dimensionType, String regionCode, String industryCode, String customerCode, Date now) {
         ExecutionTaskDetailTb relation = new ExecutionTaskDetailTb();
         relation.setTaskNo(taskNo);
         relation.setAgentCode(agentCode);
@@ -221,8 +214,7 @@ public class ExecutionTaskLifecycleService {
     }
 
     private void put(Map<String, ExecutionTaskDetailTb> relations, ExecutionTaskDetailTb relation) {
-        relations.putIfAbsent(relation.getDimensionType() + "|" + relation.getRegionCode() + "|"
-                + relation.getIndustryCode() + "|" + relation.getCustomerCode(), relation);
+        relations.putIfAbsent(relation.getDimensionType() + "|" + relation.getRegionCode() + "|" + relation.getIndustryCode() + "|" + relation.getCustomerCode(), relation);
     }
 
     private List<String> codes(List<String> values) {
@@ -240,19 +232,18 @@ public class ExecutionTaskLifecycleService {
     }
 
     private void refreshTaskStatus(String taskNo) {
-        ExecutionTaskTb task = executionTaskTbMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
-                .eq(ExecutionTaskTb::getTaskNo, taskNo).last("limit 1"));
-        if (task == null) return;
+        ExecutionTaskTb task = executionTaskTbMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery().eq(ExecutionTaskTb::getTaskNo, taskNo).last("limit 1"));
+        if (task == null)
+            return;
         List<ExecutionTaskDetailTb> all = relations(taskNo);
-        boolean running = all.stream().anyMatch(item -> !ExecutionTargetStatusEnum.SUCCESS.getCode().equals(item.getStatus())
-                && !ExecutionTargetStatusEnum.FAILED.getCode().equals(item.getStatus())
-                && !ExecutionTargetStatusEnum.CANCELLED.getCode().equals(item.getStatus()));
+        boolean running = all.stream().anyMatch(item -> !ExecutionTargetStatusEnum.SUCCESS.getCode().equals(item.getStatus()) && !ExecutionTargetStatusEnum.FAILED.getCode().equals(item.getStatus()) && !ExecutionTargetStatusEnum.CANCELLED.getCode().equals(item.getStatus()));
         boolean failed = all.stream().anyMatch(item -> ExecutionTargetStatusEnum.FAILED.getCode().equals(item.getStatus()));
-        task.setStatus(running ? ExecutionTaskStatusEnum.RUNNING.getCode()
-                : failed ? ExecutionTaskStatusEnum.FAILED.getCode() : ExecutionTaskStatusEnum.COMPLETED.getCode());
+        task.setStatus(running ? ExecutionTaskStatusEnum.RUNNING.getCode() : failed ? ExecutionTaskStatusEnum.FAILED.getCode() : ExecutionTaskStatusEnum.COMPLETED.getCode());
         Date now = new Date();
-        if (!running) task.setFinishedAt(now);
-        else if (task.getStartedAt() == null) task.setStartedAt(now);
+        if (!running)
+            task.setFinishedAt(now);
+        else if (task.getStartedAt() == null)
+            task.setStartedAt(now);
         task.setUpdatedAt(now);
         executionTaskTbMapper.updateById(task);
     }

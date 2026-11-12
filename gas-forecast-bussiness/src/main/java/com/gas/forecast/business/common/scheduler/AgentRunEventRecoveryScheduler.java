@@ -15,8 +15,9 @@ import org.springframework.stereotype.Component;
 /**
  * 处理因服务异常退出而没有收到最终回调的运行事件。
  *
- * <p>长模型步骤会周期性刷新 {@code updated_at}；超过阈值仍为 RUNNING 才判定中断，
- * 不会把正常但暂时无前端刷新的任务误判为失败。</p>
+ * <p>
+ * 长模型步骤会周期性刷新 {@code updated_at}；超过阈值仍为 RUNNING 才判定中断， 不会把正常但暂时无前端刷新的任务误判为失败。
+ * </p>
  */
 @Slf4j
 @Component
@@ -30,13 +31,10 @@ public class AgentRunEventRecoveryScheduler {
     @Scheduled(fixedDelayString = "${gas.agent.run-event-recovery.scan-delay-ms:60000}")
     public void interruptStaleRunningEvents() {
         Date cutoff = new Date(System.currentTimeMillis() - timeoutMillis);
-        List<AgentRunEventTb> staleEvents = eventMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery()
-                .eq(AgentRunEventTb::getStatus, "RUNNING")
-                .lt(AgentRunEventTb::getUpdatedAt, cutoff)
-                .orderByAsc(AgentRunEventTb::getId)
-                .last("limit 100"));
+        List<AgentRunEventTb> staleEvents = eventMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery().eq(AgentRunEventTb::getStatus, "RUNNING").lt(AgentRunEventTb::getUpdatedAt, cutoff).orderByAsc(AgentRunEventTb::getId).last("limit 100"));
         for (AgentRunEventTb event : staleEvents) {
-            if (hasRecentRunningSibling(event, cutoff)) continue;
+            if (hasRecentRunningSibling(event, cutoff))
+                continue;
             event.setStatus("INTERRUPTED");
             event.setMessage("执行服务中断，未收到后续进度更新。");
             event.setErrorCode("EXECUTION_HEARTBEAT_TIMEOUT");
@@ -49,13 +47,9 @@ public class AgentRunEventRecoveryScheduler {
 
     /** 同一预测对象仍有模型训练/回测心跳时，外层等待模型响应事件不能被误判为中断。 */
     private boolean hasRecentRunningSibling(AgentRunEventTb event, Date cutoff) {
-        if (event.getTaskDetailNo() == null || event.getTaskDetailNo().isBlank()) return false;
-        Long activeCount = eventMapper.selectCount(Wrappers.<AgentRunEventTb>lambdaQuery()
-                .eq(AgentRunEventTb::getRunNo, event.getRunNo())
-                .eq(AgentRunEventTb::getTaskDetailNo, event.getTaskDetailNo())
-                .eq(AgentRunEventTb::getStatus, "RUNNING")
-                .ge(AgentRunEventTb::getUpdatedAt, cutoff)
-                .ne(AgentRunEventTb::getId, event.getId()));
+        if (event.getTaskDetailNo() == null || event.getTaskDetailNo().isBlank())
+            return false;
+        Long activeCount = eventMapper.selectCount(Wrappers.<AgentRunEventTb>lambdaQuery().eq(AgentRunEventTb::getRunNo, event.getRunNo()).eq(AgentRunEventTb::getTaskDetailNo, event.getTaskDetailNo()).eq(AgentRunEventTb::getStatus, "RUNNING").ge(AgentRunEventTb::getUpdatedAt, cutoff).ne(AgentRunEventTb::getId, event.getId()));
         return activeCount != null && activeCount > 0;
     }
 }

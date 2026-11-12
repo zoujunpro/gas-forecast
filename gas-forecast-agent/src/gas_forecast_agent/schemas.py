@@ -47,12 +47,20 @@ class ForecastAnalysisRequest(BaseModel):
     context: dict[str, Any]
 
 
+class ForecastSuggestedQuestion(BaseModel):
+    """一个经过业务规则筛选、可由当前预测数据回答的推荐问题。"""
+
+    code: str
+    category: str
+    text: str
+
+
 class ForecastAnalysisResponse(BaseModel):
     """供 Java 保存到单条预测执行记录的解读与推荐追问。"""
 
     model_config = ConfigDict(alias_generator=_to_camel, populate_by_name=True)
     analysis: str
-    questions: list[str] = Field(min_length=3, max_length=3)
+    questions: list[ForecastSuggestedQuestion] = Field(min_length=3, max_length=3)
 
 
 class UserInputType(StrEnum):
@@ -95,22 +103,6 @@ class ExecutionStatus(StrEnum):
     FAILED = "FAILED"  # 执行失败
     CANCELLED = "CANCELLED"  # 已取消
     SKIPPED = "SKIPPED"  # 已跳过，主要用于步骤
-
-
-class ReferenceType(StrEnum):
-    """
-    消息关联的业务对象类型。
-
-    该类型决定 MessageReferenceResponse.reference_no 应当到哪张业务表查询。
-    引用只保存对象编号，不在会话响应中重复返回完整的任务或结果数据。
-    """
-
-    # 统一执行任务；reference_no 对应 execution_task_tb.task_no。
-    # 一个任务包含其下所有预测任务明细。
-    EXECUTION_TASK = "EXECUTION_TASK"
-
-    # 一次预测执行编号；对应 model_execute_record_tb.forecast_no。
-    FORECAST = "FORECAST"
 
 
 class ReferenceRelation(StrEnum):
@@ -197,15 +189,6 @@ class BusinessContext(ApiModel):
 class AgentRecentMessage(ApiModel):
     """Java 从数据库加载并传给 Agent 的一条最近原始消息。"""
 
-    message_id: int = Field(
-        ge=1,
-        description="消息数据库主键，对应 ai_conversation_message_tb.id",
-    )
-    turn_id: str | None = Field(
-        default=None,
-        max_length=64,
-        description="消息所属对话轮次；系统历史消息可以为空",
-    )
     role: str = Field(
         min_length=1,
         max_length=16,
@@ -216,22 +199,14 @@ class AgentRecentMessage(ApiModel):
         max_length=10000,
         description="消息正文",
     )
-    created_at: datetime | None = Field(
-        default=None,
-        description="消息创建时间",
-    )
-    references: list["MessageReferenceResponse"] = Field(
-        default_factory=list,
-        description="该消息关联的执行任务或预测结果",
-    )
 
 
 class AgentConversationContext(ApiModel):
     """
     Java 统一加载的会话上下文。
 
-    summary 用于承载较早消息的压缩结果，memory 保存结构化会话记忆，
-    recent_messages 保存最近未压缩的原始消息，三者职责相互独立。
+    summary承载较早消息摘要，pending_operation保存当前待恢复操作，
+    recent_messages保存最近未压缩的原始消息。
     """
 
     summary: str | None = Field(
@@ -239,9 +214,9 @@ class AgentConversationContext(ApiModel):
         max_length=50000,
         description="较早会话内容的压缩摘要；尚未生成时为空",
     )
-    memory: "ConversationMemory" = Field(
-        default_factory=lambda: ConversationMemory(),
-        description="当前会话的结构化记忆，如已确认的业务参数和待处理状态",
+    pending_operation: "PendingOperation | None" = Field(
+        default=None,
+        description="当前待澄清交互的恢复快照；普通对话为空",
     )
     recent_messages: list[AgentRecentMessage] = Field(
         default_factory=list,
@@ -442,23 +417,14 @@ class MessageReferenceResponse(ApiModel):
     """
     当前助手消息关联的业务对象轻量引用。
 
-    一条消息可以关联多个任务或预测结果。前端根据对象类型和对象编号查询任务、
-    执行步骤或业务结果详情；该对象本身不承载完整的执行过程和结果数据。
+    一条消息可以关联多个执行任务。预测结果通过执行任务的业务编号查询，
+    该对象本身不承载完整的执行过程和结果数据。
     """
 
-    reference_type: ReferenceType = Field(
-        description=(
-            "业务对象类型，决定 referenceNo 对应的业务表；"
-            "对应 ai_message_ref_tb.ref_type"
-        ),
-    )
-    reference_no: str = Field(
+    task_no: str = Field(
         min_length=1,
         max_length=64,
-        description=(
-            "业务对象编号：执行任务使用 task_no，预测结果使用 forecast_no；"
-            "对应 ai_message_ref_tb.ref_no"
-        ),
+        description="执行任务编号，对应 ai_message_ref_tb.task_no",
     )
     relation_type: ReferenceRelation = Field(
         description=(
@@ -507,20 +473,18 @@ class PendingInteraction(ApiModel):
 
 
 class PendingOperation(ApiModel):
-    """唯一的未完成操作快照。实体、参数与待回答问题始终一起保存。"""
+    """Java在多轮澄清之间保存并回传的精简未完成操作。"""
 
-    interaction: PendingInteraction
-    semantics: RequestSemantics
-    parameters: OperationParameters = Field(default_factory=OperationParameters)
-    pending_tool: str | None = None
+    original_message: str = Field(description="触发当前业务操作的原始用户问题")
+    action: str | None = Field(default=None, description="参数完整后准备执行的工具")
+    arguments: OperationParameters = Field(default_factory=OperationParameters)
     issues: list[ResolutionIssue] = Field(default_factory=list)
 
 
 class ConversationMemory(ApiModel):
-    """跨轮只保存未完成操作和页面业务焦点；没有历史任务参数缓存。"""
+    """Python 单次运行使用的未完成操作快照，不由会话表持久化。"""
 
     pending_operation: PendingOperation | None = None
-    current_business_context: BusinessContext | None = None
 
 
 class MemoryPatch(ApiModel):
@@ -558,6 +522,37 @@ class ExecutionResultResponse(ApiModel):
     error_type: str | None = Field(default=None, max_length=64)
     retryable: bool | None = None
     data: dict[str, Any] = Field(default_factory=dict)
+
+
+class ContentBlockType(StrEnum):
+    """Java和Vue统一消费的展示内容类型。"""
+
+    MARKDOWN = "MARKDOWN"
+    CHART = "CHART"
+    TABLE = "TABLE"
+    TASK_CARD = "TASK_CARD"
+    RESULT_LINK = "RESULT_LINK"
+
+
+class ContentBlock(ApiModel):
+    """一个可由Vue独立选择组件渲染的内容块。"""
+
+    type: ContentBlockType
+    data: dict[str, Any] = Field(default_factory=dict)
+
+
+class PythonClarification(ApiModel):
+    """Python返回Java的单字段澄清，不包含Java生成的interactionId。"""
+
+    field: str
+    reason: ClarificationReason
+    input_type: ClarificationInputType
+    options: list[ClarificationOption] = Field(default_factory=list)
+    pending_operation: PendingOperation
+
+
+class ErrorInfo(ApiModel):
+    code: str = Field(min_length=1, max_length=64)
 
 
 class SkillSelectionResponse(ApiModel):
@@ -600,8 +595,8 @@ class AgentChatResponse(ApiModel):
     """
     Python 返回给 Java 会话服务的内部 Agent 执行结果。
 
-    Java 使用该结果保存助手消息、业务对象引用并更新 agent_run_tb；Vue 不直接
-    调用或消费本对象。训练、预测任务的实时状态仍通过 references 查询。
+    Java 使用该结果保存助手消息并更新 agent_run_tb；任务关联由 TASK_CARD
+    内容块提供，不再额外返回一份 references 或内部审计字段。
     """
 
     conversation_no: str = Field(
@@ -625,58 +620,15 @@ class AgentChatResponse(ApiModel):
     status: AgentStatus = Field(
         description="Agent 本轮执行状态，与后台训练预测任务状态相互独立",
     )
-    message: str = Field(
-        min_length=1,
-        max_length=10000,
-        description="展示给用户的自然语言回复",
-    )
-    clarification: ClarificationResponse | None = Field(
-        default=None,
-        description="等待用户补充或确认信息时返回；其他状态为空",
-    )
-    references: list[MessageReferenceResponse] = Field(
+    blocks: list[ContentBlock] = Field(
         default_factory=list,
-        description="当前消息关联的多个执行任务或预测结果",
+        description="Java保存并返回Vue的有序展示内容块",
     )
-    intent_code: str | None = Field(
+    clarification: PythonClarification | None = Field(
         default=None,
-        max_length=32,
-        description="Agent 识别的主意图编码，用于更新 agent_run_tb.intent_code",
+        description="WAITING状态下当前单字段问题及完整恢复快照",
     )
-    intent_data: AgentIntentData = Field(
-        default_factory=AgentIntentData,
-        description="结构化意图与已解析参数摘要，用于更新 agent_run_tb.intent_json",
-    )
-    skill_code: str | None = Field(
-        default=None,
-        max_length=64,
-        description="本轮选中的 Skill 编码，用于更新 agent_run_tb.skill_code",
-    )
-    result_data: AgentResultData = Field(
-        default_factory=AgentResultData,
-        description="Agent 编排结果摘要，仅供 Java 持久化审计，不直接返回给 Vue",
-    )
-    memory_patch: MemoryPatch | None = Field(
-        default=None,
-        description="本轮会话记忆变更补丁，仅供 Java 校验、合并并持久化",
-    )
-    presentation: PresentationResponse | None = Field(
-        default=None,
-        description="前端展示结构，例如列表、图表或进度条配置",
-    )
-    execution_result: ExecutionResultResponse | None = Field(
-        default=None,
-        description="本轮工具真实结果；列表 records 用于前端展示查询表格",
-    )
-    error_code: str | None = Field(
-        default=None,
-        max_length=64,
-        description="Agent 本轮失败时的稳定错误编码",
-    )
-    error_message: str | None = Field(
-        default=None,
-        description="Agent 本轮失败时经过脱敏的错误说明",
-    )
+    error: ErrorInfo | None = Field(default=None, description="FAILED状态下的稳定错误信息")
 
 
 # ==================== LangGraph 内部运行时对象 ====================
@@ -690,20 +642,11 @@ class AgentHistoryMessage(ApiModel):
 
 
 class AgentHistoryReferences(ApiModel):
-    """一条历史消息关联的业务对象，供“这个任务”等指代消解使用。"""
+    """一条历史消息关联的任务编号，供“这个任务”等指代消解使用。"""
 
     message_id: int = Field(ge=1)
     turn_id: str | None = Field(default=None, max_length=64)
-    references: list["MessageReferenceResponse"] = Field(default_factory=list)
-
-
-class AgentRuntimeMetadata(ApiModel):
-    """编排运行所需的可信元数据，不承载任意键值对。"""
-
-    run_no: str = Field(min_length=1, max_length=64)
-    agent_code: AgentType
-    current_business_context: BusinessContext | None = None
-    history_references: list[AgentHistoryReferences] = Field(default_factory=list)
+    task_no: str = Field(min_length=1, max_length=64)
 
 
 class AgentRuntimeRequest(BaseModel):
@@ -711,13 +654,15 @@ class AgentRuntimeRequest(BaseModel):
 
     turn_id: str
     conversation_no: str
+    run_no: str = Field(min_length=1, max_length=64)
+    agent_code: AgentType
     message: str
     input_type: UserInputType = UserInputType.TEXT
     interaction_id: str | None = None
     reply_to_turn_id: str | None = None
-    agent_type: AgentType | None = None
     conversation_summary: str | None = None
-    metadata: AgentRuntimeMetadata
+    current_business_context: BusinessContext | None = None
+    history_references: list[AgentHistoryReferences] = Field(default_factory=list)
     memory: ConversationMemory = Field(default_factory=ConversationMemory)
     history: list[AgentHistoryMessage] = Field(default_factory=list)
 

@@ -9,7 +9,6 @@ from gas_forecast_agent.schemas import (
     ExecutionStatus,
     MessageReferenceResponse,
     ReferenceRelation,
-    ReferenceType,
 )
 
 
@@ -52,19 +51,11 @@ def test_agent_chat_request_accepts_business_and_conversation_context() -> None:
             },
             "conversationContext": {
                 "summary": "用户正在处理高邮安源的短期预测。",
-                "memory": {"currentBusinessContext": {"customerCode": "KH001"}},
-                "recentMessages": [{
-                    "messageId": 10,
-                    "turnId": "TURN-0",
-                    "role": "ASSISTANT",
-                    "content": "已创建预测任务",
-                    "createdAt": "2026-10-20T09:30:00+08:00",
-                    "references": [{
-                        "referenceType": "EXECUTION_TASK",
-                        "referenceNo": "TASK-1",
-                        "relationType": "CREATED",
+                    "pendingOperation": None,
+                    "recentMessages": [{
+                        "role": "ASSISTANT",
+                        "content": "已创建预测任务",
                     }],
-                }],
             },
         }
     )
@@ -74,9 +65,10 @@ def test_agent_chat_request_accepts_business_and_conversation_context() -> None:
     assert request.business_context.customer_code == "KH001"
     assert request.business_context.customer_name == "高邮安源"
     assert request.conversation_context.summary is not None
-    assert request.conversation_context.memory.current_business_context.customer_code == "KH001"
+    assert request.conversation_context.pending_operation is None
     recent = request.conversation_context.recent_messages[0]
-    assert recent.references[0].reference_no == "TASK-1"
+    assert recent.role == "ASSISTANT"
+    assert recent.content == "已创建预测任务"
 
 
 def test_agent_chat_request_rejects_missing_server_identifiers() -> None:
@@ -110,30 +102,19 @@ def test_plain_text_clarification_reply_requires_interaction_and_source_turn() -
     assert request.message == "选择第一个"
 
 
-def test_agent_chat_response_supports_multiple_message_references() -> None:
+def test_agent_chat_response_supports_task_card_blocks() -> None:
     response = AgentChatResponse(
         conversation_no="C-1",
         turn_id="TURN-1",
         run_no="RUN-1",
         agent_code=AgentType.SHORT_TERM,
         status=AgentStatus.SUCCESS,
-        message="已创建训练和预测任务。",
-        references=[
-            MessageReferenceResponse(
-                reference_type=ReferenceType.EXECUTION_TASK,
-                reference_no="T-1",
-                relation_type=ReferenceRelation.CREATED,
-                status=ExecutionStatus.PENDING,
-            ),
-            MessageReferenceResponse(
-                reference_type=ReferenceType.EXECUTION_TASK,
-                reference_no="T-2",
-                relation_type=ReferenceRelation.CREATED,
-                status=ExecutionStatus.WAITING,
-            ),
+        blocks=[
+            {"type": "TASK_CARD", "data": {"taskNo": "T-1", "relationType": "CREATED", "status": "PENDING"}},
+            {"type": "TASK_CARD", "data": {"taskNo": "T-2", "relationType": "CREATED", "status": "WAITING"}},
         ],
     )
 
     payload = response.model_dump(mode="json", by_alias=True)
     assert payload["agentCode"] == "short-term"
-    assert [item["referenceNo"] for item in payload["references"]] == ["T-1", "T-2"]
+    assert [item["data"]["taskNo"] for item in payload["blocks"]] == ["T-1", "T-2"]

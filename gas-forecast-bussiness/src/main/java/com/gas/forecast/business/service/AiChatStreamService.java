@@ -34,8 +34,7 @@ public class AiChatStreamService {
     private final PythonAgentChatClient agentClient;
     private final AgentRunEventService eventService;
     private final ObjectMapper objectMapper;
-    private final TraceableThreadPoolExecutor executor = ThreadPoolUtils.create(
-            ThreadPoolConfig.of("ai-chat-stream", 2, 4, 50));
+    private final TraceableThreadPoolExecutor executor = ThreadPoolUtils.create(ThreadPoolConfig.of("ai-chat-stream", 2, 4, 50));
     private final ScheduledExecutorService eventEmitter = Executors.newScheduledThreadPool(1, runnable -> {
         Thread thread = new Thread(runnable, "ai-chat-event-stream");
         thread.setDaemon(true);
@@ -46,29 +45,28 @@ public class AiChatStreamService {
         SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
         var security = new HashMap<>(SecurityContextHolder.getLocalMap());
         var loginUser = ThreadLocalUtil.getLoginUser();
-        executor.executeTracked("ai-chat-stream", request.conversationNo(), () -> {
+        executor.executeTracked("ai-chat-stream", request.getConversationNo(), () -> {
             try {
                 SecurityContextHolder.setLocalMap(new HashMap<>(security));
                 if (loginUser != null) {
                     ThreadLocalUtil.setLoginUser(loginUser.userId(), loginUser.username(), loginUser.token());
                 }
                 PythonAgentChatRequest pythonRequest = persistenceService.createTurn(request);
-                send(emitter, "run_started", java.util.Map.of(
-                        "runNo", pythonRequest.runNo(), "startedAt", java.time.Instant.now().toString()));
+                send(emitter, "run_started", java.util.Map.of("runNo", pythonRequest.runNo(), "startedAt", java.time.Instant.now().toString()));
                 ScheduledFuture<?> eventSubscription = subscribeRunEvents(emitter, pythonRequest.runNo());
                 PythonAgentChatResponse result;
                 RuntimeException agentException = null;
-                try { result = agentClient.chatStream(pythonRequest, text -> sendUnchecked(emitter, "progress", text)); }
-                catch (RuntimeException exception) { result = null; agentException = exception; }
-                finally {
+                try {
+                    result = agentClient.chatStream(pythonRequest, text -> sendUnchecked(emitter, "progress", text));
+                } catch (RuntimeException exception) {
+                    result = null;
+                    agentException = exception;
+                } finally {
                     eventSubscription.cancel(false);
                     sendRunEvents(emitter, pythonRequest.runNo(), new AtomicReference<>(null));
                 }
-                AiChatResponse response = result == null
-                        ? persistenceService.fail(pythonRequest, agentException == null
-                                ? new IllegalStateException("Python Agent 未返回最终结果") : agentException)
-                        : persistenceService.complete(result);
-                for (String segment : response.message().split("(?<=[。！？；\n])")) {
+                AiChatResponse response = result == null ? persistenceService.fail(pythonRequest, agentException == null ? new IllegalStateException("Python Agent 未返回最终结果") : agentException) : persistenceService.complete(result);
+                for (String segment : response.markdownText().split("(?<=[。！？；\n])")) {
                     if (!segment.isBlank()) {
                         send(emitter, "delta", segment);
                         // 避免浏览器把同一网络帧内的多个 delta 合并成一次渲染。
@@ -83,9 +81,11 @@ public class AiChatStreamService {
             } catch (Exception exception) {
                 // 回复已过期这类输入校验错误发生在创建本轮记录之前，前端可以安全地
                 // 清除本地旧交互并把原文本作为普通对话重发；不能用通用错误掩盖它。
-                String message = exception instanceof BusinessException && exception.getMessage() != null
-                        ? exception.getMessage() : "本轮处理失败，请稍后重试。";
-                try { send(emitter, "error", message); } catch (IOException ignored) { }
+                String message = exception instanceof BusinessException && exception.getMessage() != null ? exception.getMessage() : "本轮处理失败，请稍后重试。";
+                try {
+                    send(emitter, "error", message);
+                } catch (IOException ignored) {
+                }
                 emitter.completeWithError(exception);
             } finally {
                 SecurityContextHolder.remove();
@@ -102,27 +102,32 @@ public class AiChatStreamService {
     }
 
     private void sendUnchecked(SseEmitter emitter, String event, Object data) {
-        try { send(emitter, event, data); } catch (IOException exception) { throw new IllegalStateException(exception); }
+        try {
+            send(emitter, event, data);
+        } catch (IOException exception) {
+            throw new IllegalStateException(exception);
+        }
     }
 
     private ScheduledFuture<?> subscribeRunEvents(SseEmitter emitter, String runNo) {
         AtomicReference<String> lastVersion = new AtomicReference<>(null);
-        return eventEmitter.scheduleWithFixedDelay(
-                () -> sendRunEvents(emitter, runNo, lastVersion), 0, 350, TimeUnit.MILLISECONDS);
+        return eventEmitter.scheduleWithFixedDelay(() -> sendRunEvents(emitter, runNo, lastVersion), 0, 350, TimeUnit.MILLISECONDS);
     }
 
     private void sendRunEvents(SseEmitter emitter, String runNo, AtomicReference<String> lastVersion) {
         try {
             List<com.gas.forecast.business.dto.AgentRunEventResponse> events = eventService.listInternal(runNo);
-            String version = events.stream()
-                    .map(event -> event.id() + ":" + event.status() + ":" + event.updatedAt())
-                    .reduce("", (left, right) -> left + "|" + right);
-            if (!version.equals(lastVersion.getAndSet(version))) send(emitter, "run_events", events);
+            String version = events.stream().map(event -> event.id() + ":" + event.status() + ":" + event.updatedAt()).reduce("", (left, right) -> left + "|" + right);
+            if (!version.equals(lastVersion.getAndSet(version)))
+                send(emitter, "run_events", events);
         } catch (Exception ignored) {
             // 过程推送失败不能中断主对话；最终回复和历史事件仍会保留。
         }
     }
 
     @PreDestroy
-    void shutdown() { executor.shutdown(); eventEmitter.shutdown(); }
+    void shutdown() {
+        executor.shutdown();
+        eventEmitter.shutdown();
+    }
 }

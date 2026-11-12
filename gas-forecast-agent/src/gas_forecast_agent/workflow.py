@@ -20,7 +20,6 @@ from gas_forecast_agent.workflow_nodes import (
     understand_request,
 )
 from gas_forecast_agent.workflow_nodes.build_response import (
-    resolve_agent_type,
     training_result_summary,
 )
 from gas_forecast_agent.workflow_nodes.common import elapsed_ms
@@ -45,7 +44,7 @@ def build_agent_graph():
     """
     builder = StateGraph(AgentGraphState, context_schema=AgentGraphContext)
 
-    # 1. request 已携带 Java 传入的只读 memory_json 快照；本节点一次性理解用户原话，输出稳定意图、对话动作、
+    # 1. request 已携带交互表中的待恢复操作快照；本节点一次性理解用户原话，输出稳定意图、对话动作、
     #    客户/地区/行业、预测周期、训练策略和澄清要求等结构化语义。
     builder.add_node("understand_request", understand_request)
 

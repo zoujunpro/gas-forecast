@@ -169,14 +169,12 @@ create table if not exists execution_step_tb (
 create table if not exists ai_message_ref_tb (
     id bigint not null auto_increment comment '主键ID',
     message_id bigint unsigned not null comment '关联消息ID，关联ai_conversation_message_tb.id',
-    ref_type varchar(32) not null
-        comment '引用类型：EXECUTION_TASK执行任务、FORECAST预测结果',
-    ref_no varchar(64) not null comment '引用对象编号，根据ref_type确定对应业务表',
+    task_no varchar(64) not null comment '执行任务编号，关联execution_task_tb.task_no',
     relation_type varchar(32) not null default 'REFERENCED'
         comment '关联类型：CREATED本消息触发创建、REFERENCED引用历史对象、DISPLAYED消息展示对象',
     created_at datetime not null default current_timestamp comment '创建时间',
     primary key (id),
-    unique key uk_message_ref (message_id, ref_type, ref_no, relation_type),
-    key idx_ref (ref_type, ref_no)
+    unique key uk_message_id (message_id),
+    key idx_task_no (task_no)
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci
-    comment='AI消息与执行任务、预测结果的引用关系表';
+    comment='AI消息与执行任务的引用关系表';

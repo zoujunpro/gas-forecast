@@ -1,0 +1,257 @@
+{
+  "scenario": "用户请求预测高邮安源，Python追问预测天数，用户回答30天后创建预测任务",
+  "steps": [
+    {
+      "step": 1,
+      "direction": "JAVA_TO_PYTHON",
+      "description": "首次请求",
+      "payload": {
+        "conversationNo": "AICHAT-20261111-0001",
+        "turnId": "TURN-20261111-0001",
+        "runNo": "RUN-20261111-0001",
+        "message": "预测高邮安源",
+        "inputType": "TEXT",
+        "interactionId": null,
+        "replyToTurnId": null,
+        "agentCode": "short-term",
+        "businessContext": {
+          "regionCode": null,
+          "regionName": null,
+          "industryCode": null,
+          "industryName": null,
+          "customerCode": null,
+          "customerName": null
+        },
+        "conversationContext": {
+          "summary": null,
+          "pendingOperation": null,
+          "recentMessages": []
+        }
+      }
+    },
+    {
+      "step": 2,
+      "direction": "PYTHON_TO_JAVA",
+      "description": "缺少预测天数，Python返回单字段澄清和完整恢复快照",
+      "payload": {
+        "conversationNo": "AICHAT-20261111-0001",
+        "turnId": "TURN-20261111-0001",
+        "runNo": "RUN-20261111-0001",
+        "agentCode": "short-term",
+        "status": "WAITING",
+        "blocks": [
+          {
+            "type": "MARKDOWN",
+            "data": {
+              "content": "请问需要预测未来多少天？"
+            }
+          }
+        ],
+        "clarification": {
+          "field": "forecastHorizon",
+          "reason": "PARAMETER_MISSING",
+          "inputType": "NUMBER",
+          "options": [],
+          "pendingOperation": {
+            "interaction": {
+              "interactionId": "TEMP-7d68d5d1",
+              "interactionType": "CLARIFICATION",
+              "sourceTurnId": "TURN-20261111-0001",
+              "requestId": "R1",
+              "reason": "PARAMETER_MISSING",
+              "resumeFrom": "PlanValidator"
+            },
+            "semantics": {
+              "dialogueAct": "NEW_REQUEST",
+              "requests": [
+                {
+                  "requestId": "R1",
+                  "intent": "FORECAST",
+                  "scenario": "short-term",
+                  "targetSelection": "EXPLICIT",
+                  "contextRelation": "NEW",
+                  "clearParameters": [],
+                  "entities": {
+                    "regions": [],
+                    "industries": [],
+                    "customers": [
+                      "高邮安源"
+                    ]
+                  },
+                  "references": {},
+                  "parameters": {},
+                  "dependsOn": []
+                }
+              ]
+            },
+            "parameters": {
+              "customerCodes": [
+                "CUS-001"
+              ],
+              "customerNames": [
+                "高邮安源"
+              ],
+              "forecastUnit": "DAY",
+              "autoTrain": true
+            },
+            "pendingTool": "forecast_start",
+            "issues": [
+              {
+                "reason": "PARAMETER_MISSING",
+                "field": "forecastHorizon",
+                "message": "请提供预测天数",
+                "inputType": "NUMBER",
+                "required": true,
+                "options": [],
+                "details": {}
+              }
+            ]
+          }
+        },
+        "error": null
+      }
+    },
+    {
+      "step": 3,
+      "direction": "JAVA_TO_PYTHON",
+      "description": "Java生成正式interactionId并保存快照，用户回答后再次请求Python",
+      "payload": {
+        "conversationNo": "AICHAT-20261111-0001",
+        "turnId": "TURN-20261111-0002",
+        "runNo": "RUN-20261111-0002",
+        "message": "30天",
+        "inputType": "CLARIFICATION_REPLY",
+        "interactionId": "INT-20261111-0001",
+        "replyToTurnId": "TURN-20261111-0001",
+        "agentCode": "short-term",
+        "businessContext": {
+          "regionCode": null,
+          "regionName": null,
+          "industryCode": null,
+          "industryName": null,
+          "customerCode": null,
+          "customerName": null
+        },
+        "conversationContext": {
+          "summary": null,
+          "pendingOperation": {
+            "interaction": {
+              "interactionId": "INT-20261111-0001",
+              "interactionType": "CLARIFICATION",
+              "sourceTurnId": "TURN-20261111-0001",
+              "requestId": "R1",
+              "reason": "PARAMETER_MISSING",
+              "resumeFrom": "PlanValidator"
+            },
+            "semantics": {
+              "dialogueAct": "NEW_REQUEST",
+              "requests": [
+                {
+                  "requestId": "R1",
+                  "intent": "FORECAST",
+                  "scenario": "short-term",
+                  "targetSelection": "EXPLICIT",
+                  "contextRelation": "NEW",
+                  "clearParameters": [],
+                  "entities": {
+                    "regions": [],
+                    "industries": [],
+                    "customers": [
+                      "高邮安源"
+                    ]
+                  },
+                  "references": {},
+                  "parameters": {},
+                  "dependsOn": []
+                }
+              ]
+            },
+            "parameters": {
+              "customerCodes": [
+                "CUS-001"
+              ],
+              "customerNames": [
+                "高邮安源"
+              ],
+              "forecastUnit": "DAY",
+              "autoTrain": true
+            },
+            "pendingTool": "forecast_start",
+            "issues": [
+              {
+                "reason": "PARAMETER_MISSING",
+                "field": "forecastHorizon",
+                "message": "请提供预测天数",
+                "inputType": "NUMBER",
+                "required": true,
+                "options": [],
+                "details": {}
+              }
+            ]
+          },
+          "recentMessages": [
+            {
+              "messageId": 1001,
+              "turnId": "TURN-20261111-0001",
+              "role": "USER",
+              "content": "预测高邮安源",
+              "createdAt": "2026-11-11T10:00:00+08:00",
+              "taskNo": null
+            },
+            {
+              "messageId": 1002,
+              "turnId": "TURN-20261111-0001",
+              "role": "ASSISTANT",
+              "content": "请问需要预测未来多少天？",
+              "createdAt": "2026-11-11T10:00:01+08:00",
+              "taskNo": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": 4,
+      "direction": "PYTHON_TO_JAVA",
+      "description": "参数完整并成功创建任务",
+      "payload": {
+        "conversationNo": "AICHAT-20261111-0001",
+        "turnId": "TURN-20261111-0002",
+        "runNo": "RUN-20261111-0002",
+        "agentCode": "short-term",
+        "status": "SUCCESS",
+        "blocks": [
+          {
+            "type": "MARKDOWN",
+            "data": {
+              "content": "已创建高邮安源未来30天的预测任务。"
+            }
+          },
+          {
+            "type": "TABLE",
+            "data": {
+              "success": true,
+              "status": "PENDING",
+              "resultType": "TASK_CREATED",
+              "message": "预测任务已创建",
+              "data": {
+                "taskNo": "TASK-20261111-0001"
+              }
+            }
+          },
+          {
+            "type": "TASK_CARD",
+            "data": {
+              "taskNo": "TASK-20261111-0001",
+              "relationType": "CREATED",
+              "title": "高邮安源未来30天预测",
+              "status": "PENDING"
+            }
+          }
+        ],
+        "clarification": null,
+        "error": null
+      }
+    }
+  ]
+}

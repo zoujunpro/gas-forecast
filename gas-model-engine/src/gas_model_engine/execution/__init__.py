@@ -15,19 +15,16 @@ from .contracts import (
 from .forecast_pipeline import ForecastPipeline
 from .ports import BacktestRunner, CombinationBuilder, FeatureProcessor, FinalModelSelector
 from .profile_executor import AlgorithmProfileExecutor
-from .scenario_strategies import (
-    LegacyShortTermResidualStrategy,
-    MonthlyIndustryStrategy,
-    ShortTermCustomerStrategy,
-    WinterSupplyStrategy,
+from .scenarios import (
+    LegacyShortTermResidualScenario,
+    MonthlyIndustryScenario,
+    ShortTermCustomerScenario,
+    WinterSupplyScenario,
 )
-from .strategies import (
-    ConfigDrivenForecastStrategy,
-    DirectProfileStrategy,
-    ForecastStrategy,
-    ForecastStrategyRegistry,
-    PendingLegacyStrategy,
-    create_default_strategy_registry,
+from .scenario import (
+    ForecastScenario,
+    ForecastScenarioRegistry,
+    create_default_scenario_registry,
 )
 
 
@@ -44,12 +41,12 @@ def create_default_profile_executor(
 def create_default_forecast_pipeline(
     algorithm_engine: AlgorithmEngine | None = None,
     profile_registry: AlgorithmProfileRegistry | None = None,
-    strategy_registry: ForecastStrategyRegistry | None = None,
+    scenario_registry: ForecastScenarioRegistry | None = None,
 ) -> ForecastPipeline:
     registry = profile_registry or create_default_profile_registry()
     executor = AlgorithmProfileExecutor(algorithm_engine or AlgorithmEngine(), registry)
     return ForecastPipeline(
-        executor, registry, strategy_registry or create_default_strategy_registry()
+        executor, registry, scenario_registry or create_default_scenario_registry()
     )
 
 
@@ -58,18 +55,15 @@ __all__ = [
     "BacktestResult",
     "BacktestRunner",
     "CombinationBuilder",
-    "ConfigDrivenForecastStrategy",
-    "DirectProfileStrategy",
+    "ForecastScenario",
     "FeatureProcessor",
     "FinalModelSelector",
     "ForecastPipeline",
     "ForecastRequest",
     "ForecastResult",
-    "ForecastStrategy",
-    "ForecastStrategyRegistry",
-    "LegacyShortTermResidualStrategy",
-    "MonthlyIndustryStrategy",
-    "PendingLegacyStrategy",
+    "ForecastScenarioRegistry",
+    "LegacyShortTermResidualScenario",
+    "MonthlyIndustryScenario",
     "PipelineStage",
     "PipelineStageResult",
     "PipelineStageStatus",
@@ -77,9 +71,9 @@ __all__ = [
     "ProfilePredictRequest",
     "ProfilePredictionResult",
     "ProfileTrainRequest",
-    "ShortTermCustomerStrategy",
-    "WinterSupplyStrategy",
+    "ShortTermCustomerScenario",
+    "WinterSupplyScenario",
     "create_default_forecast_pipeline",
     "create_default_profile_executor",
-    "create_default_strategy_registry",
+    "create_default_scenario_registry",
 ]

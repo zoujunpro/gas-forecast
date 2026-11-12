@@ -28,39 +28,30 @@ public interface BusinessEntityResolutionService {
     record ResolutionResult(String status, String message, List<EntityCandidate> candidates) {
     }
 
-    record BatchEntityQuery(List<String> customerNames, List<String> regionNames,
-                            List<String> industryNames, Integer limit) {
+    record BatchEntityQuery(List<String> customerNames, List<String> regionNames, List<String> industryNames, Integer limit) {
     }
 
-    record BatchResolutionItem(String entityType, String inputName, String status,
-                               String message, List<EntityCandidate> candidates) {
+    record BatchResolutionItem(String entityType, String inputName, String status, String message, List<EntityCandidate> candidates) {
     }
 
-    record BatchResolutionResult(String status, String message,
-                                 List<BatchResolutionItem> items,
-                                 Map<String, Object> proposedParameters) {
+    record BatchResolutionResult(String status, String message, List<BatchResolutionItem> items, Map<String, Object> proposedParameters) {
     }
 
     /** 意图已由智能体识别；这里只处理实体名称到标准编码的转换。 */
-    record IntentEntityQuery(String intent, String dimensionType,
-                             List<EntityTargetQuery> targets, Integer limit) {
+    record IntentEntityQuery(String intent, String dimensionType, List<EntityTargetQuery> targets, Integer limit) {
     }
 
     /** 一个用户表达的地区、行业、客户组合，组内取交集、组间取并集。 */
-    record EntityTargetQuery(List<String> customerNames, List<String> regionNames,
-                             List<String> industryNames) {
+    record EntityTargetQuery(List<String> customerNames, List<String> regionNames, List<String> industryNames) {
     }
 
     /** 一个目标组合消歧后的标准编码及逐实体候选信息。 */
-    record ResolvedTarget(String status, String message,
-                          List<String> customerCodes, List<String> regionCodes, List<String> industryCodes,
-                          List<BatchResolutionItem> items) {
+    record ResolvedTarget(String status, String message, List<String> customerCodes, List<String> regionCodes, List<String> industryCodes, List<BatchResolutionItem> items) {
     }
 
     /**
      * 供意图范围组装器消费的解析结果。UNIQUE 时 proposedParameters 可直接作为查询或执行工具参数。
      */
-    record IntentResolutionResult(String intent, String dimensionType, String status, String message,
-                                  List<ResolvedTarget> targets, Map<String, Object> proposedParameters) {
+    record IntentResolutionResult(String intent, String dimensionType, String status, String message, List<ResolvedTarget> targets, Map<String, Object> proposedParameters) {
     }
 }

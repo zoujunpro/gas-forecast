@@ -35,38 +35,27 @@ public class PythonAgentChatClient {
 
     public PythonAgentChatClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(5))
-                .build();
+        this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(5)).build();
     }
 
     /**
      * 执行一次 Agent 编排请求。
      *
-     * <p>当前登录令牌只用于 Python 后续调用 Java MCP 工具时继续执行用户权限校验，
-     * 不会写入请求正文或 Agent Run 的 request_json。</p>
+     * <p>
+     * 当前登录令牌只用于 Python 后续调用 Java MCP 工具时继续执行用户权限校验， 不会写入请求正文或 Agent Run 的
+     * request_json。
+     * </p>
      */
     public PythonAgentChatResponse chat(PythonAgentChatRequest requestBody) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(chatUrl))
-                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10)))
-                    .header("Content-Type", "application/json")
-                    .header("x-traceId", requestBody.runNo())
-                    .header("X-Agent-Run-No", requestBody.runNo())
-                    .POST(HttpRequest.BodyPublishers.ofString(
-                            objectMapper.writeValueAsString(requestBody),
-                            StandardCharsets.UTF_8));
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(chatUrl)).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Content-Type", "application/json").header("x-traceId", requestBody.runNo()).header("X-Agent-Run-No", requestBody.runNo()).POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8));
             String token = ThreadLocalUtil.getToken();
             if (TextUtils.hasText(token)) {
                 builder.header("X-Access-Token", token);
             }
-            HttpResponse<String> response = httpClient.send(
-                    builder.build(),
-                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("Python Agent 返回 HTTP " + response.statusCode()
-                        + "：" + abbreviate(response.body()));
+                throw new IllegalStateException("Python Agent 返回 HTTP " + response.statusCode() + "：" + abbreviate(response.body()));
             }
             return objectMapper.readValue(response.body(), PythonAgentChatResponse.class);
         } catch (InterruptedException exception) {
@@ -83,17 +72,10 @@ public class PythonAgentChatClient {
     /** 生成一次预测结果的可追溯研判与三个推荐追问。 */
     public PythonForecastAnalysisResponse forecastAnalysis(PythonForecastAnalysisRequest requestBody) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(forecastAnalysisUrl))
-                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 45)))
-                    .header("Content-Type", "application/json")
-                    .header("x-traceId", requestBody.forecastNo())
-                    .POST(HttpRequest.BodyPublishers.ofString(
-                            objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8))
-                    .build();
+            HttpRequest request = HttpRequest.newBuilder(URI.create(forecastAnalysisUrl)).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 45))).header("Content-Type", "application/json").header("x-traceId", requestBody.forecastNo()).POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8)).build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("Python 预测解读返回 HTTP " + response.statusCode()
-                        + "：" + abbreviate(response.body()));
+                throw new IllegalStateException("Python 预测解读返回 HTTP " + response.statusCode() + "：" + abbreviate(response.body()));
             }
             PythonForecastAnalysisResponse result = objectMapper.readValue(response.body(), PythonForecastAnalysisResponse.class);
             if (result == null || !TextUtils.hasText(result.analysis()) || result.questions() == null || result.questions().size() != 3) {
@@ -104,7 +86,8 @@ public class PythonAgentChatClient {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Python 预测解读请求已中断", exception);
         } catch (Exception exception) {
-            if (exception instanceof IllegalStateException stateException) throw stateException;
+            if (exception instanceof IllegalStateException stateException)
+                throw stateException;
             throw new IllegalStateException("Python 预测解读请求失败：" + exception.getMessage(), exception);
         }
     }
@@ -112,29 +95,39 @@ public class PythonAgentChatClient {
     /** 消费 Python 的阶段事件，并在 done 事件返回完整响应。 */
     public PythonAgentChatResponse chatStream(PythonAgentChatRequest requestBody, Consumer<String> progress) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(chatUrl + "/stream"))
-                    .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10)))
-                    .header("Content-Type", "application/json").header("Accept", "text/event-stream")
-                    .header("x-traceId", requestBody.runNo())
-                    .header("X-Agent-Run-No", requestBody.runNo())
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8));
-            if (TextUtils.hasText(ThreadLocalUtil.getToken())) builder.header("X-Access-Token", ThreadLocalUtil.getToken());
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(chatUrl + "/stream")).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Content-Type", "application/json").header("Accept", "text/event-stream").header("x-traceId", requestBody.runNo()).header("X-Agent-Run-No", requestBody.runNo()).POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody), StandardCharsets.UTF_8));
+            if (TextUtils.hasText(ThreadLocalUtil.getToken()))
+                builder.header("X-Access-Token", ThreadLocalUtil.getToken());
             HttpResponse<java.util.stream.Stream<String>> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofLines());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) throw new IllegalStateException("Python Agent 返回 HTTP " + response.statusCode());
+            if (response.statusCode() < 200 || response.statusCode() >= 300)
+                throw new IllegalStateException("Python Agent 返回 HTTP " + response.statusCode());
             AtomicReference<String> event = new AtomicReference<>("message");
             AtomicReference<PythonAgentChatResponse> done = new AtomicReference<>();
             response.body().forEach(line -> {
-                if (line.startsWith("event:")) event.set(line.substring(6).trim());
-                if (line.startsWith("data:")) try {
-                    String data = line.substring(5).trim();
-                    if ("progress".equals(event.get())) progress.accept(objectMapper.readValue(data, String.class));
-                    if ("done".equals(event.get())) done.set(objectMapper.readValue(data, PythonAgentChatResponse.class));
-                } catch (Exception exception) { throw new IllegalStateException("Python Agent 流式响应解析失败", exception); }
+                if (line.startsWith("event:"))
+                    event.set(line.substring(6).trim());
+                if (line.startsWith("data:"))
+                    try {
+                        String data = line.substring(5).trim();
+                        if ("progress".equals(event.get()))
+                            progress.accept(objectMapper.readValue(data, String.class));
+                        if ("done".equals(event.get()))
+                            done.set(objectMapper.readValue(data, PythonAgentChatResponse.class));
+                    } catch (Exception exception) {
+                        throw new IllegalStateException("Python Agent 流式响应解析失败", exception);
+                    }
             });
-            if (done.get() == null) throw new IllegalStateException("Python Agent 流式响应缺少 done 事件");
+            if (done.get() == null)
+                throw new IllegalStateException("Python Agent 流式响应缺少 done 事件");
             return done.get();
-        } catch (InterruptedException exception) { Thread.currentThread().interrupt(); throw new IllegalStateException("Python Agent 请求已中断", exception); }
-        catch (Exception exception) { if (exception instanceof IllegalStateException state) throw state; throw new IllegalStateException("Python Agent 请求失败：" + exception.getMessage(), exception); }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Python Agent 请求已中断", exception);
+        } catch (Exception exception) {
+            if (exception instanceof IllegalStateException state)
+                throw state;
+            throw new IllegalStateException("Python Agent 请求失败：" + exception.getMessage(), exception);
+        }
     }
 
     private String abbreviate(String value) {

@@ -5,11 +5,7 @@ import lombok.Getter;
 /** 用户一次训练或预测请求的整体任务状态。 */
 @Getter
 public enum ExecutionTaskStatusEnum {
-    PENDING("PENDING", false),
-    RUNNING("RUNNING", false),
-    COMPLETED("COMPLETED", true),
-    FAILED("FAILED", true),
-    CANCELLED("CANCELLED", true);
+    PENDING("PENDING", false), RUNNING("RUNNING", false), COMPLETED("COMPLETED", true), FAILED("FAILED", true), CANCELLED("CANCELLED", true);
 
     private final String code;
     private final boolean terminal;

@@ -10,7 +10,9 @@ public enum AiMessageReferenceRelationEnum {
 
     private final String code;
 
-    AiMessageReferenceRelationEnum(String code) { this.code = code; }
+    AiMessageReferenceRelationEnum(String code) {
+        this.code = code;
+    }
 
     public static boolean contains(String value) {
         return Arrays.stream(values()).anyMatch(item -> item.code.equals(value));

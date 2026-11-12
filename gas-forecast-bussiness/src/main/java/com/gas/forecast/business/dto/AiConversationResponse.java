@@ -11,8 +11,6 @@ public record AiConversationResponse(
         String title,
         /** 会话绑定的智能体编码。 */
         String agentCode,
-        /** 会话当前业务焦点；可随页面或用户指令变化，不是会话绑定条件。 */
-        AiChatRequest.BusinessContext currentBusinessContext,
         /** 会话状态：ACTIVE 或 ARCHIVED。 */
         String status,
         /** 最近一条消息的创建时间。 */
@@ -20,8 +18,7 @@ public record AiConversationResponse(
         /** 会话最后更新时间。 */
         Date updatedAt,
         /** 会话详情中的历史消息；列表接口返回空列表。 */
-        List<Message> messages,
-        /** 当前页之前是否还有更早消息，前端滚动到顶部时据此继续加载。 */
+        List<Message> messages, /** 当前页之前是否还有更早消息，前端滚动到顶部时据此继续加载。 */
         boolean hasMoreMessages) {
 
     public AiConversationResponse {
@@ -43,20 +40,19 @@ public record AiConversationResponse(
             /** Agent Run 当前状态，不代表后台训练预测任务状态。 */
             String runStatus,
             /** 运行开始、结束时间，用于历史过程的总耗时展示。 */
-            Date runStartedAt,
-            Date runFinishedAt,
-            /** 该轮等待补充信息时的结构化提示。 */
-            AiChatResponse.Clarification clarification,
-            /** 前端展示结构。 */
-            PythonAgentChatResponse.Presentation presentation,
-            /** 本轮工具真实结果。 */
-            PythonAgentChatResponse.ExecutionResult executionResult,
+            Date runStartedAt, Date runFinishedAt,
+            /** 助手消息保存时生成的统一展示内容块。 */
+            List<AiChatContentBlock> blocks,
+            /** 该轮等待用户回答的单字段澄清信息。 */
+            AiChatResponse.FrontendClarification clarification,
+            /** 该轮失败时的稳定错误信息。 */
+            AiChatErrorInfo error,
             /** 当前消息关联的一个或多个业务对象。 */
-            List<AiChatResponse.Reference> references,
-            /** 消息创建时间。 */
+            List<AiChatResponse.Reference> references, /** 消息创建时间。 */
             Date createdAt) {
 
         public Message {
+            blocks = blocks == null ? List.of() : List.copyOf(blocks);
             references = references == null ? List.of() : List.copyOf(references);
         }
     }

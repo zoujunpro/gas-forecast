@@ -25,9 +25,7 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         LambdaQueryWrapper<DataMonthlySalesTb> query = Wrappers.lambdaQuery();
         String keyword = reqDTO.keyword();
         if (TextUtils.hasText(keyword)) {
-            query.and(wrapper -> wrapper.like(DataMonthlySalesTb::getRegionCode, keyword).or().like(DataMonthlySalesTb::getRegionName, keyword).or().like(DataMonthlySalesTb::getIndustryCode, keyword)
-                    .or().like(DataMonthlySalesTb::getIndustryName, keyword).or().like(DataMonthlySalesTb::getCustomerCode, keyword).or().like(DataMonthlySalesTb::getCustomerName, keyword).or()
-                    .like(DataMonthlySalesTb::getFileId, keyword));
+            query.and(wrapper -> wrapper.like(DataMonthlySalesTb::getRegionCode, keyword).or().like(DataMonthlySalesTb::getRegionName, keyword).or().like(DataMonthlySalesTb::getIndustryCode, keyword).or().like(DataMonthlySalesTb::getIndustryName, keyword).or().like(DataMonthlySalesTb::getCustomerCode, keyword).or().like(DataMonthlySalesTb::getCustomerName, keyword).or().like(DataMonthlySalesTb::getFileId, keyword));
         }
         if (TextUtils.hasText(reqDTO.startDate())) {
             query.ge(DataMonthlySalesTb::getStatDate, reqDTO.startDate());
@@ -55,7 +53,6 @@ public class DataMonthlySalesServiceImpl implements DataMonthlySalesService {
         if (item == null) {
             return null;
         }
-        return new DataSalesResponse(item.getId(), item.getStatDate(), null, null, item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(),
-                item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
+        return new DataSalesResponse(item.getId(), item.getStatDate(), null, null, item.getRegionCode(), item.getRegionName(), item.getIndustryCode(), item.getIndustryName(), item.getCustomerCode(), item.getCustomerName(), item.getGasSales(), item.getFileId(), item.getCreatedAt());
     }
 }

@@ -9,5 +9,7 @@ public enum AgentRunErrorCodeEnum {
 
     private final String code;
 
-    AgentRunErrorCodeEnum(String code) { this.code = code; }
+    AgentRunErrorCodeEnum(String code) {
+        this.code = code;
+    }
 }

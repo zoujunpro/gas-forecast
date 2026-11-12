@@ -1,7 +1,7 @@
 use gas_data;
 
 -- 会话只表示连续对话，不再按地区、行业或客户拆分。
--- 已经创建的训练、预测范围仍保存在execution_batch_tb和execution_task_tb中。
+-- 已经创建的预测范围仍保存在execution_task_tb和execution_task_detail_tb中。
 
 set @has_business_index = (
     select count(*) from information_schema.statistics
@@ -62,7 +62,3 @@ set @drop_customer_code_sql = if(
 prepare drop_customer_code_statement from @drop_customer_code_sql;
 execute drop_customer_code_statement;
 deallocate prepare drop_customer_code_statement;
-
-alter table ai_conversation_tb
-    modify column memory_json json default null
-        comment '可变会话记忆，包括当前业务焦点、已确认参数和待处理动作；不作为会话绑定条件';

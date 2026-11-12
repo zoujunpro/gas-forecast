@@ -62,7 +62,7 @@ async def execute_action(
                 message="我还不能确定你的意思。请回复“确认”执行、回复“取消”放弃，或直接说明需要修改的条件。",
                 parameters=understanding.parameters,
                 available_tools=[],
-                pending_tool=pending.pending_tool if pending else None,
+                pending_tool=pending.action if pending else None,
                 resolution_issues=[ResolutionIssue(
                     reason=ClarificationReason.WRITE_CONFIRMATION_REQUIRED,
                     field="confirmation",
@@ -88,7 +88,19 @@ async def execute_action(
             "timing": state.timing.model_copy(update={"agent_ms": elapsed_ms(started_at)}),
         }
 
-    execution_metadata = request.metadata.model_dump(mode="json", by_alias=True, exclude_none=True)
+    execution_metadata = {
+        "runNo": request.run_no,
+        "agentCode": request.agent_code.value,
+        "currentBusinessContext": (
+            request.current_business_context.model_dump(mode="json", by_alias=True, exclude_none=True)
+            if request.current_business_context is not None else None
+        ),
+        "historyReferences": [
+            item.model_dump(mode="json", by_alias=True, exclude_none=True)
+            for item in request.history_references
+        ],
+    }
+    execution_metadata = {key: value for key, value in execution_metadata.items() if value is not None}
     execution_metadata["inputType"] = request.input_type.value
     execution_metadata["turnId"] = request.turn_id
     execution_metadata["clarificationResolvedParameters"] = understanding.parameters.to_payload()
@@ -99,9 +111,7 @@ async def execute_action(
         skill=understanding.skill,
         message=request.message,
         history=conversation_history(request),
-        memory=(request.memory if understanding.continuing_operation else ConversationMemory(
-            current_business_context=request.memory.current_business_context,
-        )),
+        memory=(request.memory if understanding.continuing_operation else ConversationMemory()),
         metadata=execution_metadata,
         semantics=understanding.semantics,
         mcp=runtime.context.mcp,

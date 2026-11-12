@@ -13,6 +13,6 @@ MONTHLY_INDUSTRY_PROFILE = AlgorithmProfile(
         CandidateSpec("xgboost", "XGBOOST_V1"),
     ),
     aggregation=AggregationMode.MEDIAN,
-    strategy_code="MONTHLY_INDUSTRY_V1",
+    scenario_code="MONTHLY_INDUSTRY_V1",
     feature_policy_code="MONTHLY_INDUSTRY_FEATURES_V1",
 )

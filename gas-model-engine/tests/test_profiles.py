@@ -63,7 +63,7 @@ def test_default_profiles_expose_different_algorithm_scopes():
     winter_codes = {item.algorithm_code for item in registry.get("winter-supply").candidates}
     assert {
         "PROPHET_AR_RESIDUAL_V1",
-        "PROPHET_XGBOOST_AR_RESIDUAL_V1",
+        "PROPHET_XGBOOST_RESIDUAL_V1",
         "PROPHET_LIGHTGBM_RESIDUAL_V1",
     } <= short_codes
     assert {"NAIVE_V1", "PROPHET_V1", "XGBOOST_V1", "LIGHTGBM_V1"} <= short_codes

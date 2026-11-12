@@ -76,8 +76,7 @@ public class WebLogAspect {
     }
 
     private boolean shouldSkipArgument(Object arg) {
-        return arg == null || arg instanceof HttpServletRequest || arg instanceof HttpServletResponse || arg instanceof BindingResult || arg instanceof MultipartFile || arg instanceof MultipartFile[]
-                || arg instanceof ResponseEntity<?> || arg instanceof InputStream || arg instanceof OutputStream || arg instanceof Principal;
+        return arg == null || arg instanceof HttpServletRequest || arg instanceof HttpServletResponse || arg instanceof BindingResult || arg instanceof MultipartFile || arg instanceof MultipartFile[] || arg instanceof ResponseEntity<?> || arg instanceof InputStream || arg instanceof OutputStream || arg instanceof Principal;
     }
 
     private Object formatValue(Object value) {

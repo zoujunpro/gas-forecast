@@ -199,11 +199,8 @@ public class MysteelIndexClient {
 
     private JsonNode post(String url, JsonNode body, String token, String requestCookie, String referer) {
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Accept", "application/json, text/plain, */*")
-                    .header("Content-Type", "application/json;charset=UTF-8").header("Accept-Language", "zh-CN,zh;q=0.9").header("sec-ch-ua", "\"Chromium\";v=\"91\", \" Not;A Brand\";v=\"99\"")
-                    .header("sec-ch-ua-mobile", "?0").header("Sec-Fetch-Site", "same-origin").header("Sec-Fetch-Mode", "cors").header("Sec-Fetch-Dest", "empty")
-                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36")
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)));
+            HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 10))).header("Accept", "application/json, text/plain, */*").header("Content-Type", "application/json;charset=UTF-8").header("Accept-Language", "zh-CN,zh;q=0.9").header("sec-ch-ua", "\"Chromium\";v=\"91\", \" Not;A Brand\";v=\"99\"").header("sec-ch-ua-mobile", "?0").header("Sec-Fetch-Site", "same-origin").header("Sec-Fetch-Mode", "cors")
+                    .header("Sec-Fetch-Dest", "empty").header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36").POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)));
             if (TextUtils.hasText(token)) {
                 builder.header("token", token);
             }

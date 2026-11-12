@@ -25,8 +25,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * 按任务订阅真实运行事件。
  *
- * <p>这里不再推送固定步骤；每次快照都直接来自 {@code agent_run_event_tb}，前端按
- * 事件的主键顺序展示。任务和事件的关联以 {@code execution_task_tb.run_no} 为准。</p>
+ * <p>
+ * 这里不再推送固定步骤；每次快照都直接来自 {@code agent_run_event_tb}，前端按 事件的主键顺序展示。任务和事件的关联以
+ * {@code execution_task_tb.run_no} 为准。
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -42,10 +44,11 @@ public class ExecutionTaskEventStreamService {
     });
 
     public SseEmitter subscribe(String taskNo) {
-        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery()
-                .eq(ExecutionTaskTb::getTaskNo, taskNo).last("limit 1"));
-        if (task == null) throw new BusinessException("执行任务不存在：" + taskNo);
-        if (!TextUtils.hasText(task.getRunNo())) throw new BusinessException("该任务尚未关联智能体运行");
+        ExecutionTaskTb task = taskMapper.selectOne(Wrappers.<ExecutionTaskTb>lambdaQuery().eq(ExecutionTaskTb::getTaskNo, taskNo).last("limit 1"));
+        if (task == null)
+            throw new BusinessException("执行任务不存在：" + taskNo);
+        if (!TextUtils.hasText(task.getRunNo()))
+            throw new BusinessException("该任务尚未关联智能体运行");
 
         String runNo = task.getRunNo();
         SseEmitter emitter = new SseEmitter(TIMEOUT_MS);
@@ -55,25 +58,22 @@ public class ExecutionTaskEventStreamService {
         Runnable close = () -> {
             closed.set(true);
             ScheduledFuture<?> future = futureRef.get();
-            if (future != null) future.cancel(false);
+            if (future != null)
+                future.cancel(false);
         };
         emitter.onCompletion(close);
         emitter.onTimeout(close);
         emitter.onError(error -> close.run());
 
         Runnable publish = () -> {
-            if (closed.get()) return;
+            if (closed.get())
+                return;
             try {
-                List<AgentRunEventTb> events = eventMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery()
-                        .eq(AgentRunEventTb::getRunNo, runNo).orderByAsc(AgentRunEventTb::getId));
-                String version = events.stream()
-                        .map(event -> event.getId() + ":" + event.getStatus() + ":" + event.getUpdatedAt())
-                        .reduce("", (left, right) -> left + "|" + right);
+                List<AgentRunEventTb> events = eventMapper.selectList(Wrappers.<AgentRunEventTb>lambdaQuery().eq(AgentRunEventTb::getRunNo, runNo).orderByAsc(AgentRunEventTb::getId));
+                String version = events.stream().map(event -> event.getId() + ":" + event.getStatus() + ":" + event.getUpdatedAt()).reduce("", (left, right) -> left + "|" + right);
                 if (!version.equals(previousVersion.getAndSet(version))) {
                     synchronized (emitter) {
-                        emitter.send(SseEmitter.event().name("task_events")
-                                .data(objectMapper.writeValueAsString(Map.of(
-                                        "taskNo", taskNo, "runNo", runNo, "events", events))));
+                        emitter.send(SseEmitter.event().name("task_events").data(objectMapper.writeValueAsString(Map.of("taskNo", taskNo, "runNo", runNo, "events", events))));
                     }
                 }
             } catch (IOException exception) {

@@ -7,9 +7,11 @@ import lombok.Data;
 /** 更新同一条智能体过程事件的状态和展示文案。 */
 @Data
 public class AgentRunEventUpdateRequest {
-    @NotBlank @Size(max = 32)
+    @NotBlank
+    @Size(max = 32)
     private String status;
-    @NotBlank @Size(max = 10000)
+    @NotBlank
+    @Size(max = 10000)
     private String message;
     @Size(max = 50000)
     private String eventDataJson;
