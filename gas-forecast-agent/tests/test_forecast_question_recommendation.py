@@ -20,13 +20,14 @@ def test_does_not_recommend_risk_without_threshold() -> None:
     assert "RISK" not in {item.category for item in select_forecast_questions(context())}
 
 
-def test_ai_can_only_rewrite_selected_questions() -> None:
+def test_ai_can_generate_three_dynamic_questions() -> None:
     selected = select_forecast_questions(context())
     rewritten = [
-        {"code": item.code, "category": item.category, "text": f"{index + 1}号业务问题？"}
-        for index, item in enumerate(selected)
+        {"code": "PEAK_DATE", "category": "PEAK", "text": "峰值为什么出现在13日？"},
+        {"code": "DECLINE_RANGE", "category": "COMPARISON", "text": "较历史均值下降了多少？"},
+        {"code": "ERROR_BOUNDARY", "category": "ACCURACY", "text": "哪些日期误差可能更大？"},
     ]
-    assert [item["text"] for item in validated_questions(rewritten, selected)] == ["1号业务问题？", "2号业务问题？", "3号业务问题？"]
+    assert validated_questions(rewritten, selected) == rewritten
 
 
 def test_invalid_ai_rewrite_falls_back_to_rule_questions() -> None:

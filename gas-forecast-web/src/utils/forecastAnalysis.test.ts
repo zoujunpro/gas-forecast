@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_FORECAST_ANALYSIS_QUESTIONS, forecastAnalysisQuestions } from './forecastAnalysis'
+import { forecastAnalysisQuestions } from './forecastAnalysis'
 
 describe('forecastAnalysisQuestions', () => {
   it('uses the three persisted questions generated for this forecast', () => {
@@ -19,8 +19,8 @@ describe('forecastAnalysisQuestions', () => {
     expect(forecastAnalysisQuestions('["趋势如何？","原因是什么？","是否可信？"]')).toEqual(['趋势如何？', '原因是什么？', '是否可信？'])
   })
 
-  it('falls back when persisted questions are invalid', () => {
-    expect(forecastAnalysisQuestions('["重复问题？","重复问题？"]')).toEqual(DEFAULT_FORECAST_ANALYSIS_QUESTIONS)
-    expect(forecastAnalysisQuestions('invalid json')).toEqual(DEFAULT_FORECAST_ANALYSIS_QUESTIONS)
+  it('hides quick questions when persisted AI output is invalid', () => {
+    expect(forecastAnalysisQuestions('["重复问题？","重复问题？"]')).toEqual([])
+    expect(forecastAnalysisQuestions('invalid json')).toEqual([])
   })
 })
