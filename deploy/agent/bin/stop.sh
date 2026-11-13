@@ -3,7 +3,15 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 pid_file="$root/agent.pid"
 if command -v launchctl >/dev/null 2>&1; then
-  launchctl remove com.gas.forecast.agent >/dev/null 2>&1 || true
+  domain="gui/$(id -u)"
+  service="$domain/com.gas.forecast.agent"
+  launchctl bootout "$service" >/dev/null 2>&1 || true
+  # bootout 为异步操作；等待服务真正移除，避免紧接着 bootstrap 返回 37。
+  waited=0
+  while launchctl print "$service" >/dev/null 2>&1 && [ "$waited" -lt 15 ]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
 fi
 [ -f "$pid_file" ] || { echo 'Agent 服务未运行'; exit 0; }
 pid=$(cat "$pid_file")
