@@ -247,6 +247,32 @@ def api_client() -> Iterator[tuple[TestClient, FakeMcpClient, FakeEntityResolver
         app.dependency_overrides.clear()
 
 
+def test_forecast_analysis_supports_canonical_and_legacy_paths(api_client) -> None:
+    client, _, _ = api_client
+    payload = {
+        "forecastNo": "FORECAST-1",
+        "context": {
+            "forecastHorizon": 10,
+            "mape": 7.55,
+            "ruleAnalysis": "规则研判",
+            "forecast": {"points": [
+                {"forecast_date": "2026-11-13", "prediction": 150},
+                {"forecast_date": "2026-11-14", "prediction": 165},
+            ]},
+            "backtest": {"points": [
+                {"actual": 145},
+                {"actual": 150},
+            ]},
+        },
+    }
+    canonical = client.post("/api/v1/internal/forecast-analysis", json=payload)
+    legacy = client.post("/api/v1/forecast-analysis", json=payload)
+    assert canonical.status_code == 200
+    assert legacy.status_code == 200
+    assert canonical.json() == legacy.json()
+    assert len(canonical.json()["questions"]) == 3
+
+
 def internal_request(
     message: str,
     *,

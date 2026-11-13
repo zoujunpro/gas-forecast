@@ -89,6 +89,8 @@ async def health() -> dict[str, str]:
     return {"status": "UP"}
 
 
+@app.post("/api/v1/forecast-analysis", response_model=ForecastAnalysisResponse, response_model_by_alias=True,
+          include_in_schema=False, deprecated=True)
 @app.post("/api/v1/internal/forecast-analysis", response_model=ForecastAnalysisResponse, response_model_by_alias=True)
 async def forecast_analysis(
     request: ForecastAnalysisRequest,
