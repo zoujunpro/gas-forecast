@@ -197,18 +197,22 @@ body {
 }
 
 body:has(.short-term-workbench) .forecast-content {
-  background: linear-gradient(130deg, #f3faff, #edf6ff);
+  background:
+    radial-gradient(ellipse 75% 48% at 48% 38%, #fff 0%, transparent 100%),
+    radial-gradient(ellipse 100% 13% at 65% 101%, #b9d1f9 0%, transparent 100%),
+    linear-gradient(145deg, #eaf0fd, #f4f7fe 52%, #cfdef9);
 }
 
 /* The short-term workbench mirrors the supplied reference page.  It needs an
    isolated type scale because the application shell otherwise supplies a
    different font fallback, weight and navigation rhythm. */
 body:has(.short-term-workbench) {
-  --app-font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
-  --el-font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+  --app-font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  --el-font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
   --app-font-size-body: 15px;
   --app-line-height-body: 1.5;
-  font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+  color: #080f3d;
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
   font-size: 15px;
   line-height: 1.5;
 }
@@ -316,7 +320,7 @@ select {
 .el-menu--popup .el-menu-item.is-active {
   background: #eff6ff;
   color: #1d4ed8;
-  font-weight: 650;
+  font-weight: 600;
 }
 </style>
 
@@ -354,7 +358,7 @@ select {
 
 .forecast-brand strong {
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -401,7 +405,7 @@ select {
 .forecast-navigation a.active {
   background: linear-gradient(135deg, #0ea5e9, #0284c7);
   color: #ffffff;
-  font-weight: 650;
+  font-weight: 600;
   box-shadow: 0 5px 14px -5px rgba(14, 165, 233, 0.55);
 }
 
@@ -486,7 +490,7 @@ select {
 .agent-workspace-tabs strong {
   color: inherit;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .agent-workspace-tabs small {
@@ -788,7 +792,7 @@ select {
 .side-menu :deep(.el-menu-item.is-active) {
   background: var(--app-primary-soft);
   color: var(--app-primary-hover);
-  font-weight: 650;
+  font-weight: 600;
   box-shadow: inset 2px 0 0 var(--app-primary);
 }
 

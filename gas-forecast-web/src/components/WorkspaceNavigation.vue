@@ -50,7 +50,7 @@ defineProps<{
   background: #eff6ff;
   box-shadow: inset 0 -2px 0 #2563eb;
   color: #1d4ed8;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 @media (max-width: 850px) {

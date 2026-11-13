@@ -94,7 +94,7 @@ const compactHash = (rawValue: unknown) => {
 .management-status-tag { min-width: 56px; justify-content: center; border: 0; font-weight: 600; }
 .management-status-tag.is-success { background: #ecfdf5; color: var(--app-success); }
 .management-status-tag.is-neutral { background: #f1f5f9; color: var(--app-text-muted); }
-.cell-primary { color: var(--app-text); font-weight: 650; }
+.cell-primary { color: var(--app-text); font-weight: 600; }
 .cell-secondary { color: var(--app-text-muted); font-size: 13px; }
 .cell-number { display: block; font-variant-numeric: tabular-nums; text-align: right; }
 </style>

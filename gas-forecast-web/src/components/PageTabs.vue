@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
   color: var(--app-primary-hover);
   border-color: #bfdbfe;
   background: var(--app-primary-soft);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .tab-title {

@@ -15,6 +15,7 @@
   --app-font-weight-regular: 400;
   --app-font-weight-medium: 500;
   --app-font-weight-semibold: 600;
+  --app-font-weight-bold: 700;
   --app-bg: #f6f8fc;
   --app-surface: #ffffff;
   --app-border: #e2e8f0;
@@ -65,6 +66,23 @@ select {
   font-family: var(--app-font-family);
 }
 
+button,
+input,
+textarea,
+select,
+.el-button,
+.el-input,
+.el-select,
+.el-table,
+.el-dialog,
+.el-drawer,
+.el-message-box,
+.el-dropdown,
+.el-menu,
+.el-tooltip__popper {
+  font-family: var(--app-font-family);
+}
+
 h1,
 h2,
 h3,
@@ -73,6 +91,21 @@ h5,
 h6,
 strong {
   color: var(--app-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--app-font-family);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+strong,
+b {
+  font-weight: var(--app-font-weight-semibold);
 }
 
 .el-button {

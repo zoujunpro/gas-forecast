@@ -25,7 +25,7 @@ from gas_forecast_agent.skills import (
 )
 from gas_forecast_agent.operation_models import OperationParameters
 from gas_forecast_agent.skills.result_adapter import ToolResultAdapter
-from gas_forecast_agent.tool_results import ForecastQueryResult
+from gas_forecast_agent.tool_results import ForecastQueryResult, ToolExecutionResult
 
 
 def model_settings(**overrides) -> Settings:
@@ -966,6 +966,52 @@ def test_forecast_result_accepts_persisted_analysis_questions() -> None:
     })
 
     assert result.record.analysis_questions_json == '["本次预测准确吗？"]'
+
+
+def test_tool_result_tolerates_additive_forecast_fields_and_keeps_raw_data() -> None:
+    result = ToolExecutionResult.model_validate({
+        "success": True,
+        "status": "COMPLETED",
+        "resultType": "OBJECT",
+        "futureEnvelopeField": "new-value",
+        "data": {
+            "record": {
+                "forecastNo": "FORECAST-1",
+                "analysisQuestionsJson": '["本次预测准确吗？"]',
+                "futureRecordField": {"enabled": True},
+            },
+            "training": {},
+            "backtest": {},
+            "forecast": {"points": []},
+            "futureResultField": [1, 2, 3],
+        },
+    })
+
+    assert isinstance(result.data, ForecastQueryResult)
+    assert result.data.record.forecast_no == "FORECAST-1"
+    assert result.raw_data is not None
+    assert result.raw_data["futureResultField"] == [1, 2, 3]
+    assert "rawData" not in result.to_payload()
+
+
+def test_invalid_optional_analysis_questions_do_not_break_forecast_result() -> None:
+    result = ToolExecutionResult.model_validate({
+        "success": True,
+        "status": "COMPLETED",
+        "resultType": "RESULT",
+        "data": {
+            "record": {
+                "forecastNo": "FORECAST-1",
+                "analysisQuestionsJson": {"unexpected": "shape"},
+            },
+            "training": {},
+            "backtest": {},
+            "forecast": {"points": []},
+        },
+    })
+
+    assert isinstance(result.data, ForecastQueryResult)
+    assert result.data.record.analysis_questions_json is None
 
 
 def test_read_result_cache_uses_stable_forecast_identity() -> None:

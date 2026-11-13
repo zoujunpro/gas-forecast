@@ -76,7 +76,7 @@
           <div>
             <strong>任务执行情况</strong><small>{{ singleTask.targetName }} · {{ overview.taskNo }}</small>
           </div>
-          <el-tag :type="statusType(displayStatus)">{{ statusText(displayStatus) }}</el-tag>
+          <el-tag class="task-status" :type="statusType(displayStatus)">{{ statusText(displayStatus) }}</el-tag>
         </div>
         <div class="task-metrics single-task-metrics">
           <div>
@@ -100,7 +100,7 @@
           :status="displayStatus === 'FAILED' ? 'exception' : displayStatus === 'SUCCESS' ? 'success' : undefined"
         />
         <div class="list-title">
-          <strong>执行过程</strong><small>{{ currentText({ ...singleTask, status: displayStatus }) }}</small>
+          <strong>执行过程</strong><small :class="['process-status', String(displayStatus).toLowerCase()]">{{ currentText({ ...singleTask, status: displayStatus }) }}</small>
         </div>
         <div class="inline-steps">
           <div
@@ -157,9 +157,14 @@
     <transition name="result-reveal">
       <section v-if="forecastResult && resultRevealStage >= 4 && typedAnalysis" class="task-analysis">
         <div class="analysis-title">
-          <strong>AI 智能研判报告</strong><small>{{ analysisTyping ? '正在生成' : '已生成' }}</small>
+          <strong>AI 智能研判报告</strong><small :class="{ generating: analysisTyping }"><i></i>{{ analysisTyping ? '正在生成' : '已生成' }}</small>
         </div>
-        <p>{{ typedAnalysis }}</p>
+        <div class="analysis-judgement">
+          <section class="judgement-conclusion"><h4><el-icon><Aim /></el-icon>研判结论</h4><p>{{ typedAnalysis }}</p></section>
+          <section class="judgement-evidence"><h4><el-icon><Document /></el-icon>主要依据</h4><ul><li v-for="item in analysisEvidence" :key="item">{{ item }}</li></ul></section>
+          <section class="judgement-risk"><h4><el-icon><Warning /></el-icon>风险提示</h4><p>{{ analysisRisk }}</p></section>
+          <section class="judgement-advice"><h4><el-icon><Opportunity /></el-icon>建议措施</h4><ul><li v-for="item in analysisAdvice" :key="item">{{ item }}</li></ul></section>
+        </div>
         <div class="task-analysis-questions">
           <small>你可以继续问</small>
           <button v-for="question in analysisQuestions" :key="question" type="button" @click="emit('analysis-question', question)">
@@ -173,6 +178,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Aim, Document, Opportunity, Warning } from '@element-plus/icons-vue'
 import { getJson } from '@/api/management'
 import { compactForecastAnalysis, forecastAnalysisQuestions } from '@/utils/forecastAnalysis'
 import AiForecastResult from './AiForecastResult.vue'
@@ -589,6 +595,46 @@ const analysisText = computed(() => {
   return compactForecastAnalysis(`本次预测采用${result.training.bestModel}${Number.isFinite(mape) ? `，MAPE 为${mape.toFixed(2)}%` : ''}。${accuracy}。${average === undefined ? '' : `未来${points.length}天预测均值为${average.toFixed(2)}。`}`)
 })
 const analysisQuestions = computed(() => forecastAnalysisQuestions(forecastResult.value?.analysisQuestionsJson))
+const analysisEvidence = computed(() => {
+  const result = forecastResult.value
+  const points = Array.isArray(result?.points) ? result.points.filter((item: any) => Number.isFinite(Number(item.value))) : []
+  if (!points.length) return ['当前预测结果暂无可用的未来用气数据。']
+  const values = points.map((item: any) => Number(item.value))
+  const total = values.reduce((sum: number, value: number) => sum + value, 0)
+  const peak = Math.max(...values)
+  const peakIndex = values.indexOf(peak)
+  const evidence = [
+    `预测期日均用气量 ${(total / values.length).toFixed(2)} 万方，峰值 ${peak.toFixed(2)} 万方。`,
+    `峰值预计出现在 ${points[peakIndex]?.date || '预测期内'}，预测期共 ${values.length} 天。`
+  ]
+  const references = Array.isArray(result?.lastYearPoints) ? result.lastYearPoints : []
+  if (references.length === values.length) {
+    const referenceTotal = references.reduce((sum: number, item: any) => sum + Number(item.value || 0), 0)
+    if (referenceTotal) {
+      const rate = ((total - referenceTotal) / Math.abs(referenceTotal)) * 100
+      evidence.push(`预测总量较去年同期变化 ${rate > 0 ? '+' : ''}${rate.toFixed(2)}%。`)
+    }
+  }
+  return evidence
+})
+const analysisRisk = computed(() => {
+  const mape = Number(forecastResult.value?.training?.mape)
+  if (!Number.isFinite(mape)) return '当前缺少完整回测指标，预测结果应结合最新实际用气数据持续校验。'
+  if (mape <= 10) return `历史回测 MAPE 为 ${mape.toFixed(2)}%，整体误差较低，但仍需关注临时停产、天气突变等计划外因素。`
+  if (mape <= 20) return `历史回测 MAPE 为 ${mape.toFixed(2)}%，预测精度适中，峰值日期与短期波动可能存在偏差。`
+  return `历史回测 MAPE 为 ${mape.toFixed(2)}%，误差偏高，本次结果仅宜作为趋势参考。`
+})
+const analysisAdvice = computed(() => {
+  const points = Array.isArray(forecastResult.value?.points) ? forecastResult.value.points : []
+  const validPoints = points.filter((item: any) => Number.isFinite(Number(item.value)))
+  if (!validPoints.length) return ['补充最新实际用气数据后重新预测。']
+  const peakPoint = validPoints.reduce((peak: any, item: any) => Number(item.value) > Number(peak.value) ? item : peak)
+  const mape = Number(forecastResult.value?.training?.mape)
+  return [
+    `重点关注 ${peakPoint.date || '预测峰值日前后'} 的用气变化，提前核对客户生产计划。`,
+    Number.isFinite(mape) && mape > 20 ? '缩短复核周期，并结合人工判断修正预测结果。' : '持续跟踪实际用气偏差，出现明显变化时及时更新预测。'
+  ]
+})
 const presentationFinished = computed(
   () =>
     !isBatchTask.value &&
@@ -1158,6 +1204,51 @@ watch(
   color: #1e293b;
   font-size: 16px;
 }
+.analysis-title strong { font-weight: 600; }
+.analysis-title small,
+.process-status {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  margin: 0 !important;
+  padding: 3px 8px;
+  border: 1px solid #cfe8da;
+  border-radius: 999px;
+  background: #eff8f3;
+  color: #237653 !important;
+  font-size: 11px !important;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.analysis-title small i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: #36a36c;
+}
+.analysis-title small.generating,
+.process-status.running,
+.process-status.pending {
+  border-color: #cfe0f7;
+  background: #f1f6fd;
+  color: #356da8 !important;
+}
+.analysis-title small.generating i { background: #4f8ed7; }
+.process-status.failed {
+  border-color: #f0d5d5;
+  background: #fdf4f4;
+  color: #b44c4c !important;
+}
+.task-status {
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
 .task-analysis p {
   margin: 12px 0 0;
   color: #475569;
@@ -1165,6 +1256,36 @@ watch(
   line-height: 1.8;
   white-space: pre-wrap;
 }
+.analysis-judgement {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+.analysis-judgement section {
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.analysis-judgement h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 5px;
+  color: #334155;
+  font-size: 13px;
+}
+.analysis-judgement h4 .el-icon { font-size: 15px; }
+.analysis-judgement p,
+.analysis-judgement ul { margin: 0; color: #334155; font-size: 12px; line-height: 1.65; }
+.analysis-judgement ul { padding-left: 18px; }
+.analysis-judgement .judgement-conclusion { border-color: #dbe5f3; background: #f5f8fd; }
+.analysis-judgement .judgement-conclusion h4 { color: #2563eb; }
+.analysis-judgement .judgement-evidence { border-color: #e0e6ef; background: #f7f9fc; }
+.analysis-judgement .judgement-evidence h4 { color: #2563eb; }
+.analysis-judgement .judgement-risk { border-color: #eee1d5; background: #fcf8f4; }
+.analysis-judgement .judgement-risk h4 { color: #b45309; }
+.analysis-judgement .judgement-advice { border-color: #dbeae4; background: #f4f9f7; }
+.analysis-judgement .judgement-advice h4 { color: #0f766e; }
 .task-analysis-questions {
   display: grid;
   gap: 7px;

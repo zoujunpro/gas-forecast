@@ -315,15 +315,27 @@
             </div>
             </section>
 
-            <section v-if="currentResult" class="short-term-ai-insight" aria-label="AI结果分析">
-              <div class="short-term-ai-insight-head">
-                <h2><el-icon><Cpu /></el-icon>AI结果分析</h2>
-                <span>基于本次预测生成</span>
+            <section v-if="currentResult" class="short-term-ai-judgement" aria-label="AI智能研判">
+              <div class="short-term-ai-judgement-head">
+                <h2><el-icon><Cpu /></el-icon>AI智能研判</h2>
+                <span>自动生成</span>
               </div>
-              <p v-html="shortTermAiInsightHtml"></p>
-              <small>分析依据：{{ currentResult?.dates?.length || 0 }} 天历史用气、{{ shortTermBacktestRange }} 回测及本次预测结果。</small>
+              <div class="short-term-judgement">
+                <section class="judgement-conclusion">
+                  <h4><el-icon><Aim /></el-icon>研判结论</h4>
+                  <p class="collapsed" v-html="shortTermAiJudgementHtml"></p>
+                </section>
+                <button type="button" class="judgement-toggle" @click="shortTermJudgementDialogVisible = true">
+                  查看完整研判
+                  <span>→</span>
+                </button>
+              </div>
               <h3>你可以继续问</h3>
-              <button v-for="question in shortTermAnalysisQuestions" :key="question" type="button" @click="runShortTermQuickAnalysis(question)">{{ question }} <span>→</span></button>
+              <el-tooltip v-for="question in shortTermAnalysisQuestions" :key="question" :content="question" placement="right" :show-after="250">
+                <button type="button" @click="runShortTermQuickAnalysis(question)">
+                  <span class="question-text">{{ question }}</span><span class="question-arrow">→</span>
+                </button>
+              </el-tooltip>
               <em>点击后在右侧对话中回答</em>
             </section>
           </aside>
@@ -331,7 +343,6 @@
           <section class="short-term-center-rail" aria-label="预测结果">
             <nav v-if="currentResult" class="short-term-result-tabs" aria-label="预测信息标签">
             <button :class="{ active: shortTermTab === 'results' }" @click="shortTermTab = 'results'">结果展示</button>
-            <button :class="{ active: shortTermTab === 'process' }" @click="shortTermTab = 'process'">预测记录</button>
             <button :class="{ active: shortTermTab === 'data' }" @click="shortTermTab = 'data'">预测依据</button>
             <button :class="{ active: shortTermTab === 'model' }" @click="shortTermTab = 'model'">模型与回测</button>
           </nav>
@@ -389,34 +400,12 @@
           </section>
 
           <section v-if="currentResult && shortTermTab === 'results'" class="section-block compact-section">
-            <div class="short-term-task-head"><h2><el-icon><Histogram /></el-icon>{{ shortTermDisplayedScope }}短期用气预测</h2><span class="short-term-finished">● 已完成</span><small>预测起始：{{ shortTermForecastStart }}</small></div>
-            <div v-if="shortTermComparablePairs.length" class="future-comparison-summary">
-              <div class="reference-total">
-                <span class="comparison-icon"
-                  ><el-icon><DataAnalysis /></el-icon
-                ></span>
-                <div>
-                  <span>去年同期总量</span><strong>{{ shortTermLastYearTotal }}</strong
-                  ><small>{{ shortTermLastYearStats }}</small>
-                </div>
-              </div>
-              <div class="forecast-total">
-                <span class="comparison-icon"
-                  ><el-icon><Histogram /></el-icon
-                ></span>
-                <div>
-                  <span>本次预测总量</span><strong>{{ shortTermForecastTotal }}</strong
-                  ><small>{{ shortTermForecastStats }}</small>
-                </div>
-              </div>
-              <div :class="`trend-${shortTermTrendTone}`">
-                <span class="comparison-icon"
-                  >{{ shortTermTrendTone === 'up' ? '↑' : shortTermTrendTone === 'down' ? '↓' : '—' }}</span>
-                <div>
-                  <span>同比变化</span><strong>{{ shortTermTrendText }}</strong
-                  ><small>{{ shortTermTrendDescription }}</small>
-                </div>
-              </div>
+            <div class="short-term-task-head"><h2><el-icon><Histogram /></el-icon>{{ shortTermDisplayedScope }} 短期用气预测</h2><span class="short-term-finished">✦ 预测已完成</span><small>预测起始：{{ shortTermForecastStart }}　|　预测天数：{{ shortTermFutureValues.length }} 天</small></div>
+            <div class="short-term-fixed-summary" aria-label="预测核心指标">
+              <article><span class="metric-icon"><el-icon><Histogram /></el-icon></span><div class="metric-copy"><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }} <small>万方</small></strong><small>{{ shortTermLastYearStats }}</small></div></article>
+              <article class="primary"><span class="metric-icon"><el-icon><DataLine /></el-icon></span><div class="metric-copy"><span>本次预测总量</span><strong>{{ shortTermForecastTotal }} <small>万方</small></strong><small>{{ shortTermForecastStats }}</small></div></article>
+              <article :class="`trend-${shortTermTrendTone}`"><span class="metric-icon"><el-icon><Top /></el-icon></span><div class="metric-copy"><span>同比变化</span><strong>{{ shortTermTrendText }}</strong><small>较去年同期</small></div></article>
+              <article><span class="metric-icon"><el-icon><Aim /></el-icon></span><div class="metric-copy"><span>历史回测 MAPE</span><strong>{{ formatShortTermMetric(currentResult.metrics.mape, '%') }}</strong><small>{{ shortTermConfidenceLabel }}</small></div></article>
             </div>
             <section class="short-term-result-chart result-chart-panel compact-chart-panel">
               <div v-if="shortTermTrainingLoading" class="short-term-chart-skeleton" aria-label="图表加载中"><i></i><i></i><i></i></div>
@@ -471,16 +460,6 @@
               </span>
               <button type="button" @click="shortTermTab = 'model'">查看详情 →</button>
             </div>
-          </section>
-
-          <section v-if="currentResult && shortTermTab === 'process'" class="section-block compact-section short-term-steps">
-            <div class="short-term-task-head"><h2><el-icon><Finished /></el-icon>{{ shortTermDisplayedScope }}预测记录</h2></div>
-            <ol>
-              <li><span>✓</span><div><strong>数据准备</strong></div></li>
-              <li><span>✓</span><div><strong>模型评估与回测</strong></div></li>
-              <li><span>✓</span><div><strong>生成预测</strong></div></li>
-              <li><span>✓</span><div><strong>结果分析</strong></div></li>
-            </ol>
           </section>
 
           <section v-if="currentResult && shortTermTab === 'data'" class="section-block compact-section">
@@ -871,25 +850,24 @@
       <div class="ai-header">
         <div class="ai-title-wrap">
           <div class="ai-avatar">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L2 7V17L12 22L22 17V7L12 2Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-              <path d="M12 2V22M2 7L22 17M22 7L2 17" stroke="currentColor" stroke-width="1" opacity="0.3" />
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="7" width="16" height="14" rx="2" fill="currentColor" />
+              <path d="M12 7V3M11 3h2M1 11v6M23 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <circle cx="8.5" cy="14" r="1.2" fill="#a591fb" />
+              <circle cx="15.5" cy="14" r="1.2" fill="#a591fb" />
+              <path d="M9 18h6" stroke="#a591fb" stroke-width="1.5" stroke-linecap="round" />
             </svg>
           </div>
           <div>
-            <div class="ai-title">{{ currentAgent.name }}助手</div>
-            <div v-if="currentResult?.forecast_batch_no" class="ai-context-batch">
+            <div class="ai-title">{{ isShortTerm ? '预测智能体' : `${currentAgent.name}助手` }}</div>
+            <div v-if="isShortTerm" class="ai-role">短期客户预测专家</div>
+            <div v-else-if="currentResult?.forecast_batch_no" class="ai-context-batch">
               当前预测：{{ currentResult.forecast_batch_no }}
             </div>
-            <div class="ai-status"><span class="status-dot"></span> 智能分析已就绪</div>
+            <div class="ai-status"><span class="status-dot"></span>{{ isShortTerm ? '运行完成' : '智能分析已就绪' }}</div>
           </div>
         </div>
-        <div class="ai-header-actions">
+        <div v-if="!isShortTerm" class="ai-header-actions">
           <el-dropdown trigger="click" @command="switchAgentByPath">
             <button class="agent-switch-button" type="button">
               切换智能体
@@ -913,23 +891,29 @@
       <div v-if="isShortTerm" class="short-term-chat-scope">
         ◎ 已关联当前预测范围：{{ shortTermDisplayedScope }}
       </div>
-      <div class="ai-messages" ref="messagesRef" @scroll="loadOlderMessagesOnScroll">
+      <div class="ai-messages" ref="messagesRef" @scroll="handleMessagesScroll">
         <template v-for="msg in messages" :key="msg.id">
           <div
             v-show="msg.role === 'user' || msg.content"
             :data-task-message-id="msg.id"
             class="msg"
-            :class="[msg.role, { 'task-message': Boolean(msg.taskNo) }]"
+            :class="[
+              msg.role,
+              {
+                'task-message': Boolean(msg.taskNo),
+                'task-message-selected': Boolean(msg.taskNo) && selectedTaskNo === msg.taskNo
+              }
+            ]"
+            @click="handleTaskMessageClick(msg, $event)"
           >
             <div class="msg-avatar" :class="msg.role">
               <span v-if="msg.role === 'user'">我</span>
               <svg v-else viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 2L2 7V17L12 22L22 17V7L12 2Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                />
+                <rect x="4" y="7" width="16" height="14" rx="2" fill="currentColor" />
+                <path d="M12 7V3M11 3h2M1 11v6M23 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="8.5" cy="14" r="1.2" fill="#a591fb" />
+                <circle cx="15.5" cy="14" r="1.2" fill="#a591fb" />
+                <path d="M9 18h6" stroke="#a591fb" stroke-width="1.5" stroke-linecap="round" />
               </svg>
             </div>
             <div class="msg-body" :class="{ 'has-task-card': Boolean(msg.taskNo) }">
@@ -993,12 +977,11 @@
         <div v-if="isStreaming && !messages[messages.length - 1]?.content" class="msg assistant">
           <div class="msg-avatar assistant">
             <svg viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L2 7V17L12 22L22 17V7L12 2Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
+              <rect x="4" y="7" width="16" height="14" rx="2" fill="currentColor" />
+              <path d="M12 7V3M11 3h2M1 11v6M23 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <circle cx="8.5" cy="14" r="1.2" fill="#a591fb" />
+              <circle cx="15.5" cy="14" r="1.2" fill="#a591fb" />
+              <path d="M9 18h6" stroke="#a591fb" stroke-width="1.5" stroke-linecap="round" />
             </svg>
           </div>
           <div class="msg-body">
@@ -1008,6 +991,14 @@
       </div>
       <div class="ai-input">
         <el-input
+          v-if="isShortTerm"
+          v-model="inputMessage"
+          type="text"
+          placeholder="输入问题，让 AI 进一步分析..."
+          @keydown.enter.exact.prevent="sendMessage()"
+        />
+        <el-input
+          v-else
           v-model="inputMessage"
           type="textarea"
           :rows="2"
@@ -1024,6 +1015,35 @@
       </div>
       <p v-if="isShortTerm" class="short-term-chat-footer">ⓘ 已关联当前预测</p>
     </aside>
+
+    <el-dialog
+      v-model="shortTermJudgementDialogVisible"
+      class="judgement-dialog"
+      title="AI 智能研判"
+      width="680px"
+      append-to-body
+      destroy-on-close
+      modal-class="judgement-dialog-overlay"
+    >
+      <div class="judgement-dialog-scope">
+        <section class="judgement-conclusion">
+          <h4><el-icon><Aim /></el-icon>研判结论</h4>
+          <p v-html="shortTermAiJudgementHtml"></p>
+        </section>
+        <section class="judgement-evidence">
+          <h4><el-icon><Document /></el-icon>主要依据</h4>
+          <ul><li v-for="item in shortTermJudgementEvidence" :key="item">{{ item }}</li></ul>
+        </section>
+        <section class="judgement-risk">
+          <h4><el-icon><Warning /></el-icon>风险提示</h4>
+          <p>{{ shortTermJudgementRisk }}</p>
+        </section>
+        <section class="judgement-advice">
+          <h4><el-icon><Opportunity /></el-icon>建议措施</h4>
+          <ul><li v-for="item in shortTermJudgementAdvice" :key="item">{{ item }}</li></ul>
+        </section>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -1035,17 +1055,22 @@ import { getJson, listPage, postSse } from '@/api/management'
 import { renderMarkdown, sanitizeHtml } from '@/utils/markdown'
 import { ElMessage } from 'element-plus'
 import {
+  Aim,
   Cpu,
   DataAnalysis,
   DataLine,
+  Document,
   Finished,
   Grid,
   Histogram,
   Location,
   MagicStick,
+  Opportunity,
   PieChart,
+  Top,
   TrendCharts,
-  VideoPlay
+  VideoPlay,
+  Warning
 } from '@element-plus/icons-vue'
 import type { AgentRunEvent, AiChatContentBlock, ChatMessage } from '@/types'
 import AiExecutionTask from '@/views/ai/AiExecutionTask.vue'
@@ -1058,6 +1083,7 @@ const chartRef = ref<HTMLElement>()
 const chartRefTop = ref<HTMLElement>()
 const chartRefBottom = ref<HTMLElement>()
 const messagesRef = ref<HTMLElement>()
+const selectedTaskNo = ref('')
 const agentRoot = ref<HTMLElement>()
 const shortTermAiOffset = ref(0)
 const agentId = computed(() => String(route.meta.agentId || 'winter-supply'))
@@ -1272,7 +1298,9 @@ const industryColors: Record<string, string> = {
 const selectedProvince = ref('江苏')
 const selectedIndustry = ref('城市燃气')
 const currentResult = ref<any>(null)
-const loadingResult = ref(false)
+const shortTermJudgementDialogVisible = ref(false)
+// 首帧即进入加载态，避免会话与预测结果恢复完成前短暂渲染空态或旧错误信息。
+const loadingResult = ref(true)
 const provinceMape = ref<Record<string, number>>({})
 let shortTermTrendRequest = 0
 const shortTermTrainingData = ref<any>({ rows: [] })
@@ -1341,6 +1369,17 @@ const shortTermLastYearTotal = computed(() => {
   const total = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
   return shortTermComparablePairs.value.length ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
 })
+const formatShortTermSummaryStats = (values: number[]) => {
+  const validValues = values.map(Number).filter(Number.isFinite)
+  if (!validValues.length) return '日均 - ｜ 峰值 -'
+  const average = validValues.reduce((sum, value) => sum + value, 0) / validValues.length
+  const peak = Math.max(...validValues)
+  return `日均 ${average.toFixed(2)}｜峰值 ${peak.toFixed(2)}`
+}
+const shortTermForecastStats = computed(() => formatShortTermSummaryStats(shortTermFutureValues.value))
+const shortTermLastYearStats = computed(() =>
+  formatShortTermSummaryStats(shortTermComparablePairs.value.map((point) => point.reference))
+)
 const shortTermTrendRate = computed(() => {
   if (shortTermComparablePairs.value.length) {
     const forecastTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.forecast, 0)
@@ -1355,29 +1394,19 @@ const shortTermTrendText = computed(() => {
   const rate = shortTermTrendRate.value
   return `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`
 })
-const shortTermTrendDescription = computed(() => {
-  const rate = shortTermTrendRate.value
-  if (Math.abs(rate) < 1) return `总体保持平稳，略有${rate >= 0 ? '上升' : '下降'}`
-  return `较去年同期${rate > 0 ? '有所上升' : '有所下降'}`
-})
 const shortTermTrendTone = computed(() => {
   const rate = shortTermTrendRate.value
   if (Math.abs(rate) < 1) return 'flat'
   return rate > 0 ? 'up' : 'down'
 })
-const formatShortTermStats = (values: number[]) => {
-  if (!values.length) return '-'
-  const total = values.reduce((sum, value) => sum + value, 0)
-  const format = (value: number) => value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
-  return `日均 ${format(total / values.length)} ｜ 峰值 ${format(Math.max(...values))} ｜ 谷值 ${format(Math.min(...values))}`
-}
-const shortTermLastYearStats = computed(() =>
-  formatShortTermStats(shortTermComparablePairs.value.map((point) => point.reference))
-)
-const shortTermForecastStats = computed(() =>
-  formatShortTermStats(shortTermFutureValues.value.map((value) => Number(value)))
-)
-const shortTermAiInsight = computed(() => {
+const shortTermConfidenceLabel = computed(() => {
+  const mape = Number(currentResult.value?.metrics?.mape)
+  if (!Number.isFinite(mape)) return '暂无评估'
+  if (mape <= 10) return '可信度较高'
+  if (mape <= 20) return '可信度适中'
+  return '建议谨慎参考'
+})
+const shortTermAiJudgement = computed(() => {
   const persisted = String(currentResult.value?.analysisContent || '').trim()
   if (persisted) return compactForecastAnalysis(persisted)
   const values = shortTermFutureValues.value.map((value) => Number(value)).filter(Number.isFinite)
@@ -1388,16 +1417,47 @@ const shortTermAiInsight = computed(() => {
   const peakDate = currentResult.value?.future_dates?.[peakIndex] || '预测期内'
   return compactForecastAnalysis(`未来${values.length}天预计用气${total.toFixed(2)}万方，日均${(total / values.length).toFixed(2)}万方。${peakDate}预计达到峰值${peak.toFixed(2)}万方。`)
 })
-const shortTermAiInsightHtml = computed(() => {
+const shortTermAiJudgementHtml = computed(() => {
   const htmlEntities: Record<string, string> = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
   }
-  const escaped = shortTermAiInsight.value.replace(/[&<>'"]/g, (character) => htmlEntities[character] || character)
+  const escaped = shortTermAiJudgement.value.replace(/[&<>'"]/g, (character) => htmlEntities[character] || character)
   const highlighted = escaped.replace(
     /(\d{4}-\d{2}-\d{2}|[+-]?\d+(?:\.\d+)?%?|预计用气|峰值|上升|下降|平稳)/g,
     '<strong>$1</strong>'
   )
   return sanitizeHtml(highlighted)
+})
+const shortTermJudgementEvidence = computed(() => {
+  const values = shortTermFutureValues.value.map(Number).filter(Number.isFinite)
+  if (!values.length) return ['当前预测结果暂无可用的未来用气数据。']
+  const total = values.reduce((sum, value) => sum + value, 0)
+  const peak = Math.max(...values)
+  const peakIndex = values.indexOf(peak)
+  const peakDate = currentResult.value?.future_dates?.[peakIndex] || '预测期内'
+  const evidence = [
+    `预测期日均用气量 ${(total / values.length).toFixed(2)} 万方，峰值 ${peak.toFixed(2)} 万方。`,
+    `峰值预计出现在 ${peakDate}，预测期共 ${values.length} 天。`
+  ]
+  if (shortTermComparablePairs.value.length) evidence.push(`预测总量较去年同期变化 ${shortTermTrendText.value}。`)
+  return evidence
+})
+const shortTermJudgementRisk = computed(() => {
+  const mape = Number(currentResult.value?.metrics?.mape)
+  if (!Number.isFinite(mape)) return '当前缺少完整回测指标，预测结果应结合最新实际用气数据持续校验。'
+  if (mape <= 10) return `历史回测 MAPE 为 ${mape.toFixed(2)}%，整体误差较低，但仍需关注临时停产、天气突变等计划外因素。`
+  if (mape <= 20) return `历史回测 MAPE 为 ${mape.toFixed(2)}%，预测精度适中，峰值日期与短期波动可能存在偏差。`
+  return `历史回测 MAPE 为 ${mape.toFixed(2)}%，误差偏高，本次结果仅宜作为趋势参考。`
+})
+const shortTermJudgementAdvice = computed(() => {
+  const values = shortTermFutureValues.value.map(Number).filter(Number.isFinite)
+  if (!values.length) return ['补充最新实际用气数据后重新预测。']
+  const peakIndex = values.indexOf(Math.max(...values))
+  const peakDate = currentResult.value?.future_dates?.[peakIndex] || '预测峰值日前后'
+  const advice = [`重点关注 ${peakDate} 前后的用气变化，提前核对客户生产计划。`]
+  const mape = Number(currentResult.value?.metrics?.mape)
+  advice.push(Number.isFinite(mape) && mape > 20 ? '缩短复核周期，并结合人工判断修正预测结果。' : '持续跟踪实际用气偏差，出现明显变化时及时更新预测。')
+  return advice
 })
 const shortTermAnalysisQuestions = computed(() => {
   return forecastAnalysisQuestions(currentResult.value?.analysisQuestionsJson)
@@ -1779,19 +1839,15 @@ const stAllResults = ref<any[]>([])
 const stFilterDirty = ref(false)
 const shortTermFailureMessage = ref('')
 const runningForecast = ref(false)
-const shortTermTab = ref<'results' | 'process' | 'data' | 'model'>('results')
+const shortTermTab = ref<'results' | 'data' | 'model'>('results')
 const shortTermUiCacheKey = 'gas-forecast:short-term-ui-cache'
-const restoreShortTermUiCache = () => {
-  if (currentResult.value) return
+const readShortTermUiCache = () => {
   try {
     const cached = JSON.parse(sessionStorage.getItem(shortTermUiCacheKey) || 'null')
-    if (!cached?.result?.forecastNo) return
-    selectedStProvince.value = cached.province || ''
-    selectedStIndustry.value = cached.industry || ''
-    selectedStCustomer.value = cached.customer || ''
-    currentResult.value = cached.result
-    shortTermTrainingData.value = cached.trainingData || { rows: [] }
-  } catch { /* 会话缓存失效时直接按接口加载 */ }
+    return cached?.result?.forecastNo ? cached : null
+  } catch {
+    return null
+  }
 }
 const persistShortTermUiCache = () => {
   if (!isShortTerm.value || !currentResult.value?.forecastNo) return
@@ -1845,7 +1901,7 @@ const selectedShortTermCustomerRecord = () =>
 
 const shortTermEmptyDescription = computed(() =>
   shortTermFailureMessage.value
-    ? `预测失败：${shortTermFailureMessage.value}`
+    ? '预测任务执行失败，请检查预测参数或稍后重试'
     : stFilterDirty.value
     ? '正在获取所选范围的预测结果'
     : `${selectedStProvince.value || '当前地区'} / ${selectedStIndustry.value || '当前行业'} / ${selectedStCustomer.value || '当前客户'} 暂无预测结果`
@@ -1927,6 +1983,7 @@ const loadStMape = async () => {
 const loadStResult = async (preferConversation = false) => {
   if (!selectedStProvince.value || !selectedStIndustry.value || !selectedStCustomer.value) {
     currentResult.value = null
+    loadingResult.value = false
     return
   }
   const requestSeq = ++stResultRequestSeq
@@ -2134,6 +2191,7 @@ const setCompletionSummary = (message: ChatMessage, result: Record<string, any>)
 /** 右侧任务流程完成后，左侧自动切到同一地区、行业、客户，并加载最新预测结果。 */
 const showCompletedTaskForecast = async (message: ChatMessage, result: Record<string, any>) => {
   // 结果属于创建该任务的同一轮会话消息，避免用户必须滚动到任务卡片才能获知结论。
+  if (message.taskNo) selectedTaskNo.value = message.taskNo
   message.executionResult = result
   setCompletionSummary(message, result)
   scrollToBottom()
@@ -2185,7 +2243,7 @@ const showCompletedTaskForecast = async (message: ChatMessage, result: Record<st
 }
 
 /** 点击批量任务的一条已完成明细后，按该条真实预测维度切换左侧展示。 */
-const showBatchDetailForecast = async (detail: Record<string, any>) => {
+const showBatchDetailForecast = async (detail: Record<string, any>, selectionSeq?: number) => {
   if (!isShortTerm.value) {
     ElMessage.info('请在短期客户预测页面查看该任务结果')
     return
@@ -2193,6 +2251,7 @@ const showBatchDetailForecast = async (detail: Record<string, any>) => {
   if (!detail?.detailNo || !detail?.forecastNo) return
   try {
     const response = await getJson<any>(`/execution-tasks/details/${encodeURIComponent(detail.detailNo)}/result`)
+    if (selectionSeq !== undefined && selectionSeq !== selectedTaskSyncSeq) return
     const payload = response.data || {}
     const record = payload.record
     if (!record || record.status !== 'SUCCESS') {
@@ -2250,27 +2309,17 @@ const runShortTermForecast = async () => {
   }
   const customer = shortTermForecastContext()
   shortTermFailureMessage.value = ''
-  currentResult.value = null
+  // 发起新预测时保留上一版结果，避免中间区域在任务执行期间变成空白。
+  // 新任务完成后由 showCompletedTaskForecast 原子替换为新结果；失败时旧结果继续可用。
   stFilterDirty.value = true
   inputMessage.value = `发起${customer.regionName} ${customer.industryName} ${customer.customerName}的燃气预测，预测开始日期为${startDate}，结束日期为${endDate}，共${horizon}天`
   await sendMessage()
 }
 
 const loadShortTermDashboard = async () => {
-  restoreShortTermUiCache()
-  if (!currentResult.value) loadingResult.value = true
+  const cached = readShortTermUiCache()
+  loadingResult.value = true
   await Promise.all([loadStDimensions(), loadStMape()])
-  const firstResult = stAllResults.value[0]
-  if (!selectedStProvince.value || !stProvinces.value.includes(selectedStProvince.value)) {
-    selectedStProvince.value = firstResult?.province || stProvinces.value[0] || ''
-  }
-  if (!selectedStIndustry.value || !stIndustries.value.includes(selectedStIndustry.value)) {
-    const firstMatchedResult = stAllResults.value.find((item) => item.province === selectedStProvince.value)
-    selectedStIndustry.value = firstMatchedResult?.industry || firstResult?.industry || stIndustries.value[0] || ''
-  }
-  syncShortTermCustomers()
-  selectDefaultShortTermCustomer()
-  syncShortTermMape()
   const taskRecord = await latestConversationTaskRecord()
   if (taskRecord) {
     await focusShortTermForecastScope({
@@ -2285,7 +2334,43 @@ const loadShortTermDashboard = async () => {
     initMonthlyChart(data)
     return
   }
-  await loadStResult(true)
+
+  // 缓存、默认范围和最新任务全部确认后再一次性更新筛选项，避免刷新期间
+  // 客户下拉框依次显示缓存客户、默认客户和最终客户。
+  const cachedScopeIsValid =
+    cached?.province &&
+    cached?.industry &&
+    cached?.customer &&
+    stCustomerRecords.value.some(
+      (item) =>
+        item.regionName === cached.province &&
+        item.industryName === cached.industry &&
+        item.customerName === cached.customer
+    )
+  const firstResult = stAllResults.value[0]
+  selectedStProvince.value = cachedScopeIsValid
+    ? cached.province
+    : firstResult?.province || stProvinces.value[0] || ''
+  selectedStIndustry.value = cachedScopeIsValid
+    ? cached.industry
+    : stAllResults.value.find((item) => item.province === selectedStProvince.value)?.industry ||
+      firstResult?.industry ||
+      stIndustries.value[0] ||
+      ''
+  syncShortTermCustomers()
+  selectedStCustomer.value = cachedScopeIsValid ? cached.customer : stCustomers.value[0] || ''
+  syncShortTermMape()
+
+  if (cachedScopeIsValid) {
+    currentResult.value = cached.result
+    shortTermTrainingData.value = cached.trainingData || { rows: [] }
+    loadingResult.value = false
+    stFilterDirty.value = false
+    await nextTick()
+    initMonthlyChart(cached.result)
+    return
+  }
+  await loadStResult(false)
 }
 
 const switchStProvince = (province: string) => {
@@ -2448,12 +2533,12 @@ const initMonthlyChart = (data: any) => {
         boundaryGap: false,
         data: data.dates || [],
         axisLine: { lineStyle: { color: '#E2E8F0' } },
-        axisLabel: { color: '#94A3B8', fontSize: 10, rotate: 30 }
+        axisLabel: { color: '#64748B', fontSize: 10, rotate: 30 }
       },
       yAxis: {
         type: 'value',
         splitLine: { lineStyle: { color: '#F1F5F9' } },
-        axisLabel: { color: '#94A3B8', fontSize: 11 }
+        axisLabel: { color: '#64748B', fontSize: 11 }
       },
       dataZoom: [
         { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true },
@@ -2545,12 +2630,12 @@ const initMonthlyChart = (data: any) => {
         boundaryGap: isFutureBar,
         data: futureDates,
         axisLine: { lineStyle: { color: '#E2E8F0' } },
-        axisLabel: { color: '#94A3B8', fontSize: 10, rotate: 30 }
+        axisLabel: { color: '#64748B', fontSize: 10, rotate: 30 }
       },
       yAxis: {
         type: 'value',
         splitLine: { lineStyle: { color: '#F1F5F9' } },
-        axisLabel: { color: '#94A3B8', fontSize: 11 }
+        axisLabel: { color: '#64748B', fontSize: 11 }
       },
       dataZoom: [
         { type: 'inside', start: 0, end: 100, zoomOnMouseWheel: true },
@@ -2676,12 +2761,12 @@ const initChart = (data: any) => {
         data: data.dates,
         boundaryGap: false,
         axisLine: { lineStyle: { color: '#E2E8F0' } },
-        axisLabel: { color: '#94A3B8', fontSize: 11 }
+        axisLabel: { color: '#64748B', fontSize: 11 }
       },
       yAxis: {
         type: 'value',
         splitLine: { lineStyle: { color: '#F1F5F9' } },
-        axisLabel: { color: '#94A3B8', fontSize: 11 }
+        axisLabel: { color: '#64748B', fontSize: 11 }
       },
       series
     })
@@ -2731,12 +2816,12 @@ const initChart = (data: any) => {
         boundaryGap: false,
         data: data.dates,
         axisLine: { lineStyle: { color: '#E2E8F0' } },
-        axisLabel: { color: '#94A3B8', fontSize: 11 }
+        axisLabel: { color: '#64748B', fontSize: 11 }
       },
       yAxis: {
         type: 'value',
         splitLine: { lineStyle: { color: '#F1F5F9' } },
-        axisLabel: { color: '#94A3B8', fontSize: 11 }
+        axisLabel: { color: '#64748B', fontSize: 11 }
       },
       series
     })
@@ -2924,6 +3009,68 @@ const loadOlderMessagesOnScroll = async () => {
   } finally {
     loadingOlderMessages.value = false
   }
+}
+
+let visibleTaskSyncTimer: number | null = null
+let selectedTaskSyncSeq = 0
+
+const selectTaskMessage = async (message: ChatMessage) => {
+  if (!isShortTerm.value || !message.taskNo) return
+  const taskNo = message.taskNo
+  selectedTaskNo.value = taskNo
+  const selectionSeq = ++selectedTaskSyncSeq
+  try {
+    const response = await getJson<any>(
+      `/execution-tasks/${encodeURIComponent(taskNo)}/details?pageNo=1&pageSize=100&status=SUCCESS`
+    )
+    if (selectionSeq !== selectedTaskSyncSeq) return
+    const details = response.data?.records || []
+    const detail = [...details].reverse().find((item: any) => item.detailNo && item.forecastNo)
+    if (!detail) return
+    await showBatchDetailForecast(detail, selectionSeq)
+  } catch (error) {
+    if (selectionSeq === selectedTaskSyncSeq) console.warn('同步所选任务预测结果失败:', error)
+  }
+}
+
+const handleTaskMessageClick = (message: ChatMessage, event: MouseEvent) => {
+  if (!message.taskNo) return
+  const target = event.target as HTMLElement | null
+  if (target?.closest('button, a, input, textarea, select, [role="button"], .el-table__row')) return
+  void selectTaskMessage(message)
+}
+
+const syncVisibleTaskMessage = () => {
+  const container = messagesRef.value
+  if (!container || !isShortTerm.value) return
+  const containerRect = container.getBoundingClientRect()
+  const centerY = containerRect.top + containerRect.height / 2
+  const candidates = [...container.querySelectorAll<HTMLElement>('.task-message[data-task-message-id]')]
+    .map((element) => {
+      const rect = element.getBoundingClientRect()
+      const visible = rect.bottom > containerRect.top && rect.top < containerRect.bottom
+      return { element, visible, distance: Math.abs(rect.top + rect.height / 2 - centerY) }
+    })
+    .filter((item) => item.visible)
+    .sort((left, right) => left.distance - right.distance)
+  const messageId = candidates[0]?.element.dataset.taskMessageId
+  const message = messages.value.find((item) => item.id === messageId)
+  if (!message?.taskNo || message.taskNo === selectedTaskNo.value) return
+  void selectTaskMessage(message)
+}
+
+const scheduleVisibleTaskMessageSync = () => {
+  if (!isShortTerm.value) return
+  if (visibleTaskSyncTimer !== null) window.clearTimeout(visibleTaskSyncTimer)
+  visibleTaskSyncTimer = window.setTimeout(() => {
+    visibleTaskSyncTimer = null
+    syncVisibleTaskMessage()
+  }, 220)
+}
+
+const handleMessagesScroll = () => {
+  void loadOlderMessagesOnScroll()
+  scheduleVisibleTaskMessageSync()
 }
 
 const updateMsgInMemory = (id: string, msgId: string, content: string) => {
@@ -3286,6 +3433,7 @@ onBeforeUnmount(() => {
   if (resizeHandler) window.removeEventListener('resize', resizeHandler)
   if (shortTermScrollContainer && shortTermScrollHandler) shortTermScrollContainer.removeEventListener('scroll', shortTermScrollHandler)
   if (shortTermScrollFrame !== null) cancelAnimationFrame(shortTermScrollFrame)
+  if (visibleTaskSyncTimer !== null) window.clearTimeout(visibleTaskSyncTimer)
   ;[chartRef, chartRefTop, chartRefBottom].forEach((ref) => {
     if (ref.value) echarts.getInstanceByDom(ref.value)?.dispose()
   })
@@ -3390,7 +3538,7 @@ watch(futureChartType, () => {
 .agent-workspace-tabs strong {
   color: inherit;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
 }
 .agent-workspace-tabs small {
   margin-top: 2px;
@@ -4737,6 +4885,12 @@ watch(futureChartType, () => {
   border-radius: 12px;
   background: #f8fafc;
   border-bottom-left-radius: 4px;
+  transition: box-shadow 0.18s ease, outline-color 0.18s ease;
+}
+.msg.task-message-selected .assistant-turn-card {
+  outline: 2px solid rgba(37, 99, 235, 0.28);
+  outline-offset: 2px;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
 }
 .msg.assistant .assistant-turn-card .msg-bubble {
   margin: 0;
@@ -5075,13 +5229,6 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-result-tabs ~ .compact-section .section-badge { display: none; }
 .short-term-workbench .short-term-result-tabs ~ .compact-section .section-head { margin-bottom: 13px; }
 .short-term-workbench .short-term-result-tabs ~ .compact-section .section-title { font-size: 16px; }
-.short-term-steps ol { margin: 0; padding: 2px 0 0; list-style: none; }
-.short-term-steps li { display: flex; gap: 11px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #edf3fa; }
-.short-term-steps li:last-child { border-bottom: 0; }
-.short-term-steps li > span { display: grid; width: 20px; height: 20px; place-items: center; flex: 0 0 20px; border-radius: 50%; background: #dff8ec; color: #10a56e; font-size: 12px; }
-.short-term-steps strong,.short-term-steps small { display: block; }
-.short-term-steps strong { color: #28496d; font-size: 13px; }
-.short-term-steps small { margin-top: 3px; color: #7a91ab; font-size: 12px; }
 .short-term-task-head{display:flex;align-items:center;gap:10px;padding:0 0 12px;border-bottom:1px solid #e6eef8}.short-term-task-head h2{display:flex;align-items:center;gap:7px;margin:0;color:#1a3b60;font-size:16px}.short-term-task-head h2 .el-icon{color:#087cf4}.short-term-finished{border-radius:12px;background:#e6faef;color:#21b878;padding:3px 9px;font-size:11px}.short-term-task-head small{margin-left:auto;color:#7187a1;font-size:11px}.short-term-workbench .future-comparison-summary{margin:12px 0;gap:9px}.short-term-workbench .future-comparison-summary>div{min-height:76px;padding:12px;border:1px solid #e2edf9;border-radius:8px;background:#f6faff}.short-term-workbench .future-comparison-summary strong{font-size:22px}.short-term-result-chart{padding:13px;border:1px solid #e2edf9;border-radius:9px;background:#fff}.short-term-chart-title{display:flex;justify-content:space-between;padding-bottom:10px;color:#23486f;font-size:13px}.short-term-chart-title span{color:#5180af;font-size:11px}.short-term-result-table{margin-top:12px;padding:13px;border:1px solid #e2edf9;border-radius:9px;background:#fff}.short-term-result-table h3{margin:0 0 10px;color:#23486f;font-size:14px}.short-term-workbench .forecast-meta-info{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:12px 14px;border-radius:7px;background:#edf6ff;color:#637f9e;font-size:14px;line-height:1.5}.short-term-workbench .forecast-backtest-summary{display:inline-flex;align-items:center;min-width:0;gap:6px}.short-term-workbench .forecast-backtest-icon{display:inline-grid;flex:0 0 16px;width:16px;height:16px;place-items:center;color:#6d89aa}.short-term-workbench .forecast-backtest-icon svg{display:block;width:100%;height:100%}.short-term-workbench .forecast-backtest-summary strong{color:#365a83;font-weight:700}.short-term-workbench .forecast-backtest-summary i{width:1px;height:15px;margin:0 4px;background:#bdcde0}.short-term-workbench .forecast-backtest-summary em{overflow:hidden;font-style:normal;text-overflow:ellipsis;white-space:nowrap}.short-term-workbench .forecast-meta-info button{flex:0 0 auto;padding:0;border:0;background:transparent;color:#0075ff;font:inherit;font-weight:600;cursor:pointer}
 .short-term-agent-flow { flex: 0 0 auto; margin: 0 12px; border: 1px solid #e4eef9; border-radius: 9px; overflow: hidden; background: #fff; }
 .short-term-agent-flow-title { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; color: #17395f; font-size: 13px; font-weight: 700; background: linear-gradient(90deg, #f4f9ff, #fff); border-bottom: 1px solid #e8f0f9; }
@@ -5273,7 +5420,7 @@ watch(futureChartType, () => {
   min-width: 0;
   align-self: start;
 }
-.short-term-workbench .short-term-left-rail:has(.short-term-ai-insight) {
+.short-term-workbench .short-term-left-rail:has(.short-term-ai-judgement) {
   align-self: stretch;
 }
 .short-term-workbench .short-term-left-rail > .compact-section {
@@ -5296,20 +5443,20 @@ watch(futureChartType, () => {
   border-radius: 12px;
   background: #ffffffee;
 }
-.short-term-workbench .short-term-ai-insight {
+.short-term-workbench .short-term-ai-judgement {
   flex: 1 1 auto;
   padding: 16px;
   border: 1px solid #eaf1fa;
   border-radius: 12px;
   background: #ffffffee;
 }
-.short-term-workbench .short-term-ai-insight-head {
+.short-term-workbench .short-term-ai-judgement-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
-.short-term-workbench .short-term-ai-insight h2 {
+.short-term-workbench .short-term-ai-judgement h2 {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -5317,8 +5464,8 @@ watch(futureChartType, () => {
   color: #102240;
   font-size: 18px;
 }
-.short-term-workbench .short-term-ai-insight h2 .el-icon { color: #087cf4; font-size: 20px; }
-.short-term-workbench .short-term-ai-insight-head span {
+.short-term-workbench .short-term-ai-judgement h2 .el-icon { color: #087cf4; font-size: 20px; }
+.short-term-workbench .short-term-ai-judgement-head span {
   flex: 0 0 auto;
   padding: 4px 8px;
   border-radius: 10px;
@@ -5326,25 +5473,76 @@ watch(futureChartType, () => {
   color: #397bc0;
   font-size: 11px;
 }
-.short-term-workbench .short-term-ai-insight > p {
-  margin: 12px 0 7px;
-  color: #294768;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.6;
+.short-term-workbench .short-term-judgement {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
 }
-.short-term-workbench .short-term-ai-insight > small {
-  display: block;
-  color: #7b90aa;
+.short-term-workbench .short-term-judgement section {
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.short-term-workbench .short-term-judgement h4 {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 4px;
+  color: #334155;
   font-size: 12px;
-  line-height: 1.6;
 }
-.short-term-workbench .short-term-ai-insight h3 {
+.short-term-workbench .short-term-judgement h4 .el-icon { font-size: 14px; }
+.short-term-workbench .short-term-judgement p,
+.short-term-workbench .short-term-judgement ul {
+  margin: 0;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.short-term-workbench .short-term-judgement ul { padding-left: 17px; }
+.short-term-workbench .short-term-judgement .judgement-conclusion { border-color: #e5edfb; background: #f6f9ff; }
+.short-term-workbench .short-term-judgement .judgement-conclusion h4 { color: #2563eb; }
+.short-term-workbench .short-term-judgement .judgement-evidence { border-color: #edf1f5; background: #f8fafc; }
+.short-term-workbench .short-term-judgement .judgement-evidence h4 { color: #2563eb; }
+.short-term-workbench .short-term-judgement .judgement-risk { border-color: #f8e8e3; background: #fff8f6; }
+.short-term-workbench .short-term-judgement .judgement-risk h4 { color: #b45309; }
+.short-term-workbench .short-term-judgement .judgement-advice { border-color: #e1f0e8; background: #f4faf7; }
+.short-term-workbench .short-term-judgement .judgement-advice h4 { color: #0f766e; }
+.short-term-workbench .short-term-judgement .judgement-conclusion p.collapsed {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+.short-term-workbench .short-term-ai-judgement .short-term-judgement .judgement-toggle {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: #f5f8fc;
+  color: #52708f;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.short-term-workbench .short-term-ai-judgement .short-term-judgement .judgement-toggle:hover {
+  background: #edf5ff;
+  color: #2563eb;
+}
+.short-term-workbench .short-term-ai-judgement .short-term-judgement .judgement-toggle span {
+  color: inherit;
+  font-size: 13px;
+}
+.short-term-workbench .short-term-ai-judgement h3 {
   margin: 15px 0 8px;
   color: #315276;
   font-size: 14px;
 }
-.short-term-workbench .short-term-ai-insight button {
+.short-term-workbench .short-term-ai-judgement button {
   display: flex;
   width: 100%;
   align-items: center;
@@ -5359,8 +5557,19 @@ watch(futureChartType, () => {
   text-align: left;
   cursor: pointer;
 }
-.short-term-workbench .short-term-ai-insight button span { font-size: 18px; }
-.short-term-workbench .short-term-ai-insight > em {
+.short-term-workbench .short-term-ai-judgement button .question-text {
+  min-width: 0;
+  overflow: hidden;
+  font-size: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-ai-judgement button .question-arrow {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  font-size: 18px;
+}
+.short-term-workbench .short-term-ai-judgement > em {
   display: block;
   margin-top: 9px;
   color: #8fa0b4;
@@ -5585,6 +5794,42 @@ watch(futureChartType, () => {
   background: #0075ff;
   color: #fff;
 }
+.short-term-workbench .ai-header {
+  position: relative;
+  display: flex;
+  min-height: 72px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #dbe7ff;
+  background: linear-gradient(150deg, #f6f9fdf5, #f1f5fff0);
+}
+.short-term-workbench .ai-title-wrap { gap: 10px; }
+.short-term-workbench .ai-title { color: #080f3d; font-size: 20px; font-weight: 700; line-height: 26px; }
+.short-term-workbench .ai-role {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 10px;
+  background: #e1ecff;
+  color: #0055ed;
+  font-size: 12px;
+  font-weight: 700;
+}
+.short-term-workbench .ai-status {
+  position: absolute;
+  top: 17px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  background: #d8f2e6;
+  color: #087014;
+  font-size: 13px;
+  font-weight: 700;
+}
+.short-term-workbench .ai-status .status-dot { width: 7px; height: 7px; background: #159739; box-shadow: none; }
 .short-term-workbench .msg.user .msg-bubble {
   border-bottom-right-radius: 11px;
 }
@@ -5598,16 +5843,29 @@ watch(futureChartType, () => {
   border-radius: 10px;
   background: #fff;
 }
+.short-term-workbench .ai-input :deep(.el-textarea) {
+  --el-input-border-color: transparent;
+  --el-input-hover-border-color: transparent;
+  --el-input-focus-border-color: transparent;
+  flex: 1;
+}
 .short-term-workbench .ai-input :deep(.el-textarea__inner) {
   min-height: 45px !important;
   padding: 10px 8px;
-  border: 0;
-  box-shadow: none;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
   color: #24364d;
   font-size: 13px;
   line-height: 1.45;
 }
-.short-term-workbench .ai-input :deep(.el-textarea__inner:focus) { box-shadow: none; }
+.short-term-workbench .ai-input :deep(.el-textarea__inner:hover),
+.short-term-workbench .ai-input :deep(.el-textarea__inner:focus) {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
 .short-term-workbench .send-btn {
   width: 45px;
   height: 45px;
@@ -5632,6 +5890,10 @@ watch(futureChartType, () => {
   --st-teal: #0f766e;
   --st-amber: #b45309;
   --st-ink: #172033;
+  --st-text-primary: #1f2937;
+  --st-text-regular: #334155;
+  --st-text-secondary: #64748b;
+  --st-text-muted: #94a3b8;
   --st-muted: #64748b;
   --st-line: #e2e8f0;
   gap: 18px;
@@ -5647,7 +5909,7 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-left-rail,
 .short-term-workbench .short-term-center-rail { gap: 18px; }
 .short-term-workbench .short-term-left-rail > .compact-section,
-.short-term-workbench .short-term-ai-insight,
+.short-term-workbench .short-term-ai-judgement,
 .short-term-workbench .short-term-result-tabs,
 .short-term-workbench .short-term-tab-content,
 .short-term-workbench > .ai-panel {
@@ -5664,6 +5926,17 @@ watch(futureChartType, () => {
   font-size: 13px;
   font-weight: 600;
 }
+.short-term-workbench .short-term-filter-grid :deep(.el-select__selected-item),
+.short-term-workbench .short-term-filter-grid :deep(.el-range-input),
+.short-term-workbench .short-term-filter-grid :deep(.el-input__inner) {
+  color: var(--st-text-regular);
+  font-weight: 500;
+}
+.short-term-workbench .short-term-filter-grid :deep(.el-select__placeholder),
+.short-term-workbench .short-term-filter-grid :deep(.el-range-separator),
+.short-term-workbench .short-term-filter-grid :deep(.el-input__prefix) {
+  color: var(--st-text-secondary);
+}
 .short-term-workbench .short-term-filter-grid :deep(.el-select__wrapper),
 .short-term-workbench .short-term-filter-grid :deep(.el-date-editor) {
   min-height: 42px;
@@ -5677,20 +5950,55 @@ watch(futureChartType, () => {
   box-shadow: 0 6px 14px rgba(37, 99, 235, .18);
 }
 .short-term-workbench .short-term-filter-actions .predict-result-btn:hover:not(:disabled) { background: #1d4ed8; }
-.short-term-workbench .short-term-ai-insight { padding: 18px; }
-.short-term-workbench .short-term-ai-insight h2,
+.short-term-workbench .short-term-ai-judgement { padding: 18px; }
+.short-term-workbench .short-term-ai-judgement h2,
 .short-term-workbench .short-term-task-head h2 { color: var(--st-ink); }
-.short-term-workbench .short-term-ai-insight > p { color: #334155; line-height: 1.75; }
-.short-term-workbench .short-term-ai-insight button {
+.short-term-workbench .short-term-ai-judgement button {
   border-color: #dbe5f1;
   border-radius: 8px;
   background: #fff;
   color: #2563eb;
   font-size: 13px;
 }
-.short-term-workbench .short-term-ai-insight button:hover { border-color: #93c5fd; background: var(--st-blue-soft); }
+.short-term-workbench .short-term-ai-judgement button:hover { border-color: #93c5fd; background: var(--st-blue-soft); }
 .short-term-workbench .short-term-result-tabs button { color: #64748b; font-size: 14px; }
 .short-term-workbench .short-term-result-tabs button.active { color: #2563eb; border-bottom-color: #2563eb; }
+.short-term-workbench .short-term-fixed-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.short-term-workbench .short-term-fixed-summary article {
+  display: grid;
+  min-width: 0;
+  min-height: 80px;
+  align-content: center;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+.short-term-workbench .short-term-fixed-summary span {
+  color: var(--st-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.short-term-workbench .short-term-fixed-summary strong {
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--st-text-primary);
+  font-size: 21px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-fixed-summary small { margin-top: 3px; color: var(--st-text-muted); font-size: 10px; }
+.short-term-workbench .short-term-fixed-summary .primary strong { color: #2563eb; }
+.short-term-workbench .short-term-fixed-summary .trend-up strong { color: var(--st-amber); }
+.short-term-workbench .short-term-fixed-summary .trend-down strong { color: var(--st-teal); }
+.short-term-workbench .short-term-fixed-summary .trend-flat strong { color: var(--st-text-secondary); }
 .short-term-workbench .future-comparison-summary { gap: 12px; }
 .short-term-workbench .future-comparison-summary > div {
   min-height: 104px;
@@ -5750,12 +6058,12 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-task-head h2 { text-rendering: geometricPrecision; }
 .short-term-workbench .short-term-title-row span,
 .short-term-workbench .section-hint,
-.short-term-workbench .short-term-hero > small { color: #94a3b8; }
+.short-term-workbench .short-term-hero > small { color: var(--st-text-secondary); }
 .short-term-workbench .short-term-title-row span {
   padding-left: 14px;
-  color: #94a3b8;
+  color: var(--st-text-secondary);
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 500;
 }
 .short-term-workbench .short-term-filter-grid :deep(.el-select__wrapper:hover),
 .short-term-workbench .short-term-filter-grid :deep(.el-input__wrapper:hover) { border-color: #b9c8dc; }
@@ -5783,7 +6091,7 @@ watch(futureChartType, () => {
 }
 .short-term-workbench .future-comparison-summary strong {
   font-variant-numeric: tabular-nums;
-  font-weight: 750;
+  font-weight: 600;
   line-height: 1.15;
 }
 .short-term-workbench .future-comparison-summary small { color: #94a3b8; font-size: 11px; }
@@ -5804,43 +6112,39 @@ watch(futureChartType, () => {
 .short-term-workbench .short-term-training-pagination :deep(.btn-prev),
 .short-term-workbench .short-term-training-pagination :deep(.btn-next),
 .short-term-workbench .short-term-training-pagination :deep(.number) { border-radius: 6px; }
-.short-term-workbench .short-term-ai-insight > p { color: #334155; font-size: 14px; line-height: 1.8; }
-.short-term-workbench .short-term-ai-insight > p :deep(strong) {
-  padding: 0 2px;
-  border-radius: 3px;
-  background: #eef5ff;
-  color: #1d4ed8;
-  font-weight: 700;
-}
-.short-term-workbench .short-term-ai-insight > small { color: #8491a3; }
-.short-term-workbench .short-term-ai-insight-head span {
+.short-term-workbench .short-term-ai-judgement-head span {
   border: 1px solid #dbeafe;
   background: #f5f9ff;
   color: #2563eb;
   font-weight: 600;
 }
-.short-term-workbench .short-term-ai-insight button { transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
-.short-term-workbench .short-term-ai-insight button span { color: #94a3b8; font-size: 14px; font-weight: 400; }
-.short-term-workbench .short-term-ai-insight button:hover { transform: none; border-color: #bfdbfe; background: #f8fbff; }
+.short-term-workbench .short-term-ai-judgement button { transition: color .18s ease, border-color .18s ease, background-color .18s ease; }
+.short-term-workbench .short-term-ai-judgement button .question-text { color: #2563eb; font-weight: 500; }
+.short-term-workbench .short-term-ai-judgement button .question-arrow { color: #2563eb; font-size: 14px; font-weight: 600; }
+.short-term-workbench .short-term-ai-judgement button:hover { transform: none; border-color: #bfdbfe; background: #f8fbff; }
 .short-term-workbench .short-term-finished,
 .short-term-workbench .model-selected {
   border: 1px solid #bfe2dc;
   background: #edf8f6;
   color: var(--st-teal);
-  font-weight: 650;
+  font-weight: 600;
 }
 .short-term-workbench .agent-process-item.running { border-color: #bfdbfe; background: #f5f9ff; }
 .short-term-workbench .agent-process-item.success .agent-process-state { border-color: var(--st-teal); background: var(--st-teal); }
 .short-term-workbench .agent-process-item.failed .agent-process-state { border-color: #dc5a63; background: #dc5a63; }
 .short-term-workbench .agent-process-item.interrupted .agent-process-state { border-color: var(--st-amber); background: var(--st-amber); }
-.short-term-workbench .agent-process-head { color: #334155; }
+.short-term-workbench .agent-process-head { color: var(--st-text-regular); }
 .short-term-workbench .agent-process-toggle { color: #64748b; }
 .short-term-workbench .ai-status { color: #64748b; }
 .short-term-workbench .status-dot { background: var(--st-teal); box-shadow: 0 0 0 3px #e8f5f3; }
-.short-term-workbench .msg.assistant .msg-bubble { border: 1px solid #e5ebf2; }
+.short-term-workbench .msg.assistant .msg-bubble {
+  border: 1px solid #e5ebf2;
+  color: var(--st-text-regular);
+}
 .short-term-workbench .msg.user .msg-bubble { border: 1px solid rgba(29, 78, 216, .18); }
 .short-term-workbench .ai-input:focus-within { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37, 99, 235, .08); }
 .short-term-workbench .send-btn:disabled { background: #cbd5e1; box-shadow: none; }
+.short-term-workbench .short-term-chat-footer { color: var(--st-text-secondary); }
 
 /* 原有布局内的最后一轮精修：状态更克制、数据更易扫读、加载不留白。 */
 .short-term-workbench .short-term-result-tabs button {
@@ -5887,6 +6191,566 @@ watch(futureChartType, () => {
 .short-term-workbench .error-positive { color: var(--st-teal); }
 .short-term-workbench .error-negative { color: var(--st-amber); }
 .short-term-workbench .error-empty { color: #aab5c3; font-weight: 400; }
+
+/* 参考 dashboard-source：浅蓝柔光底、蓝白半透明卡片和高对比深蓝文字。 */
+.agent-detail.short-term-workbench {
+  --st-blue: #005aff;
+  --st-blue-soft: #e8f0ff;
+  --st-ink: #080f3d;
+  --st-text-primary: #16264b;
+  --st-text-regular: #31466f;
+  --st-text-secondary: #60749a;
+  --st-text-muted: #8292ae;
+  --st-muted: #60749a;
+  --st-line: #d6e3ff;
+  gap: 12px;
+  grid-template-columns: 359fr 861fr 462fr;
+  padding-bottom: 19px;
+  background:
+    radial-gradient(ellipse 75% 48% at 48% 38%, #fff 0%, transparent 100%),
+    radial-gradient(ellipse 100% 13% at 65% 101%, #b9d1f9 0%, transparent 100%),
+    linear-gradient(145deg, #eaf0fd, #f4f7fe 52%, #cfdef9);
+  color: var(--st-ink);
+  font: 15px/1.45 "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+}
+.short-term-workbench :global(.forecast-content) {
+  background:
+    radial-gradient(ellipse 75% 48% at 48% 38%, #fff 0%, transparent 100%),
+    radial-gradient(ellipse 100% 13% at 65% 101%, #b9d1f9 0%, transparent 100%),
+    linear-gradient(145deg, #eaf0fd, #f4f7fe 52%, #cfdef9);
+}
+.short-term-workbench :global(.forecast-header) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: 59px;
+  border-bottom: 0;
+  background: linear-gradient(97deg, #edf2ff, #e8eefb 53%, #b6d0f9 77%, #e9f0ff);
+  box-shadow: 0 2px 9px #7297e33d;
+}
+.short-term-workbench :global(.forecast-header)::before,
+.short-term-workbench :global(.forecast-header)::after {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  content: '';
+  pointer-events: none;
+}
+.short-term-workbench :global(.forecast-header)::before {
+  width: 615px;
+  height: 117px;
+  right: -59px;
+  top: 10px;
+  transform: rotate(8deg);
+  background: linear-gradient(110deg, #f0f7ffb8, #8db9f34d 59%, #f8fbff94);
+  box-shadow: 6px -12px 0 #eaf4ff59, 34px 12px 0 #c5dcff54;
+}
+.short-term-workbench :global(.forecast-header)::after {
+  width: 492px;
+  height: 98px;
+  right: -48px;
+  top: 34px;
+  transform: rotate(6deg);
+  background: linear-gradient(100deg, #d7eaff57, #74a9ee4f, #ecf5ff78);
+  box-shadow: 24px -11px 0 #9cc5f542;
+}
+.short-term-workbench :global(.forecast-brand strong) { color: #080f3d; }
+.short-term-workbench :global(.forecast-navigation a) { color: #40547f; font-weight: 600; }
+.short-term-workbench :global(.forecast-navigation a.active) {
+  border-bottom-color: #0657ff;
+  background: rgba(241,245,255,.9);
+  color: #0057ff;
+  box-shadow: 0 3px 10px rgba(100,152,237,.16);
+}
+.short-term-workbench .short-term-hero {
+  min-height: 58px;
+  border-bottom-color: rgba(207,221,245,.9);
+  background: transparent;
+}
+.short-term-workbench .short-term-left-rail > .compact-section,
+.short-term-workbench .short-term-ai-judgement,
+.short-term-workbench .short-term-result-tabs,
+.short-term-workbench .short-term-tab-content,
+.short-term-workbench > .ai-panel {
+  border-color: transparent;
+  border-radius: 18px;
+  background: linear-gradient(150deg, #f6f9fdf5, #f1f5fff0);
+  box-shadow: 0 8px 15px #6c97e84a, inset 0 1px 2px #fff;
+}
+.short-term-workbench .short-term-result-tabs { box-shadow: 0 4px 12px rgba(108,151,232,.12); }
+.short-term-workbench .short-term-tab-content { border-top: 0; }
+.short-term-workbench .short-term-filter-actions .predict-result-btn,
+.short-term-workbench .msg.user .msg-bubble,
+.short-term-workbench .send-btn { background: #005aff; }
+.short-term-workbench .short-term-filter-actions .predict-result-btn:hover:not(:disabled),
+.short-term-workbench .send-btn:hover:not(:disabled) { background: #004fe0; }
+.short-term-workbench .short-term-result-tabs button.active,
+.short-term-workbench .short-term-ai-judgement button .question-text,
+.short-term-workbench .short-term-ai-judgement button .question-arrow,
+.short-term-workbench .forecast-meta-info button { color: #0058ff; }
+.short-term-workbench .short-term-result-tabs button.active::after { background: #005aff; }
+.short-term-workbench .short-term-fixed-summary article,
+.short-term-workbench .future-comparison-summary > div,
+.short-term-workbench .short-term-result-chart,
+.short-term-workbench .short-term-result-table {
+  border-color: #d6e3ff;
+  border-radius: 13px;
+  background: #f1f5fdeb;
+  box-shadow: 0 3px 5px #b4cbf347;
+}
+.short-term-workbench .forecast-meta-info,
+.short-term-workbench .short-term-chat-scope {
+  border-color: #cfddf5;
+  background: rgba(230,238,255,.82);
+}
+.short-term-workbench :deep(.el-table) {
+  --el-table-header-bg-color: #e8eefb;
+  --el-table-row-hover-bg-color: #eef4ff;
+  --el-table-border-color: #dbe7ff;
+  --el-table-bg-color: rgba(251,252,255,.72);
+  --el-table-tr-bg-color: rgba(251,252,255,.72);
+}
+.short-term-workbench :deep(.el-table th.el-table__cell) { color: #405780; }
+.short-term-workbench :deep(.el-table td.el-table__cell) { color: #31466f; }
+.short-term-workbench .ai-input { border-color: #d6e3ff; background: rgba(246,249,255,.88); }
+.short-term-workbench .short-term-filter-grid :deep(.el-select__wrapper),
+.short-term-workbench .short-term-filter-grid :deep(.el-date-editor),
+.short-term-workbench .short-term-filter-actions .el-button {
+  border-color: #d2e0ff;
+  border-radius: 12px;
+  background: #fafcffe8;
+  box-shadow: 0 2px 4px #86a8e425 !important;
+}
+.short-term-workbench .short-term-filter-actions .predict-result-btn {
+  border-radius: 13px;
+  box-shadow: 0 3px 5px #83aef085;
+}
+.short-term-workbench .short-term-ai-judgement {
+  background: linear-gradient(113deg, #f5f8fdeb, #e4ecfb);
+  box-shadow: 0 1px 3px #799ce326;
+}
+.short-term-workbench .short-term-ai-judgement button,
+.short-term-workbench .short-term-questions button {
+  border-color: #d2e0fd;
+  border-radius: 12px;
+  background: #f9fbffdd;
+  box-shadow: 0 2px 5px #8cafe145;
+}
+.short-term-workbench .short-term-judgement .judgement-conclusion,
+.short-term-workbench .short-term-judgement .judgement-evidence,
+.short-term-workbench .short-term-judgement .judgement-risk,
+.short-term-workbench .short-term-judgement .judgement-advice {
+  border-color: #dbe7ff;
+  border-radius: 13px;
+  background: linear-gradient(110deg, #eef4fc, #e6edfb);
+  box-shadow: none;
+}
+.short-term-workbench .short-term-result-chart,
+.short-term-workbench .short-term-result-table {
+  border-color: #dbe7ff;
+  border-radius: 13px;
+  background: #f6f9ff69;
+  box-shadow: 0 2px 5px #a1b9ea28;
+}
+.short-term-workbench .ai-messages { background: transparent; }
+.short-term-workbench .ai-input {
+  margin: 0 15px 12px;
+  border: 1px solid #d6e4fd;
+  border-radius: 14px;
+  background: #f0f5ff;
+  box-shadow: 0 3px 7px #9db9e957;
+}
+.short-term-workbench .send-btn { border-radius: 13px; box-shadow: 0 3px 5px #83aef085; }
+.short-term-workbench :deep(button),
+.short-term-workbench :deep(input),
+.short-term-workbench :deep(textarea),
+.short-term-workbench :deep(.el-input),
+.short-term-workbench :deep(.el-select),
+.short-term-workbench :deep(.el-table) { font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+.short-term-workbench .short-term-title-row h1,
+.short-term-workbench .section-title,
+.short-term-workbench .short-term-ai-judgement h2,
+.short-term-workbench .short-term-task-head h2,
+.short-term-workbench .short-term-questions h2 {
+  color: #080f3d;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 32px;
+}
+.short-term-workbench .short-term-title-row h1 { font-size: 22px; }
+.short-term-workbench .short-term-filter-grid .form-field label {
+  margin: 5px 2px 3px;
+  color: #080f3d;
+  font-size: 16px;
+  font-weight: 700;
+}
+.short-term-workbench .short-term-filter-grid :deep(.el-select__selected-item),
+.short-term-workbench .short-term-filter-grid :deep(.el-range-input),
+.short-term-workbench .short-term-filter-grid :deep(.el-input__inner) { color: #21345d; font-size: 15px; font-weight: 600; }
+.short-term-workbench .short-term-filter-actions .predict-result-btn,
+.short-term-workbench .short-term-filter-actions .el-button { font-size: 15px; font-weight: 600; }
+.short-term-workbench .short-term-result-tabs button { color: #24385f; font-size: 15px; font-weight: 700; }
+.short-term-workbench .short-term-fixed-summary article > span,
+.short-term-workbench .future-comparison-summary > div > div > span { color: #080f3d; font-size: 14px; font-weight: 700; }
+.short-term-workbench .short-term-fixed-summary strong,
+.short-term-workbench .future-comparison-summary strong { color: #080f3d; font-size: 25px; font-weight: 700; line-height: 1.37; }
+.short-term-workbench .short-term-fixed-summary small,
+.short-term-workbench .future-comparison-summary small { color: #52678c; font-size: 12px; font-weight: 600; }
+.short-term-workbench .short-term-chart-title,
+.short-term-workbench .short-term-result-table h3 { color: #080f3d; font-size: 15px; font-weight: 700; }
+.short-term-workbench :deep(.el-table th.el-table__cell) { color: #080f3d; font-size: 15px; font-weight: 700; }
+.short-term-workbench :deep(.el-table td.el-table__cell) { color: #21345d; font-size: 15px; font-weight: 500; }
+.short-term-workbench .short-term-result-table :deep(.el-table td.el-table__cell),
+.short-term-workbench .short-term-model-table :deep(.el-table td.el-table__cell),
+.short-term-workbench .training-data-table :deep(.el-table td.el-table__cell),
+.short-term-workbench .short-term-result-table :deep(.el-table th.el-table__cell),
+.short-term-workbench .short-term-model-table :deep(.el-table th.el-table__cell),
+.short-term-workbench .training-data-table :deep(.el-table th.el-table__cell) { height: 36px; }
+.short-term-workbench .judgement-section,
+.short-term-workbench .msg-bubble { color: #21345d; font-size: 14px; font-weight: 500; line-height: 1.65; }
+.short-term-workbench .short-term-ai-judgement button,
+.short-term-workbench .short-term-questions button { color: #24385f; font-size: 14px; font-weight: 600; }
+
+/* 对话入口作为面板底栏，而不是悬浮卡片。 */
+.short-term-workbench .ai-input {
+  position: static;
+  z-index: auto;
+  flex: 0 0 58px;
+  align-items: center;
+  gap: 13px;
+  height: 58px;
+  margin: 0 15px 4px;
+  padding: 4px;
+  border: 1px solid #d6e4fd;
+  border-radius: 14px;
+  background: #f0f5ff;
+  box-shadow: 0 3px 7px #9db9e957;
+}
+.short-term-workbench .ai-input :deep(.el-input) {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+.short-term-workbench .ai-input :deep(.el-input__wrapper) {
+  height: 47px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  box-shadow: none !important;
+}
+.short-term-workbench .ai-input :deep(.el-input__inner) {
+  height: 47px;
+  line-height: 47px;
+  color: #24385f;
+  font-size: 14px;
+  font-weight: 500;
+}
+.short-term-workbench .ai-input :deep(.el-input__inner::placeholder) {
+  color: #324b8d;
+  opacity: 1;
+}
+.short-term-workbench .send-btn {
+  flex: 0 0 51px;
+  width: 51px;
+  height: 47px;
+  border-radius: 12px;
+  box-shadow: 0 3px 5px #83aef085;
+}
+.short-term-workbench .send-btn:disabled { background: #dce5f1; color: #fff; opacity: 1; }
+.short-term-workbench .short-term-chat-footer {
+  margin: 0 15px;
+  padding: 0 0 8px 3px;
+  background: rgba(246,249,255,.96);
+  color: #7185a5;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* 对齐 dashboard-source (3) 的三层蓝白空间：画布、外面板、内容盒。 */
+.agent-detail.short-term-workbench {
+  background-color: #e6efff;
+  background-image:
+    radial-gradient(ellipse 75% 48% at 48% 38%, rgba(255,255,255,.98) 0%, transparent 100%),
+    radial-gradient(ellipse 100% 13% at 65% 101%, #b9d1f9 0%, transparent 100%),
+    linear-gradient(145deg, #eaf0fd, #f4f7fe 52%, #cfdef9);
+}
+.short-term-workbench .short-term-left-rail > .compact-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 0;
+  background: linear-gradient(150deg, rgba(246,249,253,.96), rgba(241,245,255,.94));
+  box-shadow: 0 8px 15px rgba(108,151,232,.29), inset 0 1px 2px #fff;
+}
+.short-term-workbench .short-term-left-rail > .compact-section::before {
+  position: absolute;
+  z-index: -1;
+  inset: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(113deg, rgba(245,248,253,.92), #e4ecfb);
+  box-shadow: 0 1px 3px rgba(121,156,227,.15);
+  content: '';
+  pointer-events: none;
+}
+.short-term-workbench .short-term-result-table {
+  border: 1px solid #dbe7ff;
+  background: rgba(246,249,255,.72);
+  box-shadow: 0 2px 5px rgba(161,185,234,.16);
+}
+.short-term-workbench .short-term-tab-content {
+  padding: 11px 12px;
+}
+.short-term-workbench .short-term-task-head {
+  min-height: 35px;
+  gap: 11px;
+  margin: 0 0 10px;
+  padding: 0;
+  border-bottom: 0;
+}
+.short-term-workbench .short-term-task-head h2 {
+  gap: 7px;
+  font-size: 20px;
+  line-height: 32px;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-task-head h2 .el-icon {
+  font-size: 24px;
+}
+.short-term-workbench .short-term-finished {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #d8f2e6;
+  color: #087014;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-task-head small {
+  color: #24385f;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-fixed-summary {
+  gap: 9px;
+  margin: 0 0 14px;
+}
+.short-term-workbench .short-term-ai-judgement-head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid #cfe0f7;
+  border-radius: 999px;
+  background: #f1f6fd;
+  color: #356da8;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.short-term-workbench .short-term-ai-judgement-head > span::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4f8ed7;
+  content: '';
+}
+.short-term-workbench .short-term-finished {
+  border-color: #cfe8da;
+  background: #eff8f3;
+  color: #237653;
+  font-weight: 500;
+}
+.short-term-workbench .short-term-result-table h3 {
+  color: #080f3d;
+  font-weight: 700;
+}
+.short-term-workbench .future-table-wrap {
+  overflow: hidden;
+  border: 1px solid #d7e5ff;
+  border-radius: 11px;
+  background: rgba(251,252,255,.7);
+}
+.short-term-workbench .future-table-wrap :deep(.el-table),
+.short-term-workbench .future-table-wrap :deep(.el-table__inner-wrapper),
+.short-term-workbench .future-table-wrap :deep(.el-table tr) {
+  background: transparent;
+}
+.short-term-workbench .future-table-wrap :deep(.el-table th.el-table__cell) {
+  background: linear-gradient(180deg, #e3ebfc, #edf2ff);
+  color: #080f3d;
+}
+.short-term-workbench .future-table-wrap :deep(.el-table td.el-table__cell) {
+  border-bottom-color: #e7effb;
+  background: rgba(251,252,255,.58);
+}
+.short-term-workbench .short-term-fixed-summary article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  min-height: 91px;
+  align-items: center;
+  align-content: initial;
+  column-gap: 7px;
+  padding: 8px 9px;
+}
+.short-term-workbench .short-term-fixed-summary article > .metric-icon {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #dce8fc, #edf3ff);
+  color: #005aff;
+}
+.short-term-workbench .short-term-fixed-summary .metric-icon .el-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+.short-term-workbench .short-term-fixed-summary .metric-copy {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+}
+.short-term-workbench .short-term-fixed-summary .metric-copy > span {
+  color: #080f3d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-fixed-summary .metric-copy > strong {
+  margin-top: 1px;
+  font-size: 20px;
+  line-height: 1.25;
+}
+.short-term-workbench .short-term-fixed-summary .metric-copy > strong small {
+  display: inline;
+  margin: 0 0 0 2px;
+  color: currentColor;
+  font-size: 10px;
+  font-weight: 700;
+}
+.short-term-workbench .short-term-fixed-summary .metric-copy > small {
+  margin-top: 1px;
+  font-size: 9px;
+  letter-spacing: -.15px;
+  white-space: nowrap;
+}
+.short-term-workbench .short-term-fixed-summary .trend-up > .metric-icon {
+  background: #dcf1e8;
+  color: #078b20;
+}
+.short-term-workbench .short-term-fixed-summary .trend-down > .metric-icon {
+  background: #fff0e3;
+  color: #d55b12;
+  transform: rotate(180deg);
+}
+.short-term-workbench .short-term-fixed-summary .trend-flat > .metric-icon {
+  background: #edf1f7;
+  color: #60749a;
+}
+.short-term-workbench .ai-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2f73f6, #005aff);
+  box-shadow: 0 3px 8px rgba(44,105,225,.24);
+  color: #fff;
+}
+.short-term-workbench .ai-avatar svg { width: 23px; height: 23px; }
+.short-term-workbench .msg-avatar.assistant svg {
+  box-sizing: content-box;
+  width: 18px;
+  height: 18px;
+  padding: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2f73f6, #005aff);
+  box-shadow: 0 3px 8px rgba(44,105,225,.18);
+  color: #fff;
+}
+:global(.judgement-dialog) {
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(34,58,96,.18);
+  color: #21345d;
+  font: 15px/1.5 "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+}
+:global(.judgement-dialog *),
+:global(.judgement-dialog button) {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+}
+:global(.judgement-dialog-overlay) { background: rgba(25,44,76,.18); }
+:global(.judgement-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 16px 20px 13px;
+  border-bottom: 1px solid #e7ebf1;
+  background: #fff;
+}
+:global(.judgement-dialog .el-dialog__title) {
+  color: #080f3d;
+  font-size: 18px;
+  font-weight: 700;
+}
+:global(.judgement-dialog .el-dialog__close) { color: #405780; }
+:global(.judgement-dialog .el-dialog__body) {
+  padding: 16px 20px 20px;
+  background: #fff;
+}
+.judgement-dialog-scope {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.judgement-dialog-scope section {
+  padding: 13px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.judgement-dialog-scope .judgement-conclusion {
+  grid-column: 1 / -1;
+  border-color: #dbe5f3;
+  background: #f5f8fd;
+}
+.judgement-dialog-scope .judgement-evidence {
+  border-color: #e0e6ef;
+  background: #f7f9fc;
+}
+.judgement-dialog-scope .judgement-risk {
+  border-color: #eee1d5;
+  background: #fcf8f4;
+}
+.judgement-dialog-scope .judgement-advice {
+  grid-column: 1 / -1;
+  border-color: #dbeae4;
+  background: #f4f9f7;
+}
+.judgement-dialog-scope h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  color: #23436f;
+  font-size: 14px;
+  font-weight: 700;
+}
+.judgement-dialog-scope p,
+.judgement-dialog-scope ul {
+  margin: 0;
+  color: #344966;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+.judgement-dialog-scope ul { padding-left: 20px; }
+.judgement-dialog-scope :deep(strong) { color: #243b5a; font-weight: 600; }
+.judgement-dialog-scope .judgement-risk h4 { color: #a95b24; }
+.judgement-dialog-scope .judgement-advice h4 { color: #23745f; }
 @media (max-width: 1200px) {
   .agent-detail.short-term-workbench {
     grid-template-columns:240px minmax(0, 1fr);
@@ -5902,6 +6766,7 @@ watch(futureChartType, () => {
   .short-term-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .short-term-workbench .short-term-fixed-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .short-term-future-grid {
     grid-template-columns: 1fr;
   }
@@ -5928,6 +6793,7 @@ watch(futureChartType, () => {
   }
   .short-term-filter-grid,
   .short-term-summary-grid,
+  .short-term-workbench .short-term-fixed-summary,
   .future-comparison-summary {
     grid-template-columns: 1fr;
     padding-left: 0;

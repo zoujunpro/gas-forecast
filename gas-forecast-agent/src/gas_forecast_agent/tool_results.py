@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from .operation_models import OperationParameters, RuntimeModel
 
 
-class RecordAudit(RuntimeModel):
+class ToolResultModel(RuntimeModel):
+    """External MCP payloads are additive; unknown fields must not break a run."""
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class RecordAudit(ToolResultModel):
     id: int | None = None
     created_at: str | None = None
     updated_at: str | None = None
@@ -44,7 +50,7 @@ class IndustryRecord(RecordAudit):
 RecordT = TypeVar("RecordT")
 
 
-class PageResult(RuntimeModel, Generic[RecordT]):
+class PageResult(ToolResultModel, Generic[RecordT]):
     records: list[RecordT] = Field(default_factory=list)
     total: int | None = None
     page: int | None = None
@@ -56,7 +62,7 @@ class PageResult(RuntimeModel, Generic[RecordT]):
     all_fetched: bool | None = None
 
 
-class TaskDetail(RuntimeModel):
+class TaskDetail(ToolResultModel):
     id: int | None = None
     task_no: str | None = None
     detail_no: str | None = None
@@ -71,7 +77,7 @@ class TaskDetail(RuntimeModel):
     updated_at: str | None = None
 
 
-class TaskCreatedResult(RuntimeModel):
+class TaskCreatedResult(ToolResultModel):
     task_no: str | None = None
     total: int | None = None
     status: str | None = None
@@ -81,7 +87,7 @@ class TaskCreatedResult(RuntimeModel):
     proposed_parameters: OperationParameters | None = None
 
 
-class TaskCounts(RuntimeModel):
+class TaskCounts(ToolResultModel):
     total: int = 0
     pending: int = 0
     running: int = 0
@@ -89,7 +95,7 @@ class TaskCounts(RuntimeModel):
     failed: int = 0
 
 
-class TaskStatusResult(RuntimeModel):
+class TaskStatusResult(ToolResultModel):
     task_no: str
     dimension_type: str | None = None
     status: str | None = None
@@ -101,7 +107,7 @@ class TaskStatusResult(RuntimeModel):
     next_action: str | None = None
 
 
-class TaskStep(RuntimeModel):
+class TaskStep(ToolResultModel):
     id: int | None = None
     step_no: str | None = None
     task_detail_no: str | None = None
@@ -126,12 +132,12 @@ class TaskStep(RuntimeModel):
     updated_at: str | None = None
 
 
-class TaskStepsResult(RuntimeModel):
+class TaskStepsResult(ToolResultModel):
     task_no: str
     steps: list[TaskStep] = Field(default_factory=list)
 
 
-class LastYearPoint(RuntimeModel):
+class LastYearPoint(ToolResultModel):
     date: str | None = None
     value: float | None = None
 
@@ -170,14 +176,20 @@ class ForecastRecord(RecordAudit):
     backtest_result_json: str | None = None
     forecast_result_json: str | None = None
     analysis_content: str | None = None
-    analysis_questions_json: str | None = None
+    analysis_questions_json: str | list[str] | None = None
     last_year_points: list[LastYearPoint] | None = None
     error_message: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
 
+    @field_validator("analysis_questions_json", mode="before")
+    @classmethod
+    def tolerate_invalid_analysis_questions(cls, value: object) -> object:
+        """Questions are optional presentation data and must never invalidate a forecast result."""
+        return value if value is None or isinstance(value, (str, list)) else None
 
-class ForecastQueryResult(RuntimeModel):
+
+class ForecastQueryResult(ToolResultModel):
     record: ForecastRecord
     # Java 已将模型平台快照解析为对象，避免长 JSON 被当作文本截断。
     training: dict[str, Any] = Field(default_factory=dict)
@@ -185,7 +197,7 @@ class ForecastQueryResult(RuntimeModel):
     forecast: dict[str, Any] = Field(default_factory=dict)
 
 
-class ToolProblem(RuntimeModel):
+class ToolProblem(ToolResultModel):
     tool_name: str | None = None
     reason: str | None = None
     next_action: str | None = None
@@ -201,7 +213,7 @@ ToolData = (
 )
 
 
-class ToolExecutionResult(RuntimeModel):
+class ToolExecutionResult(ToolResultModel):
     """稳定结果信封；data 是具体工具的明确结果对象。"""
 
     success: bool | None = None
@@ -212,9 +224,51 @@ class ToolExecutionResult(RuntimeModel):
     error_type: str | None = None
     retryable: bool | None = None
     data: ToolData | None = None
+    raw_data: dict[str, Any] | None = Field(default=None, exclude=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_data_by_contract(cls, value: object) -> object:
+        """Select the result model once instead of trying every union member."""
+        if not isinstance(value, dict):
+            return value
+        data = value.get("data")
+        if not isinstance(data, dict) or isinstance(data, ToolResultModel):
+            return value
+
+        result_type = str(value.get("resultType") or value.get("result_type") or "").upper()
+        parsed: ToolData | dict[str, Any] = data
+
+        # Forecast details have a stable four-part shape even when older MCP
+        # versions label them as OBJECT rather than RESULT.
+        if isinstance(data.get("record"), dict) and any(
+            key in data for key in ("training", "backtest", "forecast")
+        ):
+            parsed = ForecastQueryResult.model_validate(data)
+        elif isinstance(data.get("steps"), list) and (data.get("taskNo") or data.get("task_no")):
+            parsed = TaskStepsResult.model_validate(data)
+        elif result_type == "PAGE" or isinstance(data.get("records"), list):
+            records = data.get("records") if isinstance(data.get("records"), list) else []
+            sample = next((item for item in records if isinstance(item, dict)), {})
+            if "customerCode" in sample or "customerName" in sample:
+                parsed = PageResult[CustomerRecord].model_validate(data)
+            elif "industryCode" in sample or "industryName" in sample:
+                parsed = PageResult[IndustryRecord].model_validate(data)
+            elif "regionCode" in sample or "regionName" in sample:
+                parsed = PageResult[RegionRecord].model_validate(data)
+        elif result_type == "TASK":
+            parsed = TaskCreatedResult.model_validate(data)
+        elif result_type == "PROGRESS":
+            parsed = TaskStatusResult.model_validate(data)
+        elif value.get("success") is False or any(
+            key in data for key in ("reason", "nextAction", "allowedActions", "retryable")
+        ):
+            parsed = ToolProblem.model_validate(data)
+
+        return {**value, "data": parsed, "raw_data": dict(data)}
 
 
-class ToolCallTrace(RuntimeModel):
+class ToolCallTrace(ToolResultModel):
     tool: str
     arguments: OperationParameters = Field(default_factory=OperationParameters)
     result: ToolExecutionResult
