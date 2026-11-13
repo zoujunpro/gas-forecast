@@ -6,17 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/tool_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/tool_results.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/App.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/AppHeader.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/AppHeader.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/ManagementTableCell.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/ManagementTableCell.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/PageTabs.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/PageTabs.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/WorkspaceNavigation.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/WorkspaceNavigation.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/styles/tokens.css" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/styles/tokens.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiExecutionTask.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiExecutionTask.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/dashboard/Home.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/dashboard/Home.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,7 +13,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="25304" />
+    <option name="cachedIndexableFilesCount" value="25307" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -339,14 +328,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00065" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792385222897</created>
-      <option name="number" value="00065" />
-      <option name="presentableId" value="LOCAL-00065" />
-      <option name="project" value="LOCAL" />
-      <updated>1792385222897</updated>
     </task>
     <task id="LOCAL-00066" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -732,7 +713,15 @@
       <option name="project" value="LOCAL" />
       <updated>1794472496340</updated>
     </task>
-    <option name="localTasksCounter" value="114" />
+    <task id="LOCAL-00114" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1794541075749</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
+      <option name="project" value="LOCAL" />
+      <updated>1794541075750</updated>
+    </task>
+    <option name="localTasksCounter" value="115" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
