@@ -6,12 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deploy/jenkins/gas-agent-dev-config.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/recommendation/forecast_question_rewriter.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/recommendation/forecast_question_rewriter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_forecast_question_recommendation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_forecast_question_recommendation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.test.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -334,22 +328,6 @@
       <workItem from="1790649792249" duration="3148000" />
       <workItem from="1790726805658" duration="618000" />
       <workItem from="1790748578140" duration="1146000" />
-    </task>
-    <task id="LOCAL-00069" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792732765715</created>
-      <option name="number" value="00069" />
-      <option name="presentableId" value="LOCAL-00069" />
-      <option name="project" value="LOCAL" />
-      <updated>1792732765715</updated>
-    </task>
-    <task id="LOCAL-00070" summary="初始化&#10;初始化">
-      <option name="closed" value="true" />
-      <created>1792733455454</created>
-      <option name="number" value="00070" />
-      <option name="presentableId" value="LOCAL-00070" />
-      <option name="project" value="LOCAL" />
-      <updated>1792733455454</updated>
     </task>
     <task id="LOCAL-00071" summary="初始化&#10;初始化">
       <option name="closed" value="true" />
@@ -727,7 +705,23 @@
       <option name="project" value="LOCAL" />
       <updated>1794548378078</updated>
     </task>
-    <option name="localTasksCounter" value="118" />
+    <task id="LOCAL-00118" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1794548877476</created>
+      <option name="number" value="00118" />
+      <option name="presentableId" value="LOCAL-00118" />
+      <option name="project" value="LOCAL" />
+      <updated>1794548877476</updated>
+    </task>
+    <task id="LOCAL-00119" summary="初始化&#10;初始化">
+      <option name="closed" value="true" />
+      <created>1794549460956</created>
+      <option name="number" value="00119" />
+      <option name="presentableId" value="LOCAL-00119" />
+      <option name="project" value="LOCAL" />
+      <updated>1794549460956</updated>
+    </task>
+    <option name="localTasksCounter" value="120" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -753,7 +747,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py</url>
-          <line>179</line>
+          <line>181</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
