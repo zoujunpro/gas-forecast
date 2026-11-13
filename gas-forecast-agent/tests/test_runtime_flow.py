@@ -230,5 +230,6 @@ def test_tool_data_is_typed_and_preserves_wire_values():
     assert isinstance(result.data.records[0], CustomerRecord)
     assert result.data.records[0].region_name == "江苏"
     assert result.to_payload() == payload
-    with pytest.raises(ValidationError):
-        ToolExecutionResult.model_validate({"data": {"unknownBusinessField": 1}})
+    # MCP/业务接口允许向结果中追加展示字段；新增字段不应阻断整个 Agent 请求。
+    additive = ToolExecutionResult.model_validate({"data": {"unknownBusinessField": 1}})
+    assert additive.data.records == []
