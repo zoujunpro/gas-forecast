@@ -955,7 +955,7 @@
                 </div>
               </template>
               <template v-else>
-                <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ msg.content }}</div>
+                <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ visibleUserMessage(msg.content) }}</div>
                 <div v-else-if="!msg.blocks?.length" class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
               </template>
               <ContentBlocks v-if="msg.role === 'assistant'" :blocks="msg.runNo ? (msg.blocks || []).filter(block => block.type !== 'MARKDOWN') : (msg.blocks || [])" compact-tasks
@@ -1403,6 +1403,12 @@ const shortTermConfidenceLabel = computed(() => {
   if (mape <= 20) return '可信度适中'
   return '建议谨慎参考'
 })
+// 请求末尾的预测关联信息仅用于路由，历史回显也不展示该内部编号。
+const visibleUserMessage = (content: string) => content.replace(
+  /\r?\n预测编号[：:]\s*FORECAST[-_A-Za-z0-9]+\s*$/i,
+  ''
+).trimEnd()
+
 const shortTermAiJudgement = computed(() => {
   const persisted = String(currentResult.value?.analysisContent || '').trim()
   if (persisted) return compactForecastAnalysis(persisted)
