@@ -290,7 +290,7 @@ def test_successful_page_status_cannot_be_overridden_by_model() -> None:
     )
 
     assert fallback.status == "COMPLETED"
-    assert fallback.message == "查询完成，共找到154条记录，完整结果已展示。"
+    assert fallback.message == "查询完成，共找到154条记录，结果见下方表格。"
     assert fallback.execution_result is not None
 
 
@@ -307,7 +307,7 @@ def test_python_style_model_message_is_parsed_and_long_page_text_uses_fallback()
     }
     long_message = "已查询到客户：\n" + "\n".join(f"- 客户{i}" for i in range(154))
     assert ToolResultAdapter.presentation_message(result, long_message) == (
-        "查询完成，共找到154条记录，完整结果已展示。"
+        "查询完成，共找到154条记录，结果见下方表格。"
     )
 
 

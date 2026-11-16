@@ -53,8 +53,7 @@ public record PythonAgentChatRequest(
             /** 当前待澄清交互的恢复快照；普通对话为空。 */
             AgentPendingOperation pendingOperation,
             /** 最近原始消息，按创建时间正序排列，不包含本轮用户消息。 */
-            List<RecentMessage> recentMessages,
-            /** 当前会话最近的预测任务，按任务时间从新到旧排列。 */
+            List<RecentMessage> recentMessages, /** 当前会话最近的预测任务，按任务时间从新到旧排列。 */
             List<RecentForecastTask> recentForecastTasks) {
         public ConversationContext {
             recentMessages = recentMessages == null ? List.of() : List.copyOf(recentMessages);

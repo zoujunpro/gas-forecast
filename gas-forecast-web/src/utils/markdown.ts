@@ -1,3 +1,4 @@
+import { normalizeReply } from './replyText'
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 
@@ -8,4 +9,4 @@ export const sanitizeHtml = (source: string): string =>
     FORBID_ATTR: ['style']
   })
 
-export const renderMarkdown = (source: string): string => sanitizeHtml(marked(source, { async: false }))
+export const renderMarkdown = (source: string): string => sanitizeHtml(marked(normalizeReply(source), { async: false }))

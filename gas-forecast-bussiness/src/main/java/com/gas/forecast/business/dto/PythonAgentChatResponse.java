@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
  * Python FastAPI 返回给 Java 的内部 Agent 执行结果。
  *
  * <p>
- * Java 校验 conversationNo、turnId 和 runNo 后，保存内容块与澄清状态并更新 Agent Run。
- * 任务关联直接从 TASK_CARD 内容块提取，本对象不再维护重复的 references 和审计字段。
+ * Java 校验 conversationNo、turnId 和 runNo 后，保存内容块与澄清状态并更新 Agent Run。 任务关联直接从
+ * TASK_CARD 内容块提取，本对象不再维护重复的 references 和审计字段。
  * </p>
  */
 public record PythonAgentChatResponse(
@@ -28,8 +28,7 @@ public record PythonAgentChatResponse(
         /** Java保存并返回Vue的有序展示内容块。 */
         List<AiChatContentBlock> blocks,
         /** WAITING状态下当前单字段问题及恢复快照。 */
-        PythonClarification clarification,
-        /** FAILED状态下的稳定错误信息。 */
+        PythonClarification clarification, /** FAILED状态下的稳定错误信息。 */
         AiChatErrorInfo error) {
 
     public PythonAgentChatResponse {

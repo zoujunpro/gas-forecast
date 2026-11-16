@@ -402,8 +402,8 @@
           <section v-if="currentResult && shortTermTab === 'results'" class="section-block compact-section">
             <div class="short-term-task-head"><h2><el-icon><Histogram /></el-icon>{{ shortTermDisplayedScope }} 短期用气预测</h2><span class="short-term-finished">✦ 预测已完成</span><small>预测起始：{{ shortTermForecastStart }}　|　预测天数：{{ shortTermFutureValues.length }} 天</small></div>
             <div class="short-term-fixed-summary" aria-label="预测核心指标">
-              <article><span class="metric-icon"><el-icon><Histogram /></el-icon></span><div class="metric-copy"><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }} <small>万方</small></strong><small>{{ shortTermLastYearStats }}</small></div></article>
-              <article class="primary"><span class="metric-icon"><el-icon><DataLine /></el-icon></span><div class="metric-copy"><span>本次预测总量</span><strong>{{ shortTermForecastTotal }} <small>万方</small></strong><small>{{ shortTermForecastStats }}</small></div></article>
+              <article><span class="metric-icon"><el-icon><Histogram /></el-icon></span><div class="metric-copy"><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }}</strong><small>{{ shortTermLastYearStats }}</small></div></article>
+              <article class="primary"><span class="metric-icon"><el-icon><DataLine /></el-icon></span><div class="metric-copy"><span>本次预测总量</span><strong>{{ shortTermForecastTotal }}</strong><small>{{ shortTermForecastStats }}</small></div></article>
               <article :class="`trend-${shortTermTrendTone}`"><span class="metric-icon"><el-icon><Top /></el-icon></span><div class="metric-copy"><span>同比变化</span><strong>{{ shortTermTrendText }}</strong><small>较去年同期</small></div></article>
               <article><span class="metric-icon"><el-icon><Aim /></el-icon></span><div class="metric-copy"><span>历史回测 MAPE</span><strong>{{ formatShortTermMetric(currentResult.metrics.mape, '%') }}</strong><small>{{ shortTermConfidenceLabel }}</small></div></article>
             </div>
@@ -428,7 +428,7 @@
                   extra-series-color="#b6c2d0"
                   :forecast-start-date="shortTermTrendChart.forecastStartDate"
                   legend-align="left"
-                  y-axis-name="用气量（万方）"
+                  y-axis-name="用气量"
                   forecast-area-color="rgba(37,99,235,.032)"
                 />
                 <el-empty v-else description="暂无趋势数据" :image-size="64" />
@@ -917,6 +917,8 @@
               </svg>
             </div>
             <div class="msg-body" :class="{ 'has-task-card': Boolean(msg.taskNo) }">
+              <ContentBlocks v-if="msg.role === 'assistant' && msg.runNo"
+                :blocks="(msg.blocks || []).filter(block => block.type === 'MARKDOWN')" />
               <template v-if="msg.role === 'assistant' && msg.runNo">
                 <div class="assistant-turn-card">
                   <div v-if="!msg.blocks?.length && shouldShowAssistantBubble(msg)" class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
@@ -956,7 +958,7 @@
                 <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ msg.content }}</div>
                 <div v-else-if="!msg.blocks?.length" class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
               </template>
-              <ContentBlocks v-if="msg.role === 'assistant'" :blocks="msg.blocks || []"
+              <ContentBlocks v-if="msg.role === 'assistant'" :blocks="msg.runNo ? (msg.blocks || []).filter(block => block.type !== 'MARKDOWN') : (msg.blocks || [])" compact-tasks
                 @forecast-completed="result => { finishRunProcess(msg); showCompletedTaskForecast(msg, result) }"
                 @batch-detail-selected="showBatchDetailForecast" @analysis-question="runShortTermQuickAnalysis"
                 @content-rendered="scrollToBottom" />
@@ -1017,7 +1019,6 @@
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 10L18 2L10 18L8 11L2 10Z" /></svg>
         </button>
       </div>
-      <p v-if="isShortTerm" class="short-term-chat-footer">ⓘ 已关联当前预测</p>
     </aside>
 
     <el-dialog
@@ -1052,6 +1053,7 @@
 </template>
 
 <script setup lang="ts">
+import { presentationColumns } from '@/components/chat/presentationFields'
 import ContentBlocks from '@/components/chat/ContentBlocks.vue'
 import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -1161,17 +1163,7 @@ const chatListRows = (message: ChatMessage): Record<string, any>[] => {
   return Array.isArray(records) ? records : []
 }
 
-const chatListColumns = (message: ChatMessage) => {
-  const first = chatListRows(message)[0] || {}
-  const labels: Record<string, string> = {
-    regionName: '地区',
-    industryName: '行业',
-    customerName: '客户'
-  }
-  return Object.keys(labels)
-    .filter((key) => key in first)
-    .map((key) => ({ key, label: labels[key] }))
-}
+const chatListColumns = (message: ChatMessage) => presentationColumns(chatListRows(message)).map(column => ({ key: column.field, label: column.title }))
 
 const isRunInProgress = (message: ChatMessage) => {
   const status = String(message.runStatus || '').toUpperCase()
@@ -1420,7 +1412,7 @@ const shortTermAiJudgement = computed(() => {
   const peak = Math.max(...values)
   const peakIndex = values.indexOf(peak)
   const peakDate = currentResult.value?.future_dates?.[peakIndex] || '预测期内'
-  return compactForecastAnalysis(`未来${values.length}天预计用气${total.toFixed(2)}万方，日均${(total / values.length).toFixed(2)}万方。${peakDate}预计达到峰值${peak.toFixed(2)}万方。`)
+  return compactForecastAnalysis(`未来${values.length}天预计用气${total.toFixed(2)}，日均${(total / values.length).toFixed(2)}。${peakDate}预计达到峰值${peak.toFixed(2)}。`)
 })
 const shortTermAiJudgementHtml = computed(() => {
   const htmlEntities: Record<string, string> = {
@@ -1441,7 +1433,7 @@ const shortTermJudgementEvidence = computed(() => {
   const peakIndex = values.indexOf(peak)
   const peakDate = currentResult.value?.future_dates?.[peakIndex] || '预测期内'
   const evidence = [
-    `预测期日均用气量 ${(total / values.length).toFixed(2)} 万方，峰值 ${peak.toFixed(2)} 万方。`,
+    `预测期日均用气量 ${(total / values.length).toFixed(2)}，峰值 ${peak.toFixed(2)}。`,
     `峰值预计出现在 ${peakDate}，预测期共 ${values.length} 天。`
   ]
   if (shortTermComparablePairs.value.length) evidence.push(`预测总量较去年同期变化 ${shortTermTrendText.value}。`)
@@ -4888,16 +4880,16 @@ watch(futureChartType, () => {
   line-height: 1.7;
 }
 .assistant-turn-card {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 10px;
   overflow: hidden;
-  border-radius: 12px;
-  background: #f8fafc;
-  border-bottom-left-radius: 4px;
-  transition: box-shadow 0.18s ease, outline-color 0.18s ease;
+  border-left: 2px solid #e2e8f0;
+  border-radius: 0;
+  background: transparent;
 }
 .msg.task-message-selected .assistant-turn-card {
-  outline: 2px solid rgba(37, 99, 235, 0.28);
-  outline-offset: 2px;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+  border-left-color: #94a3b8;
 }
 .msg.assistant .assistant-turn-card .msg-bubble {
   margin: 0;
@@ -4915,14 +4907,12 @@ watch(futureChartType, () => {
 .assistant-turn-card .agent-process {
   margin: 0;
   border: 0;
-  border-top: 1px solid #e2eaf3;
   border-radius: 0;
   background: transparent;
 }
 .assistant-turn-card .agent-process-list { border-top-color: #e2eaf3; }
 .task-completion-summary {
-  padding: 11px 15px;
-  border-top: 1px solid #e2eaf3;
+  padding: 2px 12px 10px;
   color: #1e293b;
   font-size: 14px;
   line-height: 1.7;
@@ -5881,13 +5871,6 @@ watch(futureChartType, () => {
 }
 .short-term-workbench .send-btn:hover:not(:disabled) { background: #0069e6; box-shadow: none; }
 .short-term-workbench .send-btn svg { width: 18px; height: 18px; }
-.short-term-workbench .short-term-chat-footer {
-  flex: 0 0 auto;
-  margin: 7px 15px 8px;
-  color: #8a9bb0;
-  font-size: 11px;
-  line-height: 1.3;
-}
 
 /* 视觉收敛：短期预测页只保留蓝色主调、青绿辅助和低饱和橙色预警，
    让 KPI、图表、表格和会话形成稳定的阅读层级。 */
@@ -6151,7 +6134,6 @@ watch(futureChartType, () => {
 .short-term-workbench .msg.user .msg-bubble { border: 1px solid rgba(29, 78, 216, .18); }
 .short-term-workbench .ai-input:focus-within { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37, 99, 235, .08); }
 .short-term-workbench .send-btn:disabled { background: #cbd5e1; box-shadow: none; }
-.short-term-workbench .short-term-chat-footer { color: var(--st-text-secondary); }
 
 /* 原有布局内的最后一轮精修：状态更克制、数据更易扫读、加载不留白。 */
 .short-term-workbench .short-term-result-tabs button {
@@ -6426,7 +6408,7 @@ watch(futureChartType, () => {
   align-items: center;
   gap: 13px;
   height: 58px;
-  margin: 0 15px 4px;
+  margin: 0 15px 8px;
   padding: 4px;
   border: 1px solid #d6e4fd;
   border-radius: 14px;
@@ -6464,14 +6446,6 @@ watch(futureChartType, () => {
   box-shadow: 0 3px 5px #83aef085;
 }
 .short-term-workbench .send-btn:disabled { background: #dce5f1; color: #fff; opacity: 1; }
-.short-term-workbench .short-term-chat-footer {
-  margin: 0 15px;
-  padding: 0 0 8px 3px;
-  background: rgba(246,249,255,.96);
-  color: #7185a5;
-  font-size: 11px;
-  line-height: 1.4;
-}
 
 /* 对齐 dashboard-source (3) 的三层蓝白空间：画布、外面板、内容盒。 */
 .agent-detail.short-term-workbench {
@@ -6812,4 +6786,13 @@ watch(futureChartType, () => {
     padding-left: 0;
   }
 }
+
+/* 会话摘要与展示块共用正文尺寸，过程标签保持次级层级。 */
+.short-term-workbench .task-completion-summary {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.75;
+}
+.short-term-workbench .task-completion-summary :deep(strong) { font-weight: 600; }
+.short-term-workbench .agent-process-title { font-size: 12px; font-weight: 500; }
 </style>

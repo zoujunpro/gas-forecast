@@ -21,13 +21,7 @@ public class AiChatContentBlock {
 
     /** 与type对应的结构化内容。 */
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type")
-    @JsonSubTypes({
-        @JsonSubTypes.Type(value = MarkdownContentData.class, name = "MARKDOWN"),
-        @JsonSubTypes.Type(value = ChartContentData.class, name = "CHART"),
-        @JsonSubTypes.Type(value = TableContentData.class, name = "TABLE"),
-        @JsonSubTypes.Type(value = TaskCardContentData.class, name = "TASK_CARD"),
-        @JsonSubTypes.Type(value = ResultLinkContentData.class, name = "RESULT_LINK")
-    })
+    @JsonSubTypes({@JsonSubTypes.Type(value = MarkdownContentData.class, name = "MARKDOWN"), @JsonSubTypes.Type(value = ChartContentData.class, name = "CHART"), @JsonSubTypes.Type(value = TableContentData.class, name = "TABLE"), @JsonSubTypes.Type(value = TaskCardContentData.class, name = "TASK_CARD"), @JsonSubTypes.Type(value = ResultLinkContentData.class, name = "RESULT_LINK")})
     private ContentData data;
 
     public AiChatContentBlock(AiChatContentTypeEnum type, ContentData data) {

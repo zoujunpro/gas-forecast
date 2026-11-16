@@ -113,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+import { presentationColumns } from '@/components/chat/presentationFields'
 import ContentBlocks from '@/components/chat/ContentBlocks.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Delete as DeleteIcon, Edit, MagicStick, Plus, Promotion, VideoPause } from '@element-plus/icons-vue'
@@ -265,14 +266,7 @@ const trainingResultOf = (message: Message) => message.trainingResult || message
 const executionTaskNos = (message: Message) => [...new Set((message.blocks || [])
   .filter((block) => block.type === 'TASK_CARD' && Boolean(block.data?.taskNo))
   .map((block) => String(block.data.taskNo)))]
-const listColumns = (message: Message) => {
-  const first = listRows(message)[0] || {}
-  const labels: Record<string, string> = {
-    customerCode: '客户编码', customerName: '客户名称', regionCode: '地区编码', regionName: '地区名称',
-    industryCode: '行业编码', industryName: '行业名称', code: '编码', name: '名称', status: '状态'
-  }
-  return Object.keys(labels).filter((key) => key in first).map((key) => ({ key, label: labels[key] }))
-}
+const listColumns = (message: Message) => presentationColumns(listRows(message)).map(column => ({ key: column.field, label: column.title }))
 const stepStatusText = (status: ProgressStep['status']) => ({
   SUCCESS: '已完成', RUNNING: '执行中', WAITING: '等待中', PARTIAL_FAILED: '部分失败', FAILED: '失败', SKIPPED: '已跳过'
 }[status])

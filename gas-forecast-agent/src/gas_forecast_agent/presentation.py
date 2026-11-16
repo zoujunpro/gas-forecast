@@ -76,11 +76,14 @@ class PresentationPlanner:
         return {"title": "预测任务执行情况", "currentStep": 3 if done else 2, "totalSteps": 3, "steps": steps}
 
 
-def build_content_blocks(message: str, result: dict[str, Any], planned: dict[str, Any]):
+def build_content_blocks(message: str, result: dict[str, Any], planned: dict[str, Any], tool_name: str | None = None):
     """只从真实工具结果构建内容块，保留执行信封供现有页面读取。"""
     from gas_forecast_agent.schemas import ContentBlock, ContentBlockType
+    from gas_forecast_agent.presentation_fields import presentation_columns
 
-    blocks = [ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": message})]
+    from gas_forecast_agent.reply_text import user_reply
+
+    blocks = [ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": user_reply(message)})]
     presentation = planned.get("presentation", {})
     forecast = planned.get("forecast_result", {})
     if result.get("success") is not False and presentation.get("type") in {"CHART", "FORECAST_CHART"} and forecast.get("points"):
@@ -96,7 +99,7 @@ def build_content_blocks(message: str, result: dict[str, Any], planned: dict[str
         fields = list(dict.fromkeys(key for row in rows for key in row))
         blocks.append(ContentBlock(type=ContentBlockType.TABLE, data={
             "title": "查询结果", "rows": rows,
-            "columns": [{"field": key, "title": key} for key in fields],
+            "columns": presentation_columns(tool_name, fields),
             "total": data.get("total", len(rows)),
             "page": data.get("page", data.get("pageNo", 1)),
             "pageSize": data.get("size", data.get("pageSize", 20)),

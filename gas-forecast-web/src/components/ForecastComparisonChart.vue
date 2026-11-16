@@ -105,8 +105,8 @@ const render = () => nextTick(() => {
         return [`<strong>${date}</strong>`, ...lines].join('<br/>')
       }
     },
-    legend: { top: 0, left: props.legendAlign === 'left' ? 0 : 'center', right: props.legendAlign === 'left' ? 82 : undefined, selectedMode: true, itemWidth: 14, itemHeight: 8, textStyle: { color: '#64748B', fontSize: 11 }, data: [props.referenceName, props.forecastName, ...(props.extraSeriesName ? [props.extraSeriesName] : [])] },
-    grid: { left: '2%', right: '4%', top: 40, bottom: 14, containLabel: true },
+    legend: { type: 'scroll', top: 0, left: props.legendAlign === 'left' ? 0 : 'center', right: 82, selectedMode: true, itemWidth: 14, itemHeight: 8, textStyle: { color: '#64748B', fontSize: 11 }, data: [props.referenceName, props.forecastName, ...(props.extraSeriesName ? [props.extraSeriesName] : [])] },
+    grid: { left: '2%', right: '4%', top: props.yAxisName ? 68 : 48, bottom: 14, containLabel: true },
     xAxis: {
       type: 'category',
       boundaryGap: isBar,

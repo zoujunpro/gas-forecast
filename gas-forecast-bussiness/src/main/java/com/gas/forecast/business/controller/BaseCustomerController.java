@@ -33,11 +33,8 @@ public class BaseCustomerController {
     @PostMapping("agentPage")
     @RequirePermission("base:customer:list")
     public ResponseResult<Object> agentPage(@Valid @RequestBody BaseCustomerPageRequest request) {
-        return ResponseResult.success(agentBusinessQueryService.customers(
-            request.getKeyword(), request.getRegionCode(), request.getIndustryCode(),
-            request.getPage(), Math.min(request.getSize(), 200), false));
+        return ResponseResult.success(agentBusinessQueryService.customers(request.getKeyword(), request.getRegionCode(), request.getIndustryCode(), request.getPage(), Math.min(request.getSize(), 200), false));
     }
-
 
     /**
      * 分页查询客户列表。

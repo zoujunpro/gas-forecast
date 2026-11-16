@@ -141,3 +141,18 @@ def test_chart_to_table_drops_chart_only_properties():
     table = apply_plan(plan, defaults)[0]
     assert "chartType" not in table.data
     assert table.data["rows"] == defaults[0].data["rows"]
+
+
+def test_master_data_columns_hide_codes_and_keep_original_rows():
+    from gas_forecast_agent.presentation import build_content_blocks
+    from gas_forecast_agent.presentation_planner import PresentationPlan, apply_plan
+    import pytest
+    for tool, name in [("customer_list", "customerName"), ("region_list", "regionName"), ("industry_list", "industryName")]:
+        row = {"id": 1, "customerCode": "C1", "regionCode": "R1", "industryCode": "I1", name: "名称"}
+        blocks = build_content_blocks("完成", {"data": {"records": [row]}}, {}, tool_name=tool)
+        assert blocks[1].data["columns"] == [{"field": name, "title": {"customerName": "客户名称", "regionName": "地区名称", "industryName": "行业名称"}[name]}]
+        assert blocks[1].data["rows"] == [row]
+        with pytest.raises(ValueError):
+            apply_plan(PresentationPlan.model_validate({"blocks": [{"type": "TABLE", "source_id": "1", "columns": ["id"]}]}), blocks)
+        planned = apply_plan(PresentationPlan.model_validate({"blocks": [{"type": "TABLE", "source_id": "1"}]}), blocks)
+        assert planned[1].data["columns"] == blocks[1].data["columns"]

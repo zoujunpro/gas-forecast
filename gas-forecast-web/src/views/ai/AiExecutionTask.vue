@@ -604,7 +604,7 @@ const analysisEvidence = computed(() => {
   const peak = Math.max(...values)
   const peakIndex = values.indexOf(peak)
   const evidence = [
-    `预测期日均用气量 ${(total / values.length).toFixed(2)} 万方，峰值 ${peak.toFixed(2)} 万方。`,
+    `预测期日均用气量 ${(total / values.length).toFixed(2)}，峰值 ${peak.toFixed(2)}。`,
     `峰值预计出现在 ${points[peakIndex]?.date || '预测期内'}，预测期共 ${values.length} 天。`
   ]
   const references = Array.isArray(result?.lastYearPoints) ? result.lastYearPoints : []
@@ -929,6 +929,8 @@ watch(
 
 <style scoped>
 .task-presentation {
+  box-sizing: border-box;
+  min-width: 0;
   width: 100%;
   max-width: 100%;
   overflow-anchor: none;
@@ -1187,8 +1189,10 @@ watch(
   background: #fff;
 }
 .task-presentation.compact .task-analysis {
+  box-sizing: border-box;
+  width: 100%;
   margin-top: 0;
-  padding: 12px 15px 15px;
+  padding: 12px 0 15px;
   border: 0;
   border-top: 1px solid #e2eaf3;
   border-radius: 0;
@@ -1258,10 +1262,14 @@ watch(
 }
 .analysis-judgement {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 7px;
   margin-top: 10px;
 }
 .analysis-judgement section {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 9px 11px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -1491,4 +1499,22 @@ watch(
     transform: scale(1.55);
   }
 }
+
+/* 聊天中的报告与普通回复使用同一正文层级。 */
+.task-presentation.compact .task-analysis,
+.task-presentation.compact .task-analysis p,
+.task-presentation.compact .analysis-judgement ul,
+.task-presentation.compact .analysis-judgement li {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.75;
+}
+.task-presentation.compact .analysis-title,
+.task-presentation.compact .analysis-judgement h4 {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.75;
+}
+.task-presentation.compact .analysis-judgement p { margin: 0; }
+.task-presentation.compact .analysis-title small { font-size: 12px !important; }
 </style>

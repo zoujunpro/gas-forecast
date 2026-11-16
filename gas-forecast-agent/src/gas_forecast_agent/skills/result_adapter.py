@@ -50,13 +50,15 @@ class ToolResultAdapter:
             if total is None:
                 records = data.get("records")
                 total = len(records) if isinstance(records, list) else 0
-            return f"查询完成，共找到{total}条记录，完整结果已展示。"
-        return str(result.get("message") or "工具执行成功，结果已展示。")
+            return f"查询完成，共找到{total}条记录，结果见下方表格。"
+        from gas_forecast_agent.reply_text import user_reply
+        return user_reply(result.get("message"))
 
     @classmethod
     def presentation_message(cls, result: dict[str, Any], model_message: str) -> str:
         """模型可以润色短说明，但不能用长列表或序列化对象替代前端组件。"""
-        text = model_message.strip()
+        from gas_forecast_agent.reply_text import user_reply
+        text = user_reply(model_message)
         if str(result.get("resultType") or "").upper() != "PAGE":
             return text
         suspicious = (
