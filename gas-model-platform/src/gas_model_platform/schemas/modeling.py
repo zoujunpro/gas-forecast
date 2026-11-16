@@ -147,6 +147,8 @@ class ForecastExecuteRequest(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
     history_dataset: list[TrainDatasetRow] = Field(min_length=1)
     future_dataset: list[PredictDatasetRow] = Field(min_length=1, max_length=366)
+    # date为对应预测日期，gas_sales为已查询的去年同期实际销量；不参与训练。
+    comparison_dataset: list[TrainDatasetRow] | None = None
 
 
 class FeatureComputeRequest(BaseModel):

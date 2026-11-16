@@ -64,7 +64,7 @@ class ModelRuntime:
         处理器内部仍复用既有 train/predict 能力，但两次调用均使用 forecast_no，
         因而模型产物只会落在 artifact_root/{forecast_no} 下。
         """
-        common = request.model_dump(exclude={"history_dataset", "future_dataset", "forecast_no"})
+        common = request.model_dump(exclude={"history_dataset", "future_dataset", "comparison_dataset", "forecast_no"})
         train_request = TrainRequest(
             **common,
             train_batch_no=request.forecast_no,
@@ -192,6 +192,7 @@ class ModelRuntime:
                     [(p.stat_date, p.actual_value) for p in training.rolling_backtest_results],
                     [(p.date, p.gas_sales) for p in request.history_dataset],
                     request.forecast_unit,
+                    comparison=None if request.comparison_dataset is None else [(p.date, p.gas_sales) for p in request.comparison_dataset],
                 ),
                 points=prediction.points,
                 metadata=prediction.metadata,

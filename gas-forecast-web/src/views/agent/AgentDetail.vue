@@ -214,7 +214,7 @@
               <div class="chart-label">滚动回测结果（实际值 vs 预测值）</div>
               <ForecastComparisonChart class="chart" style="height: 300px" :dates="currentResult.dates || []" :reference-values="currentResult.actual || []" :forecast-values="currentResult.predicted || []" :chart-type="chartType === 'bar' ? 'bar' : 'line'" reference-name="实际值" forecast-name="预测值" reference-color="#0f766e" forecast-color="#2563eb" />
               <div class="chart-label" v-if="currentResult.future_dates">历史与近期预测</div>
-              <ForecastComparisonChart v-if="currentResult.future_dates" class="chart" style="height: 300px" :dates="currentResult.future_dates" :reference-values="currentResult.last_year_values || []" :forecast-values="currentResult.future_predicted || []" :chart-type="futureChartType === 'bar' ? 'bar' : 'line'" />
+              <ForecastComparisonChart v-if="currentResult.future_dates" class="chart" style="height: 300px" :dates="currentResult.future_dates" :reference-values="currentResult.statistics?.yearOverYear?.matchedCount ? (currentResult.last_year_values || []) : []" :forecast-values="currentResult.future_predicted || []" :extra-series-values="currentResult.forecast_actual_values || []" extra-series-name="历史实际" extra-series-color="#0f766e" :chart-type="futureChartType === 'bar' ? 'bar' : 'line'" />
               <el-empty v-else description="当前范围暂无成功的近期预测结果" :image-size="72" />
             </div>
             <div class="data-summary" v-if="currentResult.future_dates">
@@ -624,7 +624,7 @@
               <div class="chart-label" v-if="currentResult.dates">滚动回测结果（实际值 vs 预测值）</div>
               <ForecastComparisonChart v-if="currentResult.dates" class="chart" style="height: 300px" :dates="currentResult.dates" :reference-values="currentResult.actual || []" :forecast-values="currentResult.predicted || []" :chart-type="chartType === 'bar' ? 'bar' : 'line'" reference-name="实际值" forecast-name="预测值" reference-color="#0f766e" forecast-color="#2563eb" />
               <div class="chart-label" v-if="currentResult.future_dates">历史与未来预测</div>
-              <ForecastComparisonChart v-if="currentResult.future_dates" class="chart" style="height: 300px" :dates="currentResult.future_dates" :reference-values="currentResult.last_year_values || []" :forecast-values="currentResult.future_predicted || []" :chart-type="futureChartType === 'bar' ? 'bar' : 'line'" />
+              <ForecastComparisonChart v-if="currentResult.future_dates" class="chart" style="height: 300px" :dates="currentResult.future_dates" :reference-values="currentResult.statistics?.yearOverYear?.matchedCount ? (currentResult.last_year_values || []) : []" :forecast-values="currentResult.future_predicted || []" :extra-series-values="currentResult.forecast_actual_values || []" extra-series-name="历史实际" extra-series-color="#0f766e" :chart-type="futureChartType === 'bar' ? 'bar' : 'line'" />
             </div>
             <div class="data-summary" v-if="currentResult.future_dates">
               <div class="summary-item" v-if="currentResult.dates">
@@ -1335,6 +1335,7 @@ watch(
         future_predicted: forecast.map((point: any) => point.value),
         forecast_actual_dates: forecastActual.map((point: any) => point.date),
         forecast_actual_values: forecastActual.map((point: any) => point.value),
+        statistics: data.statistics || currentResult.value?.statistics,
         last_year_dates: lastYear.map((point: any) => point.date),
         last_year_values: lastYear.map((point: any) => point.value)
       }
@@ -1354,20 +1355,17 @@ const shortTermForecastTotal = computed(() => {
   return currentResult.value?.statistics?.count || total ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
 })
 const shortTermComparablePairs = computed(() => {
+  const statistics = currentResult.value?.statistics
+  if (!statistics?.yearOverYear?.matchedCount) return []
   const references = currentResult.value?.last_year_values || []
   return shortTermFutureValues.value.flatMap((value, index) => {
     const reference = references[index]
-    return reference == null || !Number.isFinite(Number(reference))
-      ? []
-      : [{ forecast: Number(value), reference: Number(reference) }]
+    return reference == null || !Number.isFinite(Number(reference)) ? [] : [{ forecast: Number(value), reference: Number(reference) }]
   })
 })
 const shortTermLastYearTotal = computed(() => {
   const yoy = currentResult.value?.statistics?.yearOverYear
-  if (yoy) return yoy.matchedCount ? Number(yoy.baselineValue).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
-
-  const total = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
-  return shortTermComparablePairs.value.length ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
+  return yoy?.matchedCount ? Number(yoy.baselineValue).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '暂无统一统计结果'
 })
 const formatShortTermSummaryStats = (values: number[]) => {
   const validValues = values.map(Number).filter(Number.isFinite)
@@ -1382,21 +1380,11 @@ const shortTermForecastStats = computed(() => {
 })
 const shortTermLastYearStats = computed(() => {
   const yoy = currentResult.value?.statistics?.yearOverYear
-  if (yoy) return yoy.matchedCount ? `日均 ${Number(yoy.baselinePeriodAverage).toFixed(2)}｜峰值 ${Number(yoy.baselinePeakValue).toFixed(2)}` : '日均 - ｜ 峰值 -'
-  return formatShortTermSummaryStats(shortTermComparablePairs.value.map((point) => point.reference))
+  return yoy?.matchedCount ? `日均 ${Number(yoy.baselinePeriodAverage).toFixed(2)}｜峰值 ${Number(yoy.baselinePeakValue).toFixed(2)}` : '暂无统一统计结果'
 })
 const shortTermTrendRate = computed(() => {
   const yoy = currentResult.value?.statistics?.yearOverYear
-  if (yoy) return yoy.status === 'AVAILABLE' ? Number(yoy.changePercent) : Number.NaN
-
-  if (shortTermComparablePairs.value.length) {
-    const forecastTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.forecast, 0)
-    const referenceTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
-    return referenceTotal === 0 ? 0 : ((forecastTotal - referenceTotal) / Math.abs(referenceTotal)) * 100
-  }
-  const values = shortTermFutureValues.value
-  if (values.length < 2 || !Number(values[0])) return 0
-  return ((Number(values[values.length - 1]) - Number(values[0])) / Math.abs(Number(values[0]))) * 100
+  return yoy?.status === 'AVAILABLE' ? Number(yoy.changePercent) : Number.NaN
 })
 const shortTermTrendText = computed(() => {
   const rate = shortTermTrendRate.value
@@ -1445,19 +1433,7 @@ const shortTermAiJudgementHtml = computed(() => {
 })
 const shortTermJudgementEvidence = computed(() => {
   const saved = forecastStatisticsEvidence(currentResult.value?.statistics)
-  if (saved.length) return saved
-  const values = shortTermFutureValues.value.map(Number).filter(Number.isFinite)
-  if (!values.length) return ['当前预测结果暂无可用的未来用气数据。']
-  const total = values.reduce((sum, value) => sum + value, 0)
-  const peak = Math.max(...values)
-  const peakIndex = values.indexOf(peak)
-  const peakDate = currentResult.value?.future_dates?.[peakIndex] || '预测期内'
-  const evidence = [
-    `预测期日均用气量 ${(total / values.length).toFixed(2)}，峰值 ${peak.toFixed(2)}。`,
-    `峰值预计出现在 ${peakDate}，预测期共 ${values.length} 天。`
-  ]
-  if (shortTermComparablePairs.value.length) evidence.push(`预测总量较去年同期变化 ${shortTermTrendText.value}。`)
-  return evidence
+  return saved.length ? saved : ['暂无统一统计结果，请完成一次新的预测后查看。']
 })
 const shortTermJudgementRisk = computed(() => {
   const mape = Number(currentResult.value?.metrics?.mape)

@@ -61,6 +61,8 @@ def test_execution_response_saves_statistics_inside_forecast(grain, agent):
             return SimpleNamespace(valid=True, summary={}, errors=[], warnings=[])
 
         def train(self, context):
+            assert "comparison_dataset" not in context.model_dump()
+            assert context.dataset[0]["gas_sales"] == 100
             return TrainResult(agent_code=agent, model_code='TEST', train_batch_no='FORECAST-1')
 
         def predict(self, context):
@@ -71,8 +73,27 @@ def test_execution_response_saves_statistics_inside_forecast(grain, agent):
     result = runtime.execute_forecast(ForecastExecuteRequest(
         model_code='TEST', agent_code=agent, forecast_no='FORECAST-1', forecast_horizon=1,
         forecast_unit=grain, history_dataset=[{'date': '2025-12-01', 'gas_sales': 100}],
-        future_dataset=[{'date': '2026-01-01'}]))
+        future_dataset=[{'date': '2026-01-01'}],
+        comparison_dataset=[{'date': '2026-01-01', 'gas_sales': 100}]))
     snapshot = result.model_dump(mode='json')['forecast']['statistics']
     assert snapshot['grain'] == grain
     assert snapshot['total'] == 120
+    assert snapshot['yearOverYear']['changePercent'] == 20
+    assert snapshot['lastYearPoints'] == [{'date': '2026-01-01', 'value': 100}]
     assert snapshot['historicalComparison']['status'] == 'UNAVAILABLE'
+
+
+@pytest.mark.parametrize('grain', ['day', 'month', 'tenday'])
+def test_explicit_comparison_is_already_aligned_and_overrides_old_sources(grain):
+    result = calculate([('2026-01-01', 200), ('2026-02-01', 300)], [],
+                       [('2025-01-01', 1)], grain,
+                       comparison=[('2026-01-01', 100)])
+    assert result['yearOverYear']['changePercent'] == 100
+    assert result['yearOverYear']['coverage'] == 'PARTIAL'
+    assert result['lastYearPoints'] == [{'date': '2026-01-01', 'value': 100}]
+
+
+def test_explicit_empty_comparison_does_not_fall_back_to_training_history():
+    result = calculate([('2026-01-01', 200)], [], [('2025-01-01', 100)], 'day', comparison=[])
+    assert result['yearOverYear']['matchedCount'] == 0
+    assert result['lastYearPoints'] == []

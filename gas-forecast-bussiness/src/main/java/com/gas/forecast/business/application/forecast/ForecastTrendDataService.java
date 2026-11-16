@@ -8,6 +8,8 @@ import com.gas.forecast.dao.domain.ModelForecastResultTb;
 import com.gas.forecast.dao.mapper.DataDailySalesTbMapper;
 import com.gas.forecast.dao.mapper.DataRegionWeatherDailyTbMapper;
 import com.gas.forecast.dao.mapper.ModelForecastResultTbMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.text.SimpleDateFormat;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ForecastTrendDataService {
     private final ModelForecastResultTbMapper modelForecastResultTbMapper;
+    private final ObjectMapper objectMapper;
     private final DataDailySalesTbMapper dataDailySalesTbMapper;
     private final DataRegionWeatherDailyTbMapper dataRegionWeatherDailyTbMapper;
 
@@ -51,7 +54,29 @@ public class ForecastTrendDataService {
         List<Map<String, Object>> lastYearPoints = new ArrayList<>(lastYearHistory.size() + lastYearForecast.size());
         lastYearPoints.addAll(lastYearHistory);
         lastYearPoints.addAll(lastYearForecast);
-        return Map.of("forecastPoints", forecastPoints, "historyPoints", historyPoints, "forecastActualPoints", forecastActualPoints, "lastYearPoints", lastYearPoints);
+        // 新记录优先使用预测时保存的同期快照，趋势图与同比卡片保持同一数据源。
+        Map<String, Object> statistics = savedStatistics(record);
+        if (!statistics.isEmpty()) {
+            Object savedPoints = statistics.get("lastYearPoints");
+            if (savedPoints instanceof List<?> list && !list.isEmpty()) {
+                List<Map<String, Object>> savedForecast = list.stream()
+                        .filter(item -> item instanceof Map)
+                        .map(item -> (Map<String, Object>) item)
+                        .filter(item -> String.valueOf(item.get("date")).compareTo(forecastStart.toString()) >= 0)
+                        .toList();
+                lastYearPoints = new ArrayList<>(lastYearHistory);
+                lastYearPoints.addAll(savedForecast);
+            }
+        }
+        return Map.of("forecastPoints", forecastPoints, "historyPoints", historyPoints, "forecastActualPoints", forecastActualPoints, "lastYearPoints", lastYearPoints, "statistics", statistics);
+    }
+
+
+    private Map<String, Object> savedStatistics(ModelExecuteRecordTb record) {
+        try {
+            JsonNode node = objectMapper.readTree(record.getForecastResultJson()).path("statistics");
+            return node.isObject() ? objectMapper.convertValue(node, Map.class) : Map.of();
+        } catch (Exception ignored) { return Map.of(); }
     }
 
     /**

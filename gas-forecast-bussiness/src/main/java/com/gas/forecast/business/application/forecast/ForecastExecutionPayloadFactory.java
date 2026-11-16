@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ForecastExecutionPayloadFactory {
     private final ObjectMapper objectMapper;
+    private final ForecastLastYearComparisonService lastYearComparisonService;
     private final DataDailySalesTbMapper dataDailySalesTbMapper;
     private final DataRegionWeatherDailyTbMapper dataRegionWeatherDailyTbMapper;
 
@@ -85,6 +86,16 @@ public class ForecastExecutionPayloadFactory {
         record.setForecastStartDate(start);
         record.setForecastHorizon(horizon);
         record.setForecastUnit(unit);
+        List<String> comparisonDates = new java.util.ArrayList<>();
+        for (DataDailySalesTb item : sales) comparisonDates.add(item.getStatDate());
+        for (JsonNode row : future) comparisonDates.add(row.path("date").asText());
+        ArrayNode comparison = payload.putArray("comparison_dataset");
+        for (Map<String, Object> point : lastYearComparisonService.lastYearPoints(record, comparisonDates)) {
+            // date保持预测日期：服务已完成去年同期映射，不再向前偏移一年。
+            ObjectNode row = comparison.addObject();
+            row.put("date", String.valueOf(point.get("date")));
+            row.set("gas_sales", objectMapper.valueToTree(point.get("value")));
+        }
         return payload;
     }
 
@@ -115,7 +126,11 @@ public class ForecastExecutionPayloadFactory {
         return "month".equals(unit) ? today.withDayOfMonth(1) : "tenday".equals(unit) ? today.withDayOfMonth(today.getDayOfMonth() <= 10 ? 1 : today.getDayOfMonth() <= 20 ? 11 : 21) : today;
     }
     private LocalDate next(LocalDate start, String unit, int index) {
-        return "month".equals(unit) ? start.plusMonths(index) : "tenday".equals(unit) ? start.plusDays(index * 10L) : start.plusDays(index);
+        if ("tenday".equals(unit)) {
+            int slot = (start.getDayOfMonth() <= 10 ? 0 : start.getDayOfMonth() <= 20 ? 1 : 2) + index;
+            return start.withDayOfMonth(1).plusMonths(slot / 3).withDayOfMonth((slot % 3) * 10 + 1);
+        }
+        return "month".equals(unit) ? start.plusMonths(index) : start.plusDays(index);
     }
     private void put(ObjectNode node, String name, String value) {
         if (TextUtils.hasText(value))

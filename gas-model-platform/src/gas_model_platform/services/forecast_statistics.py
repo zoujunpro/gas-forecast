@@ -36,10 +36,11 @@ def _comparison(forecast, baseline):
             'reason': None if right > 0 else '比较基准不大于零，无法计算变化率'}
 
 
-def calculate_forecast_statistics(points, backtest, history, grain):
+def calculate_forecast_statistics(points, backtest, history, grain, comparison=None):
     """Inputs are (ISO date, value) pairs; backtest actuals share forecast grain.
 
-    Raw history is known to be daily in the execution contract. It is only used
+    Explicit comparison rows are aligned to forecast dates and never enter training.
+    Raw history is known to be daily in the legacy execution contract. It is only used
     for daily YoY. Month/tenday comparisons use same-grain backtest actuals.
     """
     predicted = _points(points)
@@ -67,18 +68,27 @@ def calculate_forecast_statistics(points, backtest, history, grain):
     evidence = result['evidence']
     if actual:
         baseline = sum(actual.values(), Decimal(0)) / len(actual)
-        comparison = _comparison([average], [baseline])
-        comparison.update(basis='PERIOD_AVERAGE', source='BACKTEST_ACTUAL',
+        historical_comparison = _comparison([average], [baseline])
+        historical_comparison.update(basis='PERIOD_AVERAGE', source='BACKTEST_ACTUAL',
                           startDate=min(actual), endDate=max(actual), count=len(actual))
-        result['historicalComparison'] = comparison
+        result['historicalComparison'] = historical_comparison
         evidence.append(f"预测期{label}均{average:.2f}，回测实际期（{min(actual)}至{max(actual)}，{len(actual)}个{label}）均值{baseline:.2f}"
-                        + (f"，变化{comparison['changePercent']:+.2f}%。" if comparison['changePercent'] is not None else '，基准不大于零，不计算变化率。'))
+                        + (f"，变化{historical_comparison['changePercent']:+.2f}%。" if historical_comparison['changePercent'] is not None else '，基准不大于零，不计算变化率。'))
     else:
         evidence.append('暂无同粒度历史实际数据，不能判断较历史升降。')
-    references = _points(history) if grain == 'day' else actual
+    references = _points(comparison) if comparison is not None else (_points(history) if grain == 'day' else actual)
+    if comparison is not None:
+        # 快照同时保存历史区间和预测区间的同期点，供趋势图直接复用。
+        result['lastYearPoints'] = [{'date': day, 'value': _rounded(value)} for day, value in sorted(references.items())]
+        result['historyLastYearPoints'] = [item for item in result['lastYearPoints'] if item['date'] < dates[0]]
+        result['forecastLastYearPoints'] = [item for item in result['lastYearPoints'] if item['date'] >= dates[0]]
     pairs = []
     for day in dates:
         current = date.fromisoformat(day)
+        if comparison is not None:
+            if day in references:
+                pairs.append((predicted[day], references[day]))
+            continue
         try:
             previous = current.replace(year=current.year - 1).isoformat()
         except ValueError:  # February 29 has no exact same-day counterpart.
