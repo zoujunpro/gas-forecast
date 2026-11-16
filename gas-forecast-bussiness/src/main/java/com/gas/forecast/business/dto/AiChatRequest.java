@@ -56,7 +56,6 @@ public class AiChatRequest {
         @Size(max = 65)
         private String forecastNo;
 
-
         /** 当前地区编码；可以表示省、市等层级。 */
         @Size(max = 64, message = "地区编码长度不能超过64个字符")
         private String regionCode;

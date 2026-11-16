@@ -36,7 +36,9 @@ public class ForecastLastYearComparisonService {
         if (record != null && hasText(record.getForecastResultJson())) {
             try {
                 JsonNode saved = objectMapper.readTree(record.getForecastResultJson()).path("statistics").path("lastYearPoints");
-                if (saved.isArray()) return objectMapper.convertValue(saved, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {});
+                if (saved.isArray())
+                    return objectMapper.convertValue(saved, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
+                    });
             } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
                 // 历史记录兼容原有查询路径。
             }
@@ -61,23 +63,28 @@ public class ForecastLastYearComparisonService {
             List<String> monthKeys = comparisonDateByForecastDate.values().stream().map(date -> date.substring(0, 7)).distinct().toList();
             List<String> storedMonthDates = new ArrayList<>(monthKeys);
             monthKeys.forEach(month -> storedMonthDates.add(month + "-01"));
-            var query = new LambdaQueryWrapper<DataMonthlySalesTb>().isNotNull(DataMonthlySalesTb::getGasSales)
-                    .in(DataMonthlySalesTb::getStatDate, storedMonthDates);
-            if (hasText(record.getCustomerCode())) query.eq(DataMonthlySalesTb::getCustomerCode, record.getCustomerCode());
+            var query = new LambdaQueryWrapper<DataMonthlySalesTb>().isNotNull(DataMonthlySalesTb::getGasSales).in(DataMonthlySalesTb::getStatDate, storedMonthDates);
+            if (hasText(record.getCustomerCode()))
+                query.eq(DataMonthlySalesTb::getCustomerCode, record.getCustomerCode());
             else {
-                if (hasText(record.getRegionCode())) query.eq(DataMonthlySalesTb::getRegionCode, record.getRegionCode());
-                if (hasText(record.getIndustryCode())) query.eq(DataMonthlySalesTb::getIndustryCode, record.getIndustryCode());
+                if (hasText(record.getRegionCode()))
+                    query.eq(DataMonthlySalesTb::getRegionCode, record.getRegionCode());
+                if (hasText(record.getIndustryCode()))
+                    query.eq(DataMonthlySalesTb::getIndustryCode, record.getIndustryCode());
             }
             for (DataMonthlySalesTb row : monthlySalesMapper.selectList(query)) {
                 BigDecimal value = decimal(row.getGasSales());
-                if (value != null) salesByDate.merge(row.getStatDate().substring(0, 7), value, BigDecimal::add);
+                if (value != null)
+                    salesByDate.merge(row.getStatDate().substring(0, 7), value, BigDecimal::add);
             }
         } else if ("tenday".equals(record.getForecastUnit())) {
             // 旬数据仅有地区维度，不能冒充客户或行业口径。
-            if (hasText(record.getCustomerCode()) || hasText(record.getIndustryCode()) || !hasText(record.getRegionCode())) return List.of();
+            if (hasText(record.getCustomerCode()) || hasText(record.getIndustryCode()) || !hasText(record.getRegionCode()))
+                return List.of();
             for (Map<String, Object> row : tendayComparisonMapper.selectComparison(record.getRegionCode(), new ArrayList<>(comparisonDateByForecastDate.values()))) {
                 BigDecimal value = decimal(String.valueOf(row.get("value")));
-                if (value != null) salesByDate.merge(String.valueOf(row.get("date")), value, BigDecimal::add);
+                if (value != null)
+                    salesByDate.merge(String.valueOf(row.get("date")), value, BigDecimal::add);
             }
         } else {
             LambdaQueryWrapper<DataDailySalesTb> query = new LambdaQueryWrapper<DataDailySalesTb>().isNotNull(DataDailySalesTb::getGasSales).in(DataDailySalesTb::getStatDate, comparisonDateByForecastDate.values());

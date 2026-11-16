@@ -87,8 +87,10 @@ public class ForecastExecutionPayloadFactory {
         record.setForecastHorizon(horizon);
         record.setForecastUnit(unit);
         List<String> comparisonDates = new java.util.ArrayList<>();
-        for (DataDailySalesTb item : sales) comparisonDates.add(item.getStatDate());
-        for (JsonNode row : future) comparisonDates.add(row.path("date").asText());
+        for (DataDailySalesTb item : sales)
+            comparisonDates.add(item.getStatDate());
+        for (JsonNode row : future)
+            comparisonDates.add(row.path("date").asText());
         ArrayNode comparison = payload.putArray("comparison_dataset");
         for (Map<String, Object> point : lastYearComparisonService.lastYearPoints(record, comparisonDates)) {
             // date保持预测日期：服务已完成去年同期映射，不再向前偏移一年。

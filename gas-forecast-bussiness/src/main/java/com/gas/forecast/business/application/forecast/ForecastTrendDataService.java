@@ -59,11 +59,7 @@ public class ForecastTrendDataService {
         if (!statistics.isEmpty()) {
             Object savedPoints = statistics.get("lastYearPoints");
             if (savedPoints instanceof List<?> list && !list.isEmpty()) {
-                List<Map<String, Object>> savedForecast = list.stream()
-                        .filter(item -> item instanceof Map)
-                        .map(item -> (Map<String, Object>) item)
-                        .filter(item -> String.valueOf(item.get("date")).compareTo(forecastStart.toString()) >= 0)
-                        .toList();
+                List<Map<String, Object>> savedForecast = list.stream().filter(item -> item instanceof Map).map(item -> (Map<String, Object>) item).filter(item -> String.valueOf(item.get("date")).compareTo(forecastStart.toString()) >= 0).toList();
                 lastYearPoints = new ArrayList<>(lastYearHistory);
                 lastYearPoints.addAll(savedForecast);
             }
@@ -71,12 +67,13 @@ public class ForecastTrendDataService {
         return Map.of("forecastPoints", forecastPoints, "historyPoints", historyPoints, "forecastActualPoints", forecastActualPoints, "lastYearPoints", lastYearPoints, "statistics", statistics);
     }
 
-
     private Map<String, Object> savedStatistics(ModelExecuteRecordTb record) {
         try {
             JsonNode node = objectMapper.readTree(record.getForecastResultJson()).path("statistics");
             return node.isObject() ? objectMapper.convertValue(node, Map.class) : Map.of();
-        } catch (Exception ignored) { return Map.of(); }
+        } catch (Exception ignored) {
+            return Map.of();
+        }
     }
 
     /**
