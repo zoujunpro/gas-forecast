@@ -102,7 +102,7 @@ public class AiChatPersistenceService {
 
         // 7. 创建runNo并组装发给Python Agent的内部请求，所有服务端编号均由Java生成。
         String runNo = "RUN-" + compactUuid();
-        AiChatRequest.BusinessContext context = request.getBusinessContext() == null ? new AiChatRequest.BusinessContext(null, null, null, null, null, null) : request.getBusinessContext();
+        AiChatRequest.BusinessContext context = request.getBusinessContext() == null ? new AiChatRequest.BusinessContext() : request.getBusinessContext();
         PythonAgentChatRequest agentRequest = new PythonAgentChatRequest(conversation.getConversationNo(), turnId, runNo, request.getMessage().trim(), request.getInputType().name(), trimToNull(request.getInteractionId()), trimToNull(request.getReplyToTurnId()), conversation.getAgentCode(), context, conversationContext);
 
         // 8. 保存Agent Run及请求快照，用于跟踪本轮执行状态、排查问题和校验Python响应。

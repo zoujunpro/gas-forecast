@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -11,11 +12,17 @@ class PresentationPlanner:
     """图表字段由程序固定，模型不能修改业务数值。"""
 
     @classmethod
-    def plan(cls, tool_name: str | None, result: dict[str, Any]) -> dict[str, Any]:
+    def plan(cls, tool_name: str | None, result: dict[str, Any], query: str | None = None) -> dict[str, Any]:
         data = result.get("data") if isinstance(result.get("data"), dict) else {}
         if tool_name in {"forecast_result_query", "forecast_result_by_no"}:
             forecast = cls._forecast_result(data)
             if forecast:
+                # Reading a prediction for analysis does not imply a request to draw it.
+                wants_chart = query is None or bool(re.search(r"图表|折线图|柱状图|画图|绘图|趋势图|曲线图|看图|chart|plot", query, re.I))
+                if query and re.search(r"不.{0,5}(?:图|chart)|无需.{0,5}图|只.{0,3}(?:文字|结论)", query, re.I):
+                    wants_chart = False
+                if not wants_chart:
+                    return {"presentation": {"type": "TEXT"}, "forecast_result": forecast}
                 return {
                     "presentation": {"type": "FORECAST_CHART", "chartType": "LINE", "title": "模型回测与预测结果", "xField": "date", "yFields": ["value"], "dataSource": "forecastResult.points"},
                     "forecast_result": forecast,
@@ -48,7 +55,7 @@ class PresentationPlanner:
             if not isinstance(item, dict):
                 continue
             date = item.get("date") or item.get("forecastDate") or item.get("forecast_date")
-            value = item.get("value", item.get("forecastValue", item.get("forecast_value")))
+            value = item.get("value", item.get("forecastValue", item.get("forecast_value", item.get("prediction"))))
             try:
                 valid = not isinstance(value, bool) and Decimal(str(value)).is_finite()
             except (InvalidOperation, ValueError, TypeError):
@@ -61,7 +68,7 @@ class PresentationPlanner:
         return {
             "forecastNo": record.get("forecastNo"), "customerName": record.get("customerName"),
             "average": sum(values, Decimal("0")) / Decimal(len(values)), "minimum": min(values), "maximum": max(values),
-            "training": cls._json(data.get("training")), "backtest": cls._json(data.get("backtest")), "points": points,
+            "training": cls._json(data.get("training")), "backtest": cls._json(data.get("backtest")), "points": points, "statistics": raw.get("statistics") or {},
         }
 
     @staticmethod

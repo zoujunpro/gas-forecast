@@ -12,10 +12,10 @@ class ForecastQuestionTemplate:
 
 
 FORECAST_QUESTION_CATALOG = (
-    ForecastQuestionTemplate("FORECAST_TREND", "TREND", "未来{days}天用气趋势如何？", ("forecast_points",)),
-    ForecastQuestionTemplate("FORECAST_CHANGE_RATE", "CHANGE_RATE", "未来{days}天用气量预计{direction}多少？", ("forecast_average", "reference_average")),
+    ForecastQuestionTemplate("FORECAST_TREND", "TREND", "未来{days}{period_label}用气趋势如何？", ("forecast_points",)),
+    ForecastQuestionTemplate("FORECAST_CHANGE_RATE", "CHANGE_RATE", "未来{days}{period_label}用气量预计{direction}多少？", ("forecast_average", "reference_average")),
     ForecastQuestionTemplate("FORECAST_CAUSE", "CAUSE", "用气量{direction}可能受哪些因素影响？", ("forecast_points", "reference_average")),
-    ForecastQuestionTemplate("FORECAST_PEAK", "PEAK", "未来{days}天用气峰值何时出现？", ("forecast_points", "peak_date")),
+    ForecastQuestionTemplate("FORECAST_PEAK", "PEAK", "未来{days}{period_label}用气峰值何时出现？", ("forecast_points", "peak_date")),
     ForecastQuestionTemplate("FORECAST_ACCURACY", "ACCURACY", "{mape_text}的MAPE意味着什么？", ("mape",)),
-    ForecastQuestionTemplate("FORECAST_RISK", "RISK", "未来{days}天是否存在异常用气风险？", ("forecast_points", "risk_threshold")),
+    ForecastQuestionTemplate("FORECAST_RISK", "RISK", "未来{days}{period_label}是否存在异常用气风险？", ("forecast_points", "risk_threshold")),
 )

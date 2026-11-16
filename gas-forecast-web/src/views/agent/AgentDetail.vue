@@ -404,7 +404,7 @@
             <div class="short-term-fixed-summary" aria-label="预测核心指标">
               <article><span class="metric-icon"><el-icon><Histogram /></el-icon></span><div class="metric-copy"><span>去年同期总量</span><strong>{{ shortTermLastYearTotal }}</strong><small>{{ shortTermLastYearStats }}</small></div></article>
               <article class="primary"><span class="metric-icon"><el-icon><DataLine /></el-icon></span><div class="metric-copy"><span>本次预测总量</span><strong>{{ shortTermForecastTotal }}</strong><small>{{ shortTermForecastStats }}</small></div></article>
-              <article :class="`trend-${shortTermTrendTone}`"><span class="metric-icon"><el-icon><Top /></el-icon></span><div class="metric-copy"><span>同比变化</span><strong>{{ shortTermTrendText }}</strong><small>较去年同期</small></div></article>
+              <article :class="`trend-${shortTermTrendTone}`"><span class="metric-icon"><el-icon><Top /></el-icon></span><div class="metric-copy"><span>同比变化</span><strong>{{ shortTermTrendText }}</strong><small>{{ currentResult?.statistics?.yearOverYear?.coverage === 'PARTIAL' ? `仅${currentResult.statistics.yearOverYear.matchedCount}个可比日` : '较去年同期' }}</small></div></article>
               <article><span class="metric-icon"><el-icon><Aim /></el-icon></span><div class="metric-copy"><span>历史回测 MAPE</span><strong>{{ formatShortTermMetric(currentResult.metrics.mape, '%') }}</strong><small>{{ shortTermConfidenceLabel }}</small></div></article>
             </div>
             <section class="short-term-result-chart result-chart-panel compact-chart-panel">
@@ -1081,7 +1081,7 @@ import {
 } from '@element-plus/icons-vue'
 import type { AgentRunEvent, AiChatContentBlock, ChatMessage } from '@/types'
 import AiExecutionTask from '@/views/ai/AiExecutionTask.vue'
-import { compactForecastAnalysis, forecastAnalysisQuestions } from '@/utils/forecastAnalysis'
+import { compactForecastAnalysis, forecastAnalysisQuestions, forecastStatisticsEvidence } from '@/utils/forecastAnalysis'
 import ForecastComparisonChart from '@/components/ForecastComparisonChart.vue'
 
 const route = useRoute()
@@ -1350,8 +1350,8 @@ watch(
 
 const shortTermFutureValues = computed<number[]>(() => currentResult.value?.future_predicted || [])
 const shortTermForecastTotal = computed(() => {
-  const total = shortTermFutureValues.value.reduce((sum, value) => sum + Number(value || 0), 0)
-  return total ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
+  const total = currentResult.value?.statistics?.total ?? shortTermFutureValues.value.reduce((sum, value) => sum + Number(value || 0), 0)
+  return currentResult.value?.statistics?.count || total ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
 })
 const shortTermComparablePairs = computed(() => {
   const references = currentResult.value?.last_year_values || []
@@ -1363,6 +1363,9 @@ const shortTermComparablePairs = computed(() => {
   })
 })
 const shortTermLastYearTotal = computed(() => {
+  const yoy = currentResult.value?.statistics?.yearOverYear
+  if (yoy) return yoy.matchedCount ? Number(yoy.baselineValue).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
+
   const total = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
   return shortTermComparablePairs.value.length ? total.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) : '-'
 })
@@ -1373,11 +1376,19 @@ const formatShortTermSummaryStats = (values: number[]) => {
   const peak = Math.max(...validValues)
   return `日均 ${average.toFixed(2)}｜峰值 ${peak.toFixed(2)}`
 }
-const shortTermForecastStats = computed(() => formatShortTermSummaryStats(shortTermFutureValues.value))
-const shortTermLastYearStats = computed(() =>
-  formatShortTermSummaryStats(shortTermComparablePairs.value.map((point) => point.reference))
-)
+const shortTermForecastStats = computed(() => {
+  const stats = currentResult.value?.statistics
+  return stats?.count ? `日均 ${Number(stats.periodAverage).toFixed(2)}｜峰值 ${Number(stats.peakValue).toFixed(2)}` : formatShortTermSummaryStats(shortTermFutureValues.value)
+})
+const shortTermLastYearStats = computed(() => {
+  const yoy = currentResult.value?.statistics?.yearOverYear
+  if (yoy) return yoy.matchedCount ? `日均 ${Number(yoy.baselinePeriodAverage).toFixed(2)}｜峰值 ${Number(yoy.baselinePeakValue).toFixed(2)}` : '日均 - ｜ 峰值 -'
+  return formatShortTermSummaryStats(shortTermComparablePairs.value.map((point) => point.reference))
+})
 const shortTermTrendRate = computed(() => {
+  const yoy = currentResult.value?.statistics?.yearOverYear
+  if (yoy) return yoy.status === 'AVAILABLE' ? Number(yoy.changePercent) : Number.NaN
+
   if (shortTermComparablePairs.value.length) {
     const forecastTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.forecast, 0)
     const referenceTotal = shortTermComparablePairs.value.reduce((sum, point) => sum + point.reference, 0)
@@ -1389,11 +1400,12 @@ const shortTermTrendRate = computed(() => {
 })
 const shortTermTrendText = computed(() => {
   const rate = shortTermTrendRate.value
+  if (!Number.isFinite(rate)) return '暂无可比数据'
   return `${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`
 })
 const shortTermTrendTone = computed(() => {
   const rate = shortTermTrendRate.value
-  if (Math.abs(rate) < 1) return 'flat'
+  if (!Number.isFinite(rate) || Math.abs(rate) < 1) return 'flat'
   return rate > 0 ? 'up' : 'down'
 })
 const shortTermConfidenceLabel = computed(() => {
@@ -1432,6 +1444,8 @@ const shortTermAiJudgementHtml = computed(() => {
   return sanitizeHtml(highlighted)
 })
 const shortTermJudgementEvidence = computed(() => {
+  const saved = forecastStatisticsEvidence(currentResult.value?.statistics)
+  if (saved.length) return saved
   const values = shortTermFutureValues.value.map(Number).filter(Number.isFinite)
   if (!values.length) return ['当前预测结果暂无可用的未来用气数据。']
   const total = values.reduce((sum, value) => sum + value, 0)
@@ -1709,6 +1723,7 @@ const resultFromExecuteRecord = (record: any) => {
     history_values: backtestPoints.map(actualOf),
     future_dates: forecastPoints.map(dateOf).filter(Boolean),
     future_predicted: forecastPoints.map(valueOf),
+    statistics: forecast?.statistics,
     last_year_dates: lastYearPoints.map(dateOf).filter(Boolean),
     last_year_values: lastYearPoints.map(valueOf),
     metrics: {
@@ -2163,6 +2178,7 @@ const shortTermResultFromTaskPresentation = (result: Record<string, any>) => {
     predicted: backtestPoints.map((point: any) => point.predictedValue),
     future_dates: points.map((point: any) => point.date).filter(Boolean),
     future_predicted: points.map((point: any) => point.value),
+    statistics: result.statistics,
     last_year_dates: lastYearPoints.map((point: any) => point.date).filter(Boolean),
     last_year_values: lastYearPoints.map((point: any) => point.value),
     metrics: {
@@ -3127,11 +3143,7 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
       : undefined)
   if ((!effectiveReply && !inputMessage.value.trim()) || isStreaming.value) return
   const userMessage = effectiveReply?.displayText || inputMessage.value
-  // 结果卡上的快捷分析必须绑定用户实际点击的预测。聊天气泡仍只展示问题，
-  // 请求文本附带稳定编号，Agent 会把它作为显式、不可改写的业务标识。
-  const requestMessage = explicitForecastNo
-    ? `${userMessage}\n预测编号：${explicitForecastNo}`
-    : userMessage
+  // 预测关联信息通过结构化上下文传递，用户原话保持原样。
   if (!structured) inputMessage.value = ''
   if (effectiveReply) effectiveReply.source.clarificationResolved = true
   const streamId = activeChatId.value
@@ -3157,12 +3169,12 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
   }
   const requestBody = (reply?: AgentStructuredReply) => ({
     conversationNo: activeConversationNo.value || conversationMemory.get(streamId) || null,
-    message: requestMessage,
+    message: userMessage,
     inputType: reply?.inputType || 'TEXT',
     interactionId: reply?.source.clarification?.interactionId || null,
     replyToTurnId: reply?.source.turnId || null,
     agentCode: agentId.value,
-    businessContext: activeBusinessContext()
+    businessContext: { ...activeBusinessContext(), ...(explicitForecastNo ? { forecastNo: explicitForecastNo } : {}) }
   })
   const requestStream = (reply?: AgentStructuredReply) =>
     postSse<any>(

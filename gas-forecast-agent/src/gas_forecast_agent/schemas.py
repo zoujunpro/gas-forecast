@@ -151,6 +151,8 @@ class BusinessContext(ApiModel):
     创建训练或预测任务前，地区、行业和客户仍须经过主数据校验或用户确认。
     """
 
+    forecast_no: str | None = Field(default=None, max_length=65, pattern=r"^FORECAST[-_A-Za-z0-9]+$")
+
     region_code: str | None = Field(
         default=None,
         max_length=64,
@@ -603,6 +605,7 @@ class ForecastPointResponse(ApiModel):
 
 
 class ForecastResultResponse(ApiModel):
+    statistics: dict[str, Any] = Field(default_factory=dict)
     forecast_no: str | None = None
     customer_name: str | None = None
     average: Any | None = None

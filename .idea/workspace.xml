@@ -6,7 +6,28 @@
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/presentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/recommendation/forecast_question_catalog.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/recommendation/forecast_question_catalog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/recommendation/forecast_question_selector.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/recommendation/forecast_question_selector.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/schemas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/skills/semantics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/workflow_nodes/presentation_node.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/workflow_nodes/presentation_node.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_forecast_question_recommendation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_forecast_question_recommendation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_presentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_presentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_semantics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_semantics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-agent/tests/test_skill_agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/common/scheduler/ForecastExecutionDispatcher.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/common/scheduler/ForecastExecutionDispatcher.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/AiChatRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/dto/AiChatRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiChatPersistenceService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/service/AiChatPersistenceService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/components/chat/ChartBlock.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/components/chat/ChartBlock.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.test.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.test.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.ts" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/utils/forecastAnalysis.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiExecutionTask.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/ai/AiExecutionTask.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/schemas/modeling.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/schemas/modeling.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/runtime.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/runtime.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,23 +109,23 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0040440036088691" />
-      <entry key="MS500" value="1.334869174158138" />
-      <entry key="S2" value="2.0892700885895996" />
-      <entry key="S5" value="2.8571248663597446" />
-      <entry key="S10" value="3.5386472859943963" />
-      <entry key="S30" value="6.494248296890962" />
-      <entry key="S60" value="9.104489919291183" />
-      <entry key="M2" value="11.16693502260579" />
-      <entry key="M5" value="13.075729675079701" />
-      <entry key="M10" value="18.6172453245581" />
-      <entry key="M15" value="27.891454042298307" />
-      <entry key="M30" value="57.86839917206879" />
-      <entry key="H1" value="105.40501431030441" />
-      <entry key="H2" value="160.28908867903505" />
-      <entry key="H4" value="206.0013539397836" />
-      <entry key="D1" value="259.9161828804323" />
-      <entry key="W1" value="271.07676935499774" />
+      <entry key="MS100" value="1.0000220331763399" />
+      <entry key="MS500" value="1.1385192258622383" />
+      <entry key="S2" value="2.498184760318825" />
+      <entry key="S5" value="4.197130816711841" />
+      <entry key="S10" value="5.316448872773173" />
+      <entry key="S30" value="6.623786663402606" />
+      <entry key="S60" value="8.73942753747857" />
+      <entry key="M2" value="13.761479746828496" />
+      <entry key="M5" value="32.51441139232446" />
+      <entry key="M10" value="63.57973904464216" />
+      <entry key="M15" value="87.2041778425638" />
+      <entry key="M30" value="136.67978135061745" />
+      <entry key="H1" value="201.350533396463" />
+      <entry key="H2" value="274.6134335947121" />
+      <entry key="H4" value="337.59898962290873" />
+      <entry key="D1" value="414.7922504639924" />
+      <entry key="W1" value="431.1651802498582" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -126,23 +147,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9902210331095151" />
-      <entry key="MS500" value="1.3311730903880894" />
-      <entry key="S2" value="2.08778613453948" />
-      <entry key="S5" value="2.8562764480620433" />
-      <entry key="S10" value="3.5381076153683213" />
-      <entry key="S30" value="6.493900356309387" />
-      <entry key="S60" value="9.104240444226644" />
-      <entry key="M2" value="11.166780205288642" />
-      <entry key="M5" value="13.075656698460271" />
-      <entry key="M10" value="18.61719364129618" />
-      <entry key="M15" value="27.891402636028133" />
-      <entry key="M30" value="57.86834567562176" />
-      <entry key="H1" value="105.40496503062731" />
-      <entry key="H2" value="160.2890508438269" />
-      <entry key="H4" value="206.00132949088186" />
-      <entry key="D1" value="259.9161777144262" />
-      <entry key="W1" value="271.07676858467477" />
+      <entry key="MS100" value="0.9862544343324494" />
+      <entry key="MS500" value="1.1353673914401556" />
+      <entry key="S2" value="2.496486967702555" />
+      <entry key="S5" value="4.195991869963673" />
+      <entry key="S10" value="5.315722255790334" />
+      <entry key="S30" value="6.623483449436146" />
+      <entry key="S60" value="8.739230944052958" />
+      <entry key="M2" value="13.761328565001863" />
+      <entry key="M5" value="32.5142684639155" />
+      <entry key="M10" value="63.57959697661078" />
+      <entry key="M15" value="87.20404628637924" />
+      <entry key="M30" value="136.67967487168772" />
+      <entry key="H1" value="201.35045162204457" />
+      <entry key="H2" value="274.613375824628" />
+      <entry key="H4" value="337.5989533351551" />
+      <entry key="D1" value="414.79224288777544" />
+      <entry key="W1" value="431.16517912101256" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -814,7 +835,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/gas-forecast-agent/src/gas_forecast_agent/main.py</url>
-          <line>188</line>
+          <line>192</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

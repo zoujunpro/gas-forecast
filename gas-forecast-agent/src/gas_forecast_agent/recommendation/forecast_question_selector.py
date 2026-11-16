@@ -52,7 +52,15 @@ def select_forecast_questions(context: dict[str, Any]) -> list[SelectedForecastQ
     forecast_average = fmean(forecast_values) if forecast_values else None
     reference_average = fmean(reference_values) if reference_values else None
     change_rate = ((forecast_average - reference_average) / reference_average * 100) if forecast_average is not None and reference_average not in (None, 0) else None
+    statistics = (context.get("forecast") or {}).get("statistics") or {}
+    if statistics:
+        comparison = statistics.get("historicalComparison") or {}
+        forecast_average = statistics.get("periodAverage")
+        reference_average = comparison.get("baselineValue")
+        change_rate = comparison.get("changePercent") if comparison.get("status") == "AVAILABLE" else None
     direction = "上升" if change_rate is not None and change_rate > 1 else "下降" if change_rate is not None and change_rate < -1 else "基本持平"
+    if statistics and change_rate is not None:
+        direction = "上升" if change_rate > 0 else "下降" if change_rate < 0 else "持平"
     peak_index = forecast_values.index(max(forecast_values)) if forecast_values else None
     peak_date = None if peak_index is None else str(forecast_points[peak_index].get("forecast_date") or forecast_points[peak_index].get("date") or forecast_points[peak_index].get("ds") or "预测期内")
     volatility = pstdev(forecast_values) / abs(forecast_average) if len(forecast_values) > 1 and forecast_average else 0.0
@@ -77,5 +85,12 @@ def select_forecast_questions(context: dict[str, Any]) -> list[SelectedForecastQ
     if context.get("riskThreshold") is not None:
         scores["RISK"] += 60
     selected = sorted((item for item in FORECAST_QUESTION_CATALOG if _available(item, features)), key=lambda item: scores[item.category], reverse=True)[:3]
-    values = {"days": days, "direction": direction, "mape_text": "未提供" if mape is None else f"{mape:.2f}%"}
-    return [SelectedForecastQuestion(item.code, item.category, item.template.format(**values)) for item in selected]
+    period_label = {"day": "天", "month": "个月", "tenday": "旬"}.get(statistics.get("grain"), "天")
+    days = statistics.get("count", days)
+    values = {"days": days, "period_label": period_label, "direction": direction, "mape_text": "未提供" if mape is None else f"{mape:.2f}%"}
+    return [SelectedForecastQuestion(
+        "FORECAST_COMPARISON_BASIS" if statistics and item.category == "CAUSE" else item.code,
+        "COMPARISON" if statistics and item.category == "CAUSE" else item.category,
+        "本次销量变化采用什么比较口径？" if statistics and item.category == "CAUSE"
+        else item.template.format(**values)
+    ) for item in selected]

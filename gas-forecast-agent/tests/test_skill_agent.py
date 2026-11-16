@@ -1559,3 +1559,14 @@ def test_invalid_tool_contract_is_a_retryable_system_error() -> None:
     assert result["status"] == "SYSTEM_ERROR"
     assert result["errorCode"] == "INVALID_TOOL_RESPONSE"
     assert result["retryable"] is True
+
+
+def test_selected_forecast_context_overrides_recent_task_without_rewriting_message():
+    values = ActionExecutor._initial_parameters(
+        '这个怎么算的？', empty_memory(), {
+            'currentBusinessContext': {'forecastNo': 'FORECAST-SELECTED'},
+            'recentForecastTasks': [{'details': [{'forecastNo': 'FORECAST-RECENT'}]}],
+        }, 'AICHAT-1', 'forecast-analysis', RequestSemantics.model_validate({'intent': 'ANALYZE'}),
+    )
+    assert values['forecastNo'] == 'FORECAST-SELECTED'
+    assert 'forecastNo' in values['_lockedParameters']

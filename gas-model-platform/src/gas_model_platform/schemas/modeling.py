@@ -309,6 +309,7 @@ class ForecastExecutionBacktestResult(BaseModel):
 
 
 class ForecastExecutionForecastResult(BaseModel):
+    statistics: dict[str, Any] = Field(default_factory=dict)
     points: list[ForecastPoint] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

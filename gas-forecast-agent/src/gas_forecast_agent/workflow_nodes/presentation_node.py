@@ -13,6 +13,7 @@ async def presentation_node(state: AgentGraphState, runtime: Runtime[AgentGraphC
     planned = PresentationPlanner.plan(
         result.executed_tool,
         result.execution_result.to_payload() if result.execution_result else {},
+        query=state.request.message,
     )
     blocks = build_content_blocks(
         result.message,

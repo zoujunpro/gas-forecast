@@ -301,6 +301,13 @@ public class ForecastExecutionDispatcher {
                 totalForecastValue += forecastPoint.path("prediction").asDouble(forecastPoint.path("forecast_value").asDouble());
             analysisContent.append("未来").append(forecastDays).append("天预测均值为").append(String.format(Locale.ROOT, "%.2f", totalForecastValue / forecastDays)).append("。");
         }
+        // 模型平台已计算同粒度统计；规则兜底也使用该快照，避免与AI解读口径不同。
+        JsonNode statistics = forecastExecutionResult.path("forecast").path("statistics");
+        JsonNode evidence = statistics.path("evidence");
+        if (evidence.isArray() && !evidence.isEmpty()) {
+            analysisContent = new StringBuilder(evidence.get(0).asText());
+            analysisContent.append(" ").append(accuracyAssessment).append("。");
+        }
         modelExecuteRecord.setAnalysisContent(analysisContent.toString());
         ObjectNode forecastAnalysisMetrics = objectMapper.createObjectNode();
         forecastAnalysisMetrics.put("analysis", analysisContent.toString());

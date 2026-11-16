@@ -52,6 +52,10 @@ public class AiChatRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BusinessContext {
+        /** 用户当前明确选中的预测结果，仅用于结果分析。 */
+        @Size(max = 65)
+        private String forecastNo;
+
 
         /** 当前地区编码；可以表示省、市等层级。 */
         @Size(max = 64, message = "地区编码长度不能超过64个字符")

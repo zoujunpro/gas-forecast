@@ -524,6 +524,11 @@ class ActionExecutor:
                 "role": "system",
                 "content": (
                     skill.model_instructions()
+                    + "\n预测结果forecastResultJson或forecast中的statistics是本次已保存的统一统计快照。"
+                      "分析销量时优先使用其historicalComparison、yearOverYear、峰谷及evidence，禁止另选口径重算。"
+                      "区分较历史周期均值变化、同比和期末较期初变化；后者不能证明持续上涨或下降。"
+                      "按grain使用日、月、旬，不跨粒度比较；同比部分匹配时说明范围，缺失或零基准不编造变化率。"
+                      "旧记录缺少statistics时可依据原始数据回答，但必须明确比较日期与口径，不能把缺失值当零。"
                     + "\n\n围绕用户最终目标逐步规划，本轮只决定一个下一步：调用一个工具，或直接回复用户。"
                       "不要一次生成完整执行清单；下一步必须依据已返回的真实工具结果决定。"
                       "工具名称和参数必须来自给定定义。信息不足时直接提问；"
@@ -771,6 +776,12 @@ class ActionExecutor:
                 values[key] = match.group(1)
                 # 用户明确输入的业务编号属于强标识，模型不得截断或改写。
                 locked_parameters.add(key)
+        # 结果卡显式选择的对象独立传递，不污染用户原话和消息历史。
+        selected = metadata.get("currentBusinessContext") or {}
+        selected_no = selected.get("forecastNo") if isinstance(selected, dict) else None
+        if skill_name == "forecast-analysis" and not values.get("forecastNo") and selected_no:
+            values["forecastNo"] = selected_no
+            locked_parameters.add("forecastNo")
         # 用户未指定分析对象时，使用当前会话最近的成功预测任务。
         # 单明细任务可以唯一确定forecastNo；批量任务包含多个结果时
         # 不能静默选第一个，必须请用户明确客户、地区或行业。

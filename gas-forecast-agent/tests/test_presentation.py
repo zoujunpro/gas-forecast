@@ -156,3 +156,21 @@ def test_master_data_columns_hide_codes_and_keep_original_rows():
             apply_plan(PresentationPlan.model_validate({"blocks": [{"type": "TABLE", "source_id": "1", "columns": ["id"]}]}), blocks)
         planned = apply_plan(PresentationPlan.model_validate({"blocks": [{"type": "TABLE", "source_id": "1"}]}), blocks)
         assert planned[1].data["columns"] == blocks[1].data["columns"]
+
+
+def test_forecast_statistics_snapshot_is_preserved_for_result_card():
+    statistics = {'grain': 'month', 'periodAverage': 120, 'evidence': ['预测期月均120']}
+    result = PresentationPlanner.plan('forecast_result_by_no', {'data': {
+        'forecast': {'points': [{'forecast_date': '2026-01-01', 'prediction': 120}],
+                     'statistics': statistics}}})
+    assert result['forecast_result']['statistics'] == statistics
+
+
+def test_analysis_does_not_automatically_add_chart_but_explicit_request_can():
+    data = {'data': {'forecast': {'points': [{'forecast_date': '2026-01-01', 'prediction': 120}]}}}
+    for query in ['未来10天用气趋势如何？', '怎么算的？', '上升44.3%？', '不要图表，只要结论']:
+        planned = PresentationPlanner.plan('forecast_result_by_no', data, query=query)
+        assert planned['presentation']['type'] == 'TEXT'
+        assert planned['forecast_result']['points']
+    planned = PresentationPlanner.plan('forecast_result_by_no', data, query='画一张趋势图')
+    assert planned['presentation']['type'] == 'FORECAST_CHART'

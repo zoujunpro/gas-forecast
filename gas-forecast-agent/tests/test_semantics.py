@@ -500,3 +500,26 @@ def test_legacy_flat_payload_is_upgraded_but_serializes_only_new_contract() -> N
     assert serialized["requests"][0]["parameters"] == {"forecastHorizon": 30}
     assert "needsClarification" not in serialized
     assert "clarificationQuestion" not in serialized
+
+
+@pytest.mark.parametrize('message', ['较90天回测期日均销量，上升约49.4%？', '这个怎么算的？', '峰值哪天？'])
+@pytest.mark.parametrize('mode', ['timeout', 'empty', 'invalid'])
+def test_forecast_followup_has_read_only_fallback(monkeypatch, message, mode):
+    class Completions:
+        async def create(self, **kwargs):
+            if mode == 'timeout':
+                raise TimeoutError('test')
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                content='{}' if mode == 'empty' else 'not json'))])
+    monkeypatch.setattr('gas_forecast_agent.skills.semantics.build_llm_client',
+                        lambda settings: SimpleNamespace(chat=SimpleNamespace(completions=Completions())))
+    result = asyncio.run(RequestSemanticExtractor(model_settings()).extract(
+        message, available_skills=SKILLS,
+        conversation_context={'recentForecastTasks': [{'details': [{'forecastNo': 'FORECAST-1'}]}]}))
+    assert result.primary_request.intent == SkillIntent.ANALYZE
+
+
+def test_elliptical_question_without_forecast_context_is_not_guessed():
+    assert RequestSemanticExtractor._deterministic_semantics('这个怎么算的？') is None
+    assert RequestSemanticExtractor._deterministic_semantics('重新预测上涨后的销量', {
+        'recentForecastTasks': [{'details': [{'forecastNo': 'FORECAST-1'}]}]}) is None

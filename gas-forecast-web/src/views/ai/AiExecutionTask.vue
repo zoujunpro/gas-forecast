@@ -180,7 +180,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Aim, Document, Opportunity, Warning } from '@element-plus/icons-vue'
 import { getJson } from '@/api/management'
-import { compactForecastAnalysis, forecastAnalysisQuestions } from '@/utils/forecastAnalysis'
+import { compactForecastAnalysis, forecastAnalysisQuestions, forecastStatisticsEvidence } from '@/utils/forecastAnalysis'
 import AiForecastResult from './AiForecastResult.vue'
 const props = defineProps<{ taskNo: string; compact?: boolean }>()
 const compact = computed(() => Boolean(props.compact))
@@ -597,6 +597,8 @@ const analysisText = computed(() => {
 const analysisQuestions = computed(() => forecastAnalysisQuestions(forecastResult.value?.analysisQuestionsJson))
 const analysisEvidence = computed(() => {
   const result = forecastResult.value
+  const saved = forecastStatisticsEvidence(result?.statistics)
+  if (saved.length) return saved
   const points = Array.isArray(result?.points) ? result.points.filter((item: any) => Number.isFinite(Number(item.value))) : []
   if (!points.length) return ['当前预测结果暂无可用的未来用气数据。']
   const values = points.map((item: any) => Number(item.value))
@@ -694,6 +696,7 @@ const normalizeResult = (data: Record<string, any>) => {
       bestModel: record.bestModel || training.selected_model_name || training.best_model || training.model_name,
       mape: record.mape ?? trainingMetrics.mape ?? training.mape
     },
+    statistics: data.statistics || forecast.statistics,
     points: (Array.isArray(data.points) ? data.points : forecast.points || []).map(point),
     lastYearPoints: (data.lastYearPoints || []).map(point),
     backtestPoints: (Array.isArray(data.backtestPoints)

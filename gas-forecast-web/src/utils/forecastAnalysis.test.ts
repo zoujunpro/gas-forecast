@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { forecastAnalysisQuestions } from './forecastAnalysis'
+import { forecastAnalysisQuestions, forecastStatisticsEvidence } from './forecastAnalysis'
 
 describe('forecastAnalysisQuestions', () => {
   it('uses the three persisted questions generated for this forecast', () => {
@@ -22,5 +22,12 @@ describe('forecastAnalysisQuestions', () => {
   it('hides quick questions when persisted AI output is invalid', () => {
     expect(forecastAnalysisQuestions('["重复问题？","重复问题？"]')).toEqual([])
     expect(forecastAnalysisQuestions('invalid json')).toEqual([])
+  })
+})
+
+describe('forecastStatisticsEvidence', () => {
+  it('preserves saved model statistics and ignores malformed evidence', () => {
+    expect(forecastStatisticsEvidence({ evidence: ['同比部分可比', null, 12, ''] })).toEqual(['同比部分可比'])
+    expect(forecastStatisticsEvidence(undefined)).toEqual([])
   })
 })

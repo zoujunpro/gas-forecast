@@ -24,3 +24,10 @@ export const forecastAnalysisQuestions = (value?: unknown): string[] => {
     return []
   }
 }
+
+/** New predictions carry the model platform's saved statistics; legacy ones keep their fallback. */
+export const forecastStatisticsEvidence = (statistics: unknown): string[] => {
+  if (!statistics || typeof statistics !== 'object') return []
+  const evidence = (statistics as Record<string, unknown>).evidence
+  return Array.isArray(evidence) ? evidence.filter((item): item is string => typeof item === 'string' && !!item.trim()) : []
+}

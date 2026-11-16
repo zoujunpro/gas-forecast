@@ -1,3 +1,4 @@
+from gas_model_platform.services.forecast_statistics import calculate_forecast_statistics
 from gas_model_platform.models.base import ModelHandler
 from gas_model_platform.models.registry import ModelRegistry
 from gas_model_platform.services.model_event_reporter import ModelEventReporter
@@ -186,6 +187,12 @@ class ModelRuntime:
                 fold_metrics=training.rolling_backtest_fold_metrics,
             ),
             forecast=ForecastExecutionForecastResult(
+                statistics=calculate_forecast_statistics(
+                    [(p.forecast_date, p.prediction) for p in prediction.points],
+                    [(p.stat_date, p.actual_value) for p in training.rolling_backtest_results],
+                    [(p.date, p.gas_sales) for p in request.history_dataset],
+                    request.forecast_unit,
+                ),
                 points=prediction.points,
                 metadata=prediction.metadata,
             ),

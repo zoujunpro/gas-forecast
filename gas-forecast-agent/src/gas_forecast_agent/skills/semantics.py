@@ -532,7 +532,7 @@ class RequestSemanticExtractor:
                     intent=SkillIntent.CHAT,
                 )],
             )
-        fallback = self._deterministic_semantics(message)
+        fallback = self._deterministic_semantics(message, conversation_context)
         if self._settings.skill_routing_mode == "rules":
             if fallback is not None:
                 return fallback
@@ -571,6 +571,9 @@ class RequestSemanticExtractor:
                 available_skills or [],
             )
             if not normalized.requests:
+                if fallback is not None:
+                    logger.warning("event=request_semantics_fallback reason=empty_requests")
+                    return fallback
                 raise SemanticExtractionError("语义识别模型没有返回任何请求")
             primary = normalized.primary_request
             logger.info(
@@ -597,11 +600,25 @@ class RequestSemanticExtractor:
             raise SemanticExtractionError("语义识别模型调用或结果解析失败") from exc
 
     @staticmethod
-    def _deterministic_semantics(message: str) -> RequestSemantics | None:
+    def _deterministic_semantics(message: str, context: dict | None = None) -> RequestSemantics | None:
         """仅兜底高确定性的只读分析，不替代正常的语义模型抽取。"""
         text = re.sub(r"\s+", "", message).lower()
         analysis_terms = ("分析", "研判", "误差", "趋势", "波动", "同比", "环比", "为什么", "原因")
-        if any(term in text for term in analysis_terms):
+        # Only interpret elliptical questions when a trusted forecast reference exists.
+        context = context or {}
+        references = context.get("historyReferences") or []
+        has_forecast = any(isinstance(ref, dict) and ref.get("forecastNo") for ref in references)
+        has_forecast = has_forecast or any(
+            isinstance(task, dict) and any(isinstance(detail, dict) and detail.get("forecastNo")
+                                         for detail in task.get("details", []))
+            for task in context.get("recentForecastTasks", []) if isinstance(task, dict)
+        )
+        has_forecast = has_forecast or bool((context.get("pageContext") or {}).get("forecastNo"))
+        has_forecast = has_forecast or bool(re.search(r"FORECAST[-_A-Za-z0-9]+", message, re.I))
+        follow_up = has_forecast and bool(re.search(
+            r"上升|下降|增长|减少|升了|降了|涨了|跌了|怎么算|如何计算|怎么得出|最高|最低|峰值|谷值", text
+        )) and not re.search(r"重新预测|开始预测|训练|删除|修改|取消|创建", text)
+        if any(term in text for term in analysis_terms) or follow_up:
             return RequestSemantics(
                 dialogue_act=DialogueAct.NEW_REQUEST,
                 requests=[SemanticRequest(intent=SkillIntent.ANALYZE)],

@@ -34,3 +34,16 @@ def test_invalid_ai_rewrite_falls_back_to_rule_questions() -> None:
     selected = select_forecast_questions(context())
     result = validated_questions([{"code": "UNKNOWN", "category": "RISK", "text": "系统无法回答的问题？"}], selected)
     assert [item["text"] for item in result] == [item.text for item in selected]
+
+
+def test_questions_use_saved_statistics_and_month_grain():
+    data = context()
+    data['forecast']['statistics'] = {
+        'grain': 'month', 'count': 2, 'periodAverage': 111,
+        'historicalComparison': {'status': 'AVAILABLE', 'baselineValue': 100, 'changePercent': 11},
+    }
+    questions = select_forecast_questions(data)
+    assert '上升' in questions[0].text
+    assert '个月' in questions[0].text
+    assert any('比较口径' in question.text for question in questions)
+    assert all('因素' not in question.text for question in questions)
