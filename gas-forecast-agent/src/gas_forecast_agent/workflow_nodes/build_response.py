@@ -5,11 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from gas_forecast_agent.presentation import PresentationPlanner
 from gas_forecast_agent.schemas import (
     AgentRuntimeRequest,
     AgentRuntimeResponse,
-    PresentationResponse,
     SkillSelectionResponse,
 )
 from gas_forecast_agent.workflow_nodes.common import elapsed_ms
@@ -32,7 +30,7 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
         result：公共执行器产生的回复、参数和真实工具结果。
 
     处理：
-        1. 根据工具结果生成训练卡片、预测卡片或进度等展示数据。
+        1. 读取公共展示节点已经校验的展示配置。
         2. 返回 intentCode、Skill 编码、路由原因和本轮 Agent 状态。
         3. 保留已执行工具及其结果，供 main.py 提取任务、训练和预测引用。
         4. 记录语义识别、路由、动作执行及总耗时日志。
@@ -48,11 +46,8 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
     selection = understanding.selection
     skill = understanding.skill
 
-    presentation = PresentationPlanner.plan(
-        result.executed_tool,
-        result.execution_result.to_payload() if result.execution_result else {},
-    )
-    training_result = presentation.get("training_result")
+    if not state.content_blocks:
+        raise RuntimeError("presentation 节点尚未完成")
     interaction = _interaction_details(request, result, understanding.semantics)
     response = AgentRuntimeResponse(
         conversation_no=request.conversation_no,
@@ -63,11 +58,7 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
             else None
         ),
         status=result.status,
-        message=(
-            training_result_summary(training_result)
-            if training_result
-            else result.message
-        ),
+        message=result.message,
         skill_name=skill.name,
         skill_selection=SkillSelectionResponse(
             skill_name=skill.name, confidence=selection.confidence, reason=selection.reason),
@@ -93,7 +84,7 @@ def build_response(state: AgentGraphState) -> dict[str, Any]:
         available_tools=result.available_tools,
         executed_tool=result.executed_tool,
         execution_result=result.execution_result,
-        presentation=PresentationResponse.model_validate(presentation["presentation"]),
+        content_blocks=state.content_blocks,
         decision_reason=selection.reason,
         memory_patch=memory_patch_for(state),
     )

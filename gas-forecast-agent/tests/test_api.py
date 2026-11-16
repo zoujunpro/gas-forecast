@@ -458,6 +458,7 @@ def test_agent_graph_has_current_linear_nodes() -> None:
     assert {
         "understand_request",
         "execute_action",
+        "presentation",
         "build_response",
     }.issubset(nodes)
     assert "select_skill" not in nodes
@@ -675,7 +676,7 @@ def test_customer_and_task_queries_use_read_only_skill(
     ).json()
 
     assert customer["status"] == "SUCCESS"
-    execution = next(block["data"] for block in customer["blocks"] if block["type"] == "TABLE" and "resultType" in block["data"])
-    assert execution["data"]["records"][0]["customerCode"] == "CUS-1"
+    execution = next(block["data"] for block in customer["blocks"] if block["type"] == "TABLE")
+    assert execution["rows"][0]["customerCode"] == "CUS-1"
     assert task["status"] == "SUCCESS"
     assert [name for name, _ in mcp.calls] == ["customer_list", "task_status_get"]

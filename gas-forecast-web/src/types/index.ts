@@ -18,6 +18,7 @@ export interface PredictionResult {
 }
 
 export interface ChatMessage {
+  blocks?: AiChatContentBlock[]
   id: string
   /** 同一轮用户消息和助手消息共用的轮次编号。 */
   turnId?: string

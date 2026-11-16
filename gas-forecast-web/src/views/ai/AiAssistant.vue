@@ -56,7 +56,7 @@
           <div class="message-main">
             <div class="message-name">{{ message.role === 'user' ? '您' : 'AI 预测助手' }}</div>
             <div v-if="message.role === 'user'" class="user-text">{{ message.content }}</div>
-            <div v-else class="assistant-text" v-html="sanitizeHtml(message.content)"></div>
+            <div v-else-if="!message.blocks?.length" class="assistant-text" v-html="sanitizeHtml(message.content)"></div>
             <details v-if="validProgress(message.progress)" class="execution-trace" open>
               <summary>
                 <i></i><span>{{ currentStepName(message.progress!) }}</span>
@@ -70,8 +70,9 @@
             </details>
             <AiForecastResult v-if="message.forecastResult" :result="message.forecastResult" :presentation="message.presentation" />
             <AiTrainingResult v-if="trainingResultOf(message)" :result="trainingResultOf(message)!" />
-            <AiExecutionTask v-for="taskNo in executionTaskNos(message)" :key="taskNo" :task-no="taskNo" @content-rendered="scrollBottom" />
-            <section v-if="listRows(message).length" class="result-list">
+            <AiExecutionTask v-for="taskNo in (message.blocks?.length ? [] : executionTaskNos(message))" :key="taskNo" :task-no="taskNo" @content-rendered="scrollBottom" />
+            <ContentBlocks v-if="message.role === 'assistant'" :blocks="message.blocks || []" @content-rendered="scrollBottom" />
+              <section v-if="!message.blocks?.length && listRows(message).length" class="result-list">
               <div class="result-list-head">查询结果 <span>共 {{ listRows(message).length }} 条</span></div>
               <el-table :data="listRows(message)" height="420" stripe>
                 <el-table-column v-for="column in listColumns(message)" :key="column.key" :prop="column.key" :label="column.label" min-width="150" show-overflow-tooltip />
@@ -112,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+import ContentBlocks from '@/components/chat/ContentBlocks.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Delete as DeleteIcon, Edit, MagicStick, Plus, Promotion, VideoPause } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

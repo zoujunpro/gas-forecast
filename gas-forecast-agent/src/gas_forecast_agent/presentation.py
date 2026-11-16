@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 
@@ -49,7 +49,11 @@ class PresentationPlanner:
                 continue
             date = item.get("date") or item.get("forecastDate") or item.get("forecast_date")
             value = item.get("value", item.get("forecastValue", item.get("forecast_value")))
-            if date is not None and value is not None:
+            try:
+                valid = not isinstance(value, bool) and Decimal(str(value)).is_finite()
+            except (InvalidOperation, ValueError, TypeError):
+                valid = False
+            if date is not None and valid:
                 points.append({"date": str(date), "value": value})
         if not points:
             return None
@@ -70,3 +74,31 @@ class PresentationPlanner:
             {"index": 3, "name": "生成未来预测", "status": "SUCCESS" if done else "WAITING", "detail": "等待模型执行完成"},
         ]
         return {"title": "预测任务执行情况", "currentStep": 3 if done else 2, "totalSteps": 3, "steps": steps}
+
+
+def build_content_blocks(message: str, result: dict[str, Any], planned: dict[str, Any]):
+    """只从真实工具结果构建内容块，保留执行信封供现有页面读取。"""
+    from gas_forecast_agent.schemas import ContentBlock, ContentBlockType
+
+    blocks = [ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": message})]
+    presentation = planned.get("presentation", {})
+    forecast = planned.get("forecast_result", {})
+    if result.get("success") is not False and presentation.get("type") in {"CHART", "FORECAST_CHART"} and forecast.get("points"):
+        blocks.append(ContentBlock(type=ContentBlockType.CHART, data={
+            "title": presentation.get("title", "预测结果"),
+            "chartType": "LINE", "xField": "date", "yFields": ["value"],
+            "rows": forecast["points"],
+        }))
+    data = result.get("data") if isinstance(result.get("data"), dict) else {}
+    records = data.get("records")
+    if result.get("success") is not False and isinstance(records, list):
+        rows = [dict(row) for row in records if isinstance(row, dict)]
+        fields = list(dict.fromkeys(key for row in rows for key in row))
+        blocks.append(ContentBlock(type=ContentBlockType.TABLE, data={
+            "title": "查询结果", "rows": rows,
+            "columns": [{"field": key, "title": key} for key in fields],
+            "total": data.get("total", len(rows)),
+            "page": data.get("page", data.get("pageNo", 1)),
+            "pageSize": data.get("size", data.get("pageSize", 20)),
+        }))
+    return blocks

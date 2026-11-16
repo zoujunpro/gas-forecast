@@ -360,13 +360,11 @@ def _content_blocks(
     references: list[MessageReferenceResponse],
 ) -> list[ContentBlock]:
     """把Python运行结果转换成Java和Vue统一使用的内容块。"""
-    blocks = [ContentBlock(type=ContentBlockType.MARKDOWN, data={"content": reply.message})]
-    if reply.presentation is not None:
-        presentation = reply.presentation.model_dump(mode="json", by_alias=True, exclude_none=True)
-        block_type = ContentBlockType.CHART if str(reply.presentation.type).upper() == "CHART" else ContentBlockType.TABLE
-        blocks.append(ContentBlock(type=block_type, data=presentation))
-    if execution:
-        blocks.append(ContentBlock(type=ContentBlockType.TABLE, data=execution))
+    from gas_forecast_agent.presentation import build_content_blocks
+
+    blocks = list(reply.content_blocks) if reply.content_blocks else build_content_blocks(
+        reply.message, execution, {},
+    )
     blocks.extend(ContentBlock(
         type=ContentBlockType.TASK_CARD,
         data=reference.model_dump(mode="json", by_alias=True, exclude_none=True),

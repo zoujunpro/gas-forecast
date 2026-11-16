@@ -13,6 +13,7 @@ from gas_forecast_agent.schemas import (
     AgentRuntimeRequest,
     AgentRuntimeResponse,
     ResolutionIssue,
+    ContentBlock,
 )
 from gas_forecast_agent.operation_models import OperationParameters
 from gas_forecast_agent.entity_models import EntityResolution
@@ -75,6 +76,9 @@ class AgentGraphState(BaseModel):
     # 包含 Agent 状态、回复文本、已解析参数、调用工具和工具返回摘要；它表示
     # Agent 本轮是否处理成功，不等同于异步训练或预测任务的最终执行状态。
     result: SkillRunResult | None = None
+
+    # 公共展示节点产出的受控展示配置。
+    content_blocks: list[ContentBlock] = Field(default_factory=list)
 
     # 根据 Skill 执行结果组装出的 Python 内部响应。
     # 由 build_response 节点写入，run_agent_graph 从最终 State 中取出并返回给 Java。

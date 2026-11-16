@@ -4,7 +4,10 @@ from gas_forecast_agent.workflow_nodes.build_response import build_response
 from gas_forecast_agent.workflow_nodes.execute_action import execute_action
 from gas_forecast_agent.workflow_nodes.understand_request import understand_request
 
+from gas_forecast_agent.workflow_nodes.presentation_node import presentation_node
+
 __all__ = [
+    "presentation_node",
     "understand_request",
     "execute_action",
     "build_response",

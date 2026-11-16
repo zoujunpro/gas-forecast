@@ -59,11 +59,15 @@ public class AiChatContentBlock {
         private List<Map<String, Object>> rows = List.of();
     }
 
-    /** 表格内容，同时承载工具执行结果的标准信封。 */
+    /** 表格内容，旧执行信封字段仅供历史消息兼容读取。 */
     @Data
     @NoArgsConstructor
     @JsonIgnoreProperties(value = "type")
     public static class TableContentData implements ContentData {
+        private Long total;
+        private Integer page;
+        private Integer pageSize;
+        private Map<String, Object> pagination;
         private String title;
         private String xField;
         private List<String> yFields = List.of();

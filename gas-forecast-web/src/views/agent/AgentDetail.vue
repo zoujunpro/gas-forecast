@@ -919,7 +919,7 @@
             <div class="msg-body" :class="{ 'has-task-card': Boolean(msg.taskNo) }">
               <template v-if="msg.role === 'assistant' && msg.runNo">
                 <div class="assistant-turn-card">
-                  <div v-if="shouldShowAssistantBubble(msg)" class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
+                  <div v-if="!msg.blocks?.length && shouldShowAssistantBubble(msg)" class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
                   <section class="agent-process" :class="{ expanded: msg.processExpanded }">
                     <button type="button" class="agent-process-head" @click="msg.processExpanded = !msg.processExpanded">
                       <span class="agent-process-title">
@@ -941,7 +941,7 @@
                   </section>
                   <div v-if="msg.completionSummary" class="task-completion-summary" v-html="sanitizeHtml(msg.completionSummary)"></div>
                   <AiExecutionTask
-                    v-if="msg.taskNo"
+                    v-if="msg.taskNo && !msg.blocks?.length"
                     class="task-execution-block"
                     :task-no="msg.taskNo"
                     compact
@@ -954,9 +954,13 @@
               </template>
               <template v-else>
                 <div v-if="msg.role === 'user'" class="msg-bubble msg-bubble-plain">{{ msg.content }}</div>
-                <div v-else class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
+                <div v-else-if="!msg.blocks?.length" class="msg-bubble" v-html="sanitizeHtml(msg.content)"></div>
               </template>
-              <section v-if="msg.role === 'assistant' && chatListRows(msg).length" class="chat-result-list">
+              <ContentBlocks v-if="msg.role === 'assistant'" :blocks="msg.blocks || []"
+                @forecast-completed="result => { finishRunProcess(msg); showCompletedTaskForecast(msg, result) }"
+                @batch-detail-selected="showBatchDetailForecast" @analysis-question="runShortTermQuickAnalysis"
+                @content-rendered="scrollToBottom" />
+              <section v-if="msg.role === 'assistant' && !msg.blocks?.length && chatListRows(msg).length" class="chat-result-list">
                 <div class="chat-result-list-head">
                   查询结果 <span>共 {{ chatListRows(msg).length }} 条</span>
                 </div>
@@ -1048,6 +1052,7 @@
 </template>
 
 <script setup lang="ts">
+import ContentBlocks from '@/components/chat/ContentBlocks.vue'
 import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import echarts from '@/utils/echarts'
@@ -2854,6 +2859,7 @@ const conversationMessage = (item: any): ChatMessage => ({
   content: item.role === 'assistant' ? renderMarkdown(markdownContent(item) || item.content) : item.content,
   clarification: item.clarification || undefined,
   clarificationResolved: Boolean(item.clarification),
+  blocks: contentBlocks(item),
   presentation: blockData(item, 'CHART') || undefined,
   executionResult: blockData(item, 'TABLE') || undefined,
   taskNo:
@@ -3211,6 +3217,7 @@ const sendMessage = async (structured?: AgentStructuredReply, explicitForecastNo
         msg.content = renderMarkdown(fullResponse)
         msg.turnId = data.turnId || msg.turnId
         msg.clarification = data.clarification || undefined
+        msg.blocks = contentBlocks(data)
         msg.presentation = blockData(data, 'CHART') || undefined
         msg.executionResult = blockData(data, 'TABLE') || undefined
         msg.taskNo = taskNoFromBlocks(data)

@@ -142,8 +142,7 @@ def test_candidate_then_horizon_then_direct_forecast_keeps_same_operation(conver
     assert tools.created[0]["targets"][0]["customerCodes"] == ["CUS-1"]
     assert tools.created[0]["forecastHorizon"] == 30
     assert "pendingOperation" not in chat.memory
-    execution = next(block["data"] for block in reply["blocks"] if block["type"] == "TABLE" and "resultType" in block["data"])
-    assert isinstance(ToolExecutionResult.model_validate(execution).data, TaskCreatedResult)
+    assert not any(block["type"] == "TABLE" for block in reply["blocks"])
 
 
 def test_new_request_does_not_inherit_pending_or_completed_parameters(conversation):

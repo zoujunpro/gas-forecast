@@ -715,6 +715,7 @@ class AgentRuntimeResponse(BaseModel):
     executed_tool: str | None = None
     execution_result: ToolExecutionResult | None = None
     presentation: PresentationResponse | None = None
+    content_blocks: list[ContentBlock] = Field(default_factory=list)
     next_action: str | None = None
     next_check_seconds: int | None = None
     decision_reason: str | None = None

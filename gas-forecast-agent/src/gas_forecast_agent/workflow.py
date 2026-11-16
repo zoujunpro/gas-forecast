@@ -17,6 +17,7 @@ from gas_forecast_agent.skills import RequestSemanticExtractor, SkillRegistry
 from gas_forecast_agent.workflow_nodes import (
     build_response,
     execute_action,
+    presentation_node,
     understand_request,
 )
 from gas_forecast_agent.workflow_nodes.build_response import (
@@ -52,6 +53,8 @@ def build_agent_graph():
     #    调用真实 MCP 工具并形成 Agent 本轮执行结果。
     builder.add_node("execute_action", execute_action)
 
+    builder.add_node("presentation", presentation_node)
+
     # 3. 将语义、Skill、工具结果、展示数据和记忆补丁组装为 Python -> Java 内部响应。
     builder.add_node("build_response", build_response)
 
@@ -59,7 +62,8 @@ def build_agent_graph():
     # 可以在对应节点后增加条件边，而不需要把多种职责塞进单个节点。
     builder.add_edge(START, "understand_request")
     builder.add_edge("understand_request", "execute_action")
-    builder.add_edge("execute_action", "build_response")
+    builder.add_edge("execute_action", "presentation")
+    builder.add_edge("presentation", "build_response")
     builder.add_edge("build_response", END)
     return builder.compile(name="gas-forecast-agent")
 

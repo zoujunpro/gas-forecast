@@ -27,6 +27,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class BaseCustomerController {
 
     private final BaseCustomerService baseCustomerService;
+    private final com.gas.forecast.business.application.mcp.AgentBusinessQueryService agentBusinessQueryService;
+
+    /** 与智能体初始查询使用同一查询实现，每次翻页重新检查客户查询权限。 */
+    @PostMapping("agentPage")
+    @RequirePermission("base:customer:list")
+    public ResponseResult<Object> agentPage(@Valid @RequestBody BaseCustomerPageRequest request) {
+        return ResponseResult.success(agentBusinessQueryService.customers(
+            request.getKeyword(), request.getRegionCode(), request.getIndustryCode(),
+            request.getPage(), Math.min(request.getSize(), 200), false));
+    }
+
 
     /**
      * 分页查询客户列表。

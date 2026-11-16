@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # 只读幂等工具发生明确系统异常时的额外重试次数；写工具不使用此配置。
     agent_max_read_retries: int = Field(default=1, ge=0, le=3)
 
+    presentation_llm_enabled: bool = True
+    presentation_timeout_seconds: float = Field(default=8, ge=1, le=30)
+
     def mcp_headers(self, authorization: str | None = None, access_token: str | None = None) -> dict[str, str]:
         """构造 MCP 请求头；优先透传当前用户凭证，本地开发才使用固定凭证。"""
         if access_token:
