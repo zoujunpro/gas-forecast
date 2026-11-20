@@ -1,0 +1,345 @@
+{
+  "description": "全部34个省级地区模拟天气，非真实气象数据",
+  "provinces": [
+    {
+      "code": 110000,
+      "name": "北京",
+      "longitude": 116.405285,
+      "latitude": 39.904989,
+      "minTemp": -7,
+      "maxTemp": 1,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 120000,
+      "name": "天津",
+      "longitude": 117.190182,
+      "latitude": 39.125596,
+      "minTemp": -6,
+      "maxTemp": 2,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 130000,
+      "name": "河北",
+      "longitude": 114.502461,
+      "latitude": 38.045474,
+      "minTemp": -4,
+      "maxTemp": 4,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 140000,
+      "name": "山西",
+      "longitude": 112.549248,
+      "latitude": 37.857014,
+      "minTemp": -4,
+      "maxTemp": 4,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 150000,
+      "name": "内蒙古",
+      "longitude": 111.670801,
+      "latitude": 40.818311,
+      "minTemp": -8,
+      "maxTemp": 0,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 210000,
+      "name": "辽宁",
+      "longitude": 123.429096,
+      "latitude": 41.796767,
+      "minTemp": -10,
+      "maxTemp": -2,
+      "condition": "小雪",
+      "icon": "❄"
+    },
+    {
+      "code": 220000,
+      "name": "吉林",
+      "longitude": 125.3245,
+      "latitude": 43.886841,
+      "minTemp": -13,
+      "maxTemp": -5,
+      "condition": "小雪",
+      "icon": "❄"
+    },
+    {
+      "code": 230000,
+      "name": "黑龙江",
+      "longitude": 126.642464,
+      "latitude": 45.756967,
+      "minTemp": -15,
+      "maxTemp": -7,
+      "condition": "小雪",
+      "icon": "❄"
+    },
+    {
+      "code": 310000,
+      "name": "上海",
+      "longitude": 121.472644,
+      "latitude": 31.231706,
+      "minTemp": 6,
+      "maxTemp": 14,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 320000,
+      "name": "江苏",
+      "longitude": 118.767413,
+      "latitude": 32.041544,
+      "minTemp": 5,
+      "maxTemp": 13,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 330000,
+      "name": "浙江",
+      "longitude": 120.153576,
+      "latitude": 30.287459,
+      "minTemp": 7,
+      "maxTemp": 15,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 340000,
+      "name": "安徽",
+      "longitude": 117.283042,
+      "latitude": 31.86119,
+      "minTemp": 5,
+      "maxTemp": 13,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 350000,
+      "name": "福建",
+      "longitude": 119.306239,
+      "latitude": 26.075302,
+      "minTemp": 13,
+      "maxTemp": 21,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 360000,
+      "name": "江西",
+      "longitude": 115.892151,
+      "latitude": 28.676493,
+      "minTemp": 9,
+      "maxTemp": 17,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 370000,
+      "name": "山东",
+      "longitude": 117.000923,
+      "latitude": 36.675807,
+      "minTemp": -2,
+      "maxTemp": 6,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 410000,
+      "name": "河南",
+      "longitude": 113.665412,
+      "latitude": 34.757975,
+      "minTemp": 1,
+      "maxTemp": 9,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 420000,
+      "name": "湖北",
+      "longitude": 114.298572,
+      "latitude": 30.584355,
+      "minTemp": 7,
+      "maxTemp": 15,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 430000,
+      "name": "湖南",
+      "longitude": 112.982279,
+      "latitude": 28.19409,
+      "minTemp": 10,
+      "maxTemp": 18,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 440000,
+      "name": "广东",
+      "longitude": 113.280637,
+      "latitude": 23.125178,
+      "minTemp": 17,
+      "maxTemp": 25,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 450000,
+      "name": "广西",
+      "longitude": 108.320004,
+      "latitude": 22.82402,
+      "minTemp": 18,
+      "maxTemp": 26,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 460000,
+      "name": "海南",
+      "longitude": 110.33119,
+      "latitude": 20.031971,
+      "minTemp": 22,
+      "maxTemp": 30,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 500000,
+      "name": "重庆",
+      "longitude": 106.504962,
+      "latitude": 29.533155,
+      "minTemp": 8,
+      "maxTemp": 16,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 510000,
+      "name": "四川",
+      "longitude": 104.065735,
+      "latitude": 30.659462,
+      "minTemp": 7,
+      "maxTemp": 15,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 520000,
+      "name": "贵州",
+      "longitude": 106.713478,
+      "latitude": 26.578343,
+      "minTemp": 12,
+      "maxTemp": 20,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 530000,
+      "name": "云南",
+      "longitude": 102.712251,
+      "latitude": 25.040609,
+      "minTemp": 15,
+      "maxTemp": 23,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 540000,
+      "name": "西藏",
+      "longitude": 91.132212,
+      "latitude": 29.660361,
+      "minTemp": 3,
+      "maxTemp": 11,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 610000,
+      "name": "陕西",
+      "longitude": 108.948024,
+      "latitude": 34.263161,
+      "minTemp": 1,
+      "maxTemp": 9,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 620000,
+      "name": "甘肃",
+      "longitude": 103.823557,
+      "latitude": 36.058039,
+      "minTemp": -1,
+      "maxTemp": 7,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 630000,
+      "name": "青海",
+      "longitude": 101.778916,
+      "latitude": 36.623178,
+      "minTemp": -2,
+      "maxTemp": 6,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 640000,
+      "name": "宁夏",
+      "longitude": 106.278179,
+      "latitude": 38.46637,
+      "minTemp": -5,
+      "maxTemp": 3,
+      "condition": "多云",
+      "icon": "☁"
+    },
+    {
+      "code": 650000,
+      "name": "新疆",
+      "longitude": 87.617733,
+      "latitude": 43.792818,
+      "minTemp": -17,
+      "maxTemp": -9,
+      "condition": "小雪",
+      "icon": "❄"
+    },
+    {
+      "code": 710000,
+      "name": "台湾",
+      "longitude": 121.509062,
+      "latitude": 25.044332,
+      "minTemp": 15,
+      "maxTemp": 23,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 810000,
+      "name": "香港",
+      "longitude": 114.173355,
+      "latitude": 22.320048,
+      "minTemp": 19,
+      "maxTemp": 27,
+      "condition": "晴",
+      "icon": "☀"
+    },
+    {
+      "code": 820000,
+      "name": "澳门",
+      "longitude": 113.54909,
+      "latitude": 22.198951,
+      "minTemp": 19,
+      "maxTemp": 27,
+      "condition": "晴",
+      "icon": "☀"
+    }
+  ]
+}

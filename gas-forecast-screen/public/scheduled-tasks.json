@@ -1,0 +1,44 @@
+[
+  {
+    "id": "default-short",
+    "name": "每日短期客户用气预测",
+    "scene": "短期客户",
+    "object": "江苏示范工业客户",
+    "frequency": "每天",
+    "time": "08:00",
+    "weekday": "周一",
+    "day": 1,
+    "horizon": "未来7天",
+    "instructions": "结合天气与历史销量，生成客户日度需求报告",
+    "enabled": false,
+    "builtin": true
+  },
+  {
+    "id": "default-winter",
+    "name": "每周冬季保供预测",
+    "scene": "冬季保供",
+    "object": "华北地区",
+    "frequency": "每周",
+    "time": "09:00",
+    "weekday": "周一",
+    "day": 1,
+    "horizon": "未来三旬",
+    "instructions": "关注降温与保供风险，核查供需缺口",
+    "enabled": false,
+    "builtin": true
+  },
+  {
+    "id": "default-month",
+    "name": "每月销量计划预测",
+    "scene": "月度销量",
+    "object": "江苏",
+    "frequency": "每月",
+    "time": "09:00",
+    "weekday": "周一",
+    "day": 1,
+    "horizon": "未来3个月",
+    "instructions": "按省份全部行业汇总销量预测",
+    "enabled": false,
+    "builtin": true
+  }
+]

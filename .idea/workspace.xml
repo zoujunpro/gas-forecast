@@ -5,15 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95fdb332-ef1b-4b3d-9814-f9a2117c570b" name="Changes" comment="初始化&#10;初始化">
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/application/forecast/ForecastExecutionPayloadFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/application/forecast/ForecastExecutionPayloadFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/application/forecast/ForecastLastYearComparisonService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/application/forecast/ForecastLastYearComparisonService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/application/forecast/ForecastTrendDataService.java" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-bussiness/src/main/java/com/gas/forecast/business/application/forecast/ForecastTrendDataService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" beforeDir="false" afterPath="$PROJECT_DIR$/gas-forecast-web/src/views/agent/AgentDetail.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/schemas/modeling.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/schemas/modeling.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/forecast_statistics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/forecast_statistics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/runtime.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/src/gas_model_platform/services/runtime.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gas-model-platform/tests/test_forecast_statistics.py" beforeDir="false" afterPath="$PROJECT_DIR$/gas-model-platform/tests/test_forecast_statistics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-gateway/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/gas-forecast-gateway/src/main/java/bio/drqi/Main.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +30,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="dev" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -52,6 +49,10 @@
             <RecentBranchesForRepo>
               <option name="branches">
                 <list>
+                  <RecentBranch>
+                    <option name="branchName" value="main-2026-11-17" />
+                    <option name="lastUsedInstant" value="1794880654" />
+                  </RecentBranch>
                   <RecentBranch>
                     <option name="branchName" value="dev" />
                     <option name="lastUsedInstant" value="1792995623" />
@@ -95,61 +96,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0" />
-      <entry key="MS500" value="1.0000157313281066" />
-      <entry key="S2" value="1.0629783600342415" />
-      <entry key="S5" value="1.3310096984195983" />
-      <entry key="S10" value="1.6141587472040058" />
-      <entry key="S30" value="4.470672233167389" />
-      <entry key="S60" value="11.3101295290779" />
-      <entry key="M2" value="22.240263574123503" />
-      <entry key="M5" value="43.11341279243016" />
-      <entry key="M10" value="67.91685791387953" />
-      <entry key="M15" value="88.19974756294987" />
-      <entry key="M30" value="141.69999153756544" />
-      <entry key="H1" value="225.4949858848189" />
-      <entry key="H2" value="328.5487190903466" />
-      <entry key="H4" value="422.6630680453902" />
-      <entry key="D1" value="544.5909973646637" />
-      <entry key="W1" value="571.3385071940351" />
+      <entry key="MS100" value="1.0096032281971614" />
+      <entry key="MS500" value="1.9088992191324115" />
+      <entry key="S2" value="3.2207343932209356" />
+      <entry key="S5" value="3.659669002293826" />
+      <entry key="S10" value="3.8448822392564828" />
+      <entry key="S30" value="4.381407299119107" />
+      <entry key="S60" value="5.175837089256136" />
+      <entry key="M2" value="8.479336088683645" />
+      <entry key="M5" value="25.448459327391866" />
+      <entry key="M10" value="52.25541702098936" />
+      <entry key="M15" value="74.69394770103426" />
+      <entry key="M30" value="131.74650096323683" />
+      <entry key="H1" value="219.19009963546978" />
+      <entry key="H2" value="326.51253160866145" />
+      <entry key="H4" value="424.8688774811352" />
+      <entry key="D1" value="552.9075763168983" />
+      <entry key="W1" value="581.0859531417843" />
     </decayedCancelled>
     <decayedSelected>
-      <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="0.0" />
-      <entry key="S2" value="0.0" />
-      <entry key="S5" value="0.0" />
-      <entry key="S10" value="0.0" />
-      <entry key="S30" value="0.0" />
-      <entry key="S60" value="0.0" />
-      <entry key="M2" value="0.0" />
-      <entry key="M5" value="0.0" />
-      <entry key="M10" value="0.0" />
-      <entry key="M15" value="0.0" />
-      <entry key="M30" value="0.0" />
-      <entry key="H1" value="0.0" />
-      <entry key="H2" value="0.0" />
-      <entry key="H4" value="0.0" />
-      <entry key="D1" value="0.0" />
-      <entry key="W1" value="0.0" />
+      <entry key="MS100" value="4.2912657943104274E-203" />
+      <entry key="MS500" value="3.3613759076245833E-41" />
+      <entry key="S2" value="7.61428749790839E-11" />
+      <entry key="S5" value="8.967093708974056E-5" />
+      <entry key="S10" value="0.009469473960560883" />
+      <entry key="S30" value="0.21156408858028627" />
+      <entry key="S60" value="0.4599609641918389" />
+      <entry key="M2" value="0.6782042201224046" />
+      <entry key="M5" value="0.8561388306001346" />
+      <entry key="M10" value="0.9252777045839453" />
+      <entry key="M15" value="0.9495432081321654" />
+      <entry key="M30" value="0.9744450770218738" />
+      <entry key="H1" value="0.9871398467400015" />
+      <entry key="H2" value="0.993549116420523" />
+      <entry key="H4" value="0.9967693396270387" />
+      <entry key="D1" value="0.999460830367025" />
+      <entry key="W1" value="0.9999229579625775" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.9930924954370359" />
-      <entry key="MS500" value="0.998630353873042" />
-      <entry key="S2" value="1.0625882083465352" />
-      <entry key="S5" value="1.3307793255292155" />
-      <entry key="S10" value="1.6140055646965172" />
-      <entry key="S30" value="4.47051046752375" />
-      <entry key="S60" value="11.309914031331862" />
-      <entry key="M2" value="22.240045779332817" />
-      <entry key="M5" value="43.113239084371585" />
-      <entry key="M10" value="67.91671859210342" />
-      <entry key="M15" value="88.19962552159286" />
-      <entry key="M30" value="141.69989031518176" />
-      <entry key="H1" value="225.4949014574094" />
-      <entry key="H2" value="328.5486547506603" />
-      <entry key="H4" value="422.66302540250274" />
-      <entry key="D1" value="544.5909879461997" />
-      <entry key="W1" value="571.3385057753607" />
+      <entry key="MS100" value="0.06171662929044398" />
+      <entry key="MS500" value="1.4609659934961479" />
+      <entry key="S2" value="3.082216603506041" />
+      <entry key="S5" value="3.6017736496742128" />
+      <entry key="S10" value="3.8232538397249045" />
+      <entry key="S30" value="4.569762814122495" />
+      <entry key="S60" value="5.616132240511464" />
+      <entry key="M2" value="9.144098661560742" />
+      <entry key="M5" value="26.29797652718396" />
+      <entry key="M10" value="53.177098369541" />
+      <entry key="M15" value="75.64100766290144" />
+      <entry key="M30" value="132.71963448543391" />
+      <entry key="H1" value="220.17654179338345" />
+      <entry key="H2" value="327.5057072739102" />
+      <entry key="H4" value="425.86544878167206" />
+      <entry key="D1" value="553.9070016650775" />
+      <entry key="W1" value="582.0858709526211" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -161,63 +162,64 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.GasForecastBusinessApplication.executor&quot;: &quot;Debug&quot;,
-    &quot;JUnit.DynamicTrainingFeatureServiceIntegrationTest.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.DynamicTrainingFeatureServiceIntegrationTest.prepareJiangsuPowerDynamicFeaturesWithoutTraining.executor&quot;: &quot;Debug&quot;,
-    &quot;Maven.gas-forecast [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.gas-forecast [com.diffplug.spotless:spotless-maven-plugin:3.10.2:apply].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.gas-forecast [com.diffplug.spotless:spotless-maven-plugin:3.10.2:check].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.gas-forecast [install].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.gas-forecast [spotless:apply].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.gas-forecast [spotless:check].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.gas-forecast-dao [clean].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.strategies.executor&quot;: &quot;Run&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;Spring Boot.GasForecastStartupApplication.executor&quot;: &quot;Debug&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/zoujun/work/workspace/shiyou/gas-forecast&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;onboarding.tips.debug.path&quot;: &quot;/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-model/src/main/java/bio/drqi/Main.java&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;python.packages.toolwindow.project.migrated.to.right.top.v2&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;ml.llm.LLMThirdPartyAiProvidersConfigurable&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-web/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.GasForecastBusinessApplication.executor": "Debug",
+    "JUnit.DynamicTrainingFeatureServiceIntegrationTest.executor": "Run",
+    "JUnit.DynamicTrainingFeatureServiceIntegrationTest.prepareJiangsuPowerDynamicFeaturesWithoutTraining.executor": "Debug",
+    "Maven.gas-forecast [clean].executor": "Run",
+    "Maven.gas-forecast [com.diffplug.spotless:spotless-maven-plugin:3.10.2:apply].executor": "Run",
+    "Maven.gas-forecast [com.diffplug.spotless:spotless-maven-plugin:3.10.2:check].executor": "Run",
+    "Maven.gas-forecast [install].executor": "Run",
+    "Maven.gas-forecast [spotless:apply].executor": "Run",
+    "Maven.gas-forecast [spotless:check].executor": "Run",
+    "Maven.gas-forecast-dao [clean].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.strategies.executor": "Run",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Spring Boot.GasForecastStartupApplication.executor": "Debug",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main-2026-11-17",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-screen/src",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "onboarding.tips.debug.path": "/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-model/src/main/java/bio/drqi/Main.java",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
+    "settings.editor.selected.configurable": "ml.llm.LLMThirdPartyAiProvidersConfigurable",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/Users/zoujun/work/workspace/shiyou/gas-forecast/gas-forecast-web/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;mysql&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql"
     ],
-    &quot;com.intellij.ide.scratch.LRUPopupBuilder$1/SQL Dialect&quot;: [
-      &quot;MySQL&quot;
+    "com.intellij.ide.scratch.LRUPopupBuilder$1/SQL Dialect": [
+      "MySQL"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/gas-forecast-screen/src" />
       <recent name="$PROJECT_DIR$/gas-forecast-common/gas-forecast-common-core/src/main/java/com/gas/forecast/common/util" />
       <recent name="$PROJECT_DIR$/gas-forecast-startup/src/main/resources/logs" />
     </key>

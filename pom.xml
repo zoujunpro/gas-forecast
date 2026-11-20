@@ -13,7 +13,6 @@
         <module>gas-forecast-system</module>
         <module>gas-forecast-bussiness</module>
         <module>gas-forecast-mcp</module>
-        <module>gas-forecast-gateway</module>
         <module>gas-forecast-dao</module>
         <module>gas-forecast-startup</module>
     </modules>

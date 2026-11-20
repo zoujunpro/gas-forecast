@@ -1,0 +1,20 @@
+<template>
+ <form class="mf" @submit.prevent="$emit('submit')">
+  <div class="mf-heading"><span><GraphIcon name="需求变化"/></span><div><h2>发起预测</h2><p>选择预测信息，自动创建会话并整理结果</p></div></div>
+  <div class="mf-fields"><label>业务场景<select :value="scene.id" aria-label="手动预测业务场景" @change="$emit('scene',$event.target.value)"><option v-for="item in config.scenes.filter(s=>['短期客户','冬季保供','月度销量'].includes(s.id))" :key="item.id" :value="item.id">{{item.id}}</option></select></label><label>预测周期<select :value="period" aria-label="手动预测周期" @change="$emit('update:period',$event.target.value)"><option v-for="value in scene.periods" :key="value">{{value}}</option></select></label></div>
+  <CustomerPicker v-if="scene.id==='短期客户'" :options="customers" :model-value="customerIds" @update:model-value="$emit('update:customerIds',$event)"/>
+  <label v-else>{{scene.objectLabel}}<select :value="object" :aria-label="'手动预测'+scene.objectLabel" @change="$emit('update:object',$event.target.value)"><option v-for="value in scene.objects" :key="value">{{value}}</option></select></label>
+  <label v-if="scene.id==='月度销量'">行业范围<select :value="industry" aria-label="手动预测行业" @change="$emit('update:industry',$event.target.value)"><option v-for="value in config.industries" :key="value">{{value}}</option></select></label>
+  <label v-if="scene.id==='冬季保供'">每期可用供气量 <small>万方，可选</small><input type="number" min="0" step="0.1" :value="supply" aria-label="手动预测供气量" placeholder="用于比较各期需求与供气量" @input="$emit('update:supply',$event.target.value)"></label>
+  <div class="mf-footer"><span>{{scene.id==='短期客户'?'按客户分别计算，并汇总同一周期需求':'结果将保存在本次会话和最近预测中'}}</span><button :disabled="!period||(scene.id==='短期客户'?!customerIds.length:!object)" type="submit"><GraphIcon name="需求变化"/>开始预测</button></div>
+ </form>
+</template>
+<script setup>
+import GraphIcon from './GraphIcon.vue'
+import CustomerPicker from './CustomerPicker.vue'
+defineProps({config:Object,scene:Object,period:String,object:String,industry:String,supply:[String,Number],customers:Array,customerIds:Array})
+defineEmits(['submit','scene','update:period','update:object','update:industry','update:supply','update:customerIds'])
+</script>
+<style scoped>
+.mf{width:100%;max-width:650px;margin:0 auto;padding:24px;border:1px solid var(--wb-ui-border);border-radius:14px;background:var(--wb-ui-surface-raised);box-shadow:0 5px 20px #253d2c04;color:var(--wb-ui-secondary)}.mf-heading{display:flex;align-items:center;gap:11px;margin-bottom:22px}.mf-heading>span{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--wb-ui-border);border-radius:10px;background:var(--wb-ui-surface);color:var(--wb-ui-text)}.mf-heading>span svg{width:19px;height:19px}.mf-heading h2{margin:0;color:var(--wb-ui-text);font-size:19px;font-weight:500}.mf-heading p{margin:6px 0 0;color:var(--wb-ui-text);font-size:var(--wb-font-meta)}.mf label{display:block;color:var(--wb-ui-secondary);font-size:var(--wb-font-meta);margin:14px 0}.mf label>small{color:var(--wb-ui-muted);font-size:var(--wb-font-meta);margin-left:4px}.mf-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}.mf input,.mf select{display:block;width:100%;padding:10px 11px;margin-top:7px;border:1px solid var(--wb-ui-border);border-radius:7px;background:var(--wb-ui-surface-raised);color:var(--wb-ui-text);font:inherit;font-size:var(--wb-font-control)}.mf .cp{margin:12px 0}.mf-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:22px;padding-top:17px;border-top:1px solid var(--wb-ui-border)}.mf-footer>span{font-size:var(--wb-font-meta);color:var(--wb-ui-muted)}.mf-footer>button{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1px solid var(--wb-ui-primary);border-radius:999px;background:var(--wb-ui-primary);color:var(--wb-ui-on-primary);font:inherit;font-size:var(--wb-font-control);cursor:pointer;white-space:nowrap}.mf-footer svg{width:14px;height:14px}.mf-footer button:disabled{opacity:.35;cursor:default}@media(max-width:760px){.mf{padding:18px}.mf-heading{margin-bottom:15px}.mf-fields{gap:10px}.mf-footer{gap:10px}.mf-footer>span{max-width:170px;font-size:var(--wb-font-meta)}}
+</style>

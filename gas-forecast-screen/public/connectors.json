@@ -1,0 +1,71 @@
+[
+  {
+    "id": "mcp-gas",
+    "name": "天然气业务 MCP",
+    "description": "项目现有 Java MCP 服务 · 地区、行业、客户、预测及任务查询",
+    "source": "/gas-forecast/mcp",
+    "transport": "JSON-RPC over HTTP",
+    "type": "连接器",
+    "status": "项目内置 · 未验证连接",
+    "enabled": false,
+    "external": false,
+    "tools": [
+      "region_list",
+      "industry_list",
+      "customer_list",
+      "forecast_start",
+      "forecast_result_query",
+      "forecast_result_by_no",
+      "task_status_get",
+      "task_steps_get"
+    ]
+  },
+  {
+    "id": "mcp-fetch",
+    "name": "网页内容获取 MCP",
+    "description": "获取网页内容，为事件与知识检索提供资料",
+    "source": "https://github.com/modelcontextprotocol/servers/tree/main/src/fetch",
+    "transport": "stdio · 需后端部署",
+    "type": "连接器",
+    "status": "开源候选 · 未安装",
+    "enabled": false,
+    "external": false,
+    "tools": []
+  },
+  {
+    "id": "mcp-filesystem",
+    "name": "文件系统 MCP",
+    "description": "读取和管理授权目录内的文件",
+    "source": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
+    "transport": "stdio · 需后端部署",
+    "type": "连接器",
+    "status": "开源候选 · 未安装",
+    "enabled": false,
+    "external": false,
+    "tools": []
+  },
+  {
+    "id": "mcp-memory",
+    "name": "知识图谱记忆 MCP",
+    "description": "基于知识图谱保存和检索关联信息",
+    "source": "https://github.com/modelcontextprotocol/servers/tree/main/src/memory",
+    "transport": "stdio · 需后端部署",
+    "type": "连接器",
+    "status": "开源候选 · 未安装",
+    "enabled": false,
+    "external": false,
+    "tools": []
+  },
+  {
+    "id": "mcp-playwright",
+    "name": "Playwright MCP",
+    "description": "微软开源浏览器自动化连接器",
+    "source": "https://github.com/microsoft/playwright-mcp",
+    "transport": "需后端部署",
+    "type": "连接器",
+    "status": "开源候选 · 未安装",
+    "enabled": false,
+    "external": false,
+    "tools": []
+  }
+]

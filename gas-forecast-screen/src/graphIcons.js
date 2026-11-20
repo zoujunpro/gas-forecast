@@ -1,0 +1,47 @@
+export const graphIconPaths = {
+  home: 'M3 10l9-8 9 8v11h-6v-7H9v7H3V10Z',
+  send: 'M11.2 3.4a.9.9 0 0 1 1.6 0l8 15.5c.5 1-.5 2-1.5 1.5L12 17l-7.3 3.4c-1 .5-2-.5-1.5-1.5L11.2 3.4Z',
+  panelLeft: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM8 3v18',
+  panelRight: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM16 3v18',
+  filter: 'M3 4h18l-7 8v7l-4 2v-9L3 4Z',
+  sliders: 'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
+  trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',
+  folder: 'M3 6h6l2 2h10v12H3V6ZM3 6V4h6l2 2h8v2',
+  library: 'M3 3h5v18H3V3ZM10 3h5v18h-5V3ZM17 4l4-1 3 17-4 1-3-17ZM4 7h3M11 7h3',
+  sun: 'M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0',
+  cloud: 'M6 19h12a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 9a5 5 0 0 0 0 10Z',
+  rain: 'M6 15a4 4 0 0 1 0-8 6 6 0 0 1 11.5 2H18a3 3 0 0 1 0 6M7 18l-1 3M12 18l-1 3M17 18l-1 3',
+  edit: 'm16 3 5 5M4 15 16 3l5 5-12 12H4v-5ZM3 22h18',
+  企业: 'M5 21V4l10-2v19M15 8h5v13M2 21h21M8 7h3M8 11h3M8 15h3M17 12h1M17 16h1',
+  地点: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  行业: 'M3 21V11l6 3V8l6 4V3h4l2 18ZM7 17h1M12 17h1M17 17h1',
+  行业工厂: 'M3 21V11l6 3V8l6 4V3h4l2 18ZM7 17h1M12 17h1M17 17h1',
+  品类: 'M13 2c1 5-3 6-3 10 0 1 1 2 2 3 0-3 2-4 3-5 3 3 5 5 5 8a8 8 0 0 1-16 0C4 11 9 8 13 2Z',
+  驱动因素: 'M4 21V11h4v10M10 21V6h4v15M16 21V2h4v19',
+  需求变化: 'M3 17 9 11l4 3 8-10M16 4h5v5',
+  业务行动: 'M9 12l3 3 8-10M20 13v7H4V4h11',
+  传导规则: 'M7 3h13v18H7M3 7h7M3 12h7M3 17h7M13 7h4M13 12h4M13 17h4',
+  事件: 'm13 2-9 12h7l-1 8 10-13h-8Z',
+  因素指标: 'M4 21V11h4v10M10 21V6h4v15M16 21V2h4v19',
+  指标值: 'M4 21V11h4v10M10 21V6h4v15M16 21V2h4v19',
+  时间: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 6v6l4 2',
+  运输: 'M4 20c0-5 16-11 16-16M7 20a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM23 4a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  预测: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0ZM12 9v6M9 12h6',
+  graph: 'M12 4v5M12 9 5 17M12 9l7 8M15 4a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM8 20a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM22 20a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  search: 'M18 10.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0ZM16 16l5 5',
+  zoomIn: 'M18 10.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0ZM16 16l5 5M7 10.5h7M10.5 7v7',
+  zoomOut: 'M18 10.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0ZM16 16l5 5M7 10.5h7',
+  reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6',
+  fit: 'M9 3H3v6M15 3h6v6M3 15v6h6M21 15v6h-6',
+  close: 'm6 6 12 12M18 6 6 18',
+  chevron: 'm9 5 7 7-7 7',
+  message: 'M21 3H3v15h5l4 4 4-4h5Z',
+}
+export function graphNodeIcon(type, color) {
+  const path = graphIconPaths[type] || graphIconPaths.graph
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`)
+}
+export const graphColors = {
+  企业: ['#dceaff', '#0756d8'], 品类: ['#ffdab6', '#a34600'], 地点: ['#dcc6ff', '#6134a8'], 行业: ['#bcebc6', '#16703a'], 行业工厂: ['#bcebc6', '#16703a'],
+  因素指标: ['#bce9ef', '#086d80'], 指标值: ['#c8ebf0', '#086d80'], 时间: ['#e3e8f1', '#47576d'], 事件: ['#ffddba', '#a84a0b'], 预测: ['#d3dfff', '#354da7'],
+}

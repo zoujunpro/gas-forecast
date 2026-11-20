@@ -1,0 +1,202 @@
+[
+  {
+    "code": "EWMA_V1",
+    "name": "指数加权移动平均",
+    "family": "baseline"
+  },
+  {
+    "code": "MOVING_AVERAGE_V1",
+    "name": "移动平均",
+    "family": "baseline"
+  },
+  {
+    "code": "NAIVE_V1",
+    "name": "朴素预测",
+    "family": "baseline"
+  },
+  {
+    "code": "SEASONAL_MEAN_V1",
+    "name": "季节同期均值",
+    "family": "baseline"
+  },
+  {
+    "code": "SEASONAL_NAIVE_V1",
+    "name": "季节朴素预测",
+    "family": "baseline"
+  },
+  {
+    "code": "SEASONAL_TREND_V1",
+    "name": "季节趋势预测",
+    "family": "baseline"
+  },
+  {
+    "code": "ARIMA_V1",
+    "name": "ARIMA",
+    "family": "statistical"
+  },
+  {
+    "code": "AUTOREGRESSION_V1",
+    "name": "自回归",
+    "family": "statistical"
+  },
+  {
+    "code": "EXPONENTIAL_SMOOTHING_V1",
+    "name": "指数平滑",
+    "family": "statistical"
+  },
+  {
+    "code": "PROPHET_V1",
+    "name": "Prophet",
+    "family": "statistical"
+  },
+  {
+    "code": "SARIMAX_V1",
+    "name": "SARIMAX",
+    "family": "statistical"
+  },
+  {
+    "code": "THETA_V1",
+    "name": "Theta",
+    "family": "statistical"
+  },
+  {
+    "code": "UNOBSERVED_COMPONENTS_V1",
+    "name": "不可观测成分模型",
+    "family": "statistical"
+  },
+  {
+    "code": "BAYESIAN_RIDGE_V1",
+    "name": "贝叶斯岭回归",
+    "family": "linear"
+  },
+  {
+    "code": "ELASTIC_NET_V1",
+    "name": "ElasticNet回归",
+    "family": "linear"
+  },
+  {
+    "code": "HUBER_V1",
+    "name": "Huber稳健回归",
+    "family": "linear"
+  },
+  {
+    "code": "LASSO_V1",
+    "name": "Lasso回归",
+    "family": "linear"
+  },
+  {
+    "code": "LINEAR_REGRESSION_V1",
+    "name": "线性回归",
+    "family": "linear"
+  },
+  {
+    "code": "LINEAR_SVR_V1",
+    "name": "线性支持向量回归",
+    "family": "linear"
+  },
+  {
+    "code": "PLS_V1",
+    "name": "偏最小二乘回归",
+    "family": "linear"
+  },
+  {
+    "code": "RIDGE_V1",
+    "name": "岭回归",
+    "family": "linear"
+  },
+  {
+    "code": "ADABOOST_V1",
+    "name": "AdaBoost",
+    "family": "tree"
+  },
+  {
+    "code": "BAGGING_TREE_V1",
+    "name": "Bagging决策树",
+    "family": "tree"
+  },
+  {
+    "code": "CATBOOST_V1",
+    "name": "CatBoost",
+    "family": "tree"
+  },
+  {
+    "code": "DECISION_TREE_V1",
+    "name": "决策树",
+    "family": "tree"
+  },
+  {
+    "code": "EXTRA_TREES_V1",
+    "name": "极端随机树",
+    "family": "tree"
+  },
+  {
+    "code": "GRADIENT_BOOSTING_V1",
+    "name": "梯度提升树",
+    "family": "tree"
+  },
+  {
+    "code": "LIGHTGBM_V1",
+    "name": "LightGBM",
+    "family": "tree"
+  },
+  {
+    "code": "RANDOM_FOREST_V1",
+    "name": "随机森林",
+    "family": "tree"
+  },
+  {
+    "code": "XGBOOST_V1",
+    "name": "XGBoost",
+    "family": "tree"
+  },
+  {
+    "code": "INVERSE_ERROR_WEIGHT_V1",
+    "name": "误差倒数加权",
+    "family": "composite"
+  },
+  {
+    "code": "MEDIAN_ENSEMBLE_V1",
+    "name": "中位数组合",
+    "family": "composite"
+  },
+  {
+    "code": "NNLS_WEIGHT_V1",
+    "name": "非负最小二乘组合",
+    "family": "composite"
+  },
+  {
+    "code": "PROPHET_AR_RESIDUAL_V1",
+    "name": "Prophet+AR残差",
+    "family": "composite"
+  },
+  {
+    "code": "PROPHET_LIGHTGBM_RESIDUAL_V1",
+    "name": "Prophet+LightGBM残差",
+    "family": "composite"
+  },
+  {
+    "code": "PROPHET_XGBOOST_RESIDUAL_V1",
+    "name": "Prophet+XGBoost",
+    "family": "composite"
+  },
+  {
+    "code": "RESIDUAL_COMBINATION_V1",
+    "name": "残差组合",
+    "family": "composite"
+  },
+  {
+    "code": "RIDGE_STACKING_V1",
+    "name": "Ridge Stacking",
+    "family": "composite"
+  },
+  {
+    "code": "WEIGHTED_AVERAGE_V1",
+    "name": "加权平均组合",
+    "family": "composite"
+  },
+  {
+    "code": "WINSORIZED_AVERAGE_V1",
+    "name": "缩尾平均组合",
+    "family": "composite"
+  }
+]
